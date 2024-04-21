@@ -1,0 +1,11 @@
+[package]
+name = "tabiew"
+version = "0.1.0"
+authors = ["Shayan Hashemi <shshemi@gmail.com>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+crossterm = "0.27.0"
+polars = "0.39.2"
+ratatui = "0.26.0"
