@@ -10,10 +10,10 @@ use crate::{
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
     let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
+    app.table_height = layout[0].height - 1;
     let table_slice = &app
         .data_frame
-        .slice(app.table_offset.0, (layout[0].height - 1) as usize);
-        
+        .slice(app.table_offset.0, app.table_height as usize);
     frame.render_stateful_widget(
         Table::new(
             rows_from_dataframe(table_slice),

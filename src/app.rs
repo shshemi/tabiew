@@ -19,6 +19,7 @@ pub struct App {
 
     pub table_offset: (i64, usize),
     pub table_select: usize,
+    pub table_height: u16,
 }
 
 impl Default for App {
@@ -33,6 +34,7 @@ impl Default for App {
                 .unwrap(),
             table_offset: (0, 0),
             table_select: 0,
+            table_height: 0,
         }
     }
 }
