@@ -12,3 +12,9 @@ pub mod tui;
 
 /// Event handler.
 pub mod handler;
+
+/// Theme and styling
+pub mod theme;
+
+/// Utils
+pub mod utils;
