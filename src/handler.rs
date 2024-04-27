@@ -14,6 +14,11 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
                 app.quit();
             }
         }
+
+        KeyCode::PageUp => app.page_up(),
+
+        KeyCode::PageDown => app.page_down(),
+
         _ => {}
     }
     Ok(())

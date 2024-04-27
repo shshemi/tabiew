@@ -1,4 +1,4 @@
-use std::error;
+use std::{error, ops::Sub};
 
 use polars::{
     frame::DataFrame,
@@ -17,7 +17,7 @@ pub struct App {
     // pub data_frame: DataFrame,
     pub data_frame: DataFrame,
 
-    pub table_offset: (i64, usize),
+    pub table_offset: (usize, usize),
     pub table_select: usize,
     pub table_height: u16,
 }
@@ -51,5 +51,21 @@ impl App {
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
         self.running = false;
+    }
+
+    pub fn offset_up(&mut self, len: usize) {
+        self.table_offset.0 = self.table_offset.0.saturating_sub(len)
+    }
+
+    pub fn offset_down(&mut self, len: usize) {
+        self.table_offset.0 = (self.data_frame.height() - 1).min(self.table_offset.0 + len)
+    }
+
+    pub fn page_up(&mut self) {
+        self.offset_up(self.table_height.into())
+    }
+
+    pub fn page_down(&mut self) {
+        self.offset_down(self.table_height.into())
     }
 }
