@@ -1,14 +1,22 @@
+use polars::io::csv::CsvReader;
+use polars::io::SerReader;
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
+use std::io;
 use tabiew::app::{App, AppResult};
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::tui::Tui;
-use std::io;
-use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
 
 fn main() -> AppResult<()> {
     // Create an application.
-    let mut app = App::new();
+    let data_frame = CsvReader::from_path("sample_large.csv")
+        .unwrap()
+        .infer_schema(None)
+        .has_header(true)
+        .finish()
+        .unwrap();
+    let mut app = App::new(&data_frame);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());

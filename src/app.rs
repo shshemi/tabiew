@@ -1,48 +1,33 @@
-use std::{error, ops::Sub};
+use std::error;
 
-use polars::{
-    frame::DataFrame,
-    io::{csv::CsvReader, SerReader},
-};
+use polars::frame::DataFrame;
+use ratatui::widgets::{Table, TableState};
+
+use crate::utils::tabulate;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 /// Application.
 #[derive(Debug)]
-pub struct App {
+pub struct App<'a> {
     /// Is the application running?
     pub running: bool,
 
-    // pub data_frame: DataFrame,
-    pub data_frame: DataFrame,
-
-    pub table_offset: (usize, usize),
-    pub table_select: usize,
-    pub table_height: u16,
+    pub table: Table<'a>,
+    pub table_state: TableState,
+    pub rows: usize,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl<'a> App<'a> {
+    /// Constructs a new instance of [`App`].
+    pub fn new(data_frame: &'a DataFrame) -> Self {
         Self {
             running: true,
-            data_frame: CsvReader::from_path("sample.csv")
-                .unwrap()
-                .infer_schema(None)
-                .has_header(true)
-                .finish()
-                .unwrap(),
-            table_offset: (0, 0),
-            table_select: 0,
-            table_height: 0,
+            table: tabulate(data_frame),
+            table_state: TableState::new().with_offset(0).with_selected(0),
+            rows: data_frame.height()
         }
-    }
-}
-
-impl App {
-    /// Constructs a new instance of [`App`].
-    pub fn new() -> Self {
-        Self::default()
     }
 
     /// Handles the tick event of the terminal.
@@ -53,19 +38,19 @@ impl App {
         self.running = false;
     }
 
-    pub fn offset_up(&mut self, len: usize) {
-        self.table_offset.0 = self.table_offset.0.saturating_sub(len)
+    pub fn select_up(&mut self, len: usize) {
+        self.table_state.select(
+            self.table_state
+                .selected()
+                .map(|idx| idx.saturating_sub(len)),
+        )
     }
 
-    pub fn offset_down(&mut self, len: usize) {
-        self.table_offset.0 = (self.data_frame.height() - 1).min(self.table_offset.0 + len)
-    }
-
-    pub fn page_up(&mut self) {
-        self.offset_up(self.table_height.into())
-    }
-
-    pub fn page_down(&mut self) {
-        self.offset_down(self.table_height.into())
+    pub fn select_down(&mut self, len: usize) {
+        self.table_state.select(
+            self.table_state
+                .selected()
+                .map(|idx| idx.saturating_add(len).min(self.rows - 1)),
+        )
     }
 }
