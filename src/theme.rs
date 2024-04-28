@@ -4,6 +4,7 @@ pub trait Styler {
     fn table_header() -> Style;
     fn table_header_cell(col: usize) -> Style;
     fn table_row(row: usize) -> Style;
+    fn table_highlight() -> Style;
     fn table_cell(row: usize, col: usize) -> Style;
     fn status_bar() -> Style;
 }
@@ -35,6 +36,10 @@ impl Styler for Theme {
         } else {
             Style::new().bg(Color::from_u32(0x001c191d))
         }
+    }
+
+    fn table_highlight() -> Style {
+        Style::new().bg(Color::from_u32(0x00c89f2d))
     }
 
     fn table_cell(_row: usize, _col: usize) -> Style {
