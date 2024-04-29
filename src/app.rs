@@ -18,6 +18,7 @@ pub struct App<'a> {
     pub table_state: TableState,
     pub rows: usize,
     pub cols: usize,
+    pub visible_rows: u16
 }
 
 impl<'a> App<'a> {
@@ -29,6 +30,7 @@ impl<'a> App<'a> {
             table_state: TableState::new().with_offset(0).with_selected(0),
             rows: data_frame.height(),
             cols: data_frame.width(),
+            visible_rows: 0
         }
     }
 

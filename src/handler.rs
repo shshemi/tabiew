@@ -19,9 +19,9 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
 
         KeyCode::Down => app.select_down(1),
 
-        KeyCode::PageUp => app.select_up(20),
+        KeyCode::PageUp => app.select_up(app.visible_rows.into()),
 
-        KeyCode::PageDown => app.select_down(20),
+        KeyCode::PageDown => app.select_down(app.visible_rows.into()),
 
         _ => {}
     }
