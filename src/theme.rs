@@ -47,6 +47,6 @@ impl Styler for Theme {
     }
 
     fn status_bar() -> Style {
-        Style::default().bg(Color::from_u32(0x00007dd0))
+        Style::default().bg(Color::from_u32(0x00007dd0)).fg(Color::White)
     }
 }
