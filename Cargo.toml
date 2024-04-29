@@ -6,6 +6,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
 polars = { version = "0.39.2", features = ["dtype-decimal"] }
 ratatui = "0.26.0"

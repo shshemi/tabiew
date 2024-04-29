@@ -1,3 +1,4 @@
+use clap::Parser;
 use polars::io::csv::CsvReader;
 use polars::io::SerReader;
 use ratatui::backend::CrosstermBackend;
@@ -9,13 +10,15 @@ use tabiew::handler::handle_key_events;
 use tabiew::tui::Tui;
 
 fn main() -> AppResult<()> {
+
+    // Parse CLI
+    let args = Args::parse();
+
     // Create an application.
-    let data_frame = CsvReader::from_path("sample_large.csv")
-        .unwrap()
-        .infer_schema(None)
+    let data_frame = CsvReader::from_path(&args.file_name)?
+        .infer_schema(Some(0))
         .has_header(true)
-        .finish()
-        .unwrap();
+        .finish()?;
     let mut app = App::new(&data_frame);
 
     // Initialize the terminal user interface.
@@ -41,4 +44,11 @@ fn main() -> AppResult<()> {
     // Exit the user interface.
     tui.exit()?;
     Ok(())
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(help = "File to open", required = true)]
+    file_name: String,
 }
