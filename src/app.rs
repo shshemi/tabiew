@@ -32,7 +32,7 @@ impl<'a> App<'a> {
             rows: data_frame.height(),
             cols: data_frame.width(),
             visible_rows: 0,
-            status : AppStatus::Normal
+            status: AppStatus::Normal,
         }
     }
 
@@ -68,6 +68,14 @@ impl<'a> App<'a> {
         )
     }
 
+    pub fn select_first(&mut self) {
+        self.table_state.select(0.into())
+    }
+
+    pub fn select_last(&mut self) {
+        self.table_state.select(self.rows.saturating_sub(1).into())
+    }
+
     pub fn set_data_frame(&mut self, data_frame: &'a DataFrame) {
         self.table = tabulate(data_frame);
         self.table_state = TableState::new().with_offset(0).with_selected(0);
@@ -76,7 +84,7 @@ impl<'a> App<'a> {
     }
 
     pub fn state_normal(&mut self) {
-        self.status  = AppStatus::Normal;
+        self.status = AppStatus::Normal;
     }
 
     pub fn state_error(&mut self, msg: String, ticks: usize) {
