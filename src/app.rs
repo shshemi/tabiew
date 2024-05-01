@@ -74,6 +74,14 @@ impl<'a> App<'a> {
         self.rows = data_frame.height();
         self.cols = data_frame.width();
     }
+
+    pub fn state_normal(&mut self) {
+        self.status  = AppStatus::Normal;
+    }
+
+    pub fn state_error(&mut self, msg: String, ticks: usize) {
+        self.status = AppStatus::Error(msg, ticks);
+    }
 }
 
 #[derive(Debug)]
