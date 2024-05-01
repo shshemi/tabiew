@@ -6,7 +6,9 @@ pub trait Styler {
     fn table_row(row: usize) -> Style;
     fn table_highlight() -> Style;
     fn table_cell(row: usize, col: usize) -> Style;
-    fn status_bar() -> Style;
+    fn status_bar_red() -> Style;
+    fn status_bar_green() -> Style;
+    fn status_bar_blue() -> Style;
 }
 
 pub struct Theme;
@@ -46,7 +48,15 @@ impl Styler for Theme {
         Style::default().fg(Color::White)
     }
 
-    fn status_bar() -> Style {
+    fn status_bar_red() -> Style {
+        Style::default().bg(Color::from_u32(0x00d07d00)).fg(Color::White)
+    }
+
+    fn status_bar_green() -> Style {
+        Style::default().bg(Color::from_u32(0x00008f1f)).fg(Color::White)
+    }
+
+    fn status_bar_blue() -> Style {
         Style::default().bg(Color::from_u32(0x00007dd0)).fg(Color::White)
     }
 }
