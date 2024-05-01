@@ -14,6 +14,8 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
         (AppStatus::Normal, KeyCode::Down) => app.select_down(1),
         (AppStatus::Normal, KeyCode::PageUp) => app.select_up(app.visible_rows.into()),
         (AppStatus::Normal, KeyCode::PageDown) => app.select_down(app.visible_rows.into()),
+        (AppStatus::Normal, KeyCode::Home) => app.select_first(),
+        (AppStatus::Normal, KeyCode::End) => app.select_last(),
         (AppStatus::Normal, KeyCode::Char(':')) => {
             app.state_error("Commands are not supported yet!".to_owned(), 8)
         }
