@@ -18,7 +18,7 @@ pub struct App<'a> {
     pub table_state: TableState,
     pub rows: usize,
     pub cols: usize,
-    pub visible_rows: u16
+    pub visible_rows: u16,
 }
 
 impl<'a> App<'a> {
@@ -30,7 +30,7 @@ impl<'a> App<'a> {
             table_state: TableState::new().with_offset(0).with_selected(0),
             rows: data_frame.height(),
             cols: data_frame.width(),
-            visible_rows: 0
+            visible_rows: 0,
         }
     }
 
@@ -56,5 +56,12 @@ impl<'a> App<'a> {
                 .selected()
                 .map(|idx| idx.saturating_add(len).min(self.rows - 1)),
         )
+    }
+
+    pub fn set_data_frame(&mut self, data_frame: &'a DataFrame) {
+        self.table = tabulate(data_frame);
+        self.table_state = TableState::new().with_offset(0).with_selected(0);
+        self.rows = data_frame.height();
+        self.cols = data_frame.width();
     }
 }
