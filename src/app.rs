@@ -19,6 +19,7 @@ pub struct App<'a> {
     pub rows: usize,
     pub cols: usize,
     pub visible_rows: u16,
+    pub status: AppStatus,
 }
 
 impl<'a> App<'a> {
@@ -31,6 +32,7 @@ impl<'a> App<'a> {
             rows: data_frame.height(),
             cols: data_frame.width(),
             visible_rows: 0,
+            status : AppStatus::Normal
         }
     }
 
@@ -64,4 +66,10 @@ impl<'a> App<'a> {
         self.rows = data_frame.height();
         self.cols = data_frame.width();
     }
+}
+
+#[derive(Debug)]
+pub enum AppStatus {
+    Normal,
+    Error(String, usize),
 }
