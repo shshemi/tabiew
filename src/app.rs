@@ -37,7 +37,15 @@ impl<'a> App<'a> {
     }
 
     /// Handles the tick event of the terminal.
-    pub fn tick(&self) {}
+    pub fn tick(&mut self) {
+        if let AppStatus::Error(_, ref mut ticks) = self.status {
+            if ticks == &0 {
+                self.status = AppStatus::Normal;
+            } else {
+                *ticks -= 1;
+            }
+        }
+    }
 
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
