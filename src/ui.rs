@@ -14,9 +14,9 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     frame.render_stateful_widget(&app.table, layout[0], &mut app.table_state);
 
-    frame.render_widget(
-        match &app.status {
-            crate::app::AppStatus::Normal => Line::default()
+    match &app.status {
+        crate::app::AppStatus::Normal => frame.render_widget(
+            Line::default()
                 .spans([
                     Span::raw(format!(
                         "Row: {:<width$} ",
@@ -27,12 +27,16 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 ])
                 .alignment(Alignment::Right)
                 .style(Theme::status_bar_blue()),
-            crate::app::AppStatus::Error(msg, _) => {
-                Line::raw(msg)
+            layout[1],
+        ),
+
+        crate::app::AppStatus::Error(msg, _) => frame.render_widget(
+            Line::raw(msg)
                 .alignment(Alignment::Center)
-                .style(Theme::status_bar_red())
-            }
-        },
-        layout[1],
-    );
+                .style(Theme::status_bar_red()),
+            layout[1],
+        ),
+
+        crate::app::AppStatus::Command(text) => frame.render_widget(text.widget(), layout[1]),
+    }
 }
