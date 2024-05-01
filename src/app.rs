@@ -1,9 +1,16 @@
 use std::error;
 
 use polars::frame::DataFrame;
-use ratatui::widgets::{Table, TableState};
+use ratatui::{
+    style::{Style, Stylize},
+    widgets::{Table, TableState},
+};
+use tui_textarea::TextArea;
 
-use crate::utils::tabulate;
+use crate::{
+    theme::{Styler, Theme},
+    utils::tabulate,
+};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -19,7 +26,7 @@ pub struct App<'a> {
     pub rows: usize,
     pub cols: usize,
     pub visible_rows: u16,
-    pub status: AppStatus,
+    pub status: AppStatus<'a>,
 }
 
 impl<'a> App<'a> {
@@ -82,18 +89,37 @@ impl<'a> App<'a> {
         self.rows = data_frame.height();
         self.cols = data_frame.width();
     }
-
-    pub fn state_normal(&mut self) {
-        self.status = AppStatus::Normal;
-    }
-
-    pub fn state_error(&mut self, msg: String, ticks: usize) {
-        self.status = AppStatus::Error(msg, ticks);
-    }
 }
 
 #[derive(Debug)]
-pub enum AppStatus {
+pub enum AppStatus<'a> {
     Normal,
     Error(String, usize),
+    Command(TextArea<'a>),
+}
+
+impl<'a> AppStatus<'a> {
+    pub fn normal(&mut self) {
+        self.update(AppStatus::Normal);
+    }
+
+    pub fn error(&mut self, msg: String, ticks: usize) {
+        self.update(AppStatus::Error(msg, ticks));
+    }
+
+    pub fn command(&mut self) -> &mut TextArea<'a> {
+        if let AppStatus::Command(text_area) = self {
+            text_area
+        } else {
+            let mut text_area = TextArea::default();
+            text_area.set_style(Theme::status_bar_green());
+            text_area.set_cursor_line_style(Style::default());
+            self.update(AppStatus::Command(text_area));
+            self.command()
+        }
+    }
+
+    pub fn update(&mut self, status: AppStatus<'a>) {
+        *self = status;
+    }
 }
