@@ -14,11 +14,25 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     app.rendered_rows = layout[0].height - 1;
     app.adjust_offset();
 
+    // Building local table
     let local_df = app
         .data_frame
         .slice(app.offset as i64, app.rendered_rows.into());
 
-    let local_tbl = tabulate(&local_df);
+    let local_widths = app
+        .widths
+        .iter()
+        .copied()
+        .map(|w| Constraint::Length(w as u16))
+        .collect::<Vec<_>>();
+
+    let highlight_symbol = format!(
+        "{:>width$} ",
+        app.select,
+        width = app.data_frame.height().to_string().len()
+    );
+
+    let local_tbl = tabulate(&local_df, &local_widths, &highlight_symbol);
 
     let mut local_st = TableState::new()
         .with_offset(0)

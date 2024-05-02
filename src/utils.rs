@@ -1,6 +1,8 @@
-use polars::{datatypes::AnyValue, frame::DataFrame};
+use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
 use ratatui::{
-    layout::Constraint, text::Span, widgets::{Cell, Row, Table}
+    layout::Constraint,
+    text::Span,
+    widgets::{Cell, Row, Table},
 };
 
 use crate::theme::{Styler, Theme};
@@ -45,18 +47,64 @@ pub fn zip_iters<I1: IntoIterator<Item = I2>, I2: Iterator<Item = T>, T: Clone +
     }
 }
 
-pub fn tabulate(data_frame: &polars::prelude::DataFrame) -> Table {
+pub fn tabulate<'a>(data_frame: &'a DataFrame, width: &'a[Constraint], highlight_symbol: &'a str) -> Table<'a> {
     Table::new(
         rows_from_dataframe(data_frame),
-        widths_from_dataframe(data_frame),
+        width,
     )
     .header(header_from_dataframe(data_frame))
-    .highlight_symbol(Span::raw("-> ").style(Theme::table_cell(0, 0)))
+    .highlight_symbol(Span::raw(highlight_symbol).style(Theme::table_cell(0, 0)))
     .highlight_style(Theme::table_highlight())
 }
 
-fn cell_from_value(value: polars::datatypes::AnyValue) -> Cell {
-    Cell::new(match value {
+
+pub fn widths_from_dataframe(df: &polars::frame::DataFrame) -> Vec<usize> {
+    df.get_column_names()
+        .into_iter()
+        .zip(df.get_columns())
+        .map(|(col, series)| col.len().max(series_width(series)))
+        .collect::<Vec<_>>()
+}
+
+fn rows_from_dataframe(df: &DataFrame) -> Vec<Row> {
+    zip_iters(df.iter().map(|series| series.iter()))
+        .enumerate()
+        .map(|(row_idx, row)| {
+            Row::new(
+                row.into_iter()
+                    .enumerate()
+                    .map(|(col_idx, value)| {
+                        Cell::new(string_from_any_value(value))
+                            .style(Theme::table_cell(row_idx, col_idx))
+                    })
+                    .collect::<Vec<_>>(),
+            )
+            .style(Theme::table_row(row_idx))
+        })
+        .collect::<Vec<_>>()
+}
+
+fn header_from_dataframe(df: &DataFrame) -> Row {
+    Row::new(
+        df.get_column_names()
+            .into_iter()
+            .enumerate()
+            .map(|(col_idx, name)| Cell::new(name).style(Theme::table_header_cell(col_idx)))
+            .collect::<Vec<_>>(),
+    )
+    .style(Theme::table_header())
+}
+
+fn series_width(series: &Series) -> usize {
+    series
+        .iter()
+        .map(|any_value| string_from_any_value(any_value).len())
+        .max()
+        .unwrap_or_default()
+}
+
+fn string_from_any_value(value: polars::datatypes::AnyValue) -> String {
+    match value {
         AnyValue::Null => "".to_owned(),
         AnyValue::Boolean(v) => format!("{}", v),
         AnyValue::String(v) => v.to_string(),
@@ -79,40 +127,5 @@ fn cell_from_value(value: polars::datatypes::AnyValue) -> Cell {
         AnyValue::Binary(v) => format!("{:?}", v),
         AnyValue::BinaryOwned(v) => format!("{:?}", v),
         AnyValue::Decimal(v1, v2) => format!("{}.{}", v1, v2),
-    })
-}
-
-fn widths_from_dataframe(df: &polars::frame::DataFrame) -> Vec<Constraint> {
-    df.get_column_names()
-        .into_iter()
-        .map(|col| Constraint::Min(col.len() as u16))
-        .collect::<Vec<_>>()
-}
-
-fn rows_from_dataframe(df: &DataFrame) -> Vec<Row> {
-    zip_iters(df.iter().map(|series| series.iter()))
-        .enumerate()
-        .map(|(row_idx, row)| {
-            Row::new(
-                row.into_iter()
-                    .enumerate()
-                    .map(|(col_idx, value)| {
-                        cell_from_value(value).style(Theme::table_cell(row_idx, col_idx))
-                    })
-                    .collect::<Vec<_>>(),
-            )
-            .style(Theme::table_row(row_idx))
-        })
-        .collect::<Vec<_>>()
-}
-
-fn header_from_dataframe(df: &DataFrame) -> Row {
-    Row::new(
-        df.get_column_names()
-            .into_iter()
-            .enumerate()
-            .map(|(col_idx, name)| Cell::new(name).style(Theme::table_header_cell(col_idx)))
-            .collect::<Vec<_>>(),
-    )
-    .style(Theme::table_header())
+    }
 }
