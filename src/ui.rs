@@ -3,6 +3,7 @@ use ratatui::{prelude::*, widgets::*};
 use crate::{
     app::App,
     theme::{Styler, Theme},
+    utils::tabulate,
 };
 
 /// Renders the user interface widgets.
@@ -10,9 +11,19 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
 
     // Set visible rows = table height - 1 (if header)
-    app.visible_rows = layout[0].height - 1;
+    app.rendered_rows = layout[0].height - 1;
+    app.adjust_offset();
 
-    frame.render_stateful_widget(&app.table, layout[0], &mut app.table_state);
+    let local_df = app
+        .data_frame
+        .slice(app.offset as i64, app.rendered_rows.into());
+
+    let local_tbl = tabulate(&local_df);
+
+    let mut local_st = TableState::new()
+        .with_offset(0)
+        .with_selected(app.select.saturating_sub(app.offset));
+    frame.render_stateful_widget(local_tbl, layout[0], &mut local_st);
 
     match &app.status {
         crate::app::AppStatus::Normal => frame.render_widget(
@@ -20,10 +31,14 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 .spans([
                     Span::raw(format!(
                         "Row: {:<width$} ",
-                        app.table_state.selected().map(|row| row + 1).unwrap_or(0),
-                        width = app.rows.to_string().len()
+                        app.select,
+                        width = app.data_frame.height().to_string().len()
                     )),
-                    Span::raw(format!("Table Size: {} x {} ", app.rows, app.cols)),
+                    Span::raw(format!(
+                        "Table Size: {} x {} ",
+                        app.data_frame.height(),
+                        app.data_frame.width()
+                    )),
                 ])
                 .alignment(Alignment::Right)
                 .style(Theme::status_bar_blue()),

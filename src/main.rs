@@ -19,7 +19,7 @@ fn main() -> AppResult<()> {
         .infer_schema(Some(0))
         .has_header(true)
         .finish()?;
-    let mut app = App::new(&data_frame);
+    let mut app = App::new(data_frame);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());

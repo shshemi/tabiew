@@ -1,16 +1,10 @@
 use std::error;
 
 use polars::frame::DataFrame;
-use ratatui::{
-    style::{Style, Stylize},
-    widgets::{Table, TableState},
-};
+use ratatui::style::Style;
 use tui_textarea::TextArea;
 
-use crate::{
-    theme::{Styler, Theme},
-    utils::tabulate,
-};
+use crate::theme::{Styler, Theme};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -21,24 +15,22 @@ pub struct App<'a> {
     /// Is the application running?
     pub running: bool,
 
-    pub table: Table<'a>,
-    pub table_state: TableState,
-    pub rows: usize,
-    pub cols: usize,
-    pub visible_rows: u16,
+    pub data_frame: DataFrame,
+    pub offset: usize,
+    pub select: usize,
+    pub rendered_rows: u16,
     pub status: AppStatus<'a>,
 }
 
 impl<'a> App<'a> {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: &'a DataFrame) -> Self {
+    pub fn new(data_frame: DataFrame) -> Self {
         Self {
             running: true,
-            table: tabulate(data_frame),
-            table_state: TableState::new().with_offset(0).with_selected(0),
-            rows: data_frame.height(),
-            cols: data_frame.width(),
-            visible_rows: 0,
+            data_frame,
+            offset: 0,
+            select: 0,
+            rendered_rows: 0,
             status: AppStatus::Normal,
         }
     }
@@ -60,34 +52,37 @@ impl<'a> App<'a> {
     }
 
     pub fn select_up(&mut self, len: usize) {
-        self.table_state.select(
-            self.table_state
-                .selected()
-                .map(|idx| idx.saturating_sub(len)),
-        )
+        self.select(self.select.saturating_sub(len))
     }
 
     pub fn select_down(&mut self, len: usize) {
-        self.table_state.select(
-            self.table_state
-                .selected()
-                .map(|idx| idx.saturating_add(len).min(self.rows - 1)),
-        )
+        self.select(self.select + len);
     }
 
     pub fn select_first(&mut self) {
-        self.table_state.select(0.into())
+        self.select(usize::MIN)
     }
 
     pub fn select_last(&mut self) {
-        self.table_state.select(self.rows.saturating_sub(1).into())
+        self.select(usize::MAX);
     }
 
-    pub fn set_data_frame(&mut self, data_frame: &'a DataFrame) {
-        self.table = tabulate(data_frame);
-        self.table_state = TableState::new().with_offset(0).with_selected(0);
-        self.rows = data_frame.height();
-        self.cols = data_frame.width();
+    pub fn select(&mut self, select: usize) {
+        self.select = select.min(self.data_frame.height().saturating_sub(1))
+    }
+
+    pub fn adjust_offset(&mut self) {
+        self.offset = self.offset.clamp(
+            self.select
+                .saturating_sub(self.rendered_rows.saturating_sub(1).into()),
+            self.select,
+        );
+    }
+
+    pub fn set_data_frame(&mut self, data_frame: DataFrame) {
+        self.data_frame = data_frame;
+        self.offset = 0;
+        self.select = 0;
     }
 }
 
