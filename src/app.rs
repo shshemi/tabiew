@@ -4,7 +4,10 @@ use polars::frame::DataFrame;
 use ratatui::style::Style;
 use tui_textarea::TextArea;
 
-use crate::theme::{Styler, Theme};
+use crate::{
+    theme::{Styler, Theme},
+    utils::widths_from_dataframe,
+};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -20,6 +23,7 @@ pub struct App<'a> {
     pub select: usize,
     pub rendered_rows: u16,
     pub status: AppStatus<'a>,
+    pub widths: Vec<usize>,
 }
 
 impl<'a> App<'a> {
@@ -27,11 +31,12 @@ impl<'a> App<'a> {
     pub fn new(data_frame: DataFrame) -> Self {
         Self {
             running: true,
-            data_frame,
             offset: 0,
             select: 0,
             rendered_rows: 0,
             status: AppStatus::Normal,
+            widths: widths_from_dataframe(&data_frame),
+            data_frame,
         }
     }
 
@@ -80,9 +85,10 @@ impl<'a> App<'a> {
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
-        self.data_frame = data_frame;
+        self.widths = widths_from_dataframe(&data_frame);
         self.offset = 0;
         self.select = 0;
+        self.data_frame = data_frame;
     }
 }
 
