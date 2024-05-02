@@ -98,8 +98,8 @@ impl<'a> AppStatus<'a> {
         self.update(AppStatus::Normal);
     }
 
-    pub fn error(&mut self, msg: String, ticks: usize) {
-        self.update(AppStatus::Error(msg, ticks));
+    pub fn error(&mut self, msg: impl ToString, ticks: usize) {
+        self.update(AppStatus::Error(msg.to_string(), ticks));
     }
 
     pub fn command(&mut self) -> &mut TextArea<'a> {
