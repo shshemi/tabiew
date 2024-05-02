@@ -1,21 +1,42 @@
+use std::{any, error::Error, str::Split};
+
 use crate::app::{App, AppResult, AppStatus};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use polars::frame::DataFrame;
+use polars_sql::SQLContext;
 
 /// Handles the key events and updates the state of [`App`].
-pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
+pub fn handle_key_events(
+    key_event: KeyEvent,
+    app: &mut App,
+    sql_context: &mut SQLContext,
+) -> AppResult<()> {
     match (&app.status, key_event.code) {
-        // Exit application on `ESC` or `q`
-        (_, KeyCode::Esc) => {
-            app.status.normal()
-        }
+        (_, KeyCode::Esc) => app.status.normal(),
 
         (AppStatus::Command(text), KeyCode::Enter) => {
-            app.status.error(format!("Unsupported command: '{}'", text.lines()[0]), 10)
+            let command = &text.lines()[0];
+            if let Some((s1, s2)) = command.split_once(' ') {
+                match (s1, s2) {
+                    // Handle SQL queris with prefix of :q
+                    (":q", query) => match handle_query(sql_context, query) {
+                        Ok(data_frame) => {
+                            app.set_data_frame(data_frame);
+                            app.status.normal()
+                        }
+                        Err(err) => app.status.error(err, 12),
+                    },
+
+                    (_, _) => app.status.error("Invalid command", 8),
+                }
+            } else {
+                app.status.error("Invalid command", 8)
+            }
         }
 
         (AppStatus::Command(text), KeyCode::Backspace) => {
             if text.lines()[0].len() > 1 {
-                // app.status.command();
+                app.status.command().input(key_event);
             } else {
                 app.status.normal()
             }
@@ -39,4 +60,8 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
         _ => {}
     }
     Ok(())
+}
+
+fn handle_query(sql_context: &mut SQLContext, query: &str) -> Result<DataFrame, Box<dyn Error>> {
+    Ok(sql_context.execute(query)?.collect()?)
 }

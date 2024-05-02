@@ -1,8 +1,11 @@
 use clap::Parser;
 use polars::io::csv::CsvReader;
 use polars::io::SerReader;
+use polars::lazy::frame::IntoLazy;
+use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use std::any::Any;
 use std::io;
 use tabiew::app::{App, AppResult};
 use tabiew::event::{Event, EventHandler};
@@ -16,9 +19,15 @@ fn main() -> AppResult<()> {
 
     // Create an application.
     let data_frame = CsvReader::from_path(&args.file_name)?
-        .infer_schema(Some(0))
+        .infer_schema(None)
         .has_header(true)
         .finish()?;
+
+    // Setup the SQLContext
+    let mut sql_context = SQLContext::new();
+    sql_context.register("df", data_frame.clone().lazy());
+
+    // Instantiate app
     let mut app = App::new(data_frame);
 
     // Initialize the terminal user interface.
@@ -35,7 +44,7 @@ fn main() -> AppResult<()> {
         // Handle events.
         match tui.events.next()? {
             Event::Tick => app.tick(),
-            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+            Event::Key(key_event) => handle_key_events(key_event, &mut app, &mut sql_context)?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }
