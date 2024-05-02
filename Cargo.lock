@@ -1608,6 +1608,7 @@ dependencies = [
  "clap",
  "crossterm",
  "polars",
+ "polars-sql",
  "ratatui",
  "tui-textarea",
 ]
