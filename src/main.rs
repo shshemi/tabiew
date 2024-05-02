@@ -5,7 +5,6 @@ use polars::lazy::frame::IntoLazy;
 use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use std::any::Any;
 use std::io;
 use tabiew::app::{App, AppResult};
 use tabiew::event::{Event, EventHandler};
