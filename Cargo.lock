@@ -1607,6 +1607,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "crossterm",
+ "itertools",
  "polars",
  "polars-sql",
  "ratatui",

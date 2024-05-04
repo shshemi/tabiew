@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
+itertools = "0.12.1"
 polars = { version = "0.39.2", features = ["dtype-decimal", "lazy", "polars-sql"] }
 polars-sql = "0.39.2"
 # polars-sql = "0.39.2"

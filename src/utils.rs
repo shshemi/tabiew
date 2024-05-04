@@ -47,16 +47,34 @@ pub fn zip_iters<I1: IntoIterator<Item = I2>, I2: Iterator<Item = T>, T: Clone +
     }
 }
 
-pub fn tabulate<'a>(data_frame: &'a DataFrame, width: &'a[Constraint], highlight_symbol: &'a str) -> Table<'a> {
-    Table::new(
-        rows_from_dataframe(data_frame),
-        width,
-    )
-    .header(header_from_dataframe(data_frame))
-    .highlight_symbol(Span::raw(highlight_symbol).style(Theme::table_cell(0, 0)))
-    .highlight_style(Theme::table_highlight())
+pub fn line_count(text: &str, width: usize) -> usize {
+    let mut line_count = 1;
+    let mut used_space = 0;
+    for word_len in text.split(' ').map(str::len) {
+        if word_len <= width {
+            if used_space + word_len <= width {
+                used_space += word_len + 1;
+            } else {
+                used_space = word_len + 1;
+                line_count += 1;
+            }
+        } else {
+            line_count +=  (word_len - width + used_space).div_ceil(width) + 1
+        }
+    }
+    line_count
 }
 
+pub fn tabulate<'a>(
+    data_frame: &'a DataFrame,
+    width: &'a [Constraint],
+    highlight_symbol: &'a str,
+) -> Table<'a> {
+    Table::new(rows_from_dataframe(data_frame), width)
+        .header(header_from_dataframe(data_frame))
+        .highlight_symbol(Span::raw(highlight_symbol).style(Theme::table_cell(0, 0)))
+        .highlight_style(Theme::table_highlight())
+}
 
 pub fn widths_from_dataframe(df: &polars::frame::DataFrame) -> Vec<usize> {
     df.get_column_names()
@@ -103,7 +121,7 @@ fn series_width(series: &Series) -> usize {
         .unwrap_or_default()
 }
 
-fn string_from_any_value(value: polars::datatypes::AnyValue) -> String {
+pub fn string_from_any_value(value: polars::datatypes::AnyValue) -> String {
     match value {
         AnyValue::Null => "".to_owned(),
         AnyValue::Boolean(v) => format!("{}", v),
