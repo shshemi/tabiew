@@ -9,6 +9,7 @@ pub trait Styler {
     fn status_bar_red() -> Style;
     fn status_bar_green() -> Style;
     fn status_bar_blue() -> Style;
+    fn item_block() -> Style;
 }
 
 pub struct Theme;
@@ -58,5 +59,9 @@ impl Styler for Theme {
 
     fn status_bar_blue() -> Style {
         Style::default().bg(Color::from_u32(0x00007dd0)).fg(Color::White)
+    }
+    
+    fn item_block() -> Style {
+        Style::new().fg(Color::from_u32(0x00c89f2d))
     }
 }

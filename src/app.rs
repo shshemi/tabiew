@@ -24,6 +24,7 @@ pub struct App<'a> {
     pub rendered_rows: u16,
     pub status: AppStatus<'a>,
     pub widths: Vec<usize>,
+    pub detailed_view: Option<u16>
 }
 
 impl<'a> App<'a> {
@@ -37,6 +38,7 @@ impl<'a> App<'a> {
             status: AppStatus::Normal,
             widths: widths_from_dataframe(&data_frame),
             data_frame,
+            detailed_view: None
         }
     }
 
@@ -82,6 +84,34 @@ impl<'a> App<'a> {
                 .saturating_sub(self.rendered_rows.saturating_sub(1).into()),
             self.select,
         );
+    }
+
+    pub fn item_view(&mut self) {
+        self.detailed_view = 0.into();
+    }
+
+    pub fn table_view(&mut self) {
+        self.detailed_view = None
+    }
+
+    pub fn toggle_detailed_view(&mut self) {
+        if self.detailed_view.is_none() {
+            self.item_view()
+        } else {
+            self.table_view();
+        }
+    }
+
+    pub fn detailed_view_scroll_up(&mut self) {
+        if let Some(v) = self.detailed_view {
+            self.detailed_view = Some(v.saturating_sub(1))
+        }
+    }
+
+    pub fn detailed_view_scroll_down(&mut self) {
+        if let Some(v) = self.detailed_view {
+            self.detailed_view = Some(v.saturating_add(1))
+        }
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
