@@ -18,8 +18,9 @@ pub fn handle_key_events(
             let command = &text.lines()[0];
             if let Some((s1, s2)) = command.split_once(' ') {
                 match (s1, s2) {
-                    // Handle SQL queris with prefix of :q
-                    (":q", query) => match handle_query(sql_context, query) {
+
+                    // Handle SQL queris with prefix of :e
+                    (":e", query) => match handle_query(sql_context, query) {
                         Ok(data_frame) => {
                             app.set_data_frame(data_frame);
                             app.status.normal()
