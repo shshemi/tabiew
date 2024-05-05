@@ -67,7 +67,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             width = app.data_frame.height().to_string().len()
         );
 
-        let local_tbl = tabulate(&local_df, &local_widths, &highlight_symbol);
+        let local_tbl = tabulate(&local_df, &local_widths, &highlight_symbol, app.offset);
 
         let mut local_st = TableState::new()
             .with_offset(0)
