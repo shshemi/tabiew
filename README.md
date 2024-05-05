@@ -1,4 +1,4 @@
-## Tabiew
+# Tabiew
 
 The simple template will create the following project structure:
 
@@ -6,10 +6,11 @@ Tabiew is a lightweight, terminal-based application designed to help view and qu
 
 ![Image Alt text](/images/screenshot.png "Screenshot")
 
-## Features
+## Features 🌟
 
-- **View** CSV files directly in your terminal.
-- **SQL Query Support**: Execute SQL queries on CSV data to filter, sort, and analyze the data.
+- 📊 **Table View**: Explore your data with an easy-to-navigate table view.
+- 🔍 **Detailed View**: Dive deeper with a detailed view of individual records to closely inspecting specific data entries.
+- 🛠️ **SQL Query Capability**: Utilize SQL for powerful data querying within the app to perform filtering, sorting, and aggregations directly from your terminal.
 
 ## Installation
 
@@ -22,5 +23,11 @@ git pull https://github.com/shshemi/tabiew.git
 cd tabiew
 rustup override set nightly
 cargo build --release
-cp /target/release/tabiew <system_or_local_bin_path>
+cp ./target/release/tabiew <system_or_local_bin_path>
 ```
+
+## Contributing
+Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
