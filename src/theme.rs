@@ -50,18 +50,26 @@ impl Styler for Theme {
     }
 
     fn status_bar_red() -> Style {
-        Style::default().bg(Color::from_u32(0x00d07d00)).fg(Color::White)
+        Style::default()
+            .bg(Color::from_u32(0x00d07d00))
+            .fg(Color::White)
     }
 
     fn status_bar_green() -> Style {
-        Style::default().bg(Color::from_u32(0x00008f1f)).fg(Color::White)
+        Style::default()
+            .bg(Color::from_u32(0x00008f1f))
+            .fg(Color::White)
     }
 
     fn status_bar_blue() -> Style {
-        Style::default().bg(Color::from_u32(0x00007dd0)).fg(Color::White)
+        Style::default()
+            .bg(Color::from_u32(0x00007dd0))
+            .fg(Color::White)
     }
-    
+
     fn item_block() -> Style {
-        Style::new().fg(Color::from_u32(0x00c89f2d))
+        Style::new()
+            .bg(Color::from_u32(0x001c191d))
+            .fg(Color::from_u32(0x00c89f2d))
     }
 }
