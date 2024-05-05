@@ -69,8 +69,9 @@ pub fn tabulate<'a>(
     data_frame: &'a DataFrame,
     width: &'a [Constraint],
     highlight_symbol: &'a str,
+    offset: usize,
 ) -> Table<'a> {
-    Table::new(rows_from_dataframe(data_frame), width)
+    Table::new(rows_from_dataframe(data_frame, offset), width)
         .header(header_from_dataframe(data_frame))
         .highlight_symbol(Span::raw(highlight_symbol).style(Theme::table_cell(0, 0)))
         .highlight_style(Theme::table_highlight())
@@ -84,7 +85,7 @@ pub fn widths_from_dataframe(df: &polars::frame::DataFrame) -> Vec<usize> {
         .collect::<Vec<_>>()
 }
 
-fn rows_from_dataframe(df: &DataFrame) -> Vec<Row> {
+fn rows_from_dataframe(df: &DataFrame, offset: usize) -> Vec<Row> {
     zip_iters(df.iter().map(|series| series.iter()))
         .enumerate()
         .map(|(row_idx, row)| {
@@ -97,7 +98,7 @@ fn rows_from_dataframe(df: &DataFrame) -> Vec<Row> {
                     })
                     .collect::<Vec<_>>(),
             )
-            .style(Theme::table_row(row_idx))
+            .style(Theme::table_row(offset + row_idx))
         })
         .collect::<Vec<_>>()
 }
