@@ -11,12 +11,11 @@ use crate::{
 pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame) {
     let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
 
-    // Set visible rows = table height - 1 (if header)
-    tabular.rendered_rows = layout[0].height.saturating_sub(1);
-    tabular.adjust_offset();
 
     // Draw table / item
     if let Some(scroll) = &mut tabular.detailed_view {
+        // Set visible rows = 0
+        tabular.rendered_rows = 0;
         let space = layout[0].inner(&Margin::new(1, 1));
         let title = format!(" {} ", tabular.select + 1);
 
@@ -48,6 +47,10 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
         scroll.adjust(line_count, space.height as usize);
         frame.render_widget(paragraph.scroll(((*scroll).into(), 0)), layout[0]);
     } else {
+        // Set visible rows = table height - 1 (if header)
+        tabular.rendered_rows = layout[0].height.saturating_sub(1);
+        tabular.adjust_offset();
+
         // Building local table
         let local_df = tabular
             .data_frame
