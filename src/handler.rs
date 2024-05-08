@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::app::{App, AppResult, AppStatus};
+use crate::app::{Table, AppResult, StatusBar};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
 use polars_sql::SQLContext;
@@ -8,13 +8,15 @@ use polars_sql::SQLContext;
 /// Handles the key events and updates the state of [`App`].
 pub fn handle_key_events(
     key_event: KeyEvent,
-    app: &mut App,
+    tabular: &mut Table,
+    status_bar: &mut StatusBar,
     sql_context: &mut SQLContext,
+    running: &mut bool,
 ) -> AppResult<()> {
-    match (&app.status, key_event.code) {
-        (_, KeyCode::Esc) => app.status.normal(),
+    match (&status_bar, key_event.code) {
+        (_, KeyCode::Esc) => status_bar.normal(),
 
-        (AppStatus::Command(text), KeyCode::Enter) => {
+        (StatusBar::Command(text), KeyCode::Enter) => {
             let command = &text.lines()[0];
             if let Some((s1, s2)) = command.split_once(' ') {
                 match (s1, s2) {
@@ -22,43 +24,43 @@ pub fn handle_key_events(
                     // Handle SQL queris with prefix of :e
                     (":e", query) => match handle_query(sql_context, query) {
                         Ok(data_frame) => {
-                            app.set_data_frame(data_frame);
-                            app.status.normal()
+                            tabular.set_data_frame(data_frame);
+                            status_bar.normal()
                         }
-                        Err(err) => app.status.error(err, 12),
+                        Err(err) => status_bar.error(err, 12),
                     },
 
-                    (_, _) => app.status.error("Invalid command", 8),
+                    (_, _) => status_bar.error("Invalid command", 8),
                 }
             } else {
-                app.status.error("Invalid command", 8)
+                status_bar.error("Invalid command", 8)
             }
         }
 
-        (AppStatus::Command(text), KeyCode::Backspace) => {
+        (StatusBar::Command(text), KeyCode::Backspace) => {
             if text.lines()[0].len() > 1 {
-                app.status.command().input(key_event);
+                status_bar.command().input(key_event);
             } else {
-                app.status.normal()
+                status_bar.normal()
             }
         }
 
-        (AppStatus::Command(_), _) => {
-            app.status.command().input(key_event);
+        (StatusBar::Command(_), _) => {
+            status_bar.command().input(key_event);
         }
 
-        (AppStatus::Normal, KeyCode::Char('q')) => app.quit(),
-        (AppStatus::Normal, KeyCode::Char('v')) => app.toggle_detailed_view(),
-        (AppStatus::Normal, KeyCode::Char('w')) => app.detailed_view_scroll_up(),
-        (AppStatus::Normal, KeyCode::Char('s')) => app.detailed_view_scroll_down(),
-        (AppStatus::Normal, KeyCode::Up) => app.select_up(1),
-        (AppStatus::Normal, KeyCode::Down) => app.select_down(1),
-        (AppStatus::Normal, KeyCode::PageUp) => app.select_up(app.rendered_rows.into()),
-        (AppStatus::Normal, KeyCode::PageDown) => app.select_down(app.rendered_rows.into()),
-        (AppStatus::Normal, KeyCode::Home) => app.select_first(),
-        (AppStatus::Normal, KeyCode::End) => app.select_last(),
-        (AppStatus::Normal, KeyCode::Char(':')) => {
-            app.status.command().input(key_event);
+        (StatusBar::Normal, KeyCode::Char('q')) => *running = false,
+        (StatusBar::Normal, KeyCode::Char('v')) => tabular.toggle_detailed_view(),
+        (StatusBar::Normal, KeyCode::Char('w')) => tabular.detailed_view_scroll_up(),
+        (StatusBar::Normal, KeyCode::Char('s')) => tabular.detailed_view_scroll_down(),
+        (StatusBar::Normal, KeyCode::Up) => tabular.select_up(1),
+        (StatusBar::Normal, KeyCode::Down) => tabular.select_down(1),
+        (StatusBar::Normal, KeyCode::PageUp) => tabular.select_up(tabular.rendered_rows.into()),
+        (StatusBar::Normal, KeyCode::PageDown) => tabular.select_down(tabular.rendered_rows.into()),
+        (StatusBar::Normal, KeyCode::Home) => tabular.select_first(),
+        (StatusBar::Normal, KeyCode::End) => tabular.select_last(),
+        (StatusBar::Normal, KeyCode::Char(':')) => {
+            status_bar.command().input(key_event);
         }
 
         _ => {}

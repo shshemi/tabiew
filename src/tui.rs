@@ -1,4 +1,4 @@
-use crate::app::{App, AppResult};
+use crate::app::{AppResult, StatusBar, Table};
 use crate::event::EventHandler;
 use crate::ui;
 use crossterm::event::DisableMouseCapture;
@@ -50,8 +50,8 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
-    pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| ui::render(app, frame))?;
+    pub fn draw(&mut self, tabular: &mut Table, status_bar: &mut StatusBar) -> AppResult<()> {
+        self.terminal.draw(|frame| ui::render(tabular, status_bar, frame))?;
         Ok(())
     }
 

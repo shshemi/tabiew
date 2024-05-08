@@ -2,25 +2,25 @@ use itertools::{izip, Itertools};
 use ratatui::{prelude::*, widgets::*};
 
 use crate::{
-    app::App,
+    app::{StatusBar, Table},
     theme::{Styler, Theme},
     utils::{line_count, string_from_any_value, tabulate},
 };
 
 /// Renders the user interface widgets.
-pub fn render(app: &mut App, frame: &mut Frame) {
+pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame) {
     let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
 
     // Set visible rows = table height - 1 (if header)
-    app.rendered_rows = layout[0].height.saturating_sub(1);
-    app.adjust_offset();
+    tabular.rendered_rows = layout[0].height.saturating_sub(1);
+    tabular.adjust_offset();
 
     // Draw table / item
-    if let Some(scroll) = app.detailed_view {
+    if let Some(scroll) = tabular.detailed_view {
         let space = layout[0].inner(&Margin::new(1, 1));
-        let title = format!("{}", app.select);
+        let title = format!("{}", tabular.select);
 
-        let headers = app
+        let headers = tabular
             .data_frame
             .get_column_names()
             .iter()
@@ -28,14 +28,14 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 format!(
                     "{} ({:?})",
                     name,
-                    app.data_frame.column(name).unwrap().dtype()
+                    tabular.data_frame.column(name).unwrap().dtype()
                 )
             })
             .collect_vec();
 
-        let values = app
+        let values = tabular
             .data_frame
-            .get_row(app.select)
+            .get_row(tabular.select)
             .unwrap_or_default()
             .0
             .into_iter()
@@ -46,15 +46,15 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             paragraph_from_headers_values(&title, &headers, &values, space.width);
 
         let scroll = scroll.min((line_count as u16).saturating_sub(space.height));
-        app.detailed_view = Some(scroll);
+        tabular.detailed_view = Some(scroll);
         frame.render_widget(paragraph.scroll((scroll, 0)), layout[0]);
     } else {
         // Building local table
-        let local_df = app
+        let local_df = tabular
             .data_frame
-            .slice(app.offset as i64, app.rendered_rows.into());
+            .slice(tabular.offset as i64, tabular.rendered_rows.into());
 
-        let local_widths = app
+        let local_widths = tabular
             .widths
             .iter()
             .copied()
@@ -63,31 +63,31 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
         let highlight_symbol = format!(
             "{:>width$} ",
-            app.select,
-            width = app.data_frame.height().to_string().len()
+            tabular.select,
+            width = tabular.data_frame.height().to_string().len()
         );
 
-        let local_tbl = tabulate(&local_df, &local_widths, &highlight_symbol, app.offset);
+        let local_tbl = tabulate(&local_df, &local_widths, &highlight_symbol, tabular.offset);
 
         let mut local_st = TableState::new()
             .with_offset(0)
-            .with_selected(app.select.saturating_sub(app.offset));
+            .with_selected(tabular.select.saturating_sub(tabular.offset));
         frame.render_stateful_widget(local_tbl, layout[0], &mut local_st);
     }
 
-    match &app.status {
-        crate::app::AppStatus::Normal => frame.render_widget(
+    match status_bar {
+        crate::app::StatusBar::Normal => frame.render_widget(
             Line::default()
                 .spans([
                     Span::raw(format!(
                         "Row: {:<width$} ",
-                        app.select,
-                        width = app.data_frame.height().to_string().len()
+                        tabular.select,
+                        width = tabular.data_frame.height().to_string().len()
                     )),
                     Span::raw(format!(
                         "Table Size: {} x {} ",
-                        app.data_frame.height(),
-                        app.data_frame.width()
+                        tabular.data_frame.height(),
+                        tabular.data_frame.width()
                     )),
                 ])
                 .alignment(Alignment::Right)
@@ -95,14 +95,14 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             layout[1],
         ),
 
-        crate::app::AppStatus::Error(msg, _) => frame.render_widget(
-            Line::raw(msg)
+        crate::app::StatusBar::Error(msg, _) => frame.render_widget(
+            Line::raw(msg.as_str())
                 .alignment(Alignment::Center)
                 .style(Theme::status_bar_red()),
             layout[1],
         ),
 
-        crate::app::AppStatus::Command(text) => frame.render_widget(text.widget(), layout[1]),
+        crate::app::StatusBar::Command(text) => frame.render_widget(text.widget(), layout[1]),
     }
 }
 
