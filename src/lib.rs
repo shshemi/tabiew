@@ -18,3 +18,6 @@ pub mod theme;
 
 /// Utils
 pub mod utils;
+
+/// Command
+pub mod command;

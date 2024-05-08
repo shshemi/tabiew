@@ -1,6 +1,9 @@
 use std::error::Error;
 
-use crate::app::{Table, AppResult, StatusBar};
+use crate::{
+    app::{AppResult, StatusBar, Table},
+    command::ExecutionTable,
+};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
 use polars_sql::SQLContext;
@@ -12,28 +15,21 @@ pub fn handle_key_events(
     status_bar: &mut StatusBar,
     sql_context: &mut SQLContext,
     running: &mut bool,
+    exec_tbl: &ExecutionTable,
 ) -> AppResult<()> {
     match (&status_bar, key_event.code) {
         (_, KeyCode::Esc) => status_bar.normal(),
 
         (StatusBar::Command(text), KeyCode::Enter) => {
             let command = &text.lines()[0];
-            if let Some((s1, s2)) = command.split_once(' ') {
-                match (s1, s2) {
-
-                    // Handle SQL queris with prefix of :e
-                    (":e", query) => match handle_query(sql_context, query) {
-                        Ok(data_frame) => {
-                            tabular.set_data_frame(data_frame);
-                            status_bar.normal()
-                        }
-                        Err(err) => status_bar.error(err, 12),
-                    },
-
-                    (_, _) => status_bar.error("Invalid command", 8),
+            let (s1, s2) = command.split_once(' ').unwrap_or((command.as_str(), ""));
+            if let Some(func) = exec_tbl.get(s1) {
+                match func(s2, tabular, sql_context, running) {
+                    Ok(_) => status_bar.normal(),
+                    Err(error) => status_bar.error(error, 10),
                 }
             } else {
-                status_bar.error("Invalid command", 8)
+                status_bar.error("command not found", 8);
             }
         }
 
