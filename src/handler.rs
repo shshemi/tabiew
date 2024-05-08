@@ -1,11 +1,8 @@
-use std::error::Error;
-
 use crate::{
     app::{AppResult, StatusBar, Table},
     command::ExecutionTable,
 };
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use polars::frame::DataFrame;
+use crossterm::event::{KeyCode, KeyEvent};
 use polars_sql::SQLContext;
 
 /// Handles the key events and updates the state of [`App`].
@@ -46,11 +43,31 @@ pub fn handle_key_events(
         }
 
         (StatusBar::Normal, KeyCode::Char('q')) => *running = false,
-        (StatusBar::Normal, KeyCode::Char('v')) => tabular.toggle_detailed_view(),
-        (StatusBar::Normal, KeyCode::Char('w')) => tabular.detailed_view_scroll_up(),
-        (StatusBar::Normal, KeyCode::Char('s')) => tabular.detailed_view_scroll_down(),
-        (StatusBar::Normal, KeyCode::Up) => tabular.select_up(1),
-        (StatusBar::Normal, KeyCode::Down) => tabular.select_down(1),
+        (StatusBar::Normal, KeyCode::Char('v')) => tabular.switch_view(),
+        (StatusBar::Normal, KeyCode::Up) => {
+            if let Some(scroll) = &mut tabular.detailed_view {
+                scroll.up();
+            } else {
+                tabular.select_up(1);
+            }
+        }
+        (StatusBar::Normal, KeyCode::Down) => {
+            if let Some(scroll) = &mut tabular.detailed_view {
+                scroll.down();
+            } else {
+                tabular.select_down(1);
+            }
+        }
+        (StatusBar::Normal, KeyCode::Left) => {
+            if tabular.detailed_view.is_some() {
+                tabular.select_up(1)
+            }
+        }
+        (StatusBar::Normal, KeyCode::Right) => {
+            if tabular.detailed_view.is_some() {
+                tabular.select_down(1)
+            }
+        }
         (StatusBar::Normal, KeyCode::PageUp) => tabular.select_up(tabular.rendered_rows.into()),
         (StatusBar::Normal, KeyCode::PageDown) => tabular.select_down(tabular.rendered_rows.into()),
         (StatusBar::Normal, KeyCode::Home) => tabular.select_first(),
@@ -62,8 +79,4 @@ pub fn handle_key_events(
         _ => {}
     }
     Ok(())
-}
-
-fn handle_query(sql_context: &mut SQLContext, query: &str) -> Result<DataFrame, Box<dyn Error>> {
-    Ok(sql_context.execute(query)?.collect()?)
 }
