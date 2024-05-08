@@ -2,7 +2,7 @@ use crate::{
     app::{AppResult, StatusBar, Table},
     command::ExecutionTable,
 };
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars_sql::SQLContext;
 
 /// Handles the key events and updates the state of [`App`].
@@ -44,7 +44,7 @@ pub fn handle_key_events(
 
         (StatusBar::Normal, KeyCode::Char('q')) => *running = false,
         (StatusBar::Normal, KeyCode::Char('v')) => tabular.switch_view(),
-        (StatusBar::Normal, KeyCode::Up | KeyCode::Char('k'))  => {
+        (StatusBar::Normal, KeyCode::Up | KeyCode::Char('k')) => {
             if let Some(scroll) = &mut tabular.detailed_view {
                 scroll.up();
             } else {
@@ -70,10 +70,22 @@ pub fn handle_key_events(
         }
         (StatusBar::Normal, KeyCode::PageUp) => tabular.select_up(tabular.rendered_rows.into()),
         (StatusBar::Normal, KeyCode::PageDown) => tabular.select_down(tabular.rendered_rows.into()),
+        (StatusBar::Normal, KeyCode::Char('b')) if key_event.modifiers == KeyModifiers::CONTROL => {
+            tabular.select_up(tabular.rendered_rows.into())
+        }
+        (StatusBar::Normal, KeyCode::Char('f')) if key_event.modifiers == KeyModifiers::CONTROL => {
+            tabular.select_down(tabular.rendered_rows.into())
+        }
         (StatusBar::Normal, KeyCode::Home | KeyCode::Char('g')) => tabular.select_first(),
         (StatusBar::Normal, KeyCode::End | KeyCode::Char('G')) => tabular.select_last(),
         (StatusBar::Normal, KeyCode::Char(':')) => {
             status_bar.command().input(key_event);
+        }
+        (StatusBar::Normal, KeyCode::Char('u')) if key_event.modifiers == KeyModifiers::CONTROL => {
+            tabular.select_up((tabular.rendered_rows / 2).into())
+        }
+        (StatusBar::Normal, KeyCode::Char('d')) if key_event.modifiers == KeyModifiers::CONTROL => {
+            tabular.select_down((tabular.rendered_rows / 2).into())
         }
 
         _ => {}
