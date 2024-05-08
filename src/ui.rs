@@ -18,7 +18,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
     // Draw table / item
     if let Some(scroll) = &mut tabular.detailed_view {
         let space = layout[0].inner(&Margin::new(1, 1));
-        let title = format!("{}", tabular.select);
+        let title = format!(" {} ", tabular.select + 1);
 
         let headers = tabular
             .data_frame
@@ -62,7 +62,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
 
         let highlight_symbol = format!(
             "{:>width$} ",
-            tabular.select,
+            tabular.select + 1,
             width = tabular.data_frame.height().to_string().len()
         );
 
@@ -80,7 +80,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
                 .spans([
                     Span::raw(format!(
                         "Row: {:<width$} ",
-                        tabular.select,
+                        tabular.select + 1,
                         width = tabular.data_frame.height().to_string().len()
                     )),
                     Span::raw(format!(
