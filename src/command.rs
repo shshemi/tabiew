@@ -41,7 +41,7 @@ impl Default for CommandList {
                 pref: Prefix::Long(":goto"),
                 temp: "<line_index>",
                 desc: "Jumps to the <line_index> line",
-                func: command_select,
+                func: command_goto,
             },
             Command {
                 pref: Prefix::Long(":moveup"),
@@ -93,13 +93,14 @@ pub fn command_quit(
     *running = false;
     Ok(())
 }
-pub fn command_select(
+pub fn command_goto(
     idx: &str,
     tabular: &mut Table,
     _: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
-    tabular.select(idx.parse()?);
+    let idx: usize = idx.parse()?;
+    tabular.select(idx.saturating_sub(1));
     Ok(())
 }
 pub fn command_select_up(
