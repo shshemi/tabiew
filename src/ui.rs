@@ -16,7 +16,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
     tabular.adjust_offset();
 
     // Draw table / item
-    if let Some(scroll) = tabular.detailed_view {
+    if let Some(scroll) = &mut tabular.detailed_view {
         let space = layout[0].inner(&Margin::new(1, 1));
         let title = format!("{}", tabular.select);
 
@@ -45,9 +45,8 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
         let (paragraph, line_count) =
             paragraph_from_headers_values(&title, &headers, &values, space.width);
 
-        let scroll = scroll.min((line_count as u16).saturating_sub(space.height));
-        tabular.detailed_view = Some(scroll);
-        frame.render_widget(paragraph.scroll((scroll, 0)), layout[0]);
+        scroll.adjust(line_count, space.height as usize);
+        frame.render_widget(paragraph.scroll(((*scroll).into(), 0)), layout[0]);
     } else {
         // Building local table
         let local_df = tabular
