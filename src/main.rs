@@ -6,13 +6,12 @@ use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
-use tabiew::app::{App, AppResult};
+use tabiew::app::{AppResult, StatusBar, Table};
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::tui::Tui;
 
 fn main() -> AppResult<()> {
-
     // Parse CLI
     let args = Args::parse();
 
@@ -27,7 +26,11 @@ fn main() -> AppResult<()> {
     sql_context.register("df", data_frame.clone().lazy());
 
     // Instantiate app
-    let mut app = App::new(data_frame);
+    let mut tabular = Table::new(data_frame);
+    let mut status_bar = StatusBar::default();
+
+    // Running variable.
+    let mut running = true;
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
@@ -37,13 +40,16 @@ fn main() -> AppResult<()> {
     tui.init()?;
 
     // Start the main loop.
-    while app.running {
+    while running {
         // Render the user interface.
-        tui.draw(&mut app)?;
+        tui.draw(&mut tabular, &mut status_bar)?;
         // Handle events.
         match tui.events.next()? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => handle_key_events(key_event, &mut app, &mut sql_context)?,
+            Event::Tick => {
+                tabular.tick();
+                status_bar.tick();
+            }
+            Event::Key(key_event) => handle_key_events(key_event, &mut tabular, &mut status_bar, &mut sql_context, &mut running)?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }

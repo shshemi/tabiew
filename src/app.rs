@@ -1,4 +1,4 @@
-use std::error;
+use std::{default, error};
 
 use polars::frame::DataFrame;
 use ratatui::style::Style;
@@ -14,49 +14,31 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 /// Application.
 #[derive(Debug)]
-pub struct App<'a> {
-    /// Is the application running?
-    pub running: bool,
-
+pub struct Table {
     pub data_frame: DataFrame,
     pub offset: usize,
     pub select: usize,
     pub rendered_rows: u16,
-    pub status: AppStatus<'a>,
     pub widths: Vec<usize>,
-    pub detailed_view: Option<u16>
+    pub detailed_view: Option<u16>,
 }
 
-impl<'a> App<'a> {
+impl Table {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame) -> Self {
         Self {
-            running: true,
             offset: 0,
             select: 0,
             rendered_rows: 0,
-            status: AppStatus::Normal,
             widths: widths_from_dataframe(&data_frame),
             data_frame,
-            detailed_view: None
+            detailed_view: None,
         }
     }
 
     /// Handles the tick event of the terminal.
-    pub fn tick(&mut self) {
-        if let AppStatus::Error(_, ref mut ticks) = self.status {
-            if ticks == &0 {
-                self.status = AppStatus::Normal;
-            } else {
-                *ticks -= 1;
-            }
-        }
-    }
+    pub fn tick(&mut self) {}
 
-    /// Set running to false to quit the application.
-    pub fn quit(&mut self) {
-        self.running = false;
-    }
 
     pub fn select_up(&mut self, len: usize) {
         self.select(self.select.saturating_sub(len))
@@ -122,35 +104,47 @@ impl<'a> App<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum AppStatus<'a> {
+#[derive(Debug, Default)]
+pub enum StatusBar<'a> {
+    #[default]
     Normal,
     Error(String, usize),
     Command(TextArea<'a>),
 }
 
-impl<'a> AppStatus<'a> {
+
+impl<'a> StatusBar<'a> {
     pub fn normal(&mut self) {
-        self.update(AppStatus::Normal);
+        self.update(StatusBar::Normal);
     }
 
     pub fn error(&mut self, msg: impl ToString, ticks: usize) {
-        self.update(AppStatus::Error(msg.to_string(), ticks));
+        self.update(StatusBar::Error(msg.to_string(), ticks));
     }
 
     pub fn command(&mut self) -> &mut TextArea<'a> {
-        if let AppStatus::Command(text_area) = self {
+        if let StatusBar::Command(text_area) = self {
             text_area
         } else {
             let mut text_area = TextArea::default();
             text_area.set_style(Theme::status_bar_green());
             text_area.set_cursor_line_style(Style::default());
-            self.update(AppStatus::Command(text_area));
+            self.update(StatusBar::Command(text_area));
             self.command()
         }
     }
 
-    pub fn update(&mut self, status: AppStatus<'a>) {
+    pub fn update(&mut self, status: StatusBar<'a>) {
         *self = status;
+    }
+
+    pub fn tick(&mut self) {
+        if let StatusBar::Error(_, ref mut ticks) = self {
+            if ticks == &0 {
+                *self = StatusBar::Normal;
+            } else {
+                *ticks -= 1;
+            }
+        }
     }
 }
