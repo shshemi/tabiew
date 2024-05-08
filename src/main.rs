@@ -7,6 +7,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
 use tabiew::app::{AppResult, StatusBar, Table};
+use tabiew::command::CommandList;
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::tui::Tui;
@@ -32,6 +33,9 @@ fn main() -> AppResult<()> {
     // Running variable.
     let mut running = true;
 
+    // Command handling
+    let exec_tbl = CommandList::default().into_exec();
+
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
@@ -49,7 +53,14 @@ fn main() -> AppResult<()> {
                 tabular.tick();
                 status_bar.tick();
             }
-            Event::Key(key_event) => handle_key_events(key_event, &mut tabular, &mut status_bar, &mut sql_context, &mut running)?,
+            Event::Key(key_event) => handle_key_events(
+                key_event,
+                &mut tabular,
+                &mut status_bar,
+                &mut sql_context,
+                &mut running,
+                &exec_tbl,
+            )?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }
