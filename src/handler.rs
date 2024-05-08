@@ -44,34 +44,34 @@ pub fn handle_key_events(
 
         (StatusBar::Normal, KeyCode::Char('q')) => *running = false,
         (StatusBar::Normal, KeyCode::Char('v')) => tabular.switch_view(),
-        (StatusBar::Normal, KeyCode::Up) => {
+        (StatusBar::Normal, KeyCode::Up | KeyCode::Char('k'))  => {
             if let Some(scroll) = &mut tabular.detailed_view {
                 scroll.up();
             } else {
                 tabular.select_up(1);
             }
         }
-        (StatusBar::Normal, KeyCode::Down) => {
+        (StatusBar::Normal, KeyCode::Down | KeyCode::Char('j')) => {
             if let Some(scroll) = &mut tabular.detailed_view {
                 scroll.down();
             } else {
                 tabular.select_down(1);
             }
         }
-        (StatusBar::Normal, KeyCode::Left) => {
+        (StatusBar::Normal, KeyCode::Left | KeyCode::Char('h')) => {
             if tabular.detailed_view.is_some() {
                 tabular.select_up(1)
             }
         }
-        (StatusBar::Normal, KeyCode::Right) => {
+        (StatusBar::Normal, KeyCode::Right | KeyCode::Char('l')) => {
             if tabular.detailed_view.is_some() {
                 tabular.select_down(1)
             }
         }
         (StatusBar::Normal, KeyCode::PageUp) => tabular.select_up(tabular.rendered_rows.into()),
         (StatusBar::Normal, KeyCode::PageDown) => tabular.select_down(tabular.rendered_rows.into()),
-        (StatusBar::Normal, KeyCode::Home) => tabular.select_first(),
-        (StatusBar::Normal, KeyCode::End) => tabular.select_last(),
+        (StatusBar::Normal, KeyCode::Home | KeyCode::Char('g')) => tabular.select_first(),
+        (StatusBar::Normal, KeyCode::End | KeyCode::Char('G')) => tabular.select_last(),
         (StatusBar::Normal, KeyCode::Char(':')) => {
             status_bar.command().input(key_event);
         }
