@@ -1,0 +1,48 @@
+name: Rust
+
+on:
+  release:
+    types: [created]
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-upload:
+
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.release.tag_name, 'v')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build
+      run: cargo build --verbose
+      
+    - name: Install cargo deb
+      run: cargo install deb
+
+    - name: Build .deb package
+      run: cargo deb
+
+    - name: Prepare deb package
+      id: deb_pkg
+      run: |
+        FILE=$(ls ./target/debian/*.deb)
+        if [ -z "$FILE" ]; then
+          echo ".deb packge not found"
+          exit 1
+        fi
+        echo "::set-output name=filename::$FILE"
+
+    - name: Upload deb package to release assets
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ github.event.release.upload_url }}
+            asset_path: ${{ steps.deb_pkg.outputs.filename }}
+            asset_name: ${{ steps.deb_pkg.outputs.filename }}
+            asset_content_type: application/vnd.debian.binary-package 
