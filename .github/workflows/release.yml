@@ -14,9 +14,6 @@ jobs:
 
     runs-on: ubuntu-latest
     if: startsWith(github.event.release.tag_name, 'v')
-    permissions:
-      contents: read
-      releases: write
 
     steps:
     - name: Checkout to the latest version 
