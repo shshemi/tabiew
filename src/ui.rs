@@ -64,7 +64,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
             .collect::<Vec<_>>();
 
         let highlight_symbol = format!(
-            "{:>width$} ",
+            " {:>width$} ",
             tabular.select + 1,
             width = tabular.data_frame.height().to_string().len()
         );
