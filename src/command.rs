@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error};
 
-use polars::lazy::frame::LazyFrame;
+use polars::{df, frame::DataFrame, lazy::frame::LazyFrame};
 use polars_sql::SQLContext;
 
 use crate::app::Table;
@@ -13,11 +13,37 @@ pub enum Prefix {
     Long(&'static str),
     Both(&'static str, &'static str),
 }
+
+impl Prefix {
+    fn short(&self) -> Option<&'static str> {
+        match self {
+            Prefix::Short(short) => Some(short),
+            Prefix::Both(short, _) => Some(short),
+            _ => None,
+        }
+    }
+
+    fn long(&self) -> Option<&'static str> {
+        match self {
+            Prefix::Long(long) => Some(long),
+            Prefix::Both(_, long) => Some(long),
+            _ => None,
+        }
+    }
+
+    fn str(&self) -> &'static str {
+        match self {
+            Prefix::Short(short) | Prefix::Both(short, _) => short,
+            Prefix::Long(long) => long,
+        }
+    }
+}
+
 pub struct Command {
-    pref: Prefix,
-    temp: &'static str,
-    desc: &'static str,
-    func: ExecutionFunction,
+    prefix: Prefix,
+    usage: &'static str,
+    description: &'static str,
+    function: ExecutionFunction,
 }
 
 pub struct CommandList(Vec<Command>);
@@ -26,40 +52,46 @@ impl Default for CommandList {
     fn default() -> Self {
         Self(vec![
             Command {
-                pref: Prefix::Both(":Q", ":query"),
-                temp: "<query>",
-                desc: "Query the data in Structured Query Language(SQL). The table name is 'df'",
-                func: command_query,
+                prefix: Prefix::Both(":Q", ":query"),
+                usage: ":Q <query>",
+                description: "Query the data in Structured Query Language(SQL). The table name is 'df'",
+                function: command_query,
             },
             Command {
-                pref: Prefix::Both(":q", ":quit"),
-                temp: "",
-                desc: "Quit Tabiew",
-                func: command_quit,
+                prefix: Prefix::Both(":q", ":quit"),
+                usage: ":q",
+                description: "Quit Tabiew",
+                function: command_quit,
             },
             Command {
-                pref: Prefix::Long(":goto"),
-                temp: "<line_index>",
-                desc: "Jumps to the <line_index> line",
-                func: command_goto,
+                prefix: Prefix::Long(":goto"),
+                usage: ":goto <line_index>",
+                description: "Jumps to the <line_index> line",
+                function: command_goto,
             },
             Command {
-                pref: Prefix::Long(":moveup"),
-                temp: "<lines>",
-                desc: "Jump <lines> line(s) up",
-                func: command_select_up,
+                prefix: Prefix::Long(":moveup"),
+                usage: ":moveup <lines>",
+                description: "Jump <lines> line(s) up",
+                function: command_select_up,
             },
             Command {
-                pref: Prefix::Long(":movedown"),
-                temp: "<lines>",
-                desc: "Jump <lines> line(s) down",
-                func: command_select_down,
+                prefix: Prefix::Long(":movedown"),
+                usage: ":movedown <lines>",
+                description: "Jump <lines> line(s) down",
+                function: command_select_down,
             },
             Command {
-                pref: Prefix::Long(":reset"),
-                temp: "",
-                desc: "Resets the data frame and selection",
-                func: command_reset,
+                prefix: Prefix::Long(":reset"),
+                usage: ":reset",
+                description: "Reset the original data frame",
+                function: command_reset,
+            },
+            Command {
+                prefix: Prefix::Long(":help"),
+                usage: ":help",
+                description: "Show help menu",
+                function: command_help,
             },
         ])
     }
@@ -70,14 +102,40 @@ impl CommandList {
         self.0
             .into_iter()
             .flat_map(|cmd| {
-                match cmd.pref {
-                    Prefix::Short(short) => vec![(short, cmd.func)],
-                    Prefix::Long(long) => vec![(long, cmd.func)],
-                    Prefix::Both(short, long) => vec![(short, cmd.func), (long, cmd.func)],
+                match cmd.prefix {
+                    Prefix::Short(short) => vec![(short, cmd.function)],
+                    Prefix::Long(long) => vec![(long, cmd.function)],
+                    Prefix::Both(short, long) => vec![(short, cmd.function), (long, cmd.function)],
                 }
                 .into_iter()
             })
             .collect()
+    }
+
+    pub fn into_data_frame(self) -> DataFrame {
+        let len = self.0.len();
+        let (short, long, usage, description) = self.0.into_iter().fold(
+            (
+                Vec::<&'static str>::with_capacity(len),
+                Vec::<&'static str>::with_capacity(len),
+                Vec::<&'static str>::with_capacity(len),
+                Vec::<&'static str>::with_capacity(len),
+            ),
+            |(mut v1, mut v2, mut v3, mut v4), cmd| {
+                v1.push(cmd.prefix.short().unwrap_or("-"));
+                v2.push(cmd.prefix.long().unwrap_or("-"));
+                v3.push(cmd.usage);
+                v4.push(cmd.description);
+                (v1, v2, v3, v4)
+            },
+        );
+        df! {
+            "Command" => long,
+            "Short Form" => short,
+            "Usage" => usage,
+            "Description" => description,
+        }
+        .unwrap()
     }
 }
 
@@ -139,5 +197,15 @@ pub fn command_reset(
             .and_then(LazyFrame::collect)?,
     );
     tabular.select(0);
+    Ok(())
+}
+
+pub fn command_help(
+    _: &str,
+    tabular: &mut Table,
+    _: &mut SQLContext,
+    _: &mut bool,
+) -> Result<(), Box<dyn Error>> {
+    tabular.set_data_frame(CommandList::default().into_data_frame());
     Ok(())
 }
