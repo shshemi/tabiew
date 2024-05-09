@@ -30,23 +30,29 @@ jobs:
 
     - name: Build .deb package
       run: cargo deb
-
-    - name: Prepare deb package
-      id: deb_pkg
-      run: |
-        FILE=$(ls ./target/debian/*.deb)
-        if [ -z "$FILE" ]; then
-          echo ".deb packge not found"
-          exit 1
-        fi
-        echo "::set-output name=filename::$FILE"
-
-    - name: Upload deb package to release assets
-      uses: actions/upload-release-asset@v1
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload artifacts to release
+      uses: AButler/upload-release-assets@v3.0
       with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ steps.deb_pkg.outputs.filename }}
-          asset_name: ${{ steps.deb_pkg.outputs.filename }}
-          asset_content_type: application/vnd.debian.binary-package 
+        files: "./target/debian/*.deb"
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+    # - name: Prepare deb package
+    #   id: deb_pkg
+    #   run: |
+    #     FILE=$(ls ./target/debian/*.deb)
+    #     if [ -z "$FILE" ]; then
+    #       echo ".deb packge not found"
+    #       exit 1
+    #     fi
+    #     echo "::set-output name=filename::$FILE"
+
+    # - name: Upload deb package to release assets
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #       upload_url: ${{ github.event.release.upload_url }}
+    #       asset_path: ${{ steps.deb_pkg.outputs.filename }}
+    #       asset_name: ${{ steps.deb_pkg.outputs.filename }}
+    #       asset_content_type: application/vnd.debian.binary-package 
