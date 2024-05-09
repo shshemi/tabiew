@@ -11,6 +11,17 @@ crossterm = "0.27.0"
 itertools = "0.12.1"
 polars = { version = "0.39.2", features = ["dtype-decimal", "lazy", "polars-sql"] }
 polars-sql = "0.39.2"
-# polars-sql = "0.39.2"
 ratatui = "0.26.0"
 tui-textarea = "0.4.0"
+
+[package.metadata.deb]
+license-file = [ "LICENSE", "4" ]
+depends = "$auto"
+extended-description = """
+Tabiew is a lightweight, terminal-based application designed to help view and query CSV files directly in your terminal.
+"""
+section = "utils"
+priority = "optional"
+assets = [
+    [ "target/release/tabiew", "/usr/local/bin/tw", "0755" ],
+]
