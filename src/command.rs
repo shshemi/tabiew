@@ -55,6 +55,12 @@ impl Default for CommandList {
                 desc: "Jump <lines> line(s) down",
                 func: command_select_down,
             },
+            Command {
+                pref: Prefix::Long(":reset"),
+                temp: "",
+                desc: "Resets the data frame and selection",
+                func: command_reset,
+            },
         ])
     }
 }
@@ -119,5 +125,19 @@ pub fn command_select_down(
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.select_down(lines.parse()?);
+    Ok(())
+}
+
+pub fn command_reset(
+    _: &str,
+    tabular: &mut Table,
+    sql: &mut SQLContext,
+    _: &mut bool,
+) -> Result<(), Box<dyn Error>> {
+    tabular.set_data_frame(
+        sql.execute("SELECT * FROM df")
+            .and_then(LazyFrame::collect)?,
+    );
+    tabular.select(0);
     Ok(())
 }
