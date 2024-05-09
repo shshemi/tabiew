@@ -23,7 +23,7 @@ jobs:
       run: cargo build --verbose
       
     - name: Install cargo deb
-      run: cargo install deb
+      run: cargo install cargo-deb
 
     - name: Build .deb package
       run: cargo deb
