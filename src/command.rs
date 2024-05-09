@@ -54,7 +54,8 @@ impl Default for CommandList {
             Command {
                 prefix: Prefix::Both(":Q", ":query"),
                 usage: ":Q <query>",
-                description: "Query the data in Structured Query Language(SQL). The table name is 'df'",
+                description:
+                    "Query the data in Structured Query Language(SQL). The table name is 'df'",
                 function: command_query,
             },
             Command {
@@ -92,6 +93,24 @@ impl Default for CommandList {
                 usage: ":help",
                 description: "Show help menu",
                 function: command_help,
+            },
+            Command {
+                prefix: Prefix::Both(":S", ":select"),
+                usage: ":select <column_name(s)>",
+                description: "Query the original for selected columns",
+                function: command_select,
+            },
+            Command {
+                prefix: Prefix::Both(":F", ":filter"),
+                usage: ":filter <condition(s)>",
+                description: "Query the original dataset where the condition(s) match",
+                function: command_filter,
+            },
+            Command {
+                prefix: Prefix::Both(":O", ":order"),
+                usage: ":order <column(s)_and_order(s)>",
+                description: "Query the original data frame ordering by requested columns",
+                function: command_order,
             },
         ])
     }
@@ -207,5 +226,44 @@ pub fn command_help(
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.set_data_frame(CommandList::default().into_data_frame());
+    Ok(())
+}
+
+pub fn command_select(
+    query: &str,
+    tabular: &mut Table,
+    sql: &mut SQLContext,
+    _: &mut bool,
+) -> Result<(), Box<dyn Error>> {
+    tabular.set_data_frame(
+        sql.execute(format!("SELECT {} FROM df", query).as_str())
+            .and_then(LazyFrame::collect)?,
+    );
+    Ok(())
+}
+
+pub fn command_filter(
+    query: &str,
+    tabular: &mut Table,
+    sql: &mut SQLContext,
+    _: &mut bool,
+) -> Result<(), Box<dyn Error>> {
+    tabular.set_data_frame(
+        sql.execute(format!("SELECT * FROM df WHERE {}", query).as_str())
+            .and_then(LazyFrame::collect)?,
+    );
+    Ok(())
+}
+
+pub fn command_order(
+    query: &str,
+    tabular: &mut Table,
+    sql: &mut SQLContext,
+    _: &mut bool,
+) -> Result<(), Box<dyn Error>> {
+    tabular.set_data_frame(
+        sql.execute(format!("SELECT * FROM df ORDER BY {}", query).as_str())
+            .and_then(LazyFrame::collect)?,
+    );
     Ok(())
 }
