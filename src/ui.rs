@@ -63,13 +63,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
             .map(|w| Constraint::Length(w as u16))
             .collect::<Vec<_>>();
 
-        let highlight_symbol = format!(
-            " {:>width$} ",
-            tabular.select + 1,
-            width = tabular.data_frame.height().to_string().len()
-        );
-
-        let local_tbl = tabulate(&local_df, &local_widths, &highlight_symbol, tabular.offset);
+        let local_tbl = tabulate(&local_df, &local_widths, tabular.offset);
 
         let mut local_st = TableState::new()
             .with_offset(0)
