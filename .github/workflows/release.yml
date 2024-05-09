@@ -16,7 +16,8 @@ jobs:
     if: startsWith(github.event.release.tag_name, 'v')
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout to the latest version 
+      uses: actions/checkout@v4
 
     - name: Build
       run: cargo build --verbose
@@ -38,11 +39,11 @@ jobs:
         echo "::set-output name=filename::$FILE"
 
     - name: Upload deb package to release assets
-        uses: actions/upload-release-asset@v1
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-            upload_url: ${{ github.event.release.upload_url }}
-            asset_path: ${{ steps.deb_pkg.outputs.filename }}
-            asset_name: ${{ steps.deb_pkg.outputs.filename }}
-            asset_content_type: application/vnd.debian.binary-package 
+      uses: actions/upload-release-asset@v1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ steps.deb_pkg.outputs.filename }}
+          asset_name: ${{ steps.deb_pkg.outputs.filename }}
+          asset_content_type: application/vnd.debian.binary-package 
