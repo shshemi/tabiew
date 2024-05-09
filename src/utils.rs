@@ -68,12 +68,10 @@ pub fn line_count(text: &str, width: usize) -> usize {
 pub fn tabulate<'a>(
     data_frame: &'a DataFrame,
     width: &'a [Constraint],
-    highlight_symbol: &'a str,
     offset: usize,
 ) -> Table<'a> {
     Table::new(rows_from_dataframe(data_frame, offset), width)
         .header(header_from_dataframe(data_frame))
-        .highlight_symbol(Span::raw(highlight_symbol).style(Theme::table_cell(0, 0)))
         .highlight_style(Theme::table_highlight())
 }
 
