@@ -1,7 +1,6 @@
 use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
 use ratatui::{
     layout::Constraint,
-    text::Span,
     widgets::{Cell, Row, Table},
 };
 

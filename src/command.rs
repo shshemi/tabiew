@@ -30,13 +30,6 @@ impl Prefix {
             _ => None,
         }
     }
-
-    fn str(&self) -> &'static str {
-        match self {
-            Prefix::Short(short) | Prefix::Both(short, _) => short,
-            Prefix::Long(long) => long,
-        }
-    }
 }
 
 pub struct Command {
