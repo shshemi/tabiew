@@ -15,7 +15,7 @@ Tabiew is a lightweight, terminal-based application designed to help view and qu
 
 |Key Combination|Functionality|
 |-|-|
-| `v`| Switch to detailed view|
+| `v`| Toggle detailed view|
 | `k` or `Arrow Up`| Move up in the table or scroll up in detailed view|
 | `j` or `Arrow Down`| Move down in the table or scroll down in detailed view|
 | `h` or `Arrow Left`| Move to the previous item in detailed view|
