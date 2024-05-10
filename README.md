@@ -45,15 +45,20 @@ Tabiew is a lightweight, terminal-based application designed to help view and qu
 
 ## Installation
 
-You can install Tabiew via two methods:
+You can install Tabiew via three methods:
 
- 1. **deb Package**: Download the .deb package directly from our [GitHub releases page](https://github.com/shshemi/tabiew/releases) for Debian-based Linux distributions.
+1. **Cargo**: Install Tabiew from *Crates.io* is the simplest method if there is no intention to modify the source code.
+    ```bash
+    cargo install tabiew
+    ```
+
+1. **deb Package**: Download the .deb package directly from our [GitHub releases page](https://github.com/shshemi/tabiew/releases) for Debian-based Linux distributions.
 
     ```bash
     sudo dpkg -i <path_to_package.deb>
     ```
 
- 1. **Build from Source**: If you prefer, you can also build the application from source. Clone the repository and follow the build instructions provided in the README file.
+1. **Build from Source**: If you prefer, you can also build the application from source. Clone the repository and follow the build instructions provided in the README file.
 
     Make sure you have the 1.80.0-nightly (or higher) version of Rust installed.
 
