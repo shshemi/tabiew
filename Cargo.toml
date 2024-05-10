@@ -4,6 +4,10 @@ version = "0.2.0"
 authors = ["Shayan Hashemi <shshemi@gmail.com>"]
 license = "MIT"
 edition = "2021"
+description = "A simple demonstration crate"
+repository = "https://github.com/shshemi/tabiew"
+documentation = "https://docs.rs/tabiew"
+homepage = "https://github.com/shshemi/tabiew"
 
 [[bin]]
 name="tw"
