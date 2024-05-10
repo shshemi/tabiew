@@ -27,7 +27,7 @@ Tabiew is a lightweight, terminal-based application designed to help view and qu
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
 | `q`| Quit|
-| `:`| Enter command mode|
+| `:`| Command mode|
 
 ## Commands
 |Command|Usage|Description|
