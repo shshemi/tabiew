@@ -5,6 +5,10 @@ authors = ["Shayan Hashemi <shshemi@gmail.com>"]
 license = "MIT"
 edition = "2021"
 
+[[bin]]
+name="tw"
+path="src/main.rs"
+
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
@@ -23,7 +27,7 @@ Tabiew is a lightweight, terminal-based application designed to help view and qu
 section = "utils"
 priority = "optional"
 assets = [
-    [ "target/release/tabiew", "/usr/local/bin/tw", "0755" ],
+    [ "target/release/tw", "/usr/local/bin/tw", "0755" ],
 ]
 
 [profile.release]
