@@ -70,6 +70,12 @@ You can install Tabiew via three methods:
     cp ./target/release/tabiew <system_or_local_bin_path>
     ```
 
+## Usage
+Start tabiew with `tw`
+```bash
+tw <path_to_csv>
+```
+
 ## Contributing
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
 
