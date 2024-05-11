@@ -19,7 +19,7 @@ fn main() -> AppResult<()> {
     // Create an application.
     let data_frame = CsvReader::from_path(&args.file_name)?
         .infer_schema(None)
-        .has_header(true)
+        .has_header(!args.no_header)
         .finish()?;
 
     // Setup the SQLContext
@@ -76,4 +76,6 @@ fn main() -> AppResult<()> {
 struct Args {
     #[arg(help = "File to open", required = true)]
     file_name: String,
+    #[arg(long, help = "CSV file contains no header row", default_value_t=false)]
+    no_header: bool
 }
