@@ -78,7 +78,7 @@ tw <path_to_csv>
 Options:
 - `--no-header`: Use this option if the CSV file does not contain a header row.
 - `--ignore-errors`: Ignore parsing errors while loading the CSV file.
-- `--infer-schema`: Set the schema inference method. Options are no, fast, full, safe.
+- `--infer-schema`: Set the schema inference method. Options are no, fast, full, and safe.
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
