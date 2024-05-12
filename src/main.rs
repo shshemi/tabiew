@@ -18,7 +18,8 @@ fn main() -> AppResult<()> {
 
     // Create an application.
     let data_frame = CsvReader::from_path(&args.file_name)?
-        .infer_schema(None)
+        .with_ignore_errors(args.ignore_errors)
+        .infer_schema(args.infer_schema)
         .has_header(!args.no_header)
         .finish()?;
 
@@ -76,6 +77,24 @@ fn main() -> AppResult<()> {
 struct Args {
     #[arg(help = "File to open", required = true)]
     file_name: String,
-    #[arg(long, help = "CSV file contains no header row", default_value_t=false)]
-    no_header: bool
+
+    #[arg(
+        long,
+        help = "CSV file contains no header row",
+        default_value_t = false
+    )]
+    no_header: bool,
+
+    #[arg(
+        long,
+        help = "Ignore parsing errors while loading the CSV",
+        default_value_t = false
+    )]
+    ignore_errors: bool,
+
+    #[arg(
+        long,
+        help = "Number of rows to scan to infer the schema.",
+    )]
+    infer_schema: Option<usize>,
 }
