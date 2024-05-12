@@ -71,8 +71,8 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
         frame.render_stateful_widget(local_tbl, layout[0], &mut local_st);
     }
 
-    match status_bar {
-        crate::app::StatusBar::Normal => frame.render_widget(
+    match &status_bar.state {
+        crate::app::StatusBarState::Normal => frame.render_widget(
             Line::default()
                 .spans([
                     Span::raw(format!(
@@ -91,14 +91,14 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
             layout[1],
         ),
 
-        crate::app::StatusBar::Error(msg, _) => frame.render_widget(
+        crate::app::StatusBarState::Error(msg, _) => frame.render_widget(
             Line::raw(msg.as_str())
                 .alignment(Alignment::Center)
                 .style(Theme::status_bar_red()),
             layout[1],
         ),
 
-        crate::app::StatusBar::Command(text) => frame.render_widget(text.widget(), layout[1]),
+        crate::app::StatusBarState::Command(text) => frame.render_widget(text.widget(), layout[1]),
     }
 }
 
