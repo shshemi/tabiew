@@ -46,6 +46,34 @@ pub fn zip_iters<I1: IntoIterator<Item = I2>, I2: Iterator<Item = T>, T: Clone +
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Scroll(usize);
+
+impl From<Scroll> for usize {
+    fn from(val: Scroll) -> Self {
+        val.0
+    }
+}
+
+impl From<Scroll> for u16 {
+    fn from(val: Scroll) -> Self {
+        val.0 as u16
+    }
+}
+
+impl Scroll {
+    pub fn up(&mut self) {
+        self.0 = self.0.saturating_sub(1);
+    }
+
+    pub fn down(&mut self) {
+        self.0 = self.0.saturating_add(1);
+    }
+
+    pub fn adjust(&mut self, lines: usize, space: usize) {
+        self.0 = self.0.min(lines.saturating_sub(space))
+    }
+}
 pub fn line_count(text: &str, width: usize) -> usize {
     let mut line_count = 1;
     let mut used_space = 0;
