@@ -5,23 +5,48 @@ use polars::lazy::frame::IntoLazy;
 use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use std::fmt::Display;
 use std::io;
+use std::str::FromStr;
 use tabiew::app::{AppResult, StatusBar, Table};
 use tabiew::command::CommandList;
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::tui::Tui;
+use tabiew::utils::column_type_brute_foce;
 
 fn main() -> AppResult<()> {
     // Parse CLI
     let args = Args::parse();
 
     // Create an application.
-    let data_frame = CsvReader::from_path(&args.file_name)?
-        .with_ignore_errors(args.ignore_errors)
-        .infer_schema(args.infer_schema)
-        .has_header(!args.no_header)
-        .finish()?;
+    let data_frame = {
+        match args.infer_schema {
+            InferSchema::No => CsvReader::from_path(&args.file_name)?
+                .with_ignore_errors(args.ignore_errors)
+                .infer_schema(0.into())
+                .has_header(!args.no_header)
+                .finish()?,
+            InferSchema::Fast => CsvReader::from_path(&args.file_name)?
+                .with_ignore_errors(args.ignore_errors)
+                .has_header(!args.no_header)
+                .finish()?,
+            InferSchema::Full => CsvReader::from_path(&args.file_name)?
+                .with_ignore_errors(args.ignore_errors)
+                .infer_schema(None)
+                .has_header(!args.no_header)
+                .finish()?,
+            InferSchema::Safe => {
+                let mut df = CsvReader::from_path(&args.file_name)?
+                    .with_ignore_errors(args.ignore_errors)
+                    .infer_schema(0.into())
+                    .has_header(!args.no_header)
+                    .finish()?;
+                column_type_brute_foce(&mut df);
+                df
+            }
+        }
+    };
 
     // Setup the SQLContext
     let mut sql_context = SQLContext::new();
@@ -94,7 +119,42 @@ struct Args {
 
     #[arg(
         long,
-        help = "Number of rows to scan to infer the schema.",
+        help = "Schema inference method {no, fast, full, safe}.",
+        required = false,
+        default_value_t = InferSchema::Fast,
     )]
-    infer_schema: Option<usize>,
+    infer_schema: InferSchema,
+}
+
+#[derive(Debug, Clone)]
+enum InferSchema {
+    No,
+    Fast,
+    Full,
+    Safe,
+}
+
+impl FromStr for InferSchema {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "no" => Ok(InferSchema::No),
+            "fast" => Ok(InferSchema::Fast),
+            "full" => Ok(InferSchema::Full),
+            "safe" => Ok(InferSchema::Safe),
+            _ => Err("Invalid schema inference option"),
+        }
+    }
+}
+
+impl Display for InferSchema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InferSchema::No => write!(f, "no"),
+            InferSchema::Fast => write!(f, "fast"),
+            InferSchema::Full => write!(f, "full"),
+            InferSchema::Safe => write!(f, "safe"),
+        }
+    }
 }

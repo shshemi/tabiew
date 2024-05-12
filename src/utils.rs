@@ -1,4 +1,10 @@
-use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
+use std::collections::HashMap;
+
+use polars::{
+    datatypes::{AnyValue, DataType},
+    frame::DataFrame,
+    series::Series,
+};
 use ratatui::{
     layout::Constraint,
     widgets::{Cell, Row, Table},
@@ -86,7 +92,7 @@ pub fn line_count(text: &str, width: usize) -> usize {
                 line_count += 1;
             }
         } else {
-            line_count +=  (word_len - width + used_space).div_ceil(width) + 1
+            line_count += (word_len - width + used_space).div_ceil(width) + 1
         }
     }
     line_count
@@ -172,4 +178,31 @@ pub fn string_from_any_value(value: polars::datatypes::AnyValue) -> String {
         AnyValue::BinaryOwned(v) => format!("{:?}", v),
         AnyValue::Decimal(v1, v2) => format!("{}.{}", v1, v2),
     }
+}
+
+pub fn column_type_brute_foce(data_frame: &mut DataFrame) {
+    let dtypes = [
+        DataType::UInt64,
+        DataType::Int64,
+        DataType::Float64,
+        DataType::Boolean,
+        DataType::Date,
+        DataType::Time,
+    ];
+    data_frame
+        .get_column_names()
+        .into_iter()
+        .map(|col_name| (col_name, data_frame.column(col_name).unwrap()))
+        .filter_map(|(col_name, series)| {
+            dtypes
+                .iter()
+                .filter_map(|dtype| series.cast(dtype).ok())
+                .find(|series| series.null_count() != series.len())
+                .map(|series| (col_name.to_owned(), series))
+        })
+        .collect::<HashMap<String, Series>>()
+        .into_iter()
+        .for_each(|(col_name, series)| {
+            data_frame.replace(col_name.as_str(), series).unwrap();
+        });
 }
