@@ -1,8 +1,9 @@
-use std::error;
+use std::{error, ops::SubAssign};
 
+use crossterm::event::{KeyCode, KeyEvent};
 use polars::frame::DataFrame;
 use ratatui::style::Style;
-use tui_textarea::TextArea;
+use tui_textarea::{CursorMove, TextArea};
 
 use crate::{
     theme::{Styler, Theme},
@@ -38,7 +39,6 @@ impl Table {
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) {}
-
 
     pub fn select_up(&mut self, len: usize) {
         self.select(self.select.saturating_sub(len))
@@ -85,47 +85,114 @@ impl Table {
 }
 
 #[derive(Debug, Default)]
-pub enum StatusBar<'a> {
+pub struct StatusBar<'a> {
+    pub state: StatusBarState<'a>,
+    prompt_history: Vec<String>,
+}
+
+#[derive(Debug, Default)]
+pub enum StatusBarState<'a> {
     #[default]
     Normal,
     Error(String, usize),
     Command(TextArea<'a>),
 }
 
-
 impl<'a> StatusBar<'a> {
     pub fn normal(&mut self) {
-        self.update(StatusBar::Normal);
+        self.state = StatusBarState::Normal;
     }
 
     pub fn error(&mut self, msg: impl ToString, ticks: usize) {
-        self.update(StatusBar::Error(msg.to_string(), ticks));
+        self.state = StatusBarState::Error(msg.to_string(), ticks);
     }
 
-    pub fn command(&mut self) -> &mut TextArea<'a> {
-        if let StatusBar::Command(text_area) = self {
-            text_area
+    pub fn command(&mut self) {
+        let mut history = self.prompt_history.clone();
+        history.push("".to_owned());
+        let mut text_area = TextArea::new(history);
+        text_area.set_style(Theme::status_bar_green());
+        text_area.set_cursor_line_style(Style::default());
+        text_area.move_cursor(tui_textarea::CursorMove::Bottom);
+        self.state = StatusBarState::Command(text_area);
+    }
+
+    pub fn commit_prompt(&mut self) -> Option<&String> {
+        if let StatusBarState::Command(prompt) = &self.state {
+            let row = prompt.cursor().0;
+            let prompt = &prompt.lines()[row];
+            self.prompt_history.push(prompt.clone());
+            Some(prompt)
         } else {
-            let mut text_area = TextArea::default();
-            text_area.set_style(Theme::status_bar_green());
-            text_area.set_cursor_line_style(Style::default());
-            self.update(StatusBar::Command(text_area));
-            self.command()
+            None
         }
-    }
-
-    pub fn update(&mut self, status: StatusBar<'a>) {
-        *self = status;
     }
 
     pub fn tick(&mut self) {
-        if let StatusBar::Error(_, ref mut ticks) = self {
-            if ticks == &0 {
-                *self = StatusBar::Normal;
-            } else {
-                *ticks -= 1;
-            }
+        match &mut self.state {
+            StatusBarState::Error(_, 0) => self.state = StatusBarState::Normal,
+            StatusBarState::Error(_, ticks) => ticks.sub_assign(1),
+            _ => {}
+        }
+    }
+
+    pub fn input(&mut self, input: KeyEvent) {
+        match &mut self.state {
+            StatusBarState::Command(prompt) => match input.code {
+                KeyCode::Up => {
+                    prompt.move_cursor(CursorMove::Up);
+                    prompt.move_cursor(CursorMove::End);
+                }
+                KeyCode::Down => {
+                    prompt.move_cursor(CursorMove::Down);
+                    prompt.move_cursor(CursorMove::End);
+                }
+                KeyCode::Left => {
+                    if prompt.cursor().1 > 1 {
+                        prompt.input(input);
+                    }
+                }
+                KeyCode::Right => {
+                    prompt.input(input);
+                }
+
+                KeyCode::Backspace => {
+                    if prompt.lines()[prompt.cursor().0].len() == 1 {
+                        self.normal()
+                    } else if prompt.cursor().1 > 1 {
+                        prompt.input(input);
+                    }
+                }
+
+                KeyCode::Delete => {
+                    let (row, col) = prompt.cursor();
+                    if col < prompt.lines()[row].len() {
+                        prompt.input(input);
+                    }
+                }
+
+                KeyCode::Home => {
+                    prompt.move_cursor(CursorMove::Head);
+                    prompt.move_cursor(CursorMove::Forward);
+                }
+
+                KeyCode::End => {
+                    let (row, col) = prompt.cursor();
+                    if col < prompt.lines()[row].len() {
+                        prompt.move_cursor(CursorMove::End);
+                    }
+                }
+
+                KeyCode::PageUp | KeyCode::PageDown => (),
+
+                KeyCode::Char(_) => {
+                    prompt.input(input);
+                }
+
+                _ => ()
+            },
+            StatusBarState::Normal => (),
+            StatusBarState::Error(_, _) => (),
         }
     }
 }
-
