@@ -26,21 +26,29 @@ fn main() -> AppResult<()> {
                 .with_ignore_errors(args.ignore_errors)
                 .infer_schema(0.into())
                 .has_header(!args.no_header)
+                .with_quote_char((args.quote_char as u8).into())
+                .with_separator(args.separator as u8)
                 .finish()?,
             InferSchema::Fast => CsvReader::from_path(&args.file_name)?
                 .with_ignore_errors(args.ignore_errors)
                 .has_header(!args.no_header)
+                .with_quote_char((args.quote_char as u8).into())
+                .with_separator(args.separator as u8)
                 .finish()?,
             InferSchema::Full => CsvReader::from_path(&args.file_name)?
                 .with_ignore_errors(args.ignore_errors)
                 .infer_schema(None)
                 .has_header(!args.no_header)
+                .with_quote_char((args.quote_char as u8).into())
+                .with_separator(args.separator as u8)
                 .finish()?,
             InferSchema::Safe => {
                 let mut df = CsvReader::from_path(&args.file_name)?
                     .with_ignore_errors(args.ignore_errors)
                     .infer_schema(0.into())
                     .has_header(!args.no_header)
+                    .with_quote_char((args.quote_char as u8).into())
+                    .with_separator(args.separator as u8)
                     .finish()?;
                 column_type_brute_foce(&mut df);
                 df
@@ -124,6 +132,22 @@ struct Args {
         default_value_t = InferSchema::Fast,
     )]
     infer_schema: InferSchema,
+
+    #[arg(
+        long,
+        help = "The field separator or delimiter",
+        required = false,
+        default_value_t = ','
+    )]
+    separator: char,
+
+    #[arg(
+        long,
+        help = "Quote character",
+        required = false,
+        default_value_t = '"'
+    )]
+    quote_char: char,
 }
 
 #[derive(Debug, Clone)]
