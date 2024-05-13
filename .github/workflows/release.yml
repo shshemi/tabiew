@@ -20,7 +20,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --release --verbose
       
     - name: Test
       run: cargo test --all
@@ -33,9 +33,15 @@ jobs:
 
     - name: Build .deb package
       run: cargo deb
+
+    - name: Install cargo generate rpm
+      run: cargo install cargo-generate-rpm
+
+    - name: Build .rpm package
+      run: cargo generate-rpm
     
     - name: Upload artifacts to release
       uses: AButler/upload-release-assets@v3.0
       with:
-        files: "./target/debian/*.deb"
+        files: "./target/release/tw;./target/debian/*.deb;./target/generate-rpm/*.rpm"
         repo-token: ${{ secrets.GITHUB_TOKEN }}

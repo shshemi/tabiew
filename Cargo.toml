@@ -34,6 +34,11 @@ assets = [
     [ "target/release/tw", "/usr/local/bin/tw", "0755" ],
 ]
 
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/tw", dest = "/usr/local/bin/tw", mode = "755" },
+]
+
 [profile.release]
 lto = true
 strip = true
