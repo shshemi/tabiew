@@ -1,6 +1,6 @@
 # Tabiew
 
-Tabiew is a lightweight, terminal-based application designed to help view and query CSV files directly in your terminal.
+Tabiew is a lightweight, terminal-based application to view and query tabular files (CSV, TSV, and ...) directly in your terminal.
 
 ![Image Alt text](/images/screenshot.png "Screenshot")
 
