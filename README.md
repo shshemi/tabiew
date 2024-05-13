@@ -1,6 +1,6 @@
 # Tabiew
 
-Tabiew is a lightweight, terminal-based application designed to help view and query CSV files directly in your terminal. It utilizes Polar data frames and its querying engine to perform complex data manipulations without the need for a database system.
+Tabiew is a lightweight, terminal-based application designed to help view and query CSV files directly in your terminal.
 
 ![Image Alt text](/images/screenshot.png "Screenshot")
 
@@ -32,7 +32,7 @@ Tabiew is a lightweight, terminal-based application designed to help view and qu
 ## Commands
 |Command|Usage|Description|
 |-|-|-|
-|`:Q` or `:query`|`:Q <query>`| Query the data in Structured Query Language (SQL). Table name is 'df'|
+|`:Q` or `:query`|`:Q <query>`| Query the data in Structured Query Language (SQL). The table's name is 'df'|
 |`:q` or `:quit` |`:q`| Quit Tabiew|
 |`:goto`| `:goto <line_index>`| Jumps to the specified line index|
 |`:moveup`| `:moveup <lines>`| Jump a specified number of lines up|
@@ -58,9 +58,9 @@ You can install Tabiew via three methods:
     sudo dpkg -i <path_to_package.deb>
     ```
 
-1. **Build from Source**: If you prefer, you can also build the application from source. Clone the repository and follow the build instructions provided in the README file.
+1. **Build from Source**: You can also build the application from source. Clone the repository and follow the build instructions provided in the README file.
 
-    Make sure you have the 1.80.0-nightly (or higher) version of Rust installed.
+    Ensure you have the 1.80.0-nightly (or higher) version of Rust installed.
 
     ```bash
     git pull https://github.com/shshemi/tabiew.git
@@ -71,7 +71,7 @@ You can install Tabiew via three methods:
     ```
 
 ## Usage
-Start tabiew with `tw`
+Start Tabiew with `tw`
 ```bash
 tw <path_to_csv>
 ```
@@ -79,7 +79,9 @@ Options:
 - `--no-header`: Use this option if the CSV file does not contain a header row.
 - `--ignore-errors`: Ignore parsing errors while loading the CSV file.
 - `--infer-schema`: Set the schema inference method. Options are no, fast, full, and safe.
-
+- `--quote-char`: Set the quote character.
+- `--separator`: Set the separator character.
+  
 ## Contributing
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
 
