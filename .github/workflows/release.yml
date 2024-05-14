@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-and-upload:
+  build-and-upload-linux:
 
     runs-on: ubuntu-latest
     if: startsWith(github.event.release.tag_name, 'v')
@@ -45,3 +45,30 @@ jobs:
       with:
         files: "./target/release/tw;./target/debian/*.deb;./target/generate-rpm/*.rpm"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+  
+
+  build-and-upload-windows:
+    runs-on: windows-latest
+
+      steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust (nightly)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          target: x86_64-pc-windows-msvc
+
+      - name: Build
+        run: cargo build --release --verbose
+
+      - name: Test
+        run: cargo test --all
+
+      - name: Upload artifacts to release
+        uses: AButler/upload-release-assets@v3.0
+        with:
+          files: "./target/release/*.exe"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
