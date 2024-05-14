@@ -1,6 +1,6 @@
 # Tabiew
 
-Tabiew is a lightweight, terminal-based application to view and query tabular files (CSV, TSV, and ...) directly in your terminal.
+Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV and TSV files.
 
 ![Image Alt text](/images/screenshot.png "Screenshot")
 
@@ -45,30 +45,38 @@ Tabiew is a lightweight, terminal-based application to view and query tabular fi
 
 ## Installation
 
-You can install Tabiew via three methods:
+There are various ways to install Tabiew:
 
-1. **Cargo**: Install Tabiew from *Crates.io* is the simplest method if there is no intention to modify the source code.
-    ```bash
-    cargo install tabiew
-    ```
+### Debian-based
+Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) then:
+ ```bash
+ sudo dpkg -i <path_to_package.deb>
+ ```
 
-1. **deb Package**: Download the .deb package directly from our [GitHub releases page](https://github.com/shshemi/tabiew/releases) for Debian-based Linux distributions.
+### RPM-based
+Download the `.rpm` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) then:
+ ```bash
+ sudo rpm -i <path_to_package.rpm>
+ ```
 
-    ```bash
-    sudo dpkg -i <path_to_package.deb>
-    ```
+### Windows
+Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in system's PATH environment variable.
 
-1. **Build from Source**: You can also build the application from source. Clone the repository and follow the build instructions provided in the README file.
+### Cargo
+Install Tabiew from *Crates.io*:
+ ```bash
+ cargo install tabiew
+ ```
 
-    Ensure you have the 1.80.0-nightly (or higher) version of Rust installed.
-
-    ```bash
-    git pull https://github.com/shshemi/tabiew.git
-    cd tabiew
-    rustup override set nightly
-    cargo build --release
-    cp ./target/release/tabiew <system_or_local_bin_path>
-    ```
+### Build from Source
+Ensure you have the 1.80.0-nightly (or higher) version of Rust installed, then:
+```bash
+git clone https://github.com/shshemi/tabiew.git
+cd tabiew
+rustup override set nightly
+cargo build --release
+cp ./target/release/tabiew <system_or_local_bin_path>
+```
 
 ## Usage
 Start Tabiew with `tw`
