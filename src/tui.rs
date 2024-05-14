@@ -1,7 +1,6 @@
 use crate::app::{AppResult, StatusBar, Table};
 use crate::event::EventHandler;
 use crate::ui;
-use crossterm::event::DisableMouseCapture;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
 use ratatui::Terminal;
@@ -61,7 +60,7 @@ impl<B: Backend> Tui<B> {
     /// the terminal properties if unexpected errors occur.
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stderr(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(io::stderr(), LeaveAlternateScreen)?;
         Ok(())
     }
 
