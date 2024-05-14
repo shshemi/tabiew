@@ -30,18 +30,18 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 | `:`| Command mode|
 
 ## Commands
-|Command|Usage|Description|
+|Command|Example|Description|
 |-|-|-|
-|`:Q` or `:query`|`:Q <query>`| Query the data in Structured Query Language (SQL). The table's name is 'df'|
+|`:Q` or `:query`|`:Q SELECT * FROM df`| Query the data in Structured Query Language (SQL). The table's name is 'df'|
 |`:q` or `:quit` |`:q`| Quit Tabiew|
-|`:goto`| `:goto <line_index>`| Jumps to the specified line index|
-|`:moveup`| `:moveup <lines>`| Jump a specified number of lines up|
-|`:movedown`| `:movedown <lines>`| Jump a specified number of lines down|
+|`:goto`| `:goto 10`| Jumps to the specified line index|
+|`:moveup`| `:moveup 10`| Jump a specified number of lines up|
+|`:movedown`| `:movedown 10`| Jump a specified number of lines down|
+|`:S` or `:select`| `:S price, area, bedrooms, parking`|Query the original for selected columns|
+|`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Query the original dataset where the condition(s) match|
+|`:O` or `:order`| `:O area`|Query the original data frame ordering by requested columns|
 |`:reset`| `:reset`| Reset the original data frame|
 |`:help`| `:help`| Show help menu|
-|`:S` or `:select`| `:select <column_name(s)>`|Query the original for selected columns|
-|`:F` or `:filter`| `:filter <condition(s)>`|Query the original dataset where the condition(s) match|
-|`:O` or `:order`| `:order <column(s)_and_order(s)>`|Query the original data frame ordering by requested columns|
 
 ## Installation
 
