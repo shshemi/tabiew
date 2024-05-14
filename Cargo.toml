@@ -4,7 +4,7 @@ version = "0.3.2"
 authors = ["Shayan Hashemi <shshemi@gmail.com>"]
 license = "MIT"
 edition = "2021"
-description = "Tabiew is a lightweight, terminal-based application to view and query tabular files (CSV, TSV, and ...) directly in your terminal."
+description = "Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV and TSV files."
 repository = "https://github.com/shshemi/tabiew"
 documentation = "https://docs.rs/tabiew"
 homepage = "https://github.com/shshemi/tabiew"
@@ -26,7 +26,7 @@ tui-textarea = "0.4.0"
 license-file = [ "LICENSE", "4" ]
 depends = "$auto"
 extended-description = """
-Tabiew is a lightweight, terminal-based application to view and query tabular files (CSV, TSV, and ...) directly in your terminal.
+Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV and TSV files.
 """
 section = "utils"
 priority = "optional"
