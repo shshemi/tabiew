@@ -62,6 +62,8 @@ Download the `.rpm` package from the [GitHub releases page](https://github.com/s
 ### Windows
 Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in system's PATH environment variable.
 
+**Disclaimer:** The Windows version may experience performance lag.
+
 ### Cargo
 Install Tabiew from *Crates.io*:
  ```bash
