@@ -31,12 +31,12 @@ Tabiew is a lightweight, terminal-based application to view and query tabular fi
 section = "utils"
 priority = "optional"
 assets = [
-    [ "target/release/tw", "/usr/local/bin/tw", "0755" ],
+    [ "target/release/tw", "/usr/bin/tw", "0755" ],
 ]
 
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/tw", dest = "/usr/local/bin/tw", mode = "755" },
+    { source = "target/release/tw", dest = "/usr/bin/tw", mode = "755" },
 ]
 
 [profile.release]
