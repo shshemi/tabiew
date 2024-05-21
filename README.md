@@ -40,7 +40,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:moveup`| `:moveup 10`| Jump a specified number of lines up|
 |`:movedown`| `:movedown 10`| Jump a specified number of lines down|
 |`:q` or `:quit` |`:q`| Quit Tabiew|
-|`:reset`| `:reset`| Reset the original data frame|
+|`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|
 
 ## Installation
@@ -48,13 +48,13 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 There are various ways to install Tabiew:
 
 ### Debian-based
-Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) then:
+Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and:
  ```bash
  sudo dpkg -i <path_to_package.deb>
  ```
 
 ### RPM-based
-Download the `.rpm` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) then:
+Download the `.rpm` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and:
  ```bash
  sudo rpm -i <path_to_package.rpm>
  ```
