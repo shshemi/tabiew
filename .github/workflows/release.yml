@@ -75,3 +75,33 @@ jobs:
       with:
         files: "./target/release/*.exe"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+
+  build-and-upload-macos:
+
+    runs-on: macos-latest
+    if: startsWith(github.event.release.tag_name, 'v')
+
+    steps:
+    - name: Checkout to the latest version 
+      uses: actions/checkout@v4
+
+
+    - name: Install Rust (nightly)
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        target: x86_64-pc-windows-msvc
+
+    - name: Build
+      run: cargo build --release --verbose
+
+    - name: Test
+      run: cargo test --all
+
+    - name: Upload artifacts to release
+      uses: AButler/upload-release-assets@v3.0
+      with:
+        files: "./target/release/*.exe"
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
