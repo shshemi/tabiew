@@ -107,13 +107,14 @@ impl<'a> StatusBar<'a> {
         self.state = StatusBarState::Error(msg.to_string(), ticks);
     }
 
-    pub fn command(&mut self) {
+    pub fn command(&mut self, prefix: impl ToString) {
         let mut history = self.prompt_history.clone();
-        history.push("".to_owned());
+        history.push(prefix.to_string());
         let mut text_area = TextArea::new(history);
         text_area.set_style(Theme::status_bar_green());
         text_area.set_cursor_line_style(Style::default());
         text_area.move_cursor(tui_textarea::CursorMove::Bottom);
+        text_area.move_cursor(tui_textarea::CursorMove::End);
         self.state = StatusBarState::Command(text_area);
     }
 
