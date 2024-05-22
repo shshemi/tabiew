@@ -29,7 +29,7 @@ pub fn handle_key_events(
                     status_bar.error("command not found", 8);
                 }
             } else {
-                    status_bar.error("invalid state", 8);
+                status_bar.error("invalid state", 8);
             }
         }
 
@@ -83,7 +83,21 @@ pub fn handle_key_events(
         (StatusBarState::Normal, KeyCode::Home | KeyCode::Char('g')) => tabular.select_first(),
         (StatusBarState::Normal, KeyCode::End | KeyCode::Char('G')) => tabular.select_last(),
         (StatusBarState::Normal, KeyCode::Char(':')) => {
-            status_bar.command();
+            status_bar.command(":");
+        }
+        (
+            StatusBarState::Normal,
+            KeyCode::Char('1')
+            | KeyCode::Char('2')
+            | KeyCode::Char('3')
+            | KeyCode::Char('4')
+            | KeyCode::Char('5')
+            | KeyCode::Char('6')
+            | KeyCode::Char('7')
+            | KeyCode::Char('8')
+            | KeyCode::Char('9')
+        ) => {
+            status_bar.command(":goto ");
             status_bar.input(key_event);
         }
         (StatusBarState::Normal, KeyCode::Char('u'))
