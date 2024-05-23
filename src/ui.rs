@@ -91,7 +91,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
             layout[1],
         ),
 
-        crate::app::StatusBarState::Error(msg, _) => frame.render_widget(
+        crate::app::StatusBarState::Error(msg) => frame.render_widget(
             Line::raw(msg.as_str())
                 .alignment(Alignment::Center)
                 .style(Theme::status_bar_red()),

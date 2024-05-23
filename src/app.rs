@@ -1,4 +1,4 @@
-use std::{error, ops::SubAssign};
+use std::error;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use polars::frame::DataFrame;
@@ -94,7 +94,7 @@ pub struct StatusBar<'a> {
 pub enum StatusBarState<'a> {
     #[default]
     Normal,
-    Error(String, usize),
+    Error(String),
     Command(TextArea<'a>),
 }
 
@@ -103,8 +103,8 @@ impl<'a> StatusBar<'a> {
         self.state = StatusBarState::Normal;
     }
 
-    pub fn error(&mut self, msg: impl ToString, ticks: usize) {
-        self.state = StatusBarState::Error(msg.to_string(), ticks);
+    pub fn error(&mut self, msg: impl ToString) {
+        self.state = StatusBarState::Error(msg.to_string());
     }
 
     pub fn command(&mut self, prefix: impl ToString) {
@@ -129,17 +129,11 @@ impl<'a> StatusBar<'a> {
         }
     }
 
-    pub fn tick(&mut self) {
-        match &mut self.state {
-            StatusBarState::Error(_, 0) => self.state = StatusBarState::Normal,
-            StatusBarState::Error(_, ticks) => ticks.sub_assign(1),
-            _ => {}
-        }
-    }
+    pub fn tick(&mut self) {}
 
     pub fn input(&mut self, input: KeyEvent) {
-        match &mut self.state {
-            StatusBarState::Command(prompt) => match input.code {
+        if let StatusBarState::Command(prompt) = &mut self.state {
+            match input.code {
                 KeyCode::Up => {
                     prompt.move_cursor(CursorMove::Up);
                     prompt.move_cursor(CursorMove::End);
@@ -190,10 +184,8 @@ impl<'a> StatusBar<'a> {
                     prompt.input(input);
                 }
 
-                _ => ()
-            },
-            StatusBarState::Normal => (),
-            StatusBarState::Error(_, _) => (),
+                _ => (),
+            }
         }
     }
 }
