@@ -23,13 +23,13 @@ pub fn handle_key_events(
                 if let Some(func) = exec_tbl.get(s1) {
                     match func(s2, tabular, sql_context, running) {
                         Ok(_) => status_bar.normal(),
-                        Err(error) => status_bar.error(error, 10),
+                        Err(error) => status_bar.error(error),
                     }
                 } else {
-                    status_bar.error("command not found", 8);
+                    status_bar.error("command not found");
                 }
             } else {
-                status_bar.error("invalid state", 8);
+                status_bar.error("invalid state");
             }
         }
 
@@ -109,6 +109,9 @@ pub fn handle_key_events(
             if key_event.modifiers == KeyModifiers::CONTROL =>
         {
             tabular.select_down((tabular.rendered_rows / 2).into())
+        }
+        (StatusBarState::Error(_), _) => {
+            status_bar.normal();
         }
 
         _ => {}
