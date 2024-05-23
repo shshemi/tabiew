@@ -64,14 +64,14 @@ impl Default for CommandList {
                 function: command_goto,
             },
             Command {
-                prefix: Prefix::Long(":moveup"),
-                usage: ":moveup <lines>",
+                prefix: Prefix::Long(":goup"),
+                usage: ":goup <lines>",
                 description: "Jump <lines> line(s) up",
                 function: command_select_up,
             },
             Command {
-                prefix: Prefix::Long(":movedown"),
-                usage: ":movedown <lines>",
+                prefix: Prefix::Long(":godown"),
+                usage: ":godown <lines>",
                 description: "Jump <lines> line(s) down",
                 function: command_select_down,
             },
