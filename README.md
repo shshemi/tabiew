@@ -47,6 +47,12 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 
 There are various ways to install Tabiew:
 
+### Arch Linux
+You can install from the [official repositories](https://archlinux.org/packages/extra/x86_64/tabiew/) using [pacman](https://wiki.archlinux.org/title/pacman):
+```bash
+pacman -S tabiew
+```
+
 ### Debian-based
 Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and:
  ```bash
