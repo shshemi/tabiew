@@ -19,7 +19,7 @@ fn main() -> AppResult<()> {
     // Parse CLI
     let args = Args::parse();
 
-    // Create an application.
+    // Create the data frame.
     let data_frame = {
         match args.infer_schema {
             InferSchema::No => CsvReader::from_path(&args.file_name)?
