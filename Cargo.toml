@@ -13,6 +13,11 @@ homepage = "https://github.com/shshemi/tabiew"
 name="tw"
 path="src/main.rs"
 
+[[bin]]
+name = "tabiew-mangen"
+path = "src/bin/mangen.rs"
+required-features = ["clap_mangen"]
+
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
@@ -21,6 +26,7 @@ polars = { version = "0.39.2", features = ["dtype-decimal", "lazy", "polars-sql"
 polars-sql = "0.39.2"
 ratatui = "0.26.0"
 tui-textarea = "0.4.0"
+clap_mangen = { version = "0.2", optional = true }
 
 [package.metadata.deb]
 license-file = [ "LICENSE", "4" ]
