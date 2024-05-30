@@ -13,16 +13,6 @@ homepage = "https://github.com/shshemi/tabiew"
 name="tw"
 path="src/main.rs"
 
-[[bin]]
-name = "tabiew-mangen"
-path = "src/bin/mangen.rs"
-required-features = ["clap_mangen"]
-
-[[bin]]
-name = "tabiew-completions"
-path = "src/bin/completions.rs"
-required-features = ["clap_complete"]
-
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
@@ -31,8 +21,11 @@ polars = { version = "0.39.2", features = ["dtype-decimal", "lazy", "polars-sql"
 polars-sql = "0.39.2"
 ratatui = "0.26.0"
 tui-textarea = "0.4.0"
-clap_mangen = { version = "0.2", optional = true }
-clap_complete = { version = "4.5", optional = true }
+
+[build-dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+clap_mangen = { version = "0.2"}
+clap_complete = { version = "4.5"}
 
 [package.metadata.deb]
 license-file = [ "LICENSE", "4" ]
@@ -44,11 +37,21 @@ section = "utils"
 priority = "optional"
 assets = [
     [ "target/release/tw", "/usr/bin/tw", "0755" ],
+    [ "target/manual/tabiew.1", "/usr/share/man/man1/tw.1", "0644" ],
+    [ "target/manual/tabiew.1", "/usr/share/man/man1/tabiew.1", "0644" ],
+    [ "target/completion/tw.bash", "/usr/share/bash-completion/completions/tw.bash", "0644" ],
+    [ "target/completion/_tw", "/usr/share/zsh/vendor-completions/_tw", "0644" ],
+    [ "target/completion/tw.fish", "/usr/share/fish/completions/tw.fish", "0644" ],
 ]
 
 [package.metadata.generate-rpm]
 assets = [
     { source = "target/release/tw", dest = "/usr/bin/tw", mode = "755" },
+    { source = "target/manual/tabiew.1", dest = "/usr/share/man/man1/tw.1", mode = "0644" },
+    { source = "target/manual/tabiew.1", dest = "/usr/share/man/man1/tabiew.1", mode = "0644" },
+    { source = "target/completion/tw.bash", dest = "/usr/share/bash-completion/completions/tw.bash", mode = "0644" },
+    { source = "target/completion/_tw", dest = "/usr/share/zsh/vendor-completions/_tw", mode = "0644" },
+    { source = "target/completion/tw.fish", dest = "/usr/share/fish/completions/tw.fish", mode = "0644" },
 ]
 
 [profile.release]

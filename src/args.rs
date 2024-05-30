@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::fmt::Display;
 use clap::Parser;
@@ -6,7 +7,7 @@ use clap::Parser;
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[arg(help = "File to open", required = true)]
-    pub file_name: String,
+    pub file_name: PathBuf,
 
     #[arg(
         long,
