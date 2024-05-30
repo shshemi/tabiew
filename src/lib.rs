@@ -21,3 +21,6 @@ pub mod utils;
 
 /// Command
 pub mod command;
+
+/// CLI arguments
+pub mod args;
