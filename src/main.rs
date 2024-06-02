@@ -7,12 +7,12 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
 use tabiew::app::{AppResult, StatusBar, Table};
+use tabiew::args::{Args, InferSchema};
 use tabiew::command::CommandList;
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::tui::Tui;
 use tabiew::utils::column_type_brute_foce;
-use tabiew::args::{Args, InferSchema};
 
 fn main() -> AppResult<()> {
     // Parse CLI
