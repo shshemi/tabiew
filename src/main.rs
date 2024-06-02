@@ -86,14 +86,33 @@ fn main() -> AppResult<()> {
                 tabular.tick();
                 status_bar.tick();
             }
-            Event::Key(key_event) => handle_key_events(
-                key_event,
-                &mut tabular,
-                &mut status_bar,
-                &mut sql_context,
-                &mut running,
-                &exec_tbl,
-            )?,
+            Event::Key(key_event) => {
+                #[cfg(target_os = "windows")]
+                {
+                    use crossterm::event::KeyEventKind;
+                    if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+                        handle_key_events(
+                            key_event,
+                            &mut tabular,
+                            &mut status_bar,
+                            &mut sql_context,
+                            &mut running,
+                            &exec_tbl,
+                        )?
+                    }
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    handle_key_events(
+                        key_event,
+                        &mut tabular,
+                        &mut status_bar,
+                        &mut sql_context,
+                        &mut running,
+                        &exec_tbl,
+                    )?
+                }
+            }
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }
@@ -103,4 +122,3 @@ fn main() -> AppResult<()> {
     tui.exit()?;
     Ok(())
 }
-
