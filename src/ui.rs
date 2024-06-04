@@ -4,7 +4,7 @@ use ratatui::{prelude::*, widgets::*};
 use crate::{
     app::{StatusBar, Table},
     theme::Styler,
-    utils::{line_count, string_from_any_value, tabulate},
+    utils::{line_count, any_value_into_string, zip_iters},
 };
 
 /// Renders the user interface widgets.
@@ -37,7 +37,7 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
             .unwrap_or_default()
             .0
             .into_iter()
-            .map(string_from_any_value)
+            .map(any_value_into_string)
             .collect_vec();
 
         let (paragraph, line_count) =
@@ -139,4 +139,43 @@ fn lines_from_header_value<'a, Theme: Styler>(
         .chain(value_lines)
         .chain(std::iter::once(Line::default()))
         .collect_vec()
+}
+
+pub fn tabulate<'a, Theme: Styler>(
+    data_frame: &'a polars::frame::DataFrame,
+    width: &'a [Constraint],
+    offset: usize,
+) -> ratatui::widgets::Table<'a> {
+    ratatui::widgets::Table::new(rows_from_dataframe::<Theme>(data_frame, offset), width)
+        .header(header_from_dataframe::<Theme>(data_frame))
+        .highlight_style(Theme::table_highlight())
+}
+
+fn rows_from_dataframe<Theme: Styler>(df: &polars::frame::DataFrame, offset: usize) -> Vec<Row> {
+    zip_iters(df.iter().map(|series| series.iter()))
+        .enumerate()
+        .map(|(row_idx, row)| {
+            Row::new(
+                row.into_iter()
+                    .enumerate()
+                    .map(|(col_idx, value)| {
+                        Cell::new(any_value_into_string(value))
+                            .style(Theme::table_cell(row_idx, col_idx))
+                    })
+                    .collect::<Vec<_>>(),
+            )
+            .style(Theme::table_row(offset + row_idx))
+        })
+        .collect::<Vec<_>>()
+}
+
+fn header_from_dataframe<Theme: Styler>(df: &polars::frame::DataFrame) -> Row {
+    Row::new(
+        df.get_column_names()
+            .into_iter()
+            .enumerate()
+            .map(|(col_idx, name)| Cell::new(name).style(Theme::table_header_cell(col_idx)))
+            .collect::<Vec<_>>(),
+    )
+    .style(Theme::table_header())
 }

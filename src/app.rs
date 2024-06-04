@@ -5,7 +5,7 @@ use polars::frame::DataFrame;
 use ratatui::style::Style;
 use tui_textarea::{CursorMove, TextArea};
 
-use crate::{theme::Styler, utils::{widths_from_dataframe, Scroll}};
+use crate::{theme::Styler, utils::{data_frame_widths, Scroll}};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -28,7 +28,7 @@ impl Table {
             offset: 0,
             select: 0,
             rendered_rows: 0,
-            widths: widths_from_dataframe(&data_frame),
+            widths: data_frame_widths(&data_frame),
             data_frame,
             detailed_view: None,
         }
@@ -74,7 +74,7 @@ impl Table {
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
-        self.widths = widths_from_dataframe(&data_frame);
+        self.widths = data_frame_widths(&data_frame);
         self.offset = 0;
         self.select = 0;
         self.data_frame = data_frame;

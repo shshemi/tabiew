@@ -13,7 +13,7 @@ use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::theme::{Monokai, Styler};
 use tabiew::tui::Tui;
-use tabiew::utils::column_type_brute_foce;
+use tabiew::utils::infer_schema_safe;
 
 fn main() -> AppResult<()> {
     // Parse CLI
@@ -50,7 +50,7 @@ fn main() -> AppResult<()> {
                     .with_quote_char((args.quote_char as u8).into())
                     .with_separator(args.separator as u8)
                     .finish()?;
-                column_type_brute_foce(&mut df);
+                infer_schema_safe(&mut df);
                 df
             }
         }
