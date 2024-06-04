@@ -5,10 +5,7 @@ use polars::frame::DataFrame;
 use ratatui::style::Style;
 use tui_textarea::{CursorMove, TextArea};
 
-use crate::{
-    theme::{Styler, Theme},
-    utils::{widths_from_dataframe, Scroll},
-};
+use crate::{theme::Styler, utils::{widths_from_dataframe, Scroll}};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -107,7 +104,7 @@ impl<'a> StatusBar<'a> {
         self.state = StatusBarState::Error(msg.to_string());
     }
 
-    pub fn command(&mut self, prefix: impl ToString) {
+    pub fn command<Theme: Styler>(&mut self, prefix: impl ToString) {
         let mut history = self.prompt_history.clone();
         history.push(prefix.to_string());
         let mut text_area = TextArea::new(history);

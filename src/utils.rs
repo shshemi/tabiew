@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Cell, Row, Table},
 };
 
-use crate::theme::{Styler, Theme};
+use crate::theme::Styler;
 
 pub struct ZipIters<Iter> {
     iterators: Vec<Iter>,
@@ -98,13 +98,13 @@ pub fn line_count(text: &str, width: usize) -> usize {
     line_count
 }
 
-pub fn tabulate<'a>(
+pub fn tabulate<'a, Theme: Styler>(
     data_frame: &'a DataFrame,
     width: &'a [Constraint],
     offset: usize,
 ) -> Table<'a> {
-    Table::new(rows_from_dataframe(data_frame, offset), width)
-        .header(header_from_dataframe(data_frame))
+    Table::new(rows_from_dataframe::<Theme>(data_frame, offset), width)
+        .header(header_from_dataframe::<Theme>(data_frame))
         .highlight_style(Theme::table_highlight())
 }
 
@@ -116,7 +116,7 @@ pub fn widths_from_dataframe(df: &polars::frame::DataFrame) -> Vec<usize> {
         .collect::<Vec<_>>()
 }
 
-fn rows_from_dataframe(df: &DataFrame, offset: usize) -> Vec<Row> {
+fn rows_from_dataframe<Theme: Styler>(df: &DataFrame, offset: usize) -> Vec<Row> {
     zip_iters(df.iter().map(|series| series.iter()))
         .enumerate()
         .map(|(row_idx, row)| {
@@ -134,7 +134,7 @@ fn rows_from_dataframe(df: &DataFrame, offset: usize) -> Vec<Row> {
         .collect::<Vec<_>>()
 }
 
-fn header_from_dataframe(df: &DataFrame) -> Row {
+fn header_from_dataframe<Theme: Styler>(df: &DataFrame) -> Row {
     Row::new(
         df.get_column_names()
             .into_iter()

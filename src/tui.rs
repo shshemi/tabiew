@@ -1,5 +1,6 @@
 use crate::app::{AppResult, StatusBar, Table};
 use crate::event::EventHandler;
+use crate::theme::Styler;
 use crate::ui;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
@@ -49,8 +50,8 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
-    pub fn draw(&mut self, tabular: &mut Table, status_bar: &mut StatusBar) -> AppResult<()> {
-        self.terminal.draw(|frame| ui::render(tabular, status_bar, frame))?;
+    pub fn draw<Theme: Styler>(&mut self, tabular: &mut Table, status_bar: &mut StatusBar) -> AppResult<()> {
+        self.terminal.draw(|frame| ui::render::<Theme>(tabular, status_bar, frame))?;
         Ok(())
     }
 

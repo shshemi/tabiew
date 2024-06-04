@@ -3,14 +3,13 @@ use ratatui::{prelude::*, widgets::*};
 
 use crate::{
     app::{StatusBar, Table},
-    theme::{Styler, Theme},
+    theme::Styler,
     utils::{line_count, string_from_any_value, tabulate},
 };
 
 /// Renders the user interface widgets.
-pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame) {
+pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame) {
     let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
-
 
     // Draw table / item
     if let Some(scroll) = &mut tabular.detailed_view {
@@ -42,7 +41,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
             .collect_vec();
 
         let (paragraph, line_count) =
-            paragraph_from_headers_values(&title, &headers, &values, space.width);
+            paragraph_from_headers_values::<Theme>(&title, &headers, &values, space.width);
 
         scroll.adjust(line_count, space.height as usize);
         frame.render_widget(paragraph.scroll(((*scroll).into(), 0)), layout[0]);
@@ -63,7 +62,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
             .map(|w| Constraint::Length(w as u16))
             .collect::<Vec<_>>();
 
-        let local_tbl = tabulate(&local_df, &local_widths, tabular.offset);
+        let local_tbl = tabulate::<Theme>(&local_df, &local_widths, tabular.offset);
 
         let mut local_st = TableState::new()
             .with_offset(0)
@@ -102,7 +101,7 @@ pub fn render(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame
     }
 }
 
-fn paragraph_from_headers_values<'a>(
+fn paragraph_from_headers_values<'a, Theme: Styler>(
     title: &'a str,
     headers: &'a [String],
     values: &'a [String],
@@ -110,7 +109,7 @@ fn paragraph_from_headers_values<'a>(
 ) -> (Paragraph<'a>, usize) {
     let lines = izip!(headers, values.iter())
         .enumerate()
-        .flat_map(|(idx, (header, value))| lines_from_header_value(idx, header, value))
+        .flat_map(|(idx, (header, value))| lines_from_header_value::<Theme>(idx, header, value))
         .collect_vec();
     let lc = lines
         .iter()
@@ -124,7 +123,11 @@ fn paragraph_from_headers_values<'a>(
     (prgr, lc)
 }
 
-fn lines_from_header_value<'a>(idx: usize, header: &'a str, value: &'a str) -> Vec<Line<'a>> {
+fn lines_from_header_value<'a, Theme: Styler>(
+    idx: usize,
+    header: &'a str,
+    value: &'a str,
+) -> Vec<Line<'a>> {
     let header_line = std::iter::once(Line::from(Span::styled(
         header,
         Theme::table_header_cell(idx),
