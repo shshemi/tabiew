@@ -12,9 +12,9 @@ pub trait Styler {
     fn item_block() -> Style;
 }
 
-pub struct Theme;
+pub struct Monokai;
 
-impl Styler for Theme {
+impl Styler for Monokai {
     fn table_header() -> Style {
         Style::default().bg(Color::from_u32(0x001c191d))
     }

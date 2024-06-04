@@ -5,12 +5,13 @@ use polars::lazy::frame::IntoLazy;
 use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use std::io;
+use std::io::{self, Stderr};
 use tabiew::app::{AppResult, StatusBar, Table};
 use tabiew::args::{Args, InferSchema};
-use tabiew::command::CommandList;
+use tabiew::command::{CommandList, ExecutionTable};
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
+use tabiew::theme::{Monokai, Styler};
 use tabiew::tui::Tui;
 use tabiew::utils::column_type_brute_foce;
 
@@ -60,11 +61,8 @@ fn main() -> AppResult<()> {
     sql_context.register("df", data_frame.clone().lazy());
 
     // Instantiate app
-    let mut tabular = Table::new(data_frame);
-    let mut status_bar = StatusBar::default();
-
-    // Running variable.
-    let mut running = true;
+    let tabular = Table::new(data_frame);
+    let status_bar = StatusBar::default();
 
     // Command handling
     let exec_tbl = CommandList::default().into_exec();
@@ -76,10 +74,28 @@ fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
+    // Run the main loop
+    main_loop::<Monokai>(&mut tui, tabular, status_bar, sql_context, exec_tbl)?;
+
+    // Exit the user interface.
+    tui.exit()?;
+    Ok(())
+}
+
+fn main_loop<Theme: Styler>(
+    tui: &mut Tui<CrosstermBackend<Stderr>>,
+    mut tabular: Table,
+    mut status_bar: StatusBar,
+    mut sql_context: SQLContext,
+    exec_tbl: ExecutionTable,
+) -> AppResult<()>
+{
+    let mut running = true;
+
     // Start the main loop.
     while running {
         // Render the user interface.
-        tui.draw(&mut tabular, &mut status_bar)?;
+        tui.draw::<Theme>(&mut tabular, &mut status_bar)?;
         // Handle events.
         match tui.events.next()? {
             Event::Tick => {
@@ -91,7 +107,7 @@ fn main() -> AppResult<()> {
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        handle_key_events(
+                        handle_key_events::<Theme>(
                             key_event,
                             &mut tabular,
                             &mut status_bar,
@@ -103,7 +119,7 @@ fn main() -> AppResult<()> {
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    handle_key_events(
+                    handle_key_events::<Theme>(
                         key_event,
                         &mut tabular,
                         &mut status_bar,
@@ -117,8 +133,5 @@ fn main() -> AppResult<()> {
             Event::Resize(_, _) => {}
         }
     }
-
-    // Exit the user interface.
-    tui.exit()?;
     Ok(())
 }

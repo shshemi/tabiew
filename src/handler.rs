@@ -1,12 +1,12 @@
 use crate::{
     app::{AppResult, StatusBar, StatusBarState, Table},
-    command::ExecutionTable,
+    command::ExecutionTable, theme::Styler,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars_sql::SQLContext;
 
 /// Handles the key events and updates the state of [`App`].
-pub fn handle_key_events(
+pub fn handle_key_events<Theme: Styler>(
     key_event: KeyEvent,
     tabular: &mut Table,
     status_bar: &mut StatusBar,
@@ -83,7 +83,7 @@ pub fn handle_key_events(
         (StatusBarState::Normal, KeyCode::Home | KeyCode::Char('g')) => tabular.select_first(),
         (StatusBarState::Normal, KeyCode::End | KeyCode::Char('G')) => tabular.select_last(),
         (StatusBarState::Normal, KeyCode::Char(':')) => {
-            status_bar.command(":");
+            status_bar.command::<Theme>(":");
         }
         (
             StatusBarState::Normal,
@@ -97,7 +97,7 @@ pub fn handle_key_events(
             | KeyCode::Char('8')
             | KeyCode::Char('9')
         ) => {
-            status_bar.command(":goto ");
+            status_bar.command::<Theme>(":goto ");
             status_bar.input(key_event);
         }
         (StatusBarState::Normal, KeyCode::Char('u'))
