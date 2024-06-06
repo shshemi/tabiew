@@ -11,7 +11,7 @@ use tabiew::args::{Args, InferSchema};
 use tabiew::command::{CommandList, ExecutionTable};
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
-use tabiew::theme::{Monokai, Styler};
+use tabiew::theme::Styler;
 use tabiew::tui::Tui;
 use tabiew::utils::infer_schema_safe;
 
@@ -75,7 +75,22 @@ fn main() -> AppResult<()> {
     tui.init()?;
 
     // Run the main loop
-    main_loop::<Monokai>(&mut tui, tabular, status_bar, sql_context, exec_tbl)?;
+    match args.theme {
+        tabiew::args::AppTheme::Monokai => main_loop::<tabiew::theme::Monokai>(
+            &mut tui,
+            tabular,
+            status_bar,
+            sql_context,
+            exec_tbl,
+        )?,
+        tabiew::args::AppTheme::Terminal => main_loop::<tabiew::theme::Terminal>(
+            &mut tui,
+            tabular,
+            status_bar,
+            sql_context,
+            exec_tbl,
+        )?,
+    }
 
     // Exit the user interface.
     tui.exit()?;
@@ -88,8 +103,7 @@ fn main_loop<Theme: Styler>(
     mut status_bar: StatusBar,
     mut sql_context: SQLContext,
     exec_tbl: ExecutionTable,
-) -> AppResult<()>
-{
+) -> AppResult<()> {
     let mut running = true;
 
     // Start the main loop.
