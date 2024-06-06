@@ -46,6 +46,14 @@ pub struct Args {
         default_value_t = '"'
     )]
     pub quote_char: char,
+
+    #[arg(
+        long,
+        help = "Tabiew theme",
+        required = false,
+        default_value_t = AppTheme::Monokai
+    )]
+    pub theme: AppTheme,
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +85,33 @@ impl Display for InferSchema {
             InferSchema::Fast => write!(f, "fast"),
             InferSchema::Full => write!(f, "full"),
             InferSchema::Safe => write!(f, "safe"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum AppTheme {
+    Monokai,
+    Terminal
+}
+
+impl FromStr for AppTheme {
+    type Err= &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "monokai" => Ok(AppTheme::Monokai),
+            "terminal" => Ok(AppTheme::Terminal),
+            _ => Err("Invalid theme")
+        }
+    }
+}
+
+impl Display for AppTheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self{
+            AppTheme::Monokai => write!(f, "monokai"),
+            AppTheme::Terminal => write!(f, "terminal"),
         }
     }
 }

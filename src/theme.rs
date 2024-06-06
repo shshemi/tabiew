@@ -13,6 +13,7 @@ pub trait Styler {
 }
 
 pub struct Monokai;
+pub struct Terminal;
 
 impl Styler for Monokai {
     fn table_header() -> Style {
@@ -71,5 +72,43 @@ impl Styler for Monokai {
         Style::new()
             .bg(Color::from_u32(0x001c191d))
             .fg(Color::from_u32(0x00c89f2d))
+    }
+}
+
+impl Styler for Terminal {
+    fn table_header() -> Style {
+        Style::default().bg(Color::Cyan).fg(Color::Black)
+    }
+
+    fn table_header_cell(_col: usize) -> Style {
+        Style::default()
+    }
+
+    fn table_row(_row: usize) -> Style {
+        Default::default()
+    }
+
+    fn table_highlight() -> Style {
+        Style::default().bg(Color::Yellow).fg(Color::Black)
+    }
+
+    fn table_cell(_row: usize, _col: usize) -> Style {
+        Style::default()
+    }
+
+    fn status_bar_red() -> Style {
+        Style::default().bg(Color::Red).fg(Color::White)
+    }
+
+    fn status_bar_green() -> Style {
+        Style::default().bg(Color::Green).fg(Color::White)
+    }
+
+    fn status_bar_blue() -> Style {
+        Style::default().bg(Color::Blue).fg(Color::White)
+    }
+
+    fn item_block() -> Style {
+        Style::default()
     }
 }
