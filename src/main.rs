@@ -1,5 +1,5 @@
 use clap::Parser;
-use polars::io::csv::CsvReader;
+use polars::io::csv::read::{CsvParseOptions, CsvReadOptions};
 use polars::io::SerReader;
 use polars::lazy::frame::IntoLazy;
 use polars_sql::SQLContext;
@@ -21,39 +21,21 @@ fn main() -> AppResult<()> {
 
     // Create the data frame.
     let data_frame = {
-        match args.infer_schema {
-            InferSchema::No => CsvReader::from_path(&args.file_name)?
-                .with_ignore_errors(args.ignore_errors)
-                .infer_schema(0.into())
-                .has_header(!args.no_header)
-                .with_quote_char((args.quote_char as u8).into())
-                .with_separator(args.separator as u8)
-                .finish()?,
-            InferSchema::Fast => CsvReader::from_path(&args.file_name)?
-                .with_ignore_errors(args.ignore_errors)
-                .has_header(!args.no_header)
-                .with_quote_char((args.quote_char as u8).into())
-                .with_separator(args.separator as u8)
-                .finish()?,
-            InferSchema::Full => CsvReader::from_path(&args.file_name)?
-                .with_ignore_errors(args.ignore_errors)
-                .infer_schema(None)
-                .has_header(!args.no_header)
-                .with_quote_char((args.quote_char as u8).into())
-                .with_separator(args.separator as u8)
-                .finish()?,
-            InferSchema::Safe => {
-                let mut df = CsvReader::from_path(&args.file_name)?
-                    .with_ignore_errors(args.ignore_errors)
-                    .infer_schema(0.into())
-                    .has_header(!args.no_header)
+        let mut df = CsvReadOptions::default()
+            .with_ignore_errors(args.ignore_errors)
+            .with_infer_schema_length((&args.infer_schema).into())
+            .with_has_header(!args.no_header)
+            .with_parse_options(
+                CsvParseOptions::default()
                     .with_quote_char((args.quote_char as u8).into())
-                    .with_separator(args.separator as u8)
-                    .finish()?;
-                infer_schema_safe(&mut df);
-                df
-            }
+                    .with_separator(args.separator as u8),
+            )
+            .try_into_reader_with_file_path(args.file_name.into())?
+            .finish()?;
+        if matches!(args.infer_schema, InferSchema::Safe){
+            infer_schema_safe(&mut df);
         }
+        df
     };
 
     // Setup the SQLContext

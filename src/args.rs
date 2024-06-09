@@ -89,6 +89,17 @@ impl Display for InferSchema {
     }
 }
 
+impl From<&InferSchema> for Option<usize> {
+    fn from(value: &InferSchema) -> Self {
+        match value {
+            InferSchema::No => Some(0),
+            InferSchema::Fast => Some(128),
+            InferSchema::Full => None,
+            InferSchema::Safe => Some(0),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum AppTheme {
     Monokai,
