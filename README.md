@@ -54,13 +54,13 @@ pacman -S tabiew
 ```
 
 ### Debian-based
-Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and:
+Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and run:
  ```bash
  sudo dpkg -i <path_to_package.deb>
  ```
 
 ### RPM-based
-Download the `.rpm` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and:
+Download the `.rpm` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and run:
  ```bash
  sudo rpm -i <path_to_package.rpm>
  ```
@@ -97,7 +97,13 @@ Options:
 - `--infer-schema`: Set the schema inference method. Options are no, fast, full, and safe.
 - `--quote-char`: Set the quote character.
 - `--separator`: Set the separator character.
-  
+- `--theme`: Set the theme.
+
+To open a TSV file use:
+```bash
+tw <path_to_tsv> --separator $'\t' --no-header
+```
+
 ## Contributing
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
 
