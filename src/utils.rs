@@ -139,7 +139,6 @@ pub fn any_value_into_string(value: polars::datatypes::AnyValue) -> String {
 
 pub fn infer_schema_safe(data_frame: &mut DataFrame) {
     let dtypes = [
-        DataType::UInt64,
         DataType::Int64,
         DataType::Float64,
         DataType::Boolean,
