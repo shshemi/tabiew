@@ -17,8 +17,8 @@ path="src/main.rs"
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
 itertools = "0.13.0"
-polars = { version = "0.40.0", features = ["dtype-decimal", "lazy", "polars-sql", "polars-io"] }
-polars-sql = "0.40.0"
+polars = { version = "0.41.2", features = ["dtype-decimal", "lazy", "polars-sql", "polars-io"] }
+polars-sql = "0.41.2"
 rand = "0.8.5"
 ratatui = "0.26.0"
 tui-textarea = "0.4.0"
