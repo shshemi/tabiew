@@ -110,6 +110,10 @@ pub fn handle_key_events<Theme: Styler>(
         {
             tabular.select_down((tabular.rendered_rows / 2).into())
         }
+        (StatusBarState::Normal, KeyCode::Char('R'))=>
+        {
+            tabular.select_random();
+        }
         (StatusBarState::Error(_), _) => {
             status_bar.normal();
         }

@@ -26,6 +26,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 | `Ctrl+d`| Move down half a page|
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
+| `R`| Select a random row|
 | `q`| Quit|
 | `:`| Command mode|
 
