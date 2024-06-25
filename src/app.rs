@@ -2,6 +2,7 @@ use std::error;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use polars::frame::DataFrame;
+use rand::Rng;
 use ratatui::style::Style;
 use tui_textarea::{CursorMove, TextArea};
 
@@ -51,6 +52,11 @@ impl Table {
 
     pub fn select_last(&mut self) {
         self.select(usize::MAX);
+    }
+
+    pub fn select_random(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.select(rng.gen_range(0..self.data_frame.height()))
     }
 
     pub fn select(&mut self, select: usize) {

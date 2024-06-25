@@ -1659,6 +1659,7 @@ dependencies = [
  "itertools 0.13.0",
  "polars",
  "polars-sql",
+ "rand",
  "ratatui",
  "tui-textarea",
 ]
