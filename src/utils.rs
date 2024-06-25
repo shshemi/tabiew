@@ -125,15 +125,17 @@ pub fn any_value_into_string(value: polars::datatypes::AnyValue) -> String {
         AnyValue::Int64(v) => format!("{}", v),
         AnyValue::Float32(v) => format!("{}", v),
         AnyValue::Float64(v) => format!("{}", v),
+        AnyValue::Decimal(v1, v2) => format!("{}.{}", v1, v2),
         AnyValue::Date(v) => format!("{}", v),
         AnyValue::Datetime(v1, v2, v3) => format!("{} {} {:?}", v1, v2, v3),
         AnyValue::Duration(v1, v2) => format!("{} {}", v1, v2),
         AnyValue::Time(v) => format!("{}", v),
-        AnyValue::List(v) => format!("{}", v),
-        AnyValue::StringOwned(v) => format!("{}", v),
-        AnyValue::Binary(v) => format!("{:?}", v),
-        AnyValue::BinaryOwned(v) => format!("{:?}", v),
-        AnyValue::Decimal(v1, v2) => format!("{}.{}", v1, v2),
+        AnyValue::List(_) => value.to_string(),
+        AnyValue::StringOwned(v) => v.to_string(),
+        AnyValue::Binary(_) => value.to_string(),
+        AnyValue::BinaryOwned(_) => value.to_string(),
+        AnyValue::Struct(_, _, _) => value.to_string(),
+        AnyValue::StructOwned(_) => value.to_string(),
     }
 }
 
