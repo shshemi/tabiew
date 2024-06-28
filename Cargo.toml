@@ -21,7 +21,6 @@ polars = { version = "0.41.2", features = ["dtype-decimal", "lazy", "polars-sql"
 polars-sql = "0.41.2"
 rand = "0.8.5"
 ratatui = "0.26.0"
-tui-textarea = "0.4.0"
 
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }

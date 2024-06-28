@@ -3,8 +3,9 @@ use ratatui::{prelude::*, widgets::*};
 
 use crate::{
     app::{StatusBar, Table},
+    command_pallete::CommandPallete,
     theme::Styler,
-    utils::{line_count, any_value_into_string, zip_iters},
+    utils::{any_value_into_string, line_count, zip_iters},
 };
 
 /// Renders the user interface widgets.
@@ -70,7 +71,7 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
         frame.render_stateful_widget(local_tbl, layout[0], &mut local_st);
     }
 
-    match &status_bar.state {
+    match &mut status_bar.state {
         crate::app::StatusBarState::Normal => frame.render_widget(
             Line::default()
                 .spans([
@@ -97,7 +98,16 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
             layout[1],
         ),
 
-        crate::app::StatusBarState::Command(text) => frame.render_widget(text.widget(), layout[1]),
+        crate::app::StatusBarState::Command(text) => {
+            frame.render_stateful_widget(
+                CommandPallete::new(
+                    Theme::status_bar_green(),
+                    invert_style(Theme::status_bar_green()),
+                ),
+                layout[1],
+                text,
+            );
+        }
     }
 }
 
@@ -178,4 +188,9 @@ fn header_from_dataframe<Theme: Styler>(df: &polars::frame::DataFrame) -> Row {
             .collect::<Vec<_>>(),
     )
     .style(Theme::table_header())
+}
+
+fn invert_style(mut style: Style) -> Style {
+    std::mem::swap(&mut style.bg, &mut style.fg);
+    style
 }

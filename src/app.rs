@@ -3,10 +3,11 @@ use std::error;
 use crossterm::event::{KeyCode, KeyEvent};
 use polars::frame::DataFrame;
 use rand::Rng;
-use ratatui::style::Style;
-use tui_textarea::{CursorMove, TextArea};
 
-use crate::{theme::Styler, utils::{data_frame_widths, Scroll}};
+use crate::{
+    command_pallete::CommandPalleteState,
+    utils::{data_frame_widths, Scroll},
+};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -88,20 +89,20 @@ impl Table {
 }
 
 #[derive(Debug, Default)]
-pub struct StatusBar<'a> {
-    pub state: StatusBarState<'a>,
+pub struct StatusBar {
+    pub state: StatusBarState,
     prompt_history: Vec<String>,
 }
 
 #[derive(Debug, Default)]
-pub enum StatusBarState<'a> {
+pub enum StatusBarState {
     #[default]
     Normal,
     Error(String),
-    Command(TextArea<'a>),
+    Command(CommandPalleteState),
 }
 
-impl<'a> StatusBar<'a> {
+impl StatusBar {
     pub fn normal(&mut self) {
         self.state = StatusBarState::Normal;
     }
@@ -110,23 +111,17 @@ impl<'a> StatusBar<'a> {
         self.state = StatusBarState::Error(msg.to_string());
     }
 
-    pub fn command<Theme: Styler>(&mut self, prefix: impl ToString) {
+    pub fn command(&mut self, prefix: impl ToString) {
         let mut history = self.prompt_history.clone();
         history.push(prefix.to_string());
-        let mut text_area = TextArea::new(history);
-        text_area.set_style(Theme::status_bar_green());
-        text_area.set_cursor_line_style(Style::default());
-        text_area.move_cursor(tui_textarea::CursorMove::Bottom);
-        text_area.move_cursor(tui_textarea::CursorMove::End);
-        self.state = StatusBarState::Command(text_area);
+        self.state = StatusBarState::Command(history.into());
     }
 
-    pub fn commit_prompt(&mut self) -> Option<&String> {
+    pub fn commit_prompt(&mut self) -> Option<String> {
         if let StatusBarState::Command(prompt) = &self.state {
-            let row = prompt.cursor().0;
-            let prompt = &prompt.lines()[row];
-            self.prompt_history.push(prompt.clone());
-            Some(prompt)
+            let command = prompt.command();
+            self.prompt_history.push(command.clone());
+            Some(command)
         } else {
             None
         }
@@ -138,53 +133,44 @@ impl<'a> StatusBar<'a> {
         if let StatusBarState::Command(prompt) = &mut self.state {
             match input.code {
                 KeyCode::Up => {
-                    prompt.move_cursor(CursorMove::Up);
-                    prompt.move_cursor(CursorMove::End);
+                    prompt.move_up().move_eol();
                 }
                 KeyCode::Down => {
-                    prompt.move_cursor(CursorMove::Down);
-                    prompt.move_cursor(CursorMove::End);
+                    prompt.move_down().move_eol();
                 }
                 KeyCode::Left => {
                     if prompt.cursor().1 > 1 {
-                        prompt.input(input);
+                        prompt.move_left();
                     }
                 }
                 KeyCode::Right => {
-                    prompt.input(input);
+                    prompt.move_right();
                 }
 
                 KeyCode::Backspace => {
-                    if prompt.lines()[prompt.cursor().0].len() == 1 {
+                    if prompt.command_len() == 1 {
                         self.normal()
                     } else if prompt.cursor().1 > 1 {
-                        prompt.input(input);
+                        prompt.delete_backward();
                     }
                 }
 
                 KeyCode::Delete => {
-                    let (row, col) = prompt.cursor();
-                    if col < prompt.lines()[row].len() {
-                        prompt.input(input);
-                    }
+                    prompt.delete();
                 }
 
                 KeyCode::Home => {
-                    prompt.move_cursor(CursorMove::Head);
-                    prompt.move_cursor(CursorMove::Forward);
+                    prompt.move_bol().move_right();
                 }
 
                 KeyCode::End => {
-                    let (row, col) = prompt.cursor();
-                    if col < prompt.lines()[row].len() {
-                        prompt.move_cursor(CursorMove::End);
-                    }
+                    prompt.move_eol();
                 }
 
                 KeyCode::PageUp | KeyCode::PageDown => (),
 
-                KeyCode::Char(_) => {
-                    prompt.input(input);
+                KeyCode::Char(c) => {
+                    prompt.input_char(c);
                 }
 
                 _ => (),

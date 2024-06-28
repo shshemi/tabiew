@@ -32,7 +32,7 @@ fn main() -> AppResult<()> {
             )
             .try_into_reader_with_file_path(args.file_name.into())?
             .finish()?;
-        if matches!(args.infer_schema, InferSchema::Safe){
+        if matches!(args.infer_schema, InferSchema::Safe) {
             infer_schema_safe(&mut df);
         }
         df
@@ -103,7 +103,7 @@ fn main_loop<Theme: Styler>(
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        handle_key_events::<Theme>(
+                        handle_key_events(
                             key_event,
                             &mut tabular,
                             &mut status_bar,
@@ -115,7 +115,7 @@ fn main_loop<Theme: Styler>(
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    handle_key_events::<Theme>(
+                    handle_key_events(
                         key_event,
                         &mut tabular,
                         &mut status_bar,
