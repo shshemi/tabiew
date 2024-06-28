@@ -136,12 +136,12 @@ mod tests {
 
     #[test]
     fn state_test() {
-        let mut state = CommandPalleteState::new();
-        println!("{}", state.selected_line());
-        state.input('c');
-        state.input('h');
-        state.input('a');
-        state.input('r');
-        println!("{}", state.selected_line());
+        let mut state = CommandPalleteState::from(vec!["".to_owned()]);
+        println!("{}", state.command());
+        state.input_char('c');
+        state.input_char('h');
+        state.input_char('a');
+        state.input_char('r');
+        assert_eq!(state.command(), "char")
     }
 }
