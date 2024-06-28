@@ -16,7 +16,7 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
     if let Some(scroll) = &mut tabular.detailed_view {
         // Set visible rows = 0
         tabular.rendered_rows = 0;
-        let space = layout[0].inner(&Margin::new(1, 1));
+        let space = layout[0].inner(Margin::new(1, 1));
         let title = format!(" {} ", tabular.select + 1);
 
         let headers = tabular
