@@ -24,3 +24,6 @@ pub mod command;
 
 /// CLI arguments
 pub mod args;
+
+/// command pallete
+pub mod command_pallete;

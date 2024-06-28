@@ -1,12 +1,12 @@
 use crate::{
     app::{AppResult, StatusBar, StatusBarState, Table},
-    command::ExecutionTable, theme::Styler,
+    command::ExecutionTable,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars_sql::SQLContext;
 
 /// Handles the key events and updates the state of [`App`].
-pub fn handle_key_events<Theme: Styler>(
+pub fn handle_key_events(
     key_event: KeyEvent,
     tabular: &mut Table,
     status_bar: &mut StatusBar,
@@ -83,7 +83,7 @@ pub fn handle_key_events<Theme: Styler>(
         (StatusBarState::Normal, KeyCode::Home | KeyCode::Char('g')) => tabular.select_first(),
         (StatusBarState::Normal, KeyCode::End | KeyCode::Char('G')) => tabular.select_last(),
         (StatusBarState::Normal, KeyCode::Char(':')) => {
-            status_bar.command::<Theme>(":");
+            status_bar.command(":");
         }
         (
             StatusBarState::Normal,
@@ -95,9 +95,9 @@ pub fn handle_key_events<Theme: Styler>(
             | KeyCode::Char('6')
             | KeyCode::Char('7')
             | KeyCode::Char('8')
-            | KeyCode::Char('9')
+            | KeyCode::Char('9'),
         ) => {
-            status_bar.command::<Theme>(":goto ");
+            status_bar.command(":goto ");
             status_bar.input(key_event);
         }
         (StatusBarState::Normal, KeyCode::Char('u'))
@@ -110,8 +110,7 @@ pub fn handle_key_events<Theme: Styler>(
         {
             tabular.select_down((tabular.rendered_rows / 2).into())
         }
-        (StatusBarState::Normal, KeyCode::Char('R'))=>
-        {
+        (StatusBarState::Normal, KeyCode::Char('R')) => {
             tabular.select_random();
         }
         (StatusBarState::Error(_), _) => {
