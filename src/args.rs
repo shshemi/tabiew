@@ -1,7 +1,5 @@
 use std::path::PathBuf;
-use std::str::FromStr;
-use std::fmt::Display;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -25,8 +23,9 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Schema inference method {no, fast, full, safe}.",
+        help = "Schema inference method",
         required = false,
+        value_enum,
         default_value_t = InferSchema::Fast,
     )]
     pub infer_schema: InferSchema,
@@ -51,12 +50,13 @@ pub struct Args {
         long,
         help = "Tabiew theme",
         required = false,
+        value_enum,
         default_value_t = AppTheme::Monokai
     )]
     pub theme: AppTheme,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ValueEnum)]
 pub enum InferSchema {
     No,
     Fast,
@@ -64,29 +64,10 @@ pub enum InferSchema {
     Safe,
 }
 
-impl FromStr for InferSchema {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "no" => Ok(InferSchema::No),
-            "fast" => Ok(InferSchema::Fast),
-            "full" => Ok(InferSchema::Full),
-            "safe" => Ok(InferSchema::Safe),
-            _ => Err("Invalid schema inference option"),
-        }
-    }
-}
-
-impl Display for InferSchema {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InferSchema::No => write!(f, "no"),
-            InferSchema::Fast => write!(f, "fast"),
-            InferSchema::Full => write!(f, "full"),
-            InferSchema::Safe => write!(f, "safe"),
-        }
-    }
+#[derive(Debug, Clone, ValueEnum)]
+pub enum AppTheme {
+    Monokai,
+    Terminal
 }
 
 impl From<&InferSchema> for Option<usize> {
@@ -96,33 +77,6 @@ impl From<&InferSchema> for Option<usize> {
             InferSchema::Fast => Some(128),
             InferSchema::Full => None,
             InferSchema::Safe => Some(0),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum AppTheme {
-    Monokai,
-    Terminal
-}
-
-impl FromStr for AppTheme {
-    type Err= &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "monokai" => Ok(AppTheme::Monokai),
-            "terminal" => Ok(AppTheme::Terminal),
-            _ => Err("Invalid theme")
-        }
-    }
-}
-
-impl Display for AppTheme {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self{
-            AppTheme::Monokai => write!(f, "monokai"),
-            AppTheme::Terminal => write!(f, "terminal"),
         }
     }
 }
