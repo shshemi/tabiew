@@ -6,7 +6,6 @@ use polars::{
     series::Series,
 };
 
-
 pub struct ZipIters<Iter> {
     iterators: Vec<Iter>,
 }
@@ -88,7 +87,7 @@ pub fn line_count(text: &str, width: usize) -> usize {
                 line_count += 1;
             }
         } else {
-            line_count += (word_len - width + used_space).div_ceil(width) + 1
+            line_count += (word_len - width + used_space).div_ceil(width)
         }
     }
     line_count
@@ -163,4 +162,169 @@ pub fn infer_schema_safe(data_frame: &mut DataFrame) {
         .for_each(|(col_name, series)| {
             data_frame.replace(col_name.as_str(), series).unwrap();
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use polars::prelude::*;
+
+    #[test]
+    fn test_zip_iters_all_same_length() {
+        let iter1 = vec![1, 2, 3].into_iter();
+        let iter2 = vec![4, 5, 6].into_iter();
+        let iter3 = vec![7, 8, 9].into_iter();
+
+        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+
+        assert_eq!(zipped.next(), Some(vec![1, 4, 7]));
+        assert_eq!(zipped.next(), Some(vec![2, 5, 8]));
+        assert_eq!(zipped.next(), Some(vec![3, 6, 9]));
+        assert_eq!(zipped.next(), None);
+    }
+
+    #[test]
+    fn test_zip_iters_different_lengths() {
+        let iter1 = vec![1, 2].into_iter();
+        let iter2 = vec![4, 5, 6].into_iter();
+        let iter3 = vec![7].into_iter();
+
+        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+
+        assert_eq!(zipped.next(), Some(vec![1, 4, 7]));
+        assert_eq!(zipped.next(), Some(vec![2, 5, Default::default()]));
+        assert_eq!(
+            zipped.next(),
+            Some(vec![Default::default(), 6, Default::default()])
+        );
+        assert_eq!(zipped.next(), None);
+    }
+
+    #[test]
+    fn test_zip_iters_empty_iterator() {
+        let iter1 = vec![].into_iter();
+        let iter2 = vec![4, 5, 6].into_iter();
+        let iter3 = vec![].into_iter();
+
+        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+
+        assert_eq!(
+            zipped.next(),
+            Some(vec![Default::default(), 4, Default::default()])
+        );
+        assert_eq!(
+            zipped.next(),
+            Some(vec![Default::default(), 5, Default::default()])
+        );
+        assert_eq!(
+            zipped.next(),
+            Some(vec![Default::default(), 6, Default::default()])
+        );
+        assert_eq!(zipped.next(), None);
+    }
+
+    #[test]
+    fn test_zip_iters_single_iterator() {
+        let iter1 = vec![1, 2, 3].into_iter();
+
+        let mut zipped = zip_iters(vec![iter1]);
+
+        assert_eq!(zipped.next(), Some(vec![1]));
+        assert_eq!(zipped.next(), Some(vec![2]));
+        assert_eq!(zipped.next(), Some(vec![3]));
+        assert_eq!(zipped.next(), None);
+    }
+
+    #[test]
+    fn test_zip_iters_default_value() {
+        #[derive(Clone, Default, PartialEq, Debug)]
+        struct CustomType(i32);
+
+        let iter1 = vec![CustomType(1), CustomType(2)].into_iter();
+        let iter2 = vec![CustomType(4), CustomType(5), CustomType(6)].into_iter();
+        let iter3 = vec![CustomType(7)].into_iter();
+
+        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+
+        assert_eq!(
+            zipped.next(),
+            Some(vec![CustomType(1), CustomType(4), CustomType(7)])
+        );
+        assert_eq!(
+            zipped.next(),
+            Some(vec![CustomType(2), CustomType(5), CustomType::default()])
+        );
+        assert_eq!(
+            zipped.next(),
+            Some(vec![
+                CustomType::default(),
+                CustomType(6),
+                CustomType::default()
+            ])
+        );
+        assert_eq!(zipped.next(), None);
+    }
+
+    #[test]
+    fn test_line_count_single_line() {
+        let text = "Hello world";
+        assert_eq!(line_count(text, 15), 1);
+        assert_eq!(line_count(text, 11), 1);
+        assert_eq!(line_count(text, 10), 2);
+    }
+
+    #[test]
+    fn test_line_count_multiple_lines() {
+        let text = "Hello world this is a test";
+        assert_eq!(line_count(text, 15), 2);
+        assert_eq!(line_count(text, 10), 3);
+        assert_eq!(line_count(text, 5), 5);
+    }
+
+    #[test]
+    fn test_line_count_exact_width() {
+        let text = "Hello world";
+        assert_eq!(line_count(text, 5), 2);
+        assert_eq!(line_count(text, 6), 2);
+        assert_eq!(line_count(text, 11), 1);
+    }
+
+    #[test]
+    fn test_line_count_with_long_word() {
+        let text = "supercalifragilisticexpialidocious";
+        assert_eq!(line_count(text, 10), 4);
+        assert_eq!(line_count(text, 20), 2);
+        assert_eq!(line_count(text, 30), 2);
+    }
+
+    #[test]
+    fn test_line_count_with_mixed_length_words() {
+        let text = "a bb ccc dddd eeeee ffffff ggggggg";
+        assert_eq!(line_count(text, 10), 4);
+        assert_eq!(line_count(text, 5), 8);
+        assert_eq!(line_count(text, 20), 2);
+    }
+
+    #[test]
+    fn test_line_count_empty_string() {
+        let text = "";
+        assert_eq!(line_count(text, 10), 1);
+    }
+
+    #[test]
+    fn test_infer_schema_safe_basic() {
+        let mut df = df! {
+            "integers"=> ["1", "2", "3", "4"],
+            "floats"=> ["1.1", "2.2", "3.3", "4.4"],
+            "dates"=> [ "2022-1-1", "2022-1-2", "2022-1-3", "2022-1-4" ],
+            "strings"=> ["a", "b", "c", "d"],
+        }
+        .unwrap();
+        infer_schema_safe(&mut df);
+
+        assert_eq!(df.column("integers").unwrap().dtype(), &DataType::Int64);
+        assert_eq!(df.column("floats").unwrap().dtype(), &DataType::Float64);
+        assert_eq!(df.column("dates").unwrap().dtype(), &DataType::Date);
+        assert_eq!(df.column("strings").unwrap().dtype(), &DataType::String);
+    }
 }
