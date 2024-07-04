@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use clap::{CommandFactory, ValueEnum};
+use clap::CommandFactory;
 
 include!("src/args.rs");
 
