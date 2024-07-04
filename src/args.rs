@@ -4,26 +4,26 @@ use clap::{Parser, ValueEnum};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(help = "File to open", required = true)]
+    #[arg(help = "Path to the file to be opened.", required = true)]
     pub file_name: PathBuf,
 
     #[arg(
         long,
-        help = "CSV file contains no header row",
+        help = "Specify if the file does not contain a header row.",
         default_value_t = false
     )]
     pub no_header: bool,
 
     #[arg(
         long,
-        help = "Ignore parsing errors while loading the CSV",
+        help = "If set, parsing errors while loading the file will be ignored.",
         default_value_t = false
     )]
     pub ignore_errors: bool,
 
     #[arg(
         long,
-        help = "Schema inference method",
+        help = "Method to infer the schema while loading the file.",
         required = false,
         value_enum,
         default_value_t = InferSchema::Fast,
@@ -32,7 +32,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "The field separator or delimiter",
+        help = "Character used as the field separator or delimiter while loading the file.",
         required = false,
         default_value_t = ','
     )]
@@ -40,7 +40,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Quote character",
+        help = "Character used to quote fields while loading the file.",
         required = false,
         default_value_t = '"'
     )]
