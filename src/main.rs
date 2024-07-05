@@ -6,7 +6,7 @@ use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io::{self, Stderr};
-use tabiew::app::{AppResult, StatusBar, Table};
+use tabiew::app::{AppResult, StatusBar, Tabular};
 use tabiew::args::{Args, InferSchema};
 use tabiew::command::{CommandList, ExecutionTable};
 use tabiew::event::{Event, EventHandler};
@@ -43,7 +43,7 @@ fn main() -> AppResult<()> {
     sql_context.register("df", data_frame.clone().lazy());
 
     // Instantiate app
-    let tabular = Table::new(data_frame);
+    let tabular = Tabular::new(data_frame);
     let status_bar = StatusBar::default();
 
     // Command handling
@@ -81,7 +81,7 @@ fn main() -> AppResult<()> {
 
 fn main_loop<Theme: Styler>(
     tui: &mut Tui<CrosstermBackend<Stderr>>,
-    mut tabular: Table,
+    mut tabular: Tabular,
     mut status_bar: StatusBar,
     mut sql_context: SQLContext,
     exec_tbl: ExecutionTable,

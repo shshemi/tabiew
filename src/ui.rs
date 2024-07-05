@@ -1,15 +1,20 @@
+
 use itertools::{izip, Itertools};
 use ratatui::{prelude::*, widgets::*};
 
 use crate::{
-    app::{StatusBar, Table},
+    app::{StatusBar, Tabular},
     command_pallete::CommandPallete,
     theme::Styler,
-    utils::{any_value_into_string, line_count, zip_iters},
+    utils::{line_count, ValuePool2D},
 };
 
 /// Renders the user interface widgets.
-pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, frame: &mut Frame) {
+pub fn render<Theme: Styler>(
+    tabular: &mut Tabular,
+    status_bar: &mut StatusBar,
+    frame: &mut Frame,
+) {
     let layout = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
 
     // Draw table / item
@@ -19,30 +24,10 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
         let space = layout[0].inner(Margin::new(1, 1));
         let title = format!(" {} ", tabular.select + 1);
 
-        let headers = tabular
-            .data_frame
-            .get_column_names()
-            .iter()
-            .map(|name| {
-                format!(
-                    "{} ({:?})",
-                    name,
-                    tabular.data_frame.column(name).unwrap().dtype()
-                )
-            })
-            .collect_vec();
-
-        let values = tabular
-            .data_frame
-            .get_row(tabular.select)
-            .unwrap_or_default()
-            .0
-            .into_iter()
-            .map(any_value_into_string)
-            .collect_vec();
+        let values = tabular.value_pool.get_row(tabular.select);
 
         let (paragraph, line_count) =
-            paragraph_from_headers_values::<Theme>(&title, &headers, &values, space.width);
+            paragraph_from_headers_values::<Theme>(&title, &tabular.headers, &values, space.width);
 
         scroll.adjust(line_count, space.height as usize);
         frame.render_widget(paragraph.scroll(((*scroll).into(), 0)), layout[0]);
@@ -51,24 +36,23 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
         tabular.rendered_rows = layout[0].height.saturating_sub(1);
         tabular.adjust_offset();
 
-        // Building local table
-        let local_df = tabular
-            .data_frame
-            .slice(tabular.offset as i64, tabular.rendered_rows.into());
-
-        let local_widths = tabular
-            .widths
-            .iter()
-            .copied()
-            .map(|w| Constraint::Length(w as u16))
-            .collect::<Vec<_>>();
-
-        let local_tbl = tabulate::<Theme>(&local_df, &local_widths, tabular.offset);
-
         let mut local_st = TableState::new()
             .with_offset(0)
             .with_selected(tabular.select.saturating_sub(tabular.offset));
-        frame.render_stateful_widget(local_tbl, layout[0], &mut local_st);
+
+        frame.render_stateful_widget(
+            tabulate::<Theme>(
+                &tabular.value_pool,
+                &tabular.widths,
+                &tabular.headers,
+                tabular.offset,
+                tabular.rendered_rows as usize,
+            ),
+            layout[0],
+            &mut local_st,
+        );
+
+
     }
 
     match &mut status_bar.state {
@@ -78,12 +62,12 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
                     Span::raw(format!(
                         "Row: {:<width$} ",
                         tabular.select + 1,
-                        width = tabular.data_frame.height().to_string().len()
+                        width = tabular.value_pool.height().to_string().len()
                     )),
                     Span::raw(format!(
                         "Table Size: {} x {} ",
-                        tabular.data_frame.height(),
-                        tabular.data_frame.width()
+                        tabular.value_pool.height(),
+                        tabular.value_pool.width()
                     )),
                 ])
                 .alignment(Alignment::Right)
@@ -114,7 +98,7 @@ pub fn render<Theme: Styler>(tabular: &mut Table, status_bar: &mut StatusBar, fr
 fn paragraph_from_headers_values<'a, Theme: Styler>(
     title: &'a str,
     headers: &'a [String],
-    values: &'a [String],
+    values: &'a [&str],
     width: u16,
 ) -> (Paragraph<'a>, usize) {
     let lines = izip!(headers, values.iter())
@@ -152,39 +136,36 @@ fn lines_from_header_value<'a, Theme: Styler>(
 }
 
 pub fn tabulate<'a, Theme: Styler>(
-    data_frame: &'a polars::frame::DataFrame,
-    width: &'a [Constraint],
+    value_pool: &'a ValuePool2D,
+    widths: &'a [usize],
+    headers: &'a [String],
     offset: usize,
-) -> ratatui::widgets::Table<'a> {
-    ratatui::widgets::Table::new(rows_from_dataframe::<Theme>(data_frame, offset), width)
-        .header(header_from_dataframe::<Theme>(data_frame))
-        .highlight_style(Theme::table_highlight())
+    length: usize,
+) -> Table<'a> {
+    Table::new(
+        (offset..offset + length)
+            .map(|row_idx| {
+                Row::new(value_pool.get_row(row_idx).into_iter().map(Cell::new))
+                    .style(Theme::table_row(row_idx))
+            })
+            .collect_vec(),
+        widths
+            .iter()
+            .copied()
+            .map(|w| Constraint::Length(w as u16))
+            .collect::<Vec<_>>(),
+    )
+    .header(header_row::<Theme>(headers))
+    .highlight_style(Theme::table_highlight())
 }
 
-fn rows_from_dataframe<Theme: Styler>(df: &polars::frame::DataFrame, offset: usize) -> Vec<Row> {
-    zip_iters(df.iter().map(|series| series.iter()))
-        .enumerate()
-        .map(|(row_idx, row)| {
-            Row::new(
-                row.into_iter()
-                    .enumerate()
-                    .map(|(col_idx, value)| {
-                        Cell::new(any_value_into_string(value))
-                            .style(Theme::table_cell(row_idx, col_idx))
-                    })
-                    .collect::<Vec<_>>(),
-            )
-            .style(Theme::table_row(offset + row_idx))
-        })
-        .collect::<Vec<_>>()
-}
-
-fn header_from_dataframe<Theme: Styler>(df: &polars::frame::DataFrame) -> Row {
+fn header_row<Theme: Styler>(df: &[String]) -> Row {
     Row::new(
-        df.get_column_names()
-            .into_iter()
+        df.iter()
             .enumerate()
-            .map(|(col_idx, name)| Cell::new(name).style(Theme::table_header_cell(col_idx)))
+            .map(|(col_idx, name)| {
+                Cell::new(name.as_str()).style(Theme::table_header_cell(col_idx))
+            })
             .collect::<Vec<_>>(),
     )
     .style(Theme::table_header())
