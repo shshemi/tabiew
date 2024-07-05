@@ -7,13 +7,13 @@ use polars::{
 };
 
 #[derive(Debug)]
-pub struct ValuePool2D {
+pub struct TableValues {
     pool: ValuePool,
     height: usize,
     width: usize,
 }
 
-impl ValuePool2D {
+impl TableValues {
     pub fn from_dataframe(data_frame: DataFrame) -> Self {
         let height = data_frame.height();
         let width = data_frame.width();
@@ -313,7 +313,7 @@ mod tests {
         }
         .unwrap();
 
-        let vp = ValuePool2D::from_dataframe(df);
+        let vp = TableValues::from_dataframe(df);
         println!("{:?}", vp.get(0, 0))
     }
 
