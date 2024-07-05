@@ -1,4 +1,4 @@
-use crate::app::{AppResult, StatusBar, Table};
+use crate::app::{AppResult, StatusBar, Tabular};
 use crate::event::EventHandler;
 use crate::theme::Styler;
 use crate::ui;
@@ -50,7 +50,7 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
-    pub fn draw<Theme: Styler>(&mut self, tabular: &mut Table, status_bar: &mut StatusBar) -> AppResult<()> {
+    pub fn draw<Theme: Styler>(&mut self, tabular: &mut Tabular, status_bar: &mut StatusBar) -> AppResult<()> {
         self.terminal.draw(|frame| ui::render::<Theme>(tabular, status_bar, frame))?;
         Ok(())
     }

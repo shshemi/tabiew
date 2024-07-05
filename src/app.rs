@@ -6,7 +6,7 @@ use rand::Rng;
 
 use crate::{
     command_pallete::CommandPalleteState,
-    utils::{data_frame_widths, Scroll},
+    utils::{data_frame_widths, Scroll, ValuePool2D},
 };
 
 /// Application result type.
@@ -14,16 +14,17 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 /// Application.
 #[derive(Debug)]
-pub struct Table {
-    pub data_frame: DataFrame,
+pub struct Tabular {
     pub offset: usize,
     pub select: usize,
     pub rendered_rows: u16,
     pub widths: Vec<usize>,
+    pub headers: Vec<String>,
+    pub value_pool: ValuePool2D,
     pub detailed_view: Option<Scroll>,
 }
 
-impl Table {
+impl Tabular {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame) -> Self {
         Self {
@@ -31,7 +32,8 @@ impl Table {
             select: 0,
             rendered_rows: 0,
             widths: data_frame_widths(&data_frame),
-            data_frame,
+            headers: data_frame.get_column_names().into_iter().map(ToOwned::to_owned).collect(),
+            value_pool: ValuePool2D::from_dataframe(data_frame),
             detailed_view: None,
         }
     }
@@ -57,11 +59,11 @@ impl Table {
 
     pub fn select_random(&mut self) {
         let mut rng = rand::thread_rng();
-        self.select(rng.gen_range(0..self.data_frame.height()))
+        self.select(rng.gen_range(0..self.value_pool.height()))
     }
 
     pub fn select(&mut self, select: usize) {
-        self.select = select.min(self.data_frame.height().saturating_sub(1))
+        self.select = select.min(self.value_pool.height().saturating_sub(1))
     }
 
     pub fn adjust_offset(&mut self) {
@@ -84,7 +86,8 @@ impl Table {
         self.widths = data_frame_widths(&data_frame);
         self.offset = 0;
         self.select = 0;
-        self.data_frame = data_frame;
+        self.headers = data_frame.get_column_names().into_iter().map(ToOwned::to_owned).collect();
+        self.value_pool.replace_dataframe(data_frame);
     }
 }
 

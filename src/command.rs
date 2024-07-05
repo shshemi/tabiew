@@ -3,10 +3,10 @@ use std::{collections::HashMap, error::Error};
 use polars::{df, frame::DataFrame, lazy::frame::LazyFrame};
 use polars_sql::SQLContext;
 
-use crate::app::Table;
+use crate::app::Tabular;
 
 pub type ExecutionFunction =
-    fn(&str, &mut Table, &mut SQLContext, &mut bool) -> Result<(), Box<dyn Error>>;
+    fn(&str, &mut Tabular, &mut SQLContext, &mut bool) -> Result<(), Box<dyn Error>>;
 pub type ExecutionTable = HashMap<&'static str, ExecutionFunction>;
 pub enum Prefix {
     Short(&'static str),
@@ -153,7 +153,7 @@ impl CommandList {
 
 pub fn command_query(
     query: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     sql: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -162,7 +162,7 @@ pub fn command_query(
 }
 pub fn command_quit(
     _: &str,
-    _: &mut Table,
+    _: &mut Tabular,
     _: &mut SQLContext,
     running: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -171,7 +171,7 @@ pub fn command_quit(
 }
 pub fn command_goto(
     idx: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     _: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -181,7 +181,7 @@ pub fn command_goto(
 }
 pub fn command_select_up(
     lines: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     _: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -190,7 +190,7 @@ pub fn command_select_up(
 }
 pub fn command_select_down(
     lines: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     _: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -200,7 +200,7 @@ pub fn command_select_down(
 
 pub fn command_reset(
     _: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     sql: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -214,7 +214,7 @@ pub fn command_reset(
 
 pub fn command_help(
     _: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     _: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -224,7 +224,7 @@ pub fn command_help(
 
 pub fn command_select(
     query: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     sql: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -237,7 +237,7 @@ pub fn command_select(
 
 pub fn command_filter(
     query: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     sql: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -250,7 +250,7 @@ pub fn command_filter(
 
 pub fn command_order(
     query: &str,
-    tabular: &mut Table,
+    tabular: &mut Tabular,
     sql: &mut SQLContext,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
