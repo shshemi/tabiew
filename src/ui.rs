@@ -6,7 +6,7 @@ use crate::{
     app::{StatusBar, Tabular},
     command_pallete::CommandPallete,
     theme::Styler,
-    utils::{line_count, ValuePool2D},
+    utils::{line_count, TableValues},
 };
 
 /// Renders the user interface widgets.
@@ -24,7 +24,7 @@ pub fn render<Theme: Styler>(
         let space = layout[0].inner(Margin::new(1, 1));
         let title = format!(" {} ", tabular.select + 1);
 
-        let values = tabular.value_pool.get_row(tabular.select);
+        let values = tabular.table_values.get_row(tabular.select);
 
         let (paragraph, line_count) =
             paragraph_from_headers_values::<Theme>(&title, &tabular.headers, &values, space.width);
@@ -42,7 +42,7 @@ pub fn render<Theme: Styler>(
 
         frame.render_stateful_widget(
             tabulate::<Theme>(
-                &tabular.value_pool,
+                &tabular.table_values,
                 &tabular.widths,
                 &tabular.headers,
                 tabular.offset,
@@ -62,12 +62,12 @@ pub fn render<Theme: Styler>(
                     Span::raw(format!(
                         "Row: {:<width$} ",
                         tabular.select + 1,
-                        width = tabular.value_pool.height().to_string().len()
+                        width = tabular.table_values.height().to_string().len()
                     )),
                     Span::raw(format!(
                         "Table Size: {} x {} ",
-                        tabular.value_pool.height(),
-                        tabular.value_pool.width()
+                        tabular.table_values.height(),
+                        tabular.table_values.width()
                     )),
                 ])
                 .alignment(Alignment::Right)
@@ -136,7 +136,7 @@ fn lines_from_header_value<'a, Theme: Styler>(
 }
 
 pub fn tabulate<'a, Theme: Styler>(
-    value_pool: &'a ValuePool2D,
+    value_pool: &'a TableValues,
     widths: &'a [usize],
     headers: &'a [String],
     offset: usize,

@@ -6,7 +6,7 @@ use rand::Rng;
 
 use crate::{
     command_pallete::CommandPalleteState,
-    utils::{data_frame_widths, Scroll, ValuePool2D},
+    utils::{data_frame_widths, Scroll, TableValues},
 };
 
 /// Application result type.
@@ -20,7 +20,7 @@ pub struct Tabular {
     pub rendered_rows: u16,
     pub widths: Vec<usize>,
     pub headers: Vec<String>,
-    pub value_pool: ValuePool2D,
+    pub table_values: TableValues,
     pub detailed_view: Option<Scroll>,
 }
 
@@ -33,7 +33,7 @@ impl Tabular {
             rendered_rows: 0,
             widths: data_frame_widths(&data_frame),
             headers: data_frame.get_column_names().into_iter().map(ToOwned::to_owned).collect(),
-            value_pool: ValuePool2D::from_dataframe(data_frame),
+            table_values: TableValues::from_dataframe(data_frame),
             detailed_view: None,
         }
     }
@@ -59,11 +59,11 @@ impl Tabular {
 
     pub fn select_random(&mut self) {
         let mut rng = rand::thread_rng();
-        self.select(rng.gen_range(0..self.value_pool.height()))
+        self.select(rng.gen_range(0..self.table_values.height()))
     }
 
     pub fn select(&mut self, select: usize) {
-        self.select = select.min(self.value_pool.height().saturating_sub(1))
+        self.select = select.min(self.table_values.height().saturating_sub(1))
     }
 
     pub fn adjust_offset(&mut self) {
@@ -87,7 +87,7 @@ impl Tabular {
         self.offset = 0;
         self.select = 0;
         self.headers = data_frame.get_column_names().into_iter().map(ToOwned::to_owned).collect();
-        self.value_pool.replace_dataframe(data_frame);
+        self.table_values.replace_dataframe(data_frame);
     }
 }
 
