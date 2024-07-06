@@ -1,6 +1,6 @@
 # Tabiew
 
-Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV and TSV files.
+Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV or TSV files.
 
 ![Image Alt text](/images/screenshot.png "Screenshot")
 
