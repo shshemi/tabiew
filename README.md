@@ -66,13 +66,20 @@ Download the `.rpm` package from the [GitHub releases page](https://github.com/s
  sudo rpm -i <path_to_package.rpm>
  ```
 
+### MacOS
+Installing Tabiew using [Homebrew](https://brew.sh/):
+ ```bash
+ brew tap shshemi/homebrew-tabiew
+ brew install tabiew
+ ```
+
 ### Windows
-Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in system's PATH environment variable.
+Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in the system's PATH environment variable.
 
 **Disclaimer:** The Windows version may experience performance lag.
 
 ### Cargo
-Install Tabiew from *Crates.io*:
+Installing Tabiew from *Crates.io*:
  ```bash
  cargo install tabiew
  ```
