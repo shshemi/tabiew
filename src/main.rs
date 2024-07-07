@@ -13,7 +13,7 @@ use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
 use tabiew::theme::Styler;
 use tabiew::tui::Tui;
-use tabiew::utils::infer_schema_safe;
+use tabiew::utils::{as_ascii, infer_schema_safe};
 
 fn main() -> AppResult<()> {
     // Parse CLI
@@ -27,8 +27,8 @@ fn main() -> AppResult<()> {
             .with_has_header(!args.no_header)
             .with_parse_options(
                 CsvParseOptions::default()
-                    .with_quote_char((args.quote_char as u8).into())
-                    .with_separator(args.separator as u8),
+                    .with_quote_char(as_ascii(args.quote_char))
+                    .with_separator(as_ascii(args.separator).expect("Invalid separator")),
             )
             .try_into_reader_with_file_path(args.file_name.into())?
             .finish()?;
