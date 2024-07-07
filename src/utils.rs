@@ -300,6 +300,11 @@ pub fn infer_schema_safe(data_frame: &mut DataFrame) {
         });
 }
 
+#[inline]
+pub fn as_ascii(c: char) -> Option<u8> {
+    c.is_ascii().then_some(c as u8)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
