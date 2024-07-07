@@ -51,7 +51,7 @@ fn main() -> AppResult<()> {
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
-    let terminal = Terminal::new(backend)?;
+    let terminal: Terminal<CrosstermBackend<Stderr>> = Terminal::new(backend)?;
     let events = EventHandler::new(250);
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
@@ -59,6 +59,13 @@ fn main() -> AppResult<()> {
     // Run the main loop
     match args.theme {
         tabiew::args::AppTheme::Monokai => main_loop::<tabiew::theme::Monokai>(
+            &mut tui,
+            tabular,
+            status_bar,
+            sql_context,
+            exec_tbl,
+        )?,
+        tabiew::args::AppTheme::Argonaut => main_loop::<tabiew::theme::Argonaut>(
             &mut tui,
             tabular,
             status_bar,

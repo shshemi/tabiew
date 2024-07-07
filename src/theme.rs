@@ -13,6 +13,7 @@ pub trait Styler {
 }
 
 pub struct Monokai;
+pub struct Argonaut;
 pub struct Terminal;
 
 impl Styler for Monokai {
@@ -75,7 +76,68 @@ impl Styler for Monokai {
     }
 }
 
+impl Styler for Argonaut {
+    fn table_header() -> Style {
+        Style::default().bg(Color::from_u32(0x0001030b))
+    }
+
+    fn table_header_cell(col: usize) -> Style {
+        Style::default()
+            .fg(match col % 6 {
+                0 => Color::from_u32(0x00ff000f),
+                1 => Color::from_u32(0x00ffb900),
+                2 => Color::from_u32(0x00ffd866),
+                3 => Color::from_u32(0x008ce10b),
+                4 => Color::from_u32(0x006d43a6),
+                5 => Color::from_u32(0x0000d8eb),
+                _ => panic!("How!"),
+            })
+            .bold()
+    }
+
+    fn table_row(row: usize) -> Style {
+        if row % 2 == 0 {
+            Style::new().bg(Color::from_u32(0x0011131b))
+        } else {
+            Style::new().bg(Color::from_u32(0x0001030b))
+        }
+    }
+
+    fn table_highlight() -> Style {
+        Style::new().bg(Color::from_u32(0x00002a3b))
+    }
+
+    fn table_cell(_row: usize, _col: usize) -> Style {
+        Style::default().fg(Color::from_u32(0x00fffaf4))
+    }
+
+    fn status_bar_red() -> Style {
+        Style::default()
+            .bg(Color::from_u32(0x00dd0000))
+            .fg(Color::White)
+    }
+
+    fn status_bar_green() -> Style {
+        Style::default()
+            .bg(Color::from_u32(0x005cb100))
+            .fg(Color::White)
+    }
+
+    fn status_bar_blue() -> Style {
+        Style::default()
+            .bg(Color::from_u32(0x00006dd8))
+            .fg(Color::White)
+    }
+
+    fn item_block() -> Style {
+        Style::new()
+            .bg(Color::from_u32(0x000e1019))
+            .fg(Color::from_u32(0x00fffaf4))
+    }
+}
+
 impl Styler for Terminal {
+
     fn table_header() -> Style {
         Style::default().bg(Color::Cyan).fg(Color::Black)
     }
