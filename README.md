@@ -111,6 +111,15 @@ To open a TSV file use:
 ```bash
 tw <path_to_tsv> --separator $'\t' --no-header
 ```
+## Themes
+### Monokai (default):
+![Image Alt text](/images/theme-monokai.png "Monokai")
+
+### Argonaut:
+![Image Alt text](/images/theme-argonaut.png "Argonaut")
+
+### Terminal:
+![Image Alt text](/images/theme-terminal.png "Terminal")
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
