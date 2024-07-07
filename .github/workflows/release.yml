@@ -3,8 +3,7 @@ name: Rust
 on:
   release:
     types: [created]
-    branches:
-      - main
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -36,42 +35,82 @@ jobs:
 
     - name: Build .rpm package
       run: cargo generate-rpm
-
-    - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
     
     - name: Upload artifacts to release
       uses: AButler/upload-release-assets@v3.0
       with:
         files: "./target/release/tw;./target/debian/*.deb;./target/generate-rpm/*.rpm"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-  
+
+    - name: Publish to crates.io
+      run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
 
   build-and-upload-windows:
 
-    runs-on: windows-latest
     if: startsWith(github.event.release.tag_name, 'v')
+    strategy:
+      matrix:
+        os: [windows-latest]
+        target: [i686-pc-windows-msvc, x86_64-pc-windows-msvc]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout to the latest version 
       uses: actions/checkout@v4
-
 
     - name: Install Rust (nightly)
       uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         override: true
-        target: x86_64-pc-windows-msvc
+        target: ${{ matrix.target }}
 
     - name: Build
-      run: cargo build --release --verbose
+      run: cargo build --release --verbose --target ${{ matrix.target }}
 
     - name: Test
       run: cargo test --all
 
+    - name: Rename executable before uploading
+      run: cargo test --all
+
     - name: Upload artifacts to release
-      uses: AButler/upload-release-assets@v3.0
+      uses: actions/upload-artifact@v4
       with:
-        files: "./target/release/*.exe"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        name: tw-${{matrix.os}}-${{matrix.target}}.exe
+        files: target/${{ matrix.target }}/release/tw.exe
+
+  build-and-upload-macos:
+
+    if: startsWith(github.event.release.tag_name, 'v')
+    strategy:
+      matrix:
+        os: [macos-latest]
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout to the latest version 
+      uses: actions/checkout@v4
+
+    - name: Install Rust (nightly)
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        target: ${{ matrix.target }}
+
+    - name: Build
+      run: cargo build --release --verbose --target ${{ matrix.target }}
+
+    - name: Test
+      run: cargo test --all
+
+    - name: Rename executable before uploading
+      run: cargo test --all
+
+    - name: Upload artifacts to release
+      uses: actions/upload-artifact@v4
+      with:
+        name: tw-${{matrix.os}}-${{matrix.target}}
+        files: target/${{ matrix.target }}/release/tw
