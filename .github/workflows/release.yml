@@ -31,7 +31,7 @@ jobs:
       run: cargo deb
 
     - name: Install cargo generate rpm
-      run: cargo install cargo-generate-rpm
+      run: cargo install cargo-generate-rpm --version 0.14.1
 
     - name: Build .rpm package
       run: cargo generate-rpm
@@ -71,14 +71,11 @@ jobs:
     - name: Test
       run: cargo test --all
 
-    - name: Rename executable before uploading
-      run: cargo test --all
-
     - name: Upload artifacts to release
       uses: actions/upload-artifact@v4
       with:
         name: tw-${{matrix.os}}-${{matrix.target}}.exe
-        files: target/${{ matrix.target }}/release/tw.exe
+        path: target/${{ matrix.target }}/release/tw.exe
 
   build-and-upload-macos:
 
@@ -106,11 +103,8 @@ jobs:
     - name: Test
       run: cargo test --all
 
-    - name: Rename executable before uploading
-      run: cargo test --all
-
     - name: Upload artifacts to release
       uses: actions/upload-artifact@v4
       with:
         name: tw-${{matrix.os}}-${{matrix.target}}
-        files: target/${{ matrix.target }}/release/tw
+        path: target/${{ matrix.target }}/release/tw
