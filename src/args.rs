@@ -67,7 +67,8 @@ pub enum InferSchema {
 #[derive(Debug, Clone, ValueEnum)]
 pub enum AppTheme {
     Monokai,
-    Terminal
+    Argonaut,
+    Terminal,
 }
 
 impl From<&InferSchema> for Option<usize> {
