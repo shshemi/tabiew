@@ -37,36 +37,42 @@ impl Styler for Monokai {
 
     fn table_row(row: usize) -> Style {
         if row % 2 == 0 {
-            Style::new().bg(Color::from_u32(0x00232024))
+            Style::new()
+                .bg(Color::from_u32(0x00232024))
+                .fg(Color::from_u32(0x00fffaf4))
         } else {
-            Style::new().bg(Color::from_u32(0x001c191d))
+            Style::new()
+                .bg(Color::from_u32(0x001c191d))
+                .fg(Color::from_u32(0x00fffaf4))
         }
     }
 
     fn table_highlight() -> Style {
-        Style::new().bg(Color::from_u32(0x00c89f2d))
+        Style::new()
+            .bg(Color::from_u32(0x00c89f2d))
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn table_cell(_row: usize, _col: usize) -> Style {
-        Style::default().fg(Color::White)
+        Style::default().fg(Color::from_u32(0x00fffaf4))
     }
 
     fn status_bar_red() -> Style {
         Style::default()
             .bg(Color::from_u32(0x00d02d00))
-            .fg(Color::White)
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn status_bar_green() -> Style {
         Style::default()
             .bg(Color::from_u32(0x00008f1f))
-            .fg(Color::White)
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn status_bar_blue() -> Style {
         Style::default()
             .bg(Color::from_u32(0x00007dd0))
-            .fg(Color::White)
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn item_block() -> Style {
@@ -97,9 +103,13 @@ impl Styler for Argonaut {
 
     fn table_row(row: usize) -> Style {
         if row % 2 == 0 {
-            Style::new().bg(Color::from_u32(0x0011131b))
+            Style::new()
+                .bg(Color::from_u32(0x0011131b))
+                .fg(Color::from_u32(0x00fffaf4))
         } else {
-            Style::new().bg(Color::from_u32(0x0001030b))
+            Style::new()
+                .bg(Color::from_u32(0x0001030b))
+                .fg(Color::from_u32(0x00fffaf4))
         }
     }
 
@@ -114,19 +124,19 @@ impl Styler for Argonaut {
     fn status_bar_red() -> Style {
         Style::default()
             .bg(Color::from_u32(0x00dd0000))
-            .fg(Color::White)
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn status_bar_green() -> Style {
         Style::default()
             .bg(Color::from_u32(0x005cb100))
-            .fg(Color::White)
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn status_bar_blue() -> Style {
         Style::default()
             .bg(Color::from_u32(0x00006dd8))
-            .fg(Color::White)
+            .fg(Color::from_u32(0x00fffaf4))
     }
 
     fn item_block() -> Style {
@@ -137,7 +147,6 @@ impl Styler for Argonaut {
 }
 
 impl Styler for Terminal {
-
     fn table_header() -> Style {
         Style::default().bg(Color::Cyan).fg(Color::Black)
     }
