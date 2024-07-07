@@ -25,13 +25,13 @@ jobs:
       run: cargo test --all
     
     - name: Install cargo deb
-      run: cargo install cargo-deb
+      run: cargo install cargo-deb --version 2.4.0 --force
 
     - name: Build .deb package
       run: cargo deb
 
     - name: Install cargo generate rpm
-      run: cargo install cargo-generate-rpm --version 0.14.1
+      run: cargo install cargo-generate-rpm --version 0.14.1 --force
 
     - name: Build .rpm package
       run: cargo generate-rpm
