@@ -69,8 +69,7 @@ Download the `.rpm` package from the [GitHub releases page](https://github.com/s
 ### MacOS
 Installing Tabiew using [Homebrew](https://brew.sh/):
  ```bash
- brew tap shshemi/homebrew-tabiew
- brew install tabiew
+ brew install shshemi/tabiew/tabiew
  ```
 
 ### Windows
