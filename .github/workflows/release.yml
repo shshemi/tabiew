@@ -42,7 +42,7 @@ jobs:
     - name: Upload artifacts to release
       uses: AButler/upload-release-assets@v3.0
       with:
-        files: "x86-linux-gnu;./target/debian/*.deb;./target/generate-rpm/*.rpm"
+        files: "tw-x86-linux-gnu;./target/debian/*.deb;./target/generate-rpm/*.rpm"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-upload-windows:
