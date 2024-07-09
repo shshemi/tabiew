@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
+use itertools::Itertools;
 use polars::{
     error::PolarsResult,
     frame::DataFrame,
@@ -11,7 +12,7 @@ use polars_sql::SQLContext;
 pub struct SqlBackend {
     sql: SQLContext,
     default: Option<String>,
-    tables: BTreeMap<String, PathBuf>,
+    tables: BTreeMap<String, (String, PathBuf)>,
 }
 
 impl SqlBackend {
@@ -28,20 +29,32 @@ impl SqlBackend {
     }
 
     pub fn table_df(&self) -> DataFrame {
-        let (tables, paths): (Vec<String>, Vec<String>) = self
-            .tables
-            .iter()
-            .map(|(n, p)| (n.to_owned(), p.to_string_lossy().into_owned()))
-            .unzip();
+        let (tables, structures, paths) = self.tables.iter().fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut vt, mut vs, mut vp), (t, (s, p))| {
+                vt.push(t.to_owned());
+                vs.push(s.to_owned());
+                vp.push(p.to_string_lossy().into_owned());
+                (vt, vs, vp)
+            },
+        );
 
-        DataFrame::new([Series::new("Table", tables), Series::new("Path", paths)].into())
-            .expect("Invalid SQL backed state")
+        DataFrame::new(
+            [
+                Series::new("Table", tables),
+                Series::new("Structure", structures),
+                Series::new("Path", paths),
+            ]
+            .into(),
+        )
+        .expect("Invalid SQL backed state")
     }
 
     pub fn register(&mut self, name: &str, data_frame: DataFrame, path: PathBuf) {
         if let Some(name) = TableNameGen::with(name).find(|name| !self.tables.contains_key(name)) {
+            self.tables
+                .insert(name.clone(), (data_frame_structure(&data_frame), path));
             self.sql.register(&name, data_frame.lazy());
-            self.tables.insert(name.clone(), path);
             if self.default.is_none() {
                 self.default = name.into();
             }
@@ -54,7 +67,8 @@ impl SqlBackend {
 
     pub fn default_df(&mut self) -> Option<DataFrame> {
         let def = self.default.as_deref()?;
-        self.execute(format!("SELECT * FROM '{}'", def).as_str()).ok()
+        self.execute(format!("SELECT * FROM '{}'", def).as_str())
+            .ok()
     }
 }
 
@@ -88,8 +102,19 @@ impl<'a> Iterator for TableNameGen<'a> {
     }
 }
 
+fn data_frame_structure(df: &DataFrame) -> String {
+    format!(
+        "({})",
+        df.iter()
+            .map(|series| format!("{} {}", series.name().trim(), series.dtype()))
+            .join(", ")
+    )
+}
+
 #[cfg(test)]
 mod tests {
+    use polars::df;
+
     use super::*;
 
     #[test]
@@ -99,5 +124,21 @@ mod tests {
         assert_eq!(name_gen.next().unwrap(), "student_2");
         assert_eq!(name_gen.next().unwrap(), "student_3");
         assert_eq!(name_gen.next().unwrap(), "student_4");
+    }
+
+    #[test]
+    fn test_data_frame_structure() {
+        // Create a sample DataFrame
+        let df = df![
+            "name" => ["Alice", "Bob", "Charlie"],
+            "age" => [25, 30, 35],
+            " space " => [1, 1, 1],
+            "salary" => [50000.0, 60000.0, 70000.0],
+            "married" => [true, false, false],
+        ]
+        .unwrap();
+
+        // Expected output
+        assert_eq!(data_frame_structure(&df), "(name str, age i32, space i32, salary f64, married bool)");
     }
 }
