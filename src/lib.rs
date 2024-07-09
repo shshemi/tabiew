@@ -27,3 +27,6 @@ pub mod args;
 
 /// command pallete
 pub mod command_pallete;
+
+/// sql
+pub mod sql;

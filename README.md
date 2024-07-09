@@ -9,6 +9,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 - 📊 **Table View**: Explore your data with an easy-to-navigate table view.
 - 🔍 **Detailed View**: Dive deep with a detailed view of individual records.
 - 🛠️ **SQL Query Capability**: Utilize SQL for powerful data querying, such as filtering, sorting, and aggregations.
+- 🗂️ **Multiple Table Support**: Work with multiple tables simultaneously.
 - ⌨️ **Vim Inspired Keybindings**: Navigate through your data effortlessly using Vim-style keybindings.
 
 ## Keybindings️
@@ -33,7 +34,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 ## Commands
 |Command|Example|Description|
 |-|-|-|
-|`:Q` or `:query`|`:Q SELECT * FROM df`| Query the data in Structured Query Language (SQL). The table's name is 'df'|
+|`:Q` or `:query`|`:Q SELECT * FROM df`|Query the data in Structured Query Language(SQL). The table name is the file name without extension|
 |`:S` or `:select`| `:S price, area, bedrooms, parking`|Query the original for selected columns|
 |`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Query the original dataset where the condition(s) match|
 |`:O` or `:order`| `:O area`|Query the original data frame ordering by requested columns|
@@ -41,6 +42,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:goup`| `:goup 10`| Move a specified number of lines up|
 |`:godown`| `:godown 10`| Move a specified number of lines down|
 |`:q` or `:quit` |`:q`| Quit Tabiew|
+|`:tables`| `:tables`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|
 
@@ -96,7 +98,7 @@ cp ./target/release/tabiew <system_or_local_bin_path>
 ## Usage
 Start Tabiew with `tw`
 ```bash
-tw <path_to_csv>
+tw <path_to_csv(s)>
 ```
 Options:
 - `--no-header`: Use this option if the CSV file does not contain a header row.
@@ -108,7 +110,7 @@ Options:
 
 To open a TSV file use:
 ```bash
-tw <path_to_tsv> --separator $'\t' --no-header
+tw <path_to_tsv(s)> --separator $'\t' --no-header
 ```
 ## Themes
 ### Monokai (default):
