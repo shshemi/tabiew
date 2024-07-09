@@ -41,7 +41,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:goto`| `:goto 10`| Move to the specified line index|
 |`:goup`| `:goup 10`| Move a specified number of lines up|
 |`:godown`| `:godown 10`| Move a specified number of lines down|
-|`:q` or `:quit` |`:q`| Quit Tabiew|
+|`:q` or `:quit` |`:q`| Return to table view in detailed view otherwise quit Tabiew|
 |`:tables`| `:tables`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|
