@@ -1,6 +1,7 @@
 use crate::{
     app::{AppResult, StatusBar, StatusBarState, Tabular},
-    command::ExecutionTable, sql::SqlBackend,
+    command::ExecutionTable,
+    sql::SqlBackend,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -37,7 +38,13 @@ pub fn handle_key_events(
             status_bar.input(key_event)
         }
 
-        (StatusBarState::Normal, KeyCode::Char('q')) => *running = false,
+        (StatusBarState::Normal, KeyCode::Char('q')) => {
+            if tabular.detailed_view.is_some() {
+                tabular.switch_view()
+            } else {
+                *running = false
+            }
+        }
         (StatusBarState::Normal, KeyCode::Char('v')) => tabular.switch_view(),
         (StatusBarState::Normal, KeyCode::Up | KeyCode::Char('k')) => {
             if let Some(scroll) = &mut tabular.detailed_view {
