@@ -1,12 +1,11 @@
 use std::{collections::HashMap, error::Error};
 
-use polars::{df, frame::DataFrame, lazy::frame::LazyFrame};
-use polars_sql::SQLContext;
+use polars::{df, frame::DataFrame};
 
-use crate::app::Tabular;
+use crate::{app::Tabular, sql::SqlBackend};
 
 pub type ExecutionFunction =
-    fn(&str, &mut Tabular, &mut SQLContext, &mut bool) -> Result<(), Box<dyn Error>>;
+    fn(&str, &mut Tabular, &mut SqlBackend, &mut bool) -> Result<(), Box<dyn Error>>;
 pub type ExecutionTable = HashMap<&'static str, ExecutionFunction>;
 pub enum Prefix {
     Short(&'static str),
@@ -48,7 +47,7 @@ impl Default for CommandList {
                 prefix: Prefix::Both(":Q", ":query"),
                 usage: ":Q <query>",
                 description:
-                    "Query the data in Structured Query Language(SQL). The table name is 'df'",
+                    "Query the data in Structured Query Language(SQL). The table name is the file name without extension",
                 function: command_query,
             },
             Command {
@@ -105,6 +104,12 @@ impl Default for CommandList {
                 description: "Query the original data frame ordering by requested columns",
                 function: command_order,
             },
+            Command {
+                prefix: Prefix::Long(":tables"),
+                usage: ":tables",
+                description: "Show loaded data frame(s) alongside their path(s)",
+                function: command_tables,
+            },
         ])
     }
 }
@@ -154,16 +159,16 @@ impl CommandList {
 pub fn command_query(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SQLContext,
+    sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
-    tabular.set_data_frame(sql.execute(query).and_then(LazyFrame::collect)?);
+    tabular.set_data_frame(sql.execute(query)?);
     Ok(())
 }
 pub fn command_quit(
     _: &str,
     _: &mut Tabular,
-    _: &mut SQLContext,
+    _: &mut SqlBackend,
     running: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     *running = false;
@@ -172,7 +177,7 @@ pub fn command_quit(
 pub fn command_goto(
     idx: &str,
     tabular: &mut Tabular,
-    _: &mut SQLContext,
+    _: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     let idx: usize = idx.parse()?;
@@ -182,7 +187,7 @@ pub fn command_goto(
 pub fn command_select_up(
     lines: &str,
     tabular: &mut Tabular,
-    _: &mut SQLContext,
+    _: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.select_up(lines.parse()?);
@@ -191,7 +196,7 @@ pub fn command_select_up(
 pub fn command_select_down(
     lines: &str,
     tabular: &mut Tabular,
-    _: &mut SQLContext,
+    _: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.select_down(lines.parse()?);
@@ -201,12 +206,11 @@ pub fn command_select_down(
 pub fn command_reset(
     _: &str,
     tabular: &mut Tabular,
-    sql: &mut SQLContext,
+    sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.set_data_frame(
-        sql.execute("SELECT * FROM df")
-            .and_then(LazyFrame::collect)?,
+        sql.default_df().ok_or("Default data frame not found")?
     );
     tabular.select(0);
     Ok(())
@@ -215,7 +219,7 @@ pub fn command_reset(
 pub fn command_help(
     _: &str,
     tabular: &mut Tabular,
-    _: &mut SQLContext,
+    _: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.set_data_frame(CommandList::default().into_data_frame());
@@ -225,12 +229,18 @@ pub fn command_help(
 pub fn command_select(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SQLContext,
+    sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.set_data_frame(
-        sql.execute(format!("SELECT {} FROM df", query).as_str())
-            .and_then(LazyFrame::collect)?,
+        sql.execute(
+            format!(
+                "SELECT {} FROM {}",
+                query,
+                sql.default_table().ok_or("No default table found")?
+            )
+            .as_str(),
+        )?,
     );
     Ok(())
 }
@@ -238,12 +248,18 @@ pub fn command_select(
 pub fn command_filter(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SQLContext,
+    sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.set_data_frame(
-        sql.execute(format!("SELECT * FROM df WHERE {}", query).as_str())
-            .and_then(LazyFrame::collect)?,
+        sql.execute(
+            format!(
+                "SELECT * FROM {} WHERE {}",
+                sql.default_table().ok_or("No default table found")?,
+                query
+            )
+            .as_str(),
+        )?,
     );
     Ok(())
 }
@@ -251,12 +267,28 @@ pub fn command_filter(
 pub fn command_order(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SQLContext,
+    sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
     tabular.set_data_frame(
-        sql.execute(format!("SELECT * FROM df ORDER BY {}", query).as_str())
-            .and_then(LazyFrame::collect)?,
+        sql.execute(
+            format!(
+                "SELECT * FROM {} ORDER BY {}",
+                sql.default_table().ok_or("No default table found")?,
+                query
+            )
+            .as_str(),
+        )?,
     );
+    Ok(())
+}
+
+pub fn command_tables(
+    _query: &str,
+    tabular: &mut Tabular,
+    sql: &mut SqlBackend,
+    _: &mut bool,
+) -> Result<(), Box<dyn Error>> {
+    tabular.set_data_frame(sql.table_df());
     Ok(())
 }

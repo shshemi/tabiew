@@ -1,16 +1,18 @@
 use clap::Parser;
+use polars::frame::DataFrame;
 use polars::io::csv::read::{CsvParseOptions, CsvReadOptions};
 use polars::io::SerReader;
-use polars::lazy::frame::IntoLazy;
-use polars_sql::SQLContext;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use std::error::Error;
 use std::io::{self, Stderr};
+use std::path::PathBuf;
 use tabiew::app::{AppResult, StatusBar, Tabular};
 use tabiew::args::{Args, InferSchema};
 use tabiew::command::{CommandList, ExecutionTable};
 use tabiew::event::{Event, EventHandler};
 use tabiew::handler::handle_key_events;
+use tabiew::sql::SqlBackend;
 use tabiew::theme::Styler;
 use tabiew::tui::Tui;
 use tabiew::utils::{as_ascii, infer_schema_safe};
@@ -19,31 +21,31 @@ fn main() -> AppResult<()> {
     // Parse CLI
     let args = Args::parse();
 
-    // Create the data frame.
-    let data_frame = {
-        let mut df = CsvReadOptions::default()
-            .with_ignore_errors(args.ignore_errors)
-            .with_infer_schema_length((&args.infer_schema).into())
-            .with_has_header(!args.no_header)
-            .with_parse_options(
-                CsvParseOptions::default()
-                    .with_quote_char(as_ascii(args.quote_char))
-                    .with_separator(as_ascii(args.separator).expect("Invalid separator")),
-            )
-            .try_into_reader_with_file_path(args.file_name.into())?
-            .finish()?;
-        if matches!(args.infer_schema, InferSchema::Safe) {
-            infer_schema_safe(&mut df);
-        }
-        df
-    };
+    // Create the sql backend.
+    let mut sql_backend = SqlBackend::new();
 
-    // Setup the SQLContext
-    let mut sql_context = SQLContext::new();
-    sql_context.register("df", data_frame.clone().lazy());
+    // Add csv files to sql backend
+    for file in args.files {
+        sql_backend.register(
+            file.file_stem()
+                .expect("Invalid file name")
+                .to_string_lossy()
+                .into_owned()
+                .as_str(),
+            read_csv(
+                file.clone(),
+                &args.infer_schema,
+                args.quote_char,
+                args.separator,
+                args.no_header,
+                args.ignore_errors,
+            )?,
+            file,
+        );
+    }
 
-    // Instantiate app
-    let tabular = Tabular::new(data_frame);
+    // Instantiate app components
+    let tabular = Tabular::new(sql_backend.default_df().expect("Default dataframe not found"));
     let status_bar = StatusBar::default();
 
     // Command handling
@@ -62,21 +64,21 @@ fn main() -> AppResult<()> {
             &mut tui,
             tabular,
             status_bar,
-            sql_context,
+            sql_backend,
             exec_tbl,
         )?,
         tabiew::args::AppTheme::Argonaut => main_loop::<tabiew::theme::Argonaut>(
             &mut tui,
             tabular,
             status_bar,
-            sql_context,
+            sql_backend,
             exec_tbl,
         )?,
         tabiew::args::AppTheme::Terminal => main_loop::<tabiew::theme::Terminal>(
             &mut tui,
             tabular,
             status_bar,
-            sql_context,
+            sql_backend,
             exec_tbl,
         )?,
     }
@@ -90,7 +92,7 @@ fn main_loop<Theme: Styler>(
     tui: &mut Tui<CrosstermBackend<Stderr>>,
     mut tabular: Tabular,
     mut status_bar: StatusBar,
-    mut sql_context: SQLContext,
+    mut sql_context: SqlBackend,
     exec_tbl: ExecutionTable,
 ) -> AppResult<()> {
     let mut running = true;
@@ -137,4 +139,29 @@ fn main_loop<Theme: Styler>(
         }
     }
     Ok(())
+}
+
+fn read_csv(
+    path: PathBuf,
+    infer_schema: &InferSchema,
+    quote_char: char,
+    separator_char: char,
+    no_header: bool,
+    ignore_errors: bool,
+) -> Result<DataFrame, Box<dyn Error>> {
+    let mut df = CsvReadOptions::default()
+        .with_ignore_errors(ignore_errors)
+        .with_infer_schema_length(infer_schema.into())
+        .with_has_header(!no_header)
+        .with_parse_options(
+            CsvParseOptions::default()
+                .with_quote_char(as_ascii(quote_char))
+                .with_separator(as_ascii(separator_char).expect("Invalid separator")),
+        )
+        .try_into_reader_with_file_path(path.into())?
+        .finish()?;
+    if matches!(infer_schema, InferSchema::Safe) {
+        infer_schema_safe(&mut df);
+    }
+    Ok(df)
 }
