@@ -1,16 +1,15 @@
 use crate::{
     app::{AppResult, StatusBar, StatusBarState, Tabular},
-    command::ExecutionTable,
+    command::ExecutionTable, sql::SqlBackend,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use polars_sql::SQLContext;
 
 /// Handles the key events and updates the state of [`App`].
 pub fn handle_key_events(
     key_event: KeyEvent,
     tabular: &mut Tabular,
     status_bar: &mut StatusBar,
-    sql_context: &mut SQLContext,
+    sql_context: &mut SqlBackend,
     running: &mut bool,
     exec_tbl: &ExecutionTable,
 ) -> AppResult<()> {

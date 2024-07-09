@@ -4,8 +4,8 @@ use clap::{Parser, ValueEnum};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(help = "Path to the file to be opened.", required = true)]
-    pub file_name: PathBuf,
+    #[arg(help = "Path(s) to the file(s) to be opened.", required = true)]
+    pub files: Vec<PathBuf>,
 
     #[arg(
         long,
