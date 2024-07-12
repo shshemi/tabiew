@@ -14,7 +14,7 @@ pub struct TableValues {
 }
 
 impl TableValues {
-    pub fn from_dataframe(data_frame: DataFrame) -> Self {
+    pub fn from_dataframe(data_frame: &DataFrame) -> Self {
         let height = data_frame.height();
         let width = data_frame.width();
         let pool = data_frame.iter().map(Series::iter).round_robin().collect();
@@ -43,7 +43,7 @@ impl TableValues {
         self.height
     }
 
-    pub fn replace_dataframe(&mut self, data_frame: DataFrame) {
+    pub fn replace_dataframe(&mut self, data_frame: &DataFrame) {
         self.height = data_frame.height();
         self.width = data_frame.width();
         self.pool.clear();
@@ -318,7 +318,7 @@ mod tests {
         }
         .unwrap();
 
-        let vp = TableValues::from_dataframe(df);
+        let vp = TableValues::from_dataframe(&df);
         println!("{:?}", vp.get(0, 0))
     }
 

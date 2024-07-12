@@ -35,9 +35,9 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |Command|Example|Description|
 |-|-|-|
 |`:Q` or `:query`|`:Q SELECT * FROM df`|Query the data in Structured Query Language(SQL). The table name is the file name without extension|
-|`:S` or `:select`| `:S price, area, bedrooms, parking`|Query the original for selected columns|
-|`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Query the original dataset where the condition(s) match|
-|`:O` or `:order`| `:O area`|Query the original data frame ordering by requested columns|
+|`:S` or `:select`| `:S price, area, bedrooms, parking`|Query current data frame for columns/functions|
+|`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Filter current data frame, keeping rows were the condition(s) match|
+|`:O` or `:order`| `:O area`|Sort current data frame by column(s)|
 |`:goto`| `:goto 10`| Move to the specified line index|
 |`:goup`| `:goup 10`| Move a specified number of lines up|
 |`:godown`| `:godown 10`| Move a specified number of lines down|
