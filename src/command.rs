@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, path::PathBuf};
 
 use polars::{df, frame::DataFrame};
 
@@ -89,19 +89,19 @@ impl Default for CommandList {
             Command {
                 prefix: Prefix::Both(":S", ":select"),
                 usage: ":select <column_name(s)>",
-                description: "Query the original for selected columns",
+                description: "Query current data frame for columns/functions",
                 function: command_select,
             },
             Command {
                 prefix: Prefix::Both(":F", ":filter"),
                 usage: ":filter <condition(s)>",
-                description: "Query the original dataset where the condition(s) match",
+                description: "Filter current data frame, keeping rows were the condition(s) match",
                 function: command_filter,
             },
             Command {
                 prefix: Prefix::Both(":O", ":order"),
                 usage: ":order <column(s)_and_order(s)>",
-                description: "Query the original data frame ordering by requested columns",
+                description: "Sort current data frame by column(s)",
                 function: command_order,
             },
             Command {
@@ -209,9 +209,7 @@ pub fn command_reset(
     sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
-    tabular.set_data_frame(
-        sql.default_df().ok_or("Default data frame not found")?
-    );
+    tabular.set_data_frame(sql.default_df().ok_or("Default data frame not found")?);
     tabular.select(0);
     Ok(())
 }
@@ -229,15 +227,16 @@ pub fn command_help(
 pub fn command_select(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SqlBackend,
+    _sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
+    let mut sql = SqlBackend::new();
+    sql.register("df", tabular.data_frame.clone(), PathBuf::default());
     tabular.set_data_frame(
         sql.execute(
             format!(
-                "SELECT {} FROM {}",
+                "SELECT {} FROM df",
                 query,
-                sql.default_table().ok_or("No default table found")?
             )
             .as_str(),
         )?,
@@ -248,14 +247,15 @@ pub fn command_select(
 pub fn command_filter(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SqlBackend,
+    _sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
+    let mut sql = SqlBackend::new();
+    sql.register("df", tabular.data_frame.clone(), PathBuf::default());
     tabular.set_data_frame(
         sql.execute(
             format!(
-                "SELECT * FROM {} WHERE {}",
-                sql.default_table().ok_or("No default table found")?,
+                "SELECT * FROM df WHERE {}",
                 query
             )
             .as_str(),
@@ -267,14 +267,15 @@ pub fn command_filter(
 pub fn command_order(
     query: &str,
     tabular: &mut Tabular,
-    sql: &mut SqlBackend,
+    _sql: &mut SqlBackend,
     _: &mut bool,
 ) -> Result<(), Box<dyn Error>> {
+    let mut sql = SqlBackend::new();
+    sql.register("df", tabular.data_frame.clone(), PathBuf::default());
     tabular.set_data_frame(
         sql.execute(
             format!(
-                "SELECT * FROM {} ORDER BY {}",
-                sql.default_table().ok_or("No default table found")?,
+                "SELECT * FROM df ORDER BY {}",
                 query
             )
             .as_str(),

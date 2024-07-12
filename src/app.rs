@@ -21,6 +21,7 @@ pub struct Tabular {
     pub widths: Vec<usize>,
     pub headers: Vec<String>,
     pub table_values: TableValues,
+    pub data_frame: DataFrame,
     pub detailed_view: Option<Scroll>,
 }
 
@@ -33,7 +34,8 @@ impl Tabular {
             rendered_rows: 0,
             widths: data_frame_widths(&data_frame),
             headers: data_frame.get_column_names().into_iter().map(ToOwned::to_owned).collect(),
-            table_values: TableValues::from_dataframe(data_frame),
+            table_values: TableValues::from_dataframe(&data_frame),
+            data_frame,
             detailed_view: None,
         }
     }
@@ -87,7 +89,8 @@ impl Tabular {
         self.offset = 0;
         self.select = 0;
         self.headers = data_frame.get_column_names().into_iter().map(ToOwned::to_owned).collect();
-        self.table_values.replace_dataframe(data_frame);
+        self.table_values.replace_dataframe(&data_frame);
+        self.data_frame = data_frame;
     }
 }
 
