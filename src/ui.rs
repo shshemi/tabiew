@@ -3,7 +3,7 @@ use itertools::{izip, Itertools};
 use ratatui::{prelude::*, widgets::*};
 
 use crate::{
-    app::{StatusBar, Tabular},
+    app::{StatusBar, StatusBarState, Tabular},
     command_pallete::CommandPallete,
     theme::Styler,
     utils::{line_count, TableValues},
@@ -56,7 +56,7 @@ pub fn render<Theme: Styler>(
     }
 
     match &mut status_bar.state {
-        crate::app::StatusBarState::Normal => frame.render_widget(
+        StatusBarState::Normal => frame.render_widget(
             Line::default()
                 .spans([
                     Span::raw(format!(
@@ -75,14 +75,14 @@ pub fn render<Theme: Styler>(
             layout[1],
         ),
 
-        crate::app::StatusBarState::Error(msg) => frame.render_widget(
+        StatusBarState::Error(msg) => frame.render_widget(
             Line::raw(msg.as_str())
                 .alignment(Alignment::Center)
                 .style(Theme::status_bar_red()),
             layout[1],
         ),
 
-        crate::app::StatusBarState::Command(text) => {
+        StatusBarState::Command(text) => {
             frame.render_stateful_widget(
                 CommandPallete::new(
                     Theme::status_bar_green(),
