@@ -16,6 +16,12 @@ use crate::{
 use super::AppResult;
 
 #[derive(Debug)]
+pub enum TabularState {
+    Table,
+    Sheet(Scroll),
+}
+
+#[derive(Debug)]
 pub struct Tabular {
     offset: usize,
     select: usize,
@@ -24,7 +30,7 @@ pub struct Tabular {
     headers: Vec<String>,
     table_values: TableValues,
     data_frame: DataFrame,
-    scroll: Option<Scroll>,
+    state: TabularState,
 }
 
 impl Tabular {
@@ -42,7 +48,7 @@ impl Tabular {
                 .collect(),
             table_values: TableValues::from_dataframe(&data_frame),
             data_frame,
-            scroll: None,
+            state: TabularState::Table,
         }
     }
 
@@ -76,20 +82,20 @@ impl Tabular {
     }
 
     pub fn scroll_up(&mut self) -> AppResult<()> {
-        if let Some(scroll) = &mut self.scroll {
+        if let TabularState::Sheet(scroll) = &mut self.state {
             scroll.up();
             Ok(())
         } else {
-            Err("Not in detail view".into())
+            Err("Not in table view".into())
         }
     }
 
     pub fn scroll_down(&mut self) -> AppResult<()> {
-        if let Some(scroll) = &mut self.scroll {
+        if let TabularState::Sheet(scroll) = &mut self.state {
             scroll.down();
             Ok(())
         } else {
-            Err("Not in detail view".into())
+            Err("Not in table view".into())
         }
     }
 
@@ -106,20 +112,19 @@ impl Tabular {
     }
 
     pub fn switch_view(&mut self) -> AppResult<()> {
-        if self.scroll.is_none() {
-            self.detail_view()
-        } else {
-            self.table_view()
+        match self.state {
+            TabularState::Table => self.show_sheet(),
+            TabularState::Sheet(_) => self.show_table(),
         }
     }
 
-    pub fn detail_view(&mut self) -> AppResult<()> {
-        self.scroll = Scroll::default().into();
+    pub fn show_sheet(&mut self) -> AppResult<()> {
+        self.state = TabularState::Sheet(Scroll::default());
         Ok(())
     }
 
-    pub fn table_view(&mut self) -> AppResult<()> {
-        self.scroll = None;
+    pub fn show_table(&mut self) -> AppResult<()> {
+        self.state = TabularState::Table;
         Ok(())
     }
 
@@ -141,8 +146,8 @@ impl Tabular {
         &self.data_frame
     }
 
-    pub fn scroll(&self) -> &Option<Scroll> {
-        &self.scroll
+    pub fn state(&self) -> &TabularState {
+        &self.state
     }
 
     pub fn selected(&self) -> usize {
@@ -154,39 +159,44 @@ impl Tabular {
     }
 
     pub fn render<Theme: Styler>(&mut self, frame: &mut Frame, layout: Rect) -> AppResult<()> {
-        if let Some(scroll) = &mut self.scroll {
-            // Set visible rows = 0
-            self.rendered_rows = 0;
-            let space = layout.inner(Margin::new(1, 1));
-            let title = format!(" {} ", self.select + 1);
+        match &mut self.state {
+            TabularState::Table => {
+                self.rendered_rows = layout.height.saturating_sub(1);
+                self.adjust_offset();
 
-            let values = self.table_values.get_row(self.select);
+                let mut local_st = TableState::new()
+                    .with_offset(0)
+                    .with_selected(self.select.saturating_sub(self.offset));
 
-            let (paragraph, line_count) =
-                paragraph_from_headers_values::<Theme>(&title, &self.headers, &values, space.width);
+                frame.render_stateful_widget(
+                    tabulate::<Theme>(
+                        &self.table_values,
+                        &self.widths,
+                        &self.headers,
+                        self.offset,
+                        self.rendered_rows as usize,
+                    ),
+                    layout,
+                    &mut local_st,
+                );
+            }
+            TabularState::Sheet(scroll) => {
+                self.rendered_rows = 0;
+                let space = layout.inner(Margin::new(1, 1));
+                let title = format!(" {} ", self.select + 1);
 
-            scroll.adjust(line_count, space.height as usize);
-            frame.render_widget(paragraph.scroll((scroll.to_u16(), 0)), layout);
-        } else {
-            // Set visible rows = table height - 1 (if header)
-            self.rendered_rows = layout.height.saturating_sub(1);
-            self.adjust_offset();
+                let values = self.table_values.get_row(self.select);
 
-            let mut local_st = TableState::new()
-                .with_offset(0)
-                .with_selected(self.select.saturating_sub(self.offset));
-
-            frame.render_stateful_widget(
-                tabulate::<Theme>(
-                    &self.table_values,
-                    &self.widths,
+                let (paragraph, line_count) = paragraph_from_headers_values::<Theme>(
+                    &title,
                     &self.headers,
-                    self.offset,
-                    self.rendered_rows as usize,
-                ),
-                layout,
-                &mut local_st,
-            );
+                    &values,
+                    space.width,
+                );
+
+                scroll.adjust(line_count, space.height as usize);
+                frame.render_widget(paragraph.scroll((scroll.to_u16(), 0)), layout);
+            }
         }
         Ok(())
     }

@@ -112,8 +112,8 @@ impl Default for Commands {
             },
             CommandEntry {
                 prefix: Prefix::Long(":view"),
-                usage: ":view (table | detail | switch)",
-                description: "Change tabular's view to table or detail",
+                usage: ":view (table | sheet | switch)",
+                description: "Change tabular's view to table or sheet",
                 parser: command_change_view,
             },
         ])
@@ -220,7 +220,7 @@ fn command_tables(_query: &str) -> AppResult<AppAction> {
 fn command_change_view(query: &str) -> AppResult<AppAction> {
     Ok(match query {
         "table" => AppAction::TabularTableView,
-        "detail" => AppAction::TabularDetailView,
+        "sheet" => AppAction::TabularSheetView,
         "switch" => AppAction::TabularSwitchView,
         _ => Err("Invalid view")?,
     })
