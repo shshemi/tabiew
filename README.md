@@ -7,7 +7,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 ## Features
 
 - 📊 **Table View**: Explore your data with an easy-to-navigate table view.
-- 🔍 **Detail View**: Dive deep into records with details of individual records.
+- 🔍 **Sheet View**: Dive deep into records with details of individual records.
 - 🛠️ **SQL Query Capability**: Utilize SQL for powerful data querying, such as filtering, sorting, and aggregations.
 - 🗂️ **Multiple Table Support**: Work with multiple tables simultaneously.
 - ⌨️ **Vim Inspired Keybindings**: Navigate through your data effortlessly using Vim-style keybindings.
@@ -16,11 +16,11 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 
 |Key Combination|Functionality|
 |-|-|
-| `v`| Toggle detail view|
-| `k` or `Arrow Up`| Move up in the table or scroll up in detail view|
-| `j` or `Arrow Down`| Move down in the table or scroll down in detail view|
-| `h` or `Arrow Left`| Move to the previous item in detail view|
-| `l` or `Arrow Right`| Move to the next item in detail view|
+| `v`| Switch view|
+| `k` or `Arrow Up`| Move up in the table or scroll up in sheet view|
+| `j` or `Arrow Down`| Move down in the table or scroll down in sheet view|
+| `h` or `Arrow Left`| Move to the previous item in sheet view|
+| `l` or `Arrow Right`| Move to the next item in sheet view|
 | `Page Up` or  `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
 | `Ctrl+u`| Move up half a page|
@@ -41,7 +41,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:goto`| `:goto 10`| Move to the specified line index|
 |`:goup`| `:goup 10`| Move a specified number of lines up|
 |`:godown`| `:godown 10`| Move a specified number of lines down|
-|`:q` or `:quit` |`:q`| Return to table view in detail view otherwise quit Tabiew|
+|`:q` or `:quit` |`:q`| Return to table from sheet view otherwise quit|
 |`:tables`| `:tables`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|

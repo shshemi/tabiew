@@ -7,7 +7,7 @@ use ratatui::Frame;
 use status_bar::{StatusBar, StatusBarState};
 use tabular::Tabular;
 
-use crate::command::{Commands, CommandRegistery};
+use crate::command::{CommandRegistery, Commands};
 use crate::keybind::{Action, Keybind};
 use crate::sql::SqlBackend;
 use crate::theme::Styler;
@@ -29,8 +29,8 @@ pub struct App {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum AppState {
-    Tabular,
-    Detail,
+    Table,
+    Sheet,
     Command,
     Error,
 }
@@ -41,7 +41,7 @@ pub enum AppAction {
     StatusBarCommand(String),
     StatausBarError(String),
     TabularTableView,
-    TabularDetailView,
+    TabularSheetView,
     TabularSwitchView,
     SqlQuery(String),
     SqlBackendTable,
@@ -55,8 +55,8 @@ pub enum AppAction {
     TabularGoDown(usize),
     TabularGoDownHalfPage,
     TabularGoDownFullPage,
-    DetailScrollUp,
-    DetailScrollDown,
+    SheetScrollUp,
+    SheetScrollDown,
     TabularReset,
     TabularSelect(String),
     TabularOrder(String),
@@ -93,16 +93,13 @@ impl App {
     }
 
     pub fn infer_state(&self) -> AppState {
-        match self.status_bar.state {
-            StatusBarState::Normal => {
-                if self.tabular.scroll().is_some() {
-                    AppState::Detail
-                } else {
-                    AppState::Tabular
-                }
-            }
-            StatusBarState::Error(_) => AppState::Error,
-            StatusBarState::Command(_) => AppState::Command,
+        match (self.tabular.state(), &self.status_bar.state) {
+            (tabular::TabularState::Table, StatusBarState::Normal) => AppState::Table,
+            (tabular::TabularState::Table, StatusBarState::Error(_)) => AppState::Error,
+            (tabular::TabularState::Table, StatusBarState::Command(_)) => AppState::Command,
+            (tabular::TabularState::Sheet(_), StatusBarState::Normal) => AppState::Sheet,
+            (tabular::TabularState::Sheet(_), StatusBarState::Error(_)) => AppState::Error,
+            (tabular::TabularState::Sheet(_), StatusBarState::Command(_)) => AppState::Command,
         }
     }
 
@@ -141,7 +138,7 @@ impl App {
 
             (AppState::Command, _) => self.status_bar.input(key_event),
 
-            (AppState::Tabular | AppState::Detail | AppState::Error, KeyCode::Char(':')) => {
+            (AppState::Table | AppState::Sheet | AppState::Error, KeyCode::Char(':')) => {
                 self.status_bar.command("")
             }
 
@@ -161,9 +158,9 @@ impl App {
 
             AppAction::StatausBarError(msg) => self.status_bar.error(msg),
 
-            AppAction::TabularTableView => self.tabular.table_view(),
+            AppAction::TabularTableView => self.tabular.show_table(),
 
-            AppAction::TabularDetailView => self.tabular.detail_view(),
+            AppAction::TabularSheetView => self.tabular.show_sheet(),
 
             AppAction::TabularSwitchView => self.tabular.switch_view(),
 
@@ -195,15 +192,17 @@ impl App {
 
             AppAction::TabularGoDownFullPage => self.tabular.select_down(self.tabular.page_len()),
 
-            AppAction::DetailScrollUp => self.tabular.scroll_up(),
+            AppAction::SheetScrollUp => self.tabular.scroll_up(),
 
-            AppAction::DetailScrollDown => self.tabular.scroll_down(),
+            AppAction::SheetScrollDown => self.tabular.scroll_down(),
 
-            AppAction::TabularReset => if let Some(data_frame) = self.sql.default_df() {
-                self.tabular.set_data_frame(data_frame)
-            } else {
-                Err("Default data frame not found".into())
-            },
+            AppAction::TabularReset => {
+                if let Some(data_frame) = self.sql.default_df() {
+                    self.tabular.set_data_frame(data_frame)
+                } else {
+                    Err("Default data frame not found".into())
+                }
+            }
 
             AppAction::TabularSelect(select) => {
                 let mut back = SqlBackend::new();
