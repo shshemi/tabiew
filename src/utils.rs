@@ -182,7 +182,7 @@ pub fn zip_iters<I1: IntoIterator<Item = I2>, I2: Iterator<Item = T>, T: Clone +
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub struct Scroll(usize);
 
 impl From<Scroll> for usize {
@@ -208,6 +208,10 @@ impl Scroll {
 
     pub fn adjust(&mut self, lines: usize, space: usize) {
         self.0 = self.0.min(lines.saturating_sub(space))
+    }
+
+    pub fn to_u16(&self) -> u16 {
+        self.0 as u16
     }
 }
 

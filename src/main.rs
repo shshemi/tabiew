@@ -3,17 +3,18 @@ use polars::frame::DataFrame;
 use polars::io::csv::read::{CsvParseOptions, CsvReadOptions};
 use polars::io::SerReader;
 use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
+use tabiew::keybind::Keybind;
 use std::error::Error;
-use std::io::{self, Stderr};
+use std::io::{self};
 use std::path::PathBuf;
-use tabiew::app::{AppResult, StatusBar, Tabular};
-use tabiew::args::{Args, InferSchema};
-use tabiew::command::{CommandList, ExecutionTable};
+use tabiew::app::status_bar::StatusBar;
+use tabiew::app::tabular::Tabular;
+use tabiew::app::{App, AppResult};
+use tabiew::args::{AppTheme, Args, InferSchema};
+use tabiew::command::Commands;
 use tabiew::event::{Event, EventHandler};
-use tabiew::handler::handle_key_events;
 use tabiew::sql::SqlBackend;
-use tabiew::theme::Styler;
+use tabiew::theme::{Argonaut, Monokai, Terminal};
 use tabiew::tui::Tui;
 use tabiew::utils::{as_ascii, infer_schema_safe};
 
@@ -45,99 +46,64 @@ fn main() -> AppResult<()> {
     }
 
     // Instantiate app components
-    let tabular = Tabular::new(sql_backend.default_df().expect("Default dataframe not found"));
+    let tabular = Tabular::new(
+        sql_backend
+            .default_df()
+            .expect("Default dataframe not found"),
+    );
     let status_bar = StatusBar::default();
+    let exec_tbl = Commands::default().into_exec();
+    let keybind = Keybind::default();
+    let mut app = App::new(tabular, status_bar, sql_backend, exec_tbl, keybind);
 
     // Command handling
-    let exec_tbl = CommandList::default().into_exec();
 
     // Initialize the terminal user interface.
-    let backend = CrosstermBackend::new(io::stderr());
-    let terminal: Terminal<CrosstermBackend<Stderr>> = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
-    let mut tui = Tui::new(terminal, events);
+    let mut tui = Tui::new(
+        ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
+        EventHandler::new(250),
+    );
     tui.init()?;
 
     // Run the main loop
-    match args.theme {
-        tabiew::args::AppTheme::Monokai => main_loop::<tabiew::theme::Monokai>(
-            &mut tui,
-            tabular,
-            status_bar,
-            sql_backend,
-            exec_tbl,
-        )?,
-        tabiew::args::AppTheme::Argonaut => main_loop::<tabiew::theme::Argonaut>(
-            &mut tui,
-            tabular,
-            status_bar,
-            sql_backend,
-            exec_tbl,
-        )?,
-        tabiew::args::AppTheme::Terminal => main_loop::<tabiew::theme::Terminal>(
-            &mut tui,
-            tabular,
-            status_bar,
-            sql_backend,
-            exec_tbl,
-        )?,
-    }
+    while app.running() {
+        match args.theme {
+            AppTheme::Monokai => {
+                tui.draw::<Monokai>(&mut app)?
+            }
+            AppTheme::Argonaut => {
+                tui.draw::<Argonaut>(&mut app)?
+            }
+            AppTheme::Terminal => {
+                tui.draw::<Terminal>(&mut app)?
+            }
+        }
 
-    // Exit the user interface.
-    tui.exit()?;
-    Ok(())
-}
-
-fn main_loop<Theme: Styler>(
-    tui: &mut Tui<CrosstermBackend<Stderr>>,
-    mut tabular: Tabular,
-    mut status_bar: StatusBar,
-    mut sql_context: SqlBackend,
-    exec_tbl: ExecutionTable,
-) -> AppResult<()> {
-    let mut running = true;
-
-    // Start the main loop.
-    while running {
-        // Render the user interface.
-        tui.draw::<Theme>(&mut tabular, &mut status_bar)?;
-        // Handle events.
         match tui.events.next()? {
             Event::Tick => {
-                tabular.tick();
-                status_bar.tick();
+                app.tabular.tick();
+                app.status_bar.tick();
             }
             Event::Key(key_event) => {
                 #[cfg(target_os = "windows")]
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        handle_key_events(
-                            key_event,
-                            &mut tabular,
-                            &mut status_bar,
-                            &mut sql_context,
-                            &mut running,
-                            &exec_tbl,
-                        )?
+                        app.handle_key_event(key_event)?
                     }
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    handle_key_events(
-                        key_event,
-                        &mut tabular,
-                        &mut status_bar,
-                        &mut sql_context,
-                        &mut running,
-                        &exec_tbl,
-                    )?
+                    app.handle_key_event(key_event)?
                 }
             }
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }
     }
+
+    // Exit the user interface.
+    tui.exit()?;
     Ok(())
 }
 
