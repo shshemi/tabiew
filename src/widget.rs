@@ -1,12 +1,12 @@
 use ratatui::{layout::Rect, style::Style, widgets::StatefulWidget};
 
 #[derive(Debug)]
-pub struct CommandPalleteState {
+pub struct PromptState {
     chars: Vec<Vec<char>>,
     cursor: (usize, usize),
 }
 
-impl CommandPalleteState {
+impl PromptState {
     pub fn input_char(&mut self, character: char) -> &mut Self {
         self.chars[self.cursor.0].insert(self.cursor.1, character);
         self.cursor.1 += 1;
@@ -78,7 +78,7 @@ impl CommandPalleteState {
     }
 }
 
-impl From<Vec<String>> for CommandPalleteState {
+impl From<Vec<String>> for PromptState {
     fn from(value: Vec<String>) -> Self {
         Self {
             cursor: (
@@ -93,12 +93,12 @@ impl From<Vec<String>> for CommandPalleteState {
     }
 }
 
-pub struct CommandPallete {
+pub struct Prompt {
     style: Style,
     cursor_style: Style,
 }
 
-impl CommandPallete {
+impl Prompt {
     pub fn new(style: Style, cursor_style: Style) -> Self {
         Self {
             style,
@@ -107,8 +107,8 @@ impl CommandPallete {
     }
 }
 
-impl StatefulWidget for CommandPallete {
-    type State = CommandPalleteState;
+impl StatefulWidget for Prompt {
+    type State = PromptState;
 
     fn render(
         self,
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn state_test() {
-        let mut state = CommandPalleteState::from(vec!["".to_owned()]);
+        let mut state = PromptState::from(vec!["".to_owned()]);
         println!("{}", state.command());
         state.input_char('c');
         state.input_char('h');

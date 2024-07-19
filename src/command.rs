@@ -1,23 +1,18 @@
-use std::{collections::HashMap, error::Error, path::PathBuf};
-
+use crate::app::{AppAction, AppResult};
 use polars::{df, frame::DataFrame};
+use std::{collections::HashMap, error::Error};
 
-use crate::{app::Tabular, sql::SqlBackend};
-
-pub type ExecutionFunction =
-    fn(&str, &mut Tabular, &mut SqlBackend, &mut bool) -> Result<(), Box<dyn Error>>;
-pub type ExecutionTable = HashMap<&'static str, ExecutionFunction>;
+pub type ParseFn = fn(&str) -> Result<AppAction, Box<dyn Error>>;
+pub type CommandRegistery = HashMap<&'static str, ParseFn>;
 pub enum Prefix {
-    Short(&'static str),
     Long(&'static str),
-    Both(&'static str, &'static str),
+    ShortAndLong(&'static str, &'static str),
 }
 
 impl Prefix {
     fn short(&self) -> Option<&'static str> {
         match self {
-            Prefix::Short(short) => Some(short),
-            Prefix::Both(short, _) => Some(short),
+            Prefix::ShortAndLong(short, _) => Some(short),
             _ => None,
         }
     }
@@ -25,104 +20,116 @@ impl Prefix {
     fn long(&self) -> Option<&'static str> {
         match self {
             Prefix::Long(long) => Some(long),
-            Prefix::Both(_, long) => Some(long),
-            _ => None,
+            Prefix::ShortAndLong(_, long) => Some(long),
         }
     }
 }
 
-pub struct Command {
+struct CommandEntry {
     prefix: Prefix,
     usage: &'static str,
     description: &'static str,
-    function: ExecutionFunction,
+    parser: ParseFn,
 }
 
-pub struct CommandList(Vec<Command>);
+pub struct Commands(Vec<CommandEntry>);
 
-impl Default for CommandList {
+impl Default for Commands {
     fn default() -> Self {
         Self(vec![
-            Command {
-                prefix: Prefix::Both(":Q", ":query"),
+            CommandEntry {
+                prefix: Prefix::ShortAndLong(":Q", ":query"),
                 usage: ":Q <query>",
                 description:
                     "Query the data in Structured Query Language(SQL). The table name is the file name without extension",
-                function: command_query,
+                parser: command_query,
             },
-            Command {
-                prefix: Prefix::Both(":q", ":quit"),
+            CommandEntry {
+                prefix: Prefix::ShortAndLong(":q", ":quit"),
                 usage: ":q",
                 description: "Quit Tabiew",
-                function: command_quit,
+                parser: command_quit,
             },
-            Command {
+            CommandEntry {
                 prefix: Prefix::Long(":goto"),
                 usage: ":goto <line_index>",
                 description: "Jumps to the <line_index> line",
-                function: command_goto,
+                parser: command_goto,
             },
-            Command {
+            CommandEntry {
                 prefix: Prefix::Long(":goup"),
                 usage: ":goup <lines>",
                 description: "Jump <lines> line(s) up",
-                function: command_select_up,
+                parser: command_select_up,
             },
-            Command {
+            CommandEntry {
                 prefix: Prefix::Long(":godown"),
                 usage: ":godown <lines>",
                 description: "Jump <lines> line(s) down",
-                function: command_select_down,
+                parser: command_select_down,
             },
-            Command {
+            CommandEntry {
                 prefix: Prefix::Long(":reset"),
                 usage: ":reset",
                 description: "Reset the original data frame",
-                function: command_reset,
+                parser: command_reset,
             },
-            Command {
+            CommandEntry {
                 prefix: Prefix::Long(":help"),
                 usage: ":help",
                 description: "Show help menu",
-                function: command_help,
+                parser: command_help,
             },
-            Command {
-                prefix: Prefix::Both(":S", ":select"),
+            CommandEntry {
+                prefix: Prefix::ShortAndLong(":S", ":select"),
                 usage: ":select <column_name(s)>",
                 description: "Query current data frame for columns/functions",
-                function: command_select,
+                parser: command_select,
             },
-            Command {
-                prefix: Prefix::Both(":F", ":filter"),
+            CommandEntry {
+                prefix: Prefix::ShortAndLong(":F", ":filter"),
                 usage: ":filter <condition(s)>",
                 description: "Filter current data frame, keeping rows were the condition(s) match",
-                function: command_filter,
+                parser: command_filter,
             },
-            Command {
-                prefix: Prefix::Both(":O", ":order"),
+            CommandEntry {
+                prefix: Prefix::ShortAndLong(":O", ":order"),
                 usage: ":order <column(s)_and_order(s)>",
                 description: "Sort current data frame by column(s)",
-                function: command_order,
+                parser: command_order,
             },
-            Command {
+            CommandEntry {
                 prefix: Prefix::Long(":tables"),
                 usage: ":tables",
                 description: "Show loaded data frame(s) alongside their path(s)",
-                function: command_tables,
+                parser: command_tables,
+            },
+            CommandEntry {
+                prefix: Prefix::Long(":rand"),
+                usage: ":rand",
+                description: "Select a random row from current data frame",
+                parser: command_select_random_row,
+            },
+            CommandEntry {
+                prefix: Prefix::Long(":view"),
+                usage: ":view (table | detail | switch)",
+                description: "Change tabular's view to table or detail",
+                parser: command_change_view,
             },
         ])
     }
 }
 
-impl CommandList {
-    pub fn into_exec(self) -> ExecutionTable {
+impl Commands {
+    pub fn into_exec(self) -> CommandRegistery {
         self.0
             .into_iter()
             .flat_map(|cmd| {
                 match cmd.prefix {
-                    Prefix::Short(short) => vec![(short, cmd.function)],
-                    Prefix::Long(long) => vec![(long, cmd.function)],
-                    Prefix::Both(short, long) => vec![(short, cmd.function), (long, cmd.function)],
+                    Prefix::Long(long) => vec![(long, cmd.parser)],
+                    Prefix::ShortAndLong(short, long) => {
+                        vec![(short, cmd.parser), (long, cmd.parser)]
+                    }
                 }
                 .into_iter()
             })
@@ -156,140 +163,69 @@ impl CommandList {
     }
 }
 
-pub fn command_query(
-    query: &str,
-    tabular: &mut Tabular,
-    sql: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    tabular.set_data_frame(sql.execute(query)?);
-    Ok(())
-}
-pub fn command_quit(
-    _: &str,
-    _: &mut Tabular,
-    _: &mut SqlBackend,
-    running: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    *running = false;
-    Ok(())
-}
-pub fn command_goto(
-    idx: &str,
-    tabular: &mut Tabular,
-    _: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    let idx: usize = idx.parse()?;
-    tabular.select(idx.saturating_sub(1));
-    Ok(())
-}
-pub fn command_select_up(
-    lines: &str,
-    tabular: &mut Tabular,
-    _: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    tabular.select_up(lines.parse()?);
-    Ok(())
-}
-pub fn command_select_down(
-    lines: &str,
-    tabular: &mut Tabular,
-    _: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    tabular.select_down(lines.parse()?);
-    Ok(())
+fn command_query(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::SqlQuery(query.to_owned()))
 }
 
-pub fn command_reset(
-    _: &str,
-    tabular: &mut Tabular,
-    sql: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    tabular.set_data_frame(sql.default_df().ok_or("Default data frame not found")?);
-    tabular.select(0);
-    Ok(())
+fn command_quit(_query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::Quit)
 }
 
-pub fn command_help(
-    _: &str,
-    tabular: &mut Tabular,
-    _: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    tabular.set_data_frame(CommandList::default().into_data_frame());
-    Ok(())
+fn command_goto(line: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabularGoto(
+        line.parse::<usize>()?.saturating_sub(1),
+    ))
 }
 
-pub fn command_select(
-    query: &str,
-    tabular: &mut Tabular,
-    _sql: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    let mut sql = SqlBackend::new();
-    sql.register("df", tabular.data_frame.clone(), PathBuf::default());
-    tabular.set_data_frame(
-        sql.execute(
-            format!(
-                "SELECT {} FROM df",
-                query,
-            )
-            .as_str(),
-        )?,
-    );
-    Ok(())
+fn command_select_up(lines: &str) -> AppResult<AppAction> {
+    Ok(match lines {
+        "page" => AppAction::TabularGoUpFullPage,
+        "half" => AppAction::TabularGoUpHalfPage,
+        _ => AppAction::TabularGoUp(lines.parse()?),
+    })
 }
 
-pub fn command_filter(
-    query: &str,
-    tabular: &mut Tabular,
-    _sql: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    let mut sql = SqlBackend::new();
-    sql.register("df", tabular.data_frame.clone(), PathBuf::default());
-    tabular.set_data_frame(
-        sql.execute(
-            format!(
-                "SELECT * FROM df WHERE {}",
-                query
-            )
-            .as_str(),
-        )?,
-    );
-    Ok(())
+fn command_select_down(lines: &str) -> AppResult<AppAction> {
+    Ok(match lines {
+        "page" => AppAction::TabularGoDownFullPage,
+        "half" => AppAction::TabularGoDownHalfPage,
+        _ => AppAction::TabularGoDown(lines.parse()?),
+    })
 }
 
-pub fn command_order(
-    query: &str,
-    tabular: &mut Tabular,
-    _sql: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    let mut sql = SqlBackend::new();
-    sql.register("df", tabular.data_frame.clone(), PathBuf::default());
-    tabular.set_data_frame(
-        sql.execute(
-            format!(
-                "SELECT * FROM df ORDER BY {}",
-                query
-            )
-            .as_str(),
-        )?,
-    );
-    Ok(())
+fn command_reset(_: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabularReset)
 }
 
-pub fn command_tables(
-    _query: &str,
-    tabular: &mut Tabular,
-    sql: &mut SqlBackend,
-    _: &mut bool,
-) -> Result<(), Box<dyn Error>> {
-    tabular.set_data_frame(sql.table_df());
-    Ok(())
+fn command_help(_: &str) -> AppResult<AppAction> {
+    Ok(AppAction::Help)
+}
+
+fn command_select(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabularSelect(query.to_owned()))
+}
+
+fn command_filter(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabularFilter(query.to_owned()))
+}
+
+fn command_order(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabularOrder(query.to_owned()))
+}
+
+fn command_tables(_query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::SqlBackendTable)
+}
+
+fn command_change_view(query: &str) -> AppResult<AppAction> {
+    Ok(match query {
+        "table" => AppAction::TabularTableView,
+        "detail" => AppAction::TabularDetailView,
+        "switch" => AppAction::TabularSwitchView,
+        _ => Err("Invalid view")?,
+    })
+}
+
+fn command_select_random_row(_query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabularGotoRandom)
 }

@@ -1,0 +1,161 @@
+use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::{
+    layout::{Alignment, Rect},
+    style::Style,
+    text::{Line, Span},
+    Frame,
+};
+
+use crate::{
+    widget::{Prompt, PromptState},
+    theme::Styler,
+};
+
+use super::{tabular::Tabular, AppResult};
+
+#[derive(Debug, Default)]
+pub struct StatusBar {
+    pub state: StatusBarState,
+    prompt_history: Vec<String>,
+}
+
+#[derive(Debug, Default)]
+pub enum StatusBarState {
+    #[default]
+    Normal,
+    Error(String),
+    Command(PromptState),
+}
+
+impl StatusBar {
+    pub fn stats(&mut self) -> AppResult<()> {
+        self.state = StatusBarState::Normal;
+        Ok(())
+    }
+
+    pub fn error(&mut self, msg: impl ToString) -> AppResult<()> {
+        self.state = StatusBarState::Error(msg.to_string());
+        Ok(())
+    }
+
+    pub fn command(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
+        let mut history = self.prompt_history.clone();
+        history.push(format!(":{}", prefix.as_ref()));
+        self.state = StatusBarState::Command(history.into());
+        Ok(())
+    }
+
+    pub fn commit_prompt(&mut self) -> Option<String> {
+        if let StatusBarState::Command(prompt) = &self.state {
+            let command = prompt.command();
+            self.prompt_history.push(command.clone());
+            Some(command)
+        } else {
+            None
+        }
+    }
+
+    pub fn tick(&mut self) {}
+
+    pub fn input(&mut self, input: KeyEvent) -> AppResult<()> {
+        if let StatusBarState::Command(prompt) = &mut self.state {
+            match input.code {
+                KeyCode::Up => {
+                    prompt.move_up().move_eol();
+                }
+                KeyCode::Down => {
+                    prompt.move_down().move_eol();
+                }
+                KeyCode::Left => {
+                    if prompt.cursor().1 > 1 {
+                        prompt.move_left();
+                    }
+                }
+                KeyCode::Right => {
+                    prompt.move_right();
+                }
+
+                KeyCode::Backspace => {
+                    if prompt.command_len() == 1 {
+                        self.stats()?;
+                    } else if prompt.cursor().1 > 1 {
+                        prompt.delete_backward();
+                    }
+                }
+
+                KeyCode::Delete => {
+                    prompt.delete();
+                }
+
+                KeyCode::Home => {
+                    prompt.move_bol().move_right();
+                }
+
+                KeyCode::End => {
+                    prompt.move_eol();
+                }
+
+                KeyCode::PageUp | KeyCode::PageDown => (),
+
+                KeyCode::Char(c) => {
+                    prompt.input_char(c);
+                }
+
+                _ => (),
+            }
+        }
+        Ok(())
+    }
+
+    pub fn render<Theme: Styler>(
+        &mut self,
+        frame: &mut Frame,
+        layout: Rect,
+        tabular: &Tabular,
+    ) -> AppResult<()> {
+        match &mut self.state {
+            StatusBarState::Normal => frame.render_widget(
+                Line::default()
+                    .spans([
+                        Span::raw(format!(
+                            "Row: {:<width$} ",
+                            tabular.selected() + 1,
+                            width = tabular.table_values().height().to_string().len()
+                        )),
+                        Span::raw(format!(
+                            "Table Size: {} x {} ",
+                            tabular.table_values().height(),
+                            tabular.table_values().width()
+                        )),
+                    ])
+                    .alignment(Alignment::Right)
+                    .style(Theme::status_bar_blue()),
+                layout,
+            ),
+
+            StatusBarState::Error(msg) => frame.render_widget(
+                Line::raw(msg.as_str())
+                    .alignment(Alignment::Center)
+                    .style(Theme::status_bar_red()),
+                layout,
+            ),
+
+            StatusBarState::Command(text) => {
+                frame.render_stateful_widget(
+                    Prompt::new(
+                        Theme::status_bar_green(),
+                        invert_style(Theme::status_bar_green()),
+                    ),
+                    layout,
+                    text,
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+fn invert_style(mut style: Style) -> Style {
+    std::mem::swap(&mut style.bg, &mut style.fg);
+    style
+}
