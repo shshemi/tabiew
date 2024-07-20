@@ -7,38 +7,42 @@ use ratatui::{
 };
 
 use crate::{
-    widget::{Prompt, PromptState},
     theme::Styler,
+    widget::{Prompt, PromptState},
 };
 
 use super::{tabular::Tabular, AppResult};
 
 #[derive(Debug, Default)]
 pub struct StatusBar {
-    pub state: StatusBarState,
+    state: StatusBarState,
     prompt_history: Vec<String>,
 }
 
 #[derive(Debug, Default)]
 pub enum StatusBarState {
     #[default]
-    Normal,
+    Info,
     Error(String),
     Command(PromptState),
 }
 
 impl StatusBar {
-    pub fn stats(&mut self) -> AppResult<()> {
-        self.state = StatusBarState::Normal;
+    pub fn state(&self) -> &StatusBarState {
+        &self.state
+    }
+
+    pub fn show_info(&mut self) -> AppResult<()> {
+        self.state = StatusBarState::Info;
         Ok(())
     }
 
-    pub fn error(&mut self, msg: impl ToString) -> AppResult<()> {
+    pub fn show_error(&mut self, msg: impl ToString) -> AppResult<()> {
         self.state = StatusBarState::Error(msg.to_string());
         Ok(())
     }
 
-    pub fn command(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
+    pub fn show_prompt(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
         let mut history = self.prompt_history.clone();
         history.push(format!(":{}", prefix.as_ref()));
         self.state = StatusBarState::Command(history.into());
@@ -77,7 +81,7 @@ impl StatusBar {
 
                 KeyCode::Backspace => {
                     if prompt.command_len() == 1 {
-                        self.stats()?;
+                        self.show_info()?;
                     } else if prompt.cursor().1 > 1 {
                         prompt.delete_backward();
                     }
@@ -114,7 +118,7 @@ impl StatusBar {
         tabular: &Tabular,
     ) -> AppResult<()> {
         match &mut self.state {
-            StatusBarState::Normal => frame.render_widget(
+            StatusBarState::Info => frame.render_widget(
                 Line::default()
                     .spans([
                         Span::raw(format!(
