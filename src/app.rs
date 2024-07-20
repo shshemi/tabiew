@@ -19,9 +19,9 @@ pub mod tabular;
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 pub struct App {
-    pub tabular: Tabular,
-    pub status_bar: StatusBar,
-    pub sql: SqlBackend,
+    tabular: Tabular,
+    status_bar: StatusBar,
+    sql: SqlBackend,
     exec_table: CommandRegistery,
     keybindings: Keybind,
     running: bool,
@@ -85,6 +85,10 @@ impl App {
 
     pub fn running(&self) -> bool {
         self.running
+    }
+
+    pub fn tick(&mut self) -> AppResult<()> {
+        self.tabular.tick().and_then(|_| self.status_bar.tick())
     }
 
     pub fn quit(&mut self) -> AppResult<()> {

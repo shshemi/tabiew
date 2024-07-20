@@ -59,7 +59,9 @@ impl StatusBar {
         }
     }
 
-    pub fn tick(&mut self) {}
+    pub fn tick(&mut self) -> AppResult<()> {
+        Ok(())
+    }
 
     pub fn input(&mut self, input: KeyEvent) -> AppResult<()> {
         if let StatusBarState::Command(prompt) = &mut self.state {

@@ -53,7 +53,9 @@ impl Tabular {
     }
 
     /// Handles the tick event of the terminal.
-    pub fn tick(&mut self) {}
+    pub fn tick(&mut self) -> AppResult<()> {
+        Ok(())
+    }
 
     pub fn select_up(&mut self, len: usize) -> AppResult<()> {
         self.select(self.select.saturating_sub(len))

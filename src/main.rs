@@ -81,8 +81,7 @@ fn main() -> AppResult<()> {
 
         match tui.events.next()? {
             Event::Tick => {
-                app.tabular.tick();
-                app.status_bar.tick();
+                app.tick()?
             }
             Event::Key(key_event) => {
                 #[cfg(target_os = "windows")]
