@@ -93,11 +93,11 @@ impl App {
     }
 
     pub fn infer_state(&self) -> AppState {
-        match (self.tabular.state(), &self.status_bar.state) {
-            (tabular::TabularState::Table, StatusBarState::Normal) => AppState::Table,
+        match (self.tabular.state(), self.status_bar.state()) {
+            (tabular::TabularState::Table, StatusBarState::Info) => AppState::Table,
             (tabular::TabularState::Table, StatusBarState::Error(_)) => AppState::Error,
             (tabular::TabularState::Table, StatusBarState::Command(_)) => AppState::Command,
-            (tabular::TabularState::Sheet(_), StatusBarState::Normal) => AppState::Sheet,
+            (tabular::TabularState::Sheet(_), StatusBarState::Info) => AppState::Sheet,
             (tabular::TabularState::Sheet(_), StatusBarState::Error(_)) => AppState::Error,
             (tabular::TabularState::Sheet(_), StatusBarState::Command(_)) => AppState::Command,
         }
@@ -117,29 +117,29 @@ impl App {
         let state = self.infer_state();
         let key_code = key_event.code;
         match (state, key_code) {
-            (AppState::Command | AppState::Error, KeyCode::Esc) => self.status_bar.stats(),
+            (AppState::Command | AppState::Error, KeyCode::Esc) => self.status_bar.show_info(),
 
             (AppState::Command, KeyCode::Enter) => {
                 if let Some(command) = self.status_bar.commit_prompt() {
                     let (s1, s2) = command.split_once(' ').unwrap_or((command.as_ref(), ""));
                     if let Some(parse_fn) = self.exec_table.get(s1) {
                         match parse_fn(s2).and_then(|action| self.invoke(action)) {
-                            Ok(_) => self.status_bar.stats(),
-                            Err(error) => self.status_bar.error(error),
+                            Ok(_) => self.status_bar.show_info(),
+                            Err(error) => self.status_bar.show_error(error),
                         }
                     } else {
-                        self.status_bar.error("Command not found")
+                        self.status_bar.show_error("Command not found")
                     }
                 } else {
                     self.status_bar
-                        .error("Invalid state; consider restarting Tabiew")
+                        .show_error("Invalid state; consider restarting Tabiew")
                 }
             }
 
             (AppState::Command, _) => self.status_bar.input(key_event),
 
             (AppState::Table | AppState::Sheet | AppState::Error, KeyCode::Char(':')) => {
-                self.status_bar.command("")
+                self.status_bar.show_prompt("")
             }
 
             _ => self
@@ -152,11 +152,11 @@ impl App {
     }
     fn invoke(&mut self, action: Action) -> AppResult<()> {
         match action {
-            AppAction::StatusBarStats => self.status_bar.stats(),
+            AppAction::StatusBarStats => self.status_bar.show_info(),
 
-            AppAction::StatusBarCommand(prefix) => self.status_bar.command(prefix),
+            AppAction::StatusBarCommand(prefix) => self.status_bar.show_prompt(prefix),
 
-            AppAction::StatausBarError(msg) => self.status_bar.error(msg),
+            AppAction::StatausBarError(msg) => self.status_bar.show_error(msg),
 
             AppAction::TabularTableView => self.tabular.show_table(),
 
