@@ -24,7 +24,7 @@ pub enum StatusBarState {
     #[default]
     Info,
     Error(String),
-    Command(PromptState),
+    Prompt(PromptState),
 }
 
 impl StatusBar {
@@ -45,12 +45,12 @@ impl StatusBar {
     pub fn show_prompt(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
         let mut history = self.prompt_history.clone();
         history.push(format!(":{}", prefix.as_ref()));
-        self.state = StatusBarState::Command(history.into());
+        self.state = StatusBarState::Prompt(history.into());
         Ok(())
     }
 
     pub fn commit_prompt(&mut self) -> Option<String> {
-        if let StatusBarState::Command(prompt) = &self.state {
+        if let StatusBarState::Prompt(prompt) = &self.state {
             let command = prompt.command();
             self.prompt_history.push(command.clone());
             Some(command)
@@ -64,7 +64,7 @@ impl StatusBar {
     }
 
     pub fn input(&mut self, input: KeyEvent) -> AppResult<()> {
-        if let StatusBarState::Command(prompt) = &mut self.state {
+        if let StatusBarState::Prompt(prompt) = &mut self.state {
             match input.code {
                 KeyCode::Up => {
                     prompt.move_up().move_eol();
@@ -146,7 +146,7 @@ impl StatusBar {
                 layout,
             ),
 
-            StatusBarState::Command(text) => {
+            StatusBarState::Prompt(text) => {
                 frame.render_stateful_widget(
                     Prompt::new(
                         Theme::status_bar_green(),
