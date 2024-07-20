@@ -100,10 +100,10 @@ impl App {
         match (self.tabular.state(), self.status_bar.state()) {
             (tabular::TabularState::Table, StatusBarState::Info) => AppState::Table,
             (tabular::TabularState::Table, StatusBarState::Error(_)) => AppState::Error,
-            (tabular::TabularState::Table, StatusBarState::Command(_)) => AppState::Command,
+            (tabular::TabularState::Table, StatusBarState::Prompt(_)) => AppState::Command,
             (tabular::TabularState::Sheet(_), StatusBarState::Info) => AppState::Sheet,
             (tabular::TabularState::Sheet(_), StatusBarState::Error(_)) => AppState::Error,
-            (tabular::TabularState::Sheet(_), StatusBarState::Command(_)) => AppState::Command,
+            (tabular::TabularState::Sheet(_), StatusBarState::Prompt(_)) => AppState::Command,
         }
     }
 
