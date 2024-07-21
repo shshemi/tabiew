@@ -25,26 +25,6 @@ fn main() -> AppResult<()> {
     // Create the sql backend.
     let mut sql_backend = SqlBackend::new();
 
-    // Add csv files to sql backend
-    // for path in args.files {
-    //     sql_backend.register(
-    //         path.file_stem()
-    //             .expect("Invalid file name")
-    //             .to_string_lossy()
-    //             .into_owned()
-    //             .as_str(),
-    //         read_csv(
-    //             path.clone(),
-    //             &args.infer_schema,
-    //             args.quote_char,
-    //             args.separator,
-    //             args.no_header,
-    //             args.ignore_errors,
-    //         )?,
-    //         path,
-    //     );
-    // }
-
     // Instantiate app components
     let tabs = args.files.iter().map(|path|{
         let name = path.file_stem()
@@ -65,7 +45,6 @@ fn main() -> AppResult<()> {
         let name = sql_backend.register( &name, df.clone(), path.clone());
         Tabular::new(df, format!("SELECT * FROM {}", name))
     }).collect();
-
     let status_bar = StatusBar::default();
     let exec_tbl = Commands::default().into_exec();
     let keybind = Keybind::default();
