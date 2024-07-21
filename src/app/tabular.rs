@@ -31,11 +31,12 @@ pub struct Tabular {
     table_values: TableValues,
     data_frame: DataFrame,
     state: TabularState,
+    init_query: String,
 }
 
 impl Tabular {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame) -> Self {
+    pub fn new(data_frame: DataFrame, init_query: String) -> Self {
         Self {
             offset: 0,
             select: 0,
@@ -49,6 +50,7 @@ impl Tabular {
             table_values: TableValues::from_dataframe(&data_frame),
             data_frame,
             state: TabularState::Table,
+            init_query,
         }
     }
 
@@ -158,6 +160,10 @@ impl Tabular {
 
     pub fn table_values(&self) -> &TableValues {
         &self.table_values
+    }
+
+    pub fn init_query(&self) -> &str {
+        &self.init_query
     }
 
     pub fn render<Theme: Styler>(&mut self, frame: &mut Frame, layout: Rect) -> AppResult<()> {
@@ -279,3 +285,4 @@ fn header_row<Theme: Styler>(df: &[String]) -> Row {
     )
     .style(Theme::table_header())
 }
+
