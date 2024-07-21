@@ -11,7 +11,6 @@ use polars_sql::SQLContext;
 
 pub struct SqlBackend {
     sql: SQLContext,
-    default: Option<String>,
     tables: BTreeMap<String, (String, PathBuf)>,
 }
 
@@ -19,13 +18,8 @@ impl SqlBackend {
     pub fn new() -> Self {
         Self {
             sql: SQLContext::new(),
-            default: None,
             tables: Default::default(),
         }
-    }
-
-    pub fn default_table(&self) -> Option<&str> {
-        self.default.as_deref()
     }
 
     pub fn table_df(&self) -> DataFrame {
@@ -50,25 +44,19 @@ impl SqlBackend {
         .expect("Invalid SQL backed state")
     }
 
-    pub fn register(&mut self, name: &str, data_frame: DataFrame, path: PathBuf) {
+    pub fn register(&mut self, name: &str, data_frame: DataFrame, path: PathBuf) -> String {
         if let Some(name) = TableNameGen::with(name).find(|name| !self.tables.contains_key(name)) {
             self.tables
                 .insert(name.clone(), (data_frame_structure(&data_frame), path));
             self.sql.register(&name, data_frame.lazy());
-            if self.default.is_none() {
-                self.default = name.into();
-            }
+            name
+        } else {
+            panic!("Not implemented")
         }
     }
 
     pub fn execute(&mut self, query: &str) -> PolarsResult<DataFrame> {
         self.sql.execute(query).and_then(LazyFrame::collect)
-    }
-
-    pub fn default_df(&mut self) -> Option<DataFrame> {
-        let def = self.default.as_deref()?;
-        self.execute(format!("SELECT * FROM '{}'", def).as_str())
-            .ok()
     }
 }
 

@@ -7,7 +7,7 @@ use ratatui::Frame;
 use status_bar::{StatusBar, StatusBarState};
 use tabular::Tabular;
 
-use crate::command::{CommandRegistery, Commands};
+use crate::command::CommandRegistery;
 use crate::keybind::{Action, Keybind};
 use crate::sql::SqlBackend;
 use crate::theme::Styler;
@@ -18,8 +18,14 @@ pub mod tabular;
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+#[derive(Debug, Default)]
+pub struct Tabs {
+    tabulars: Vec<Tabular>,
+    idx: usize,
+}
+
 pub struct App {
-    tabular: Tabular,
+    tabs: Tabs,
     status_bar: StatusBar,
     sql: SqlBackend,
     exec_table: CommandRegistery,
@@ -29,6 +35,7 @@ pub struct App {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum AppState {
+    Empty,
     Table,
     Sheet,
     Command,
@@ -61,20 +68,24 @@ pub enum AppAction {
     TabularSelect(String),
     TabularOrder(String),
     TabularFilter(String),
+    TabNew(String),
+    TabSelect(usize),
+    TabRemove(usize),
+    TabRename(usize, String),
     Help,
     Quit,
 }
 
 impl App {
     pub fn new(
-        tabular: Tabular,
+        tabs: Tabs,
         status_bar: StatusBar,
         sql: SqlBackend,
         exec_table: CommandRegistery,
         key_bind: Keybind,
     ) -> Self {
         Self {
-            tabular,
+            tabs,
             status_bar,
             sql,
             exec_table,
@@ -88,7 +99,8 @@ impl App {
     }
 
     pub fn tick(&mut self) -> AppResult<()> {
-        self.tabular.tick().and_then(|_| self.status_bar.tick())
+        self.tabs.selected_mut().map(|tab| tab.tick());
+        self.status_bar.tick()
     }
 
     pub fn quit(&mut self) -> AppResult<()> {
@@ -97,13 +109,19 @@ impl App {
     }
 
     pub fn infer_state(&self) -> AppState {
-        match (self.tabular.state(), self.status_bar.state()) {
-            (tabular::TabularState::Table, StatusBarState::Info) => AppState::Table,
-            (tabular::TabularState::Table, StatusBarState::Error(_)) => AppState::Error,
-            (tabular::TabularState::Table, StatusBarState::Prompt(_)) => AppState::Command,
-            (tabular::TabularState::Sheet(_), StatusBarState::Info) => AppState::Sheet,
-            (tabular::TabularState::Sheet(_), StatusBarState::Error(_)) => AppState::Error,
-            (tabular::TabularState::Sheet(_), StatusBarState::Prompt(_)) => AppState::Command,
+        match (
+            self.tabs.selected().map(Tabular::state),
+            self.status_bar.state(),
+        ) {
+            (Some(tabular::TabularState::Table), StatusBarState::Info) => AppState::Table,
+            (Some(tabular::TabularState::Table), StatusBarState::Error(_)) => AppState::Error,
+            (Some(tabular::TabularState::Table), StatusBarState::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularState::Sheet(_)), StatusBarState::Info) => AppState::Sheet,
+            (Some(tabular::TabularState::Sheet(_)), StatusBarState::Error(_)) => AppState::Error,
+            (Some(tabular::TabularState::Sheet(_)), StatusBarState::Prompt(_)) => AppState::Command,
+            (None, StatusBarState::Info) => AppState::Empty,
+            (None, StatusBarState::Error(_)) => AppState::Error,
+            (None, StatusBarState::Prompt(_)) => AppState::Command,
         }
     }
 
@@ -112,9 +130,24 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
 
         // Draw table / item
-        self.tabular.render::<Theme>(frame, layout[0])?;
-        self.status_bar
-            .render::<Theme>(frame, layout[1], &self.tabular)
+        if let Some(tab) = self.tabs.selected_mut() {
+            tab.render::<Theme>(frame, layout[0])?;
+            self.status_bar.render::<Theme>(
+                frame,
+                layout[1],
+                format!(
+                    "Row: {:<width$} Table Size: {} x {} ",
+                    tab.selected() + 1,
+                    tab.table_values().height(),
+                    tab.table_values().width(),
+                    width = tab.table_values().height().to_string().len(),
+                )
+                .as_str(),
+            )
+        } else {
+            self.status_bar
+                .render::<Theme>(frame, layout[1], "Open a new tab")
+        }
     }
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> AppResult<()> {
@@ -146,12 +179,17 @@ impl App {
                 self.status_bar.show_prompt("")
             }
 
-            _ => self
-                .keybindings
-                .get_action(state, key_event)
-                .cloned()
-                .map(|action| self.invoke(action))
-                .unwrap_or(Ok(())),
+            _ => {
+                match self
+                    .keybindings
+                    .get_action(state, key_event)
+                    .cloned()
+                    .map(|action| self.invoke(action))
+                {
+                    Some(Err(error)) => self.status_bar.show_error(error),
+                    _ => Ok(()),
+                }
+            }
         }
     }
     fn invoke(&mut self, action: Action) -> AppResult<()> {
@@ -162,77 +200,276 @@ impl App {
 
             AppAction::StatausBarError(msg) => self.status_bar.show_error(msg),
 
-            AppAction::TabularTableView => self.tabular.show_table(),
+            AppAction::TabularTableView => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.show_table()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularSheetView => self.tabular.show_sheet(),
+            AppAction::TabularSheetView => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.show_sheet()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularSwitchView => self.tabular.switch_view(),
+            AppAction::TabularSwitchView => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.switch_view()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::SqlQuery(query) => self.tabular.set_data_frame(self.sql.execute(&query)?),
+            AppAction::SqlQuery(query) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.set_data_frame(self.sql.execute(&query)?)
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::SqlBackendTable => self.tabular.set_data_frame(self.sql.table_df()),
+            AppAction::SqlBackendTable => {
+                todo!()
+            }
 
-            AppAction::TabularGoto(line) => self.tabular.select(line),
+            AppAction::TabularGoto(line) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select(line)
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularGotoFirst => self.tabular.select_first(),
+            AppAction::TabularGotoFirst => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_first()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularGotoLast => self.tabular.select_last(),
+            AppAction::TabularGotoLast => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_last()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularGotoRandom => self.tabular.select_random(),
+            AppAction::TabularGotoRandom => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_random()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularGoUp(lines) => self.tabular.select_up(lines),
+            AppAction::TabularGoUp(lines) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_up(lines)
+                } else {
+                    Ok(())
+                }
+            }
 
             AppAction::TabularGoUpHalfPage => {
-                self.tabular.select_up(self.tabular.page_len().div(2))
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_up(tab.page_len().div(2))
+                } else {
+                    Ok(())
+                }
             }
 
-            AppAction::TabularGoUpFullPage => self.tabular.select_up(self.tabular.page_len()),
+            AppAction::TabularGoUpFullPage => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_up(tab.page_len())
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::TabularGoDown(lines) => self.tabular.select_down(lines),
+            AppAction::TabularGoDown(lines) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_down(lines)
+                } else {
+                    Ok(())
+                }
+            }
 
             AppAction::TabularGoDownHalfPage => {
-                self.tabular.select_down(self.tabular.page_len().div(2))
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_down(tab.page_len().div(2))
+                } else {
+                    Ok(())
+                }
             }
 
-            AppAction::TabularGoDownFullPage => self.tabular.select_down(self.tabular.page_len()),
+            AppAction::TabularGoDownFullPage => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.select_down(tab.page_len())
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::SheetScrollUp => self.tabular.scroll_up(),
+            AppAction::SheetScrollUp => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.scroll_up()
+                } else {
+                    Ok(())
+                }
+            }
 
-            AppAction::SheetScrollDown => self.tabular.scroll_down(),
+            AppAction::SheetScrollDown => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.scroll_down()
+                } else {
+                    Ok(())
+                }
+            }
 
             AppAction::TabularReset => {
-                if let Some(data_frame) = self.sql.default_df() {
-                    self.tabular.set_data_frame(data_frame)
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.set_data_frame(self.sql.execute(tab.init_query())?)
                 } else {
-                    Err("Default data frame not found".into())
+                    Ok(())
                 }
             }
 
             AppAction::TabularSelect(select) => {
-                let mut back = SqlBackend::new();
-                back.register("df", self.tabular.data_frame().clone(), "".into());
-                self.tabular
-                    .set_data_frame(back.execute(&format!("SELECT {} FROM df", select))?)
+                if let Some(tab) = self.tabs.selected_mut() {
+                    let mut sql = SqlBackend::new();
+                    sql.register("df", tab.data_frame().clone(), "".into());
+                    tab.set_data_frame(sql.execute(&format!("SELECT {} FROM df", select))?)
+                } else {
+                    Ok(())
+                }
             }
 
             AppAction::TabularOrder(order) => {
-                let mut back = SqlBackend::new();
-                back.register("df", self.tabular.data_frame().clone(), "".into());
-                self.tabular
-                    .set_data_frame(back.execute(&format!("SELECT * FROM df ORDER BY {}", order))?)
+                if let Some(tab) = self.tabs.selected_mut() {
+                    let mut sql = SqlBackend::new();
+                    sql.register("df", tab.data_frame().clone(), "".into());
+                    tab.set_data_frame(
+                        sql.execute(&format!("SELECT * FROM df ORDER BY {}", order))?,
+                    )
+                } else {
+                    Ok(())
+                }
             }
 
             AppAction::TabularFilter(filter) => {
-                let mut back = SqlBackend::new();
-                back.register("df", self.tabular.data_frame().clone(), "".into());
-                self.tabular
-                    .set_data_frame(back.execute(&format!("SELECT * FROM df where {}", filter))?)
+                if let Some(tab) = self.tabs.selected_mut() {
+                    let mut sql = SqlBackend::new();
+                    sql.register("df", tab.data_frame().clone(), "".into());
+                    tab.set_data_frame(sql.execute(&format!("SELECT * FROM df where {}", filter))?)
+                } else {
+                    Ok(())
+                }
             }
-            AppAction::Help => self
-                .tabular
-                .set_data_frame(Commands::default().into_data_frame()),
+
+            AppAction::TabNew(query) => {
+                let df = self.sql.execute(&query)?;
+                self.tabs.add(Tabular::new(df, query))?;
+                self.tabs.select_last()
+            }
+
+            AppAction::TabSelect(idx) => self.tabs.select(idx),
+
+            AppAction::TabRemove(idx) => self.tabs.remove(idx),
+
+            AppAction::TabRename(_idx, _new_name) => {
+                todo!()
+            }
+
+            AppAction::Help => {
+                todo!()
+            }
 
             AppAction::Quit => self.quit(),
+        }
+    }
+}
+
+impl Tabs {
+    pub fn add(&mut self, tabular: Tabular) -> AppResult<()> {
+        self.tabulars.push(tabular);
+        Ok(())
+    }
+
+    pub fn idx(&self) -> usize {
+        self.idx
+    }
+
+    pub fn selected(&self) -> Option<&Tabular> {
+        self.tabulars.get(self.idx)
+    }
+
+    pub fn selected_mut(&mut self) -> Option<&mut Tabular> {
+        self.tabulars.get_mut(self.idx)
+    }
+
+    pub fn remove(&mut self, idx: usize) -> AppResult<()> {
+        self.validate_index(idx)?;
+        self.tabulars.remove(idx);
+        self.saturating_select(self.idx.saturating_sub(1))
+    }
+
+    pub fn remove_selected(&mut self) -> AppResult<()> {
+        self.remove(self.idx)
+    }
+
+    pub fn saturating_select(&mut self, idx: usize) -> AppResult<()> {
+        self.idx = idx.min(self.tabulars.len().saturating_sub(1));
+        Ok(())
+    }
+
+    pub fn select(&mut self, idx: usize) -> AppResult<()> {
+        self.validate_index(idx)?;
+        self.idx = idx;
+        Ok(())
+    }
+
+    pub fn select_next(&mut self) -> AppResult<()> {
+        self.saturating_select(self.idx.saturating_add(1))
+    }
+
+    pub fn select_prev(&mut self) -> AppResult<()> {
+        self.saturating_select(self.idx.saturating_sub(1))
+    }
+
+    pub fn select_first(&mut self) -> AppResult<()> {
+        self.saturating_select(0)
+    }
+
+    pub fn select_last(&mut self) -> AppResult<()> {
+        self.saturating_select(usize::MAX)
+    }
+
+    fn validate_index(&self, idx: usize) -> AppResult<()> {
+        if self.tabulars.is_empty() {
+            Err("no tab is currently available".into())
+        } else        if idx < self.tabulars.len() {
+            Ok(())
+        } else {
+            Err(format!("invalid tab index, valid index range is between 0 and {}", self.tabulars.len()).into())
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Tabular> {
+        self.tabulars.iter()
+    }
+}
+
+impl FromIterator<Tabular> for Tabs {
+    fn from_iter<T: IntoIterator<Item = Tabular>>(iter: T) -> Self {
+        Self {
+            tabulars: iter.into_iter().collect(),
+            idx: 0,
         }
     }
 }

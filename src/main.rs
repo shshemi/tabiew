@@ -26,35 +26,50 @@ fn main() -> AppResult<()> {
     let mut sql_backend = SqlBackend::new();
 
     // Add csv files to sql backend
-    for file in args.files {
-        sql_backend.register(
-            file.file_stem()
+    // for path in args.files {
+    //     sql_backend.register(
+    //         path.file_stem()
+    //             .expect("Invalid file name")
+    //             .to_string_lossy()
+    //             .into_owned()
+    //             .as_str(),
+    //         read_csv(
+    //             path.clone(),
+    //             &args.infer_schema,
+    //             args.quote_char,
+    //             args.separator,
+    //             args.no_header,
+    //             args.ignore_errors,
+    //         )?,
+    //         path,
+    //     );
+    // }
+
+    // Instantiate app components
+    let tabs = args.files.iter().map(|path|{
+        let name = path.file_stem()
                 .expect("Invalid file name")
                 .to_string_lossy()
-                .into_owned()
-                .as_str(),
-            read_csv(
-                file.clone(),
+                .into_owned();
+        let df = match read_csv(
+                path.clone(),
                 &args.infer_schema,
                 args.quote_char,
                 args.separator,
                 args.no_header,
                 args.ignore_errors,
-            )?,
-            file,
-        );
-    }
+            ){
+                Ok(df) => df,
+                Err(err) => panic!("{}", err),
+            };
+        let name = sql_backend.register( &name, df.clone(), path.clone());
+        Tabular::new(df, format!("SELECT * FROM {}", name))
+    }).collect();
 
-    // Instantiate app components
-    let tabular = Tabular::new(
-        sql_backend
-            .default_df()
-            .expect("Default dataframe not found"),
-    );
     let status_bar = StatusBar::default();
     let exec_tbl = Commands::default().into_exec();
     let keybind = Keybind::default();
-    let mut app = App::new(tabular, status_bar, sql_backend, exec_tbl, keybind);
+    let mut app = App::new(tabs, status_bar, sql_backend, exec_tbl, keybind);
 
     // Command handling
 

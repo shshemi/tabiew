@@ -116,6 +116,24 @@ impl Default for Commands {
                 description: "Change tabular's view to table or sheet",
                 parser: command_change_view,
             },
+            CommandEntry {
+                prefix: Prefix::Long(":tabn"),
+                usage: ":tabn <query>",
+                description: "Create a new tab with query",
+                parser: command_new_tab,
+            },
+            CommandEntry {
+                prefix: Prefix::Long(":tabr"),
+                usage: ":tabr <tab_index>",
+                description: "Remove the tab index",
+                parser: command_remove_tab,
+            },
+            CommandEntry {
+                prefix: Prefix::Long(":tab"),
+                usage: ":tab <tab_index>",
+                description: "Select the tab at index",
+                parser: command_select_tab,
+            },
         ])
     }
 }
@@ -228,4 +246,17 @@ fn command_change_view(query: &str) -> AppResult<AppAction> {
 
 fn command_select_random_row(_query: &str) -> AppResult<AppAction> {
     Ok(AppAction::TabularGotoRandom)
+}
+
+fn command_new_tab(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabNew(query.to_owned()))
+
+}
+
+fn command_remove_tab(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabRemove(query.parse()?))
+}
+
+fn command_select_tab(query: &str) -> AppResult<AppAction> {
+    Ok(AppAction::TabSelect(query.parse()?))
 }

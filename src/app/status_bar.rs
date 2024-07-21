@@ -11,7 +11,7 @@ use crate::{
     widget::{Prompt, PromptState},
 };
 
-use super::{tabular::Tabular, AppResult};
+use super::AppResult;
 
 #[derive(Debug, Default)]
 pub struct StatusBar {
@@ -117,23 +117,12 @@ impl StatusBar {
         &mut self,
         frame: &mut Frame,
         layout: Rect,
-        tabular: &Tabular,
+        info: &str,
     ) -> AppResult<()> {
         match &mut self.state {
             StatusBarState::Info => frame.render_widget(
                 Line::default()
-                    .spans([
-                        Span::raw(format!(
-                            "Row: {:<width$} ",
-                            tabular.selected() + 1,
-                            width = tabular.table_values().height().to_string().len()
-                        )),
-                        Span::raw(format!(
-                            "Table Size: {} x {} ",
-                            tabular.table_values().height(),
-                            tabular.table_values().width()
-                        )),
-                    ])
+                    .spans([Span::raw(info)])
                     .alignment(Alignment::Right)
                     .style(Theme::status_bar_blue()),
                 layout,
