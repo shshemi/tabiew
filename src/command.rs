@@ -119,19 +119,19 @@ impl Default for Commands {
             CommandEntry {
                 prefix: Prefix::Long(":tabn"),
                 usage: ":tabn <query>",
-                description: "Create a new tab with query",
+                description: "Create a new tab with the query",
                 parser: command_new_tab,
             },
             CommandEntry {
                 prefix: Prefix::Long(":tabr"),
                 usage: ":tabr <tab_index>",
-                description: "Remove the tab index",
+                description: "Remove the tab at the index",
                 parser: command_remove_tab,
             },
             CommandEntry {
                 prefix: Prefix::Long(":tab"),
                 usage: ":tab <tab_index>",
-                description: "Select the tab at index",
+                description: "Select the tab at the index",
                 parser: command_select_tab,
             },
         ])

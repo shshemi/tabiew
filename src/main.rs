@@ -8,7 +8,7 @@ use std::error::Error;
 use std::io::{self};
 use std::path::PathBuf;
 use tabiew::app::status_bar::StatusBar;
-use tabiew::app::tabular::Tabular;
+use tabiew::app::tabular::{DataFrameReset, Tabular};
 use tabiew::app::{App, AppResult};
 use tabiew::args::{AppTheme, Args, InferSchema};
 use tabiew::command::Commands;
@@ -43,7 +43,7 @@ fn main() -> AppResult<()> {
                 Err(err) => panic!("{}", err),
             };
         let name = sql_backend.register( &name, df.clone(), path.clone());
-        Tabular::new(df, format!("SELECT * FROM {}", name))
+        Tabular::new(df, DataFrameReset::Query(format!("SELECT * FROM {}", name)))
     }).collect();
     let status_bar = StatusBar::default();
     let exec_tbl = Commands::default().into_exec();

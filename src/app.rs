@@ -5,9 +5,9 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::{Constraint, Layout};
 use ratatui::Frame;
 use status_bar::{StatusBar, StatusBarState};
-use tabular::Tabular;
+use tabular::{DataFrameReset, Tabular};
 
-use crate::command::CommandRegistery;
+use crate::command::{CommandRegistery, Commands};
 use crate::keybind::{Action, Keybind};
 use crate::sql::SqlBackend;
 use crate::theme::Styler;
@@ -71,6 +71,10 @@ pub enum AppAction {
     TabNew(String),
     TabSelect(usize),
     TabRemove(usize),
+    TabRemoveSelected,
+    TabSelectedPrev,
+    TabSelectedNext,
+    TabRemoveOrQuit,
     TabRename(usize, String),
     Help,
     Quit,
@@ -132,6 +136,8 @@ impl App {
         // Draw table / item
         if let Some(tab) = self.tabs.selected_mut() {
             tab.render::<Theme>(frame, layout[0])?;
+        }
+        if let Some(tab) = self.tabs.selected() {
             self.status_bar.render::<Theme>(
                 frame,
                 layout[1],
@@ -145,8 +151,7 @@ impl App {
                 .as_str(),
             )
         } else {
-            self.status_bar
-                .render::<Theme>(frame, layout[1], "Open a new tab")
+            self.status_bar.render::<Theme>(frame, layout[1], "")
         }
     }
 
@@ -175,9 +180,7 @@ impl App {
 
             (AppState::Command, _) => self.status_bar.input(key_event),
 
-            (AppState::Table | AppState::Sheet | AppState::Error, KeyCode::Char(':')) => {
-                self.status_bar.show_prompt("")
-            }
+            (_, KeyCode::Char(':')) => self.status_bar.show_prompt(""),
 
             _ => {
                 match self
@@ -233,7 +236,9 @@ impl App {
             }
 
             AppAction::SqlBackendTable => {
-                todo!()
+                self.tabs
+                    .add(Tabular::new(self.sql.table_df(), DataFrameReset::Tables))?;
+                self.tabs.select_last()
             }
 
             AppAction::TabularGoto(line) => {
@@ -334,7 +339,11 @@ impl App {
 
             AppAction::TabularReset => {
                 if let Some(tab) = self.tabs.selected_mut() {
-                    tab.set_data_frame(self.sql.execute(tab.init_query())?)
+                    tab.set_data_frame(match tab.reset() {
+                        DataFrameReset::Help => Commands::default().into_data_frame(),
+                        DataFrameReset::Tables => self.sql.table_df(),
+                        DataFrameReset::Query(query) => self.sql.execute(query)?,
+                    })
                 } else {
                     Ok(())
                 }
@@ -374,7 +383,8 @@ impl App {
 
             AppAction::TabNew(query) => {
                 let df = self.sql.execute(&query)?;
-                self.tabs.add(Tabular::new(df, query))?;
+                self.tabs
+                    .add(Tabular::new(df, DataFrameReset::Query(query)))?;
                 self.tabs.select_last()
             }
 
@@ -382,12 +392,30 @@ impl App {
 
             AppAction::TabRemove(idx) => self.tabs.remove(idx),
 
+            AppAction::TabRemoveSelected => self.tabs.remove(self.tabs.idx()),
+
             AppAction::TabRename(_idx, _new_name) => {
                 todo!()
             }
 
+            AppAction::TabSelectedPrev => self.tabs.select_prev(),
+
+            AppAction::TabSelectedNext => self.tabs.select_next(),
+
+            AppAction::TabRemoveOrQuit => {
+                if self.tabs.len() == 1 {
+                    self.quit()
+                } else {
+                    self.tabs.remove(self.tabs.idx())
+                }
+            }
+
             AppAction::Help => {
-                todo!()
+                self.tabs.add(Tabular::new(
+                    Commands::default().into_data_frame(),
+                    DataFrameReset::Help,
+                ))?;
+                self.tabs.select_last()
             }
 
             AppAction::Quit => self.quit(),
@@ -399,6 +427,14 @@ impl Tabs {
     pub fn add(&mut self, tabular: Tabular) -> AppResult<()> {
         self.tabulars.push(tabular);
         Ok(())
+    }
+
+    pub fn len(&self) -> usize {
+        self.tabulars.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn idx(&self) -> usize {
@@ -453,10 +489,14 @@ impl Tabs {
     fn validate_index(&self, idx: usize) -> AppResult<()> {
         if self.tabulars.is_empty() {
             Err("no tab is currently available".into())
-        } else        if idx < self.tabulars.len() {
+        } else if idx < self.tabulars.len() {
             Ok(())
         } else {
-            Err(format!("invalid tab index, valid index range is between 0 and {}", self.tabulars.len()).into())
+            Err(format!(
+                "invalid tab index, valid index range is between 0 and {}",
+                self.tabulars.len()
+            )
+            .into())
         }
     }
 

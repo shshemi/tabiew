@@ -19,37 +19,42 @@ impl Default for Keybind {
     fn default() -> Self {
         Self {
             map: [
+                // Quit
+                (
+                    StateKey::KeyCode(KeyCode::Char('Q'), KeyModifiers::SHIFT),
+                    AppAction::Quit,
+                ),
                 // Clear error
                 (
                     StateKey::State(AppState::Error),
                     AppAction::StatusBarStats,
                 ),
                 
-                // Table view navigation
+                // Close app/tab/sheet
                 (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('q'), KeyModifiers::empty()),
+                    StateKey::Exact(AppState::Empty, KeyCode::Char('q'), KeyModifiers::empty()),
                     AppAction::Quit,
                 ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Char('q'), KeyModifiers::empty()),
+                    AppAction::TabularTableView,
+                ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Char('q'), KeyModifiers::empty()),
+                    AppAction::TabRemoveOrQuit,
+                ),
+
+                // Switch between tab/sheet
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('v'), KeyModifiers::empty()),
                     AppAction::TabularSheetView,
                 ),
                 (
-                    StateKey::Exact(AppState::Table, KeyCode::Up, KeyModifiers::empty()),
-                    AppAction::TabularGoUp(1),
+                    StateKey::Exact(AppState::Sheet, KeyCode::Char('v'), KeyModifiers::empty()),
+                    AppAction::TabularTableView,
                 ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Down, KeyModifiers::empty()),
-                    AppAction::TabularGoDown(1),
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('k'), KeyModifiers::empty()),
-                    AppAction::TabularGoUp(1),
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('j'), KeyModifiers::empty()),
-                    AppAction::TabularGoDown(1),
-                ),
+
+                // Table half/page navigation
                 (
                     StateKey::Exact(AppState::Table, KeyCode::PageUp, KeyModifiers::empty()),
                     AppAction::TabularGoUpFullPage,
@@ -74,39 +79,23 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('d'), KeyModifiers::CONTROL),
                     AppAction::TabularGoDownHalfPage,
                 ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('g'), KeyModifiers::empty()),
-                    AppAction::TabularGotoFirst,
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('G'), KeyModifiers::SHIFT),
-                    AppAction::TabularGotoLast,
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Home, KeyModifiers::empty()),
-                    AppAction::TabularGotoFirst,
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::End, KeyModifiers::SHIFT),
-                    AppAction::TabularGotoLast,
-                ),
 
-                // Sheet view navigation
+                // Move to prev/next record
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Char('q'), KeyModifiers::empty()),
-                    AppAction::TabularTableView,
+                    StateKey::Exact(AppState::Table, KeyCode::Up, KeyModifiers::empty()),
+                    AppAction::TabularGoUp(1),
                 ),
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Char('v'), KeyModifiers::empty()),
-                    AppAction::TabularTableView,
+                    StateKey::Exact(AppState::Table, KeyCode::Down, KeyModifiers::empty()),
+                    AppAction::TabularGoDown(1),
                 ),
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Up, KeyModifiers::empty()),
-                    AppAction::SheetScrollUp
+                    StateKey::Exact(AppState::Table, KeyCode::Char('k'), KeyModifiers::empty()),
+                    AppAction::TabularGoUp(1),
                 ),
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Down, KeyModifiers::empty()),
-                    AppAction::SheetScrollDown
+                    StateKey::Exact(AppState::Table, KeyCode::Char('j'), KeyModifiers::empty()),
+                    AppAction::TabularGoDown(1),
                 ),
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Right, KeyModifiers::empty()),
@@ -124,13 +113,23 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('l'), KeyModifiers::empty()),
                     AppAction::TabularGoDown(1),
                 ),
+
+                // Move to first/last record
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Char('k'), KeyModifiers::empty()),
-                    AppAction::SheetScrollUp
+                    StateKey::Exact(AppState::Sheet, KeyCode::Home, KeyModifiers::empty()),
+                    AppAction::TabularGotoFirst,
                 ),
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Char('j'), KeyModifiers::empty()),
-                    AppAction::SheetScrollDown
+                    StateKey::Exact(AppState::Sheet, KeyCode::End, KeyModifiers::empty()),
+                    AppAction::TabularGotoLast,
+                ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Home, KeyModifiers::empty()),
+                    AppAction::TabularGotoFirst,
+                ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::End, KeyModifiers::empty()),
+                    AppAction::TabularGotoLast,
                 ),
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('g'), KeyModifiers::empty()),
@@ -141,15 +140,51 @@ impl Default for Keybind {
                     AppAction::TabularGotoLast,
                 ),
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::Home, KeyModifiers::empty()),
+                    StateKey::Exact(AppState::Table, KeyCode::Char('g'), KeyModifiers::empty()),
                     AppAction::TabularGotoFirst,
                 ),
                 (
-                    StateKey::Exact(AppState::Sheet, KeyCode::End, KeyModifiers::SHIFT),
+                    StateKey::Exact(AppState::Table, KeyCode::Char('G'), KeyModifiers::SHIFT),
                     AppAction::TabularGotoLast,
                 ),
 
-                // Goto line
+                // Scroll up/down in sheets
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Up, KeyModifiers::empty()),
+                    AppAction::SheetScrollUp
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Down, KeyModifiers::empty()),
+                    AppAction::SheetScrollDown
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Char('k'), KeyModifiers::empty()),
+                    AppAction::SheetScrollUp
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Char('j'), KeyModifiers::empty()),
+                    AppAction::SheetScrollDown
+                ),
+
+                // Move prev/next tab
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Char('H'), KeyModifiers::SHIFT),
+                    AppAction::TabSelectedPrev,
+                ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Char('L'), KeyModifiers::SHIFT),
+                    AppAction::TabSelectedNext,
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Char('H'), KeyModifiers::SHIFT),
+                    AppAction::TabSelectedPrev,
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Char('L'), KeyModifiers::SHIFT),
+                    AppAction::TabSelectedNext,
+                ),
+
+                // Move to line by number
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('1'), KeyModifiers::empty()),
                     AppAction::StatusBarCommand("goto 1".to_owned()),
