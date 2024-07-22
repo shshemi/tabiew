@@ -26,7 +26,7 @@ pub struct Args {
         help = "Method to infer the schema while loading the file.",
         required = false,
         value_enum,
-        default_value_t = InferSchema::Fast,
+        default_value_t = InferSchema::Safe,
     )]
     pub infer_schema: InferSchema,
 
