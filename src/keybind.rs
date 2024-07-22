@@ -44,7 +44,7 @@ impl Default for Keybind {
                     AppAction::TabRemoveOrQuit,
                 ),
 
-                // Switch between tab/sheet
+                // Switch tab/sheet
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('v'), KeyModifiers::empty()),
                     AppAction::TabularSheetView,
@@ -54,7 +54,17 @@ impl Default for Keybind {
                     AppAction::TabularTableView,
                 ),
 
-                // Table half/page navigation
+                // Move half page
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Char('u'), KeyModifiers::CONTROL),
+                    AppAction::TabularGoUpHalfPage,
+                ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Char('d'), KeyModifiers::CONTROL),
+                    AppAction::TabularGoDownHalfPage,
+                ),
+
+                // Move full page
                 (
                     StateKey::Exact(AppState::Table, KeyCode::PageUp, KeyModifiers::empty()),
                     AppAction::TabularGoUpFullPage,
@@ -70,14 +80,6 @@ impl Default for Keybind {
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('f'), KeyModifiers::CONTROL),
                     AppAction::TabularGoDownFullPage,
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('u'), KeyModifiers::CONTROL),
-                    AppAction::TabularGoUpHalfPage,
-                ),
-                (
-                    StateKey::Exact(AppState::Table, KeyCode::Char('d'), KeyModifiers::CONTROL),
-                    AppAction::TabularGoDownHalfPage,
                 ),
 
                 // Move to prev/next record
