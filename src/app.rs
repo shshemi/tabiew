@@ -142,17 +142,35 @@ impl App {
             self.status_bar.render::<Theme>(
                 frame,
                 layout[1],
-                format!(
-                    "Row: {:<width$} Table Size: {} x {} ",
-                    tab.selected() + 1,
-                    tab.table_values().height(),
-                    tab.table_values().width(),
-                    width = tab.table_values().height().to_string().len(),
-                )
-                .as_str(),
+                &[
+                    (
+                        "Tab",
+                        &format!(
+                            "{:>width$}",
+                            self.tabs.idx(),
+                            width = tab.page_len().to_string().len()
+                        ),
+                    ),
+                    (
+                        "Row",
+                        &format!(
+                            "{:>width$}",
+                            tab.selected() + 1,
+                            width = tab.table_values().height().to_string().len()
+                        ),
+                    ),
+                    (
+                        "Shape",
+                        &format!(
+                            "{} x {}",
+                            tab.table_values().height(),
+                            tab.table_values().width()
+                        ),
+                    ),
+                ],
             )
         } else {
-            self.status_bar.render::<Theme>(frame, layout[1], "")
+            self.status_bar.render::<Theme>(frame, layout[1], &[])
         }
     }
 

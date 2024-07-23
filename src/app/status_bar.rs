@@ -117,29 +117,33 @@ impl StatusBar {
         &mut self,
         frame: &mut Frame,
         layout: Rect,
-        info: &str,
+        info: &[(&str, &str)],
     ) -> AppResult<()> {
         match &mut self.state {
             StatusBarState::Info => frame.render_widget(
                 Line::default()
-                    .spans([Span::raw(info)])
+                    .spans(
+                        info.iter()
+                            .enumerate()
+                            .flat_map(|(i, (k, v))| info_key_value::<Theme>(i, k, v)),
+                    )
                     .alignment(Alignment::Right)
-                    .style(Theme::status_bar_blue()),
+                    .style(Theme::status_bar_info()),
                 layout,
             ),
 
             StatusBarState::Error(msg) => frame.render_widget(
                 Line::raw(msg.as_str())
                     .alignment(Alignment::Center)
-                    .style(Theme::status_bar_red()),
+                    .style(Theme::status_bar_error()),
                 layout,
             ),
 
             StatusBarState::Prompt(text) => {
                 frame.render_stateful_widget(
                     Prompt::new(
-                        Theme::status_bar_green(),
-                        invert_style(Theme::status_bar_green()),
+                        Theme::status_bar_prompt(),
+                        invert_style(Theme::status_bar_prompt()),
                     ),
                     layout,
                     text,
@@ -150,6 +154,13 @@ impl StatusBar {
     }
 }
 
+fn info_key_value<'a, Theme: Styler>(idx: usize, key: &'a str, value: &'a str) -> [Span<'a>; 3] {
+    [
+        Span::raw(format!(" {} ", key)).style(Theme::status_bar_info_key(idx)),
+        Span::raw(format!(" {} ", value)).style(Theme::status_bar_info_val(idx)),
+        Span::raw(" "),
+    ]
+}
 fn invert_style(mut style: Style) -> Style {
     std::mem::swap(&mut style.bg, &mut style.fg);
     style
