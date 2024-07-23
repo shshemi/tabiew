@@ -134,8 +134,9 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
 
         // Draw table / item
+        let state = self.infer_state();
         if let Some(tab) = self.tabs.selected_mut() {
-            tab.render::<Theme>(frame, layout[0])?;
+            tab.render::<Theme>(frame, layout[0], matches!(state, AppState::Table))?;
         }
         if let Some(tab) = self.tabs.selected() {
             self.status_bar.render::<Theme>(
