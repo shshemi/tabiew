@@ -173,27 +173,45 @@ impl Tabular {
         &self.reset
     }
 
-    pub fn render<Theme: Styler>(&mut self, frame: &mut Frame, layout: Rect) -> AppResult<()> {
+    pub fn render<Theme: Styler>(
+        &mut self,
+        frame: &mut Frame,
+        layout: Rect,
+        selection: bool,
+    ) -> AppResult<()> {
         match &mut self.state {
             TabularState::Table => {
                 self.rendered_rows = layout.height.saturating_sub(1);
                 self.adjust_offset();
 
-                let mut local_st = TableState::new()
-                    .with_offset(0)
-                    .with_selected(self.select.saturating_sub(self.offset));
+                if selection {
+                    let mut local_st = TableState::new()
+                        .with_offset(0)
+                        .with_selected(self.select.saturating_sub(self.offset));
 
-                frame.render_stateful_widget(
-                    tabulate::<Theme>(
-                        &self.table_values,
-                        &self.widths,
-                        &self.headers,
-                        self.offset,
-                        self.rendered_rows as usize,
-                    ),
-                    layout,
-                    &mut local_st,
-                );
+                    frame.render_stateful_widget(
+                        tabulate::<Theme>(
+                            &self.table_values,
+                            &self.widths,
+                            &self.headers,
+                            self.offset,
+                            self.rendered_rows as usize,
+                        ),
+                        layout,
+                        &mut local_st,
+                    );
+                } else {
+                    frame.render_widget(
+                        tabulate::<Theme>(
+                            &self.table_values,
+                            &self.widths,
+                            &self.headers,
+                            self.offset,
+                            self.rendered_rows as usize,
+                        ),
+                        layout,
+                    );
+                }
             }
             TabularState::Sheet(scroll) => {
                 self.rendered_rows = 0;
@@ -279,6 +297,7 @@ pub fn tabulate<'a, Theme: Styler>(
     )
     .header(header_row::<Theme>(headers))
     .highlight_style(Theme::table_highlight())
+    .column_spacing(2)
 }
 
 fn header_row<Theme: Styler>(df: &[String]) -> Row {
@@ -292,4 +311,3 @@ fn header_row<Theme: Styler>(df: &[String]) -> Row {
     )
     .style(Theme::table_header())
 }
-
