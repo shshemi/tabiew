@@ -244,7 +244,13 @@ pub fn data_frame_widths(df: &polars::frame::DataFrame) -> Vec<usize> {
 pub fn series_width(series: &Series) -> usize {
     series
         .iter()
-        .map(|any_value| any_value_into_string(any_value).len())
+        .map(|any_value| {
+            any_value_into_string(any_value)
+                .lines()
+                .next()
+                .map(str::len)
+                .unwrap_or(0)
+        })
         .max()
         .unwrap_or_default()
 }
@@ -252,29 +258,9 @@ pub fn series_width(series: &Series) -> usize {
 pub fn any_value_into_string(value: polars::datatypes::AnyValue) -> String {
     match value {
         AnyValue::Null => "".to_owned(),
-        AnyValue::Boolean(v) => format!("{}", v),
-        AnyValue::String(v) => v.to_string(),
-        AnyValue::UInt8(v) => format!("{}", v),
-        AnyValue::UInt16(v) => format!("{}", v),
-        AnyValue::UInt32(v) => format!("{}", v),
-        AnyValue::UInt64(v) => format!("{}", v),
-        AnyValue::Int8(v) => format!("{}", v),
-        AnyValue::Int16(v) => format!("{}", v),
-        AnyValue::Int32(v) => format!("{}", v),
-        AnyValue::Int64(v) => format!("{}", v),
-        AnyValue::Float32(v) => format!("{}", v),
-        AnyValue::Float64(v) => format!("{}", v),
-        AnyValue::Decimal(v1, v2) => format!("{}.{}", v1, v2),
-        AnyValue::Date(v) => format!("{}", v),
-        AnyValue::Datetime(v1, v2, v3) => format!("{} {} {:?}", v1, v2, v3),
-        AnyValue::Duration(v1, v2) => format!("{} {}", v1, v2),
-        AnyValue::Time(v) => format!("{}", v),
-        AnyValue::List(_) => value.to_string(),
         AnyValue::StringOwned(v) => v.to_string(),
-        AnyValue::Binary(_) => value.to_string(),
-        AnyValue::BinaryOwned(_) => value.to_string(),
-        AnyValue::Struct(_, _, _) => value.to_string(),
-        AnyValue::StructOwned(_) => value.to_string(),
+        AnyValue::String(v) => v.to_string(),
+        _ => value.to_string(),
     }
 }
 
