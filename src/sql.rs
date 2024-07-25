@@ -22,7 +22,7 @@ impl SqlBackend {
         }
     }
 
-    pub fn table_df(&self) -> DataFrame {
+    pub fn schema(&self) -> DataFrame {
         let (tables, structures, paths) = self.tables.iter().fold(
             (Vec::new(), Vec::new(), Vec::new()),
             |(mut vt, mut vs, mut vp), (t, (s, p))| {
