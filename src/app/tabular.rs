@@ -22,9 +22,10 @@ pub enum TabularState {
 }
 
 #[derive(Debug)]
-pub enum DataFrameReset {
+pub enum TabularType {
     Help,
-    Tables,
+    Schema,
+    Name(String),
     Query(String),
 }
 
@@ -38,12 +39,12 @@ pub struct Tabular {
     table_values: TableValues,
     data_frame: DataFrame,
     state: TabularState,
-    reset: DataFrameReset,
+    tabular_type: TabularType,
 }
 
 impl Tabular {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame, reset: DataFrameReset) -> Self {
+    pub fn new(data_frame: DataFrame, reset: TabularType) -> Self {
         Self {
             offset: 0,
             select: 0,
@@ -57,7 +58,7 @@ impl Tabular {
             table_values: TableValues::from_dataframe(&data_frame),
             data_frame,
             state: TabularState::Table,
-            reset,
+            tabular_type: reset,
         }
     }
 
@@ -169,8 +170,8 @@ impl Tabular {
         &self.table_values
     }
 
-    pub fn reset(&self) -> &DataFrameReset {
-        &self.reset
+    pub fn tabular_type(&self) -> &TabularType {
+        &self.tabular_type
     }
 
     pub fn render<Theme: Styler>(

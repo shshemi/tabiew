@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::{Constraint, Layout};
 use ratatui::Frame;
 use status_bar::{StatusBar, StatusBarState};
-use tabular::{DataFrameReset, Tabular};
+use tabular::{Tabular, TabularType};
 
 use crate::command::{CommandRegistery, Commands};
 use crate::keybind::{Action, Keybind};
@@ -51,7 +51,7 @@ pub enum AppAction {
     TabularSheetView,
     TabularSwitchView,
     SqlQuery(String),
-    SqlBackendTable,
+    SqlSchema,
     TabularGoto(usize),
     TabularGotoFirst,
     TabularGotoLast,
@@ -144,10 +144,25 @@ impl App {
                 layout[1],
                 &[
                     (
+                        match tab.tabular_type() {
+                            TabularType::Help => "Table",
+                            TabularType::Schema => "Table",
+                            TabularType::Name(_) => "Table",
+                            TabularType::Query(_) => "SQL",
+                        },
+                        match tab.tabular_type() {
+                            TabularType::Help => "Help",
+                            TabularType::Schema => "Schema",
+                            TabularType::Name(name) => name,
+                            TabularType::Query(query) => query,
+                        },
+                    ),
+                    (
                         "Tab",
                         &format!(
-                            "{:>width$}",
-                            self.tabs.idx(),
+                            "{:>width$} / {}",
+                            self.tabs.idx() + 1,
+                            self.tabs.len(),
                             width = tab.page_len().to_string().len()
                         ),
                     ),
@@ -254,10 +269,17 @@ impl App {
                 }
             }
 
-            AppAction::SqlBackendTable => {
-                self.tabs
-                    .add(Tabular::new(self.sql.table_df(), DataFrameReset::Tables))?;
-                self.tabs.select_last()
+            AppAction::SqlSchema => {
+                let idx = self.tabs.iter().enumerate().find_map(|(idx, tab)| {
+                    matches!(tab.tabular_type(), TabularType::Schema).then_some(idx)
+                });
+                if let Some(idx) = idx {
+                    self.tabs.select(idx)
+                } else {
+                    self.tabs
+                        .add(Tabular::new(self.sql.schema(), TabularType::Schema))?;
+                    self.tabs.select_last()
+                }
             }
 
             AppAction::TabularGoto(line) => {
@@ -358,10 +380,13 @@ impl App {
 
             AppAction::TabularReset => {
                 if let Some(tab) = self.tabs.selected_mut() {
-                    tab.set_data_frame(match tab.reset() {
-                        DataFrameReset::Help => Commands::default().into_data_frame(),
-                        DataFrameReset::Tables => self.sql.table_df(),
-                        DataFrameReset::Query(query) => self.sql.execute(query)?,
+                    tab.set_data_frame(match tab.tabular_type() {
+                        TabularType::Help => Commands::default().into_data_frame(),
+                        TabularType::Schema => self.sql.schema(),
+                        TabularType::Name(name) => self
+                            .sql
+                            .execute(format!("SELECT * FROM {}", name).as_str())?,
+                        TabularType::Query(query) => self.sql.execute(query)?,
                     })
                 } else {
                     Ok(())
@@ -402,12 +427,24 @@ impl App {
 
             AppAction::TabNew(query) => {
                 let df = self.sql.execute(&query)?;
-                self.tabs
-                    .add(Tabular::new(df, DataFrameReset::Query(query)))?;
+                self.tabs.add(Tabular::new(df, TabularType::Query(query)))?;
                 self.tabs.select_last()
             }
 
-            AppAction::TabSelect(idx) => self.tabs.select(idx),
+            AppAction::TabSelect(idx) => {
+                if idx == 0 {
+                    Err("zero is not a valid tab".into())
+                } else if idx <= self.tabs.len() {
+                    self.tabs.select(idx.saturating_sub(1))
+                } else {
+                    Err(format!(
+                        "index {} is out of bound, maximum is {}",
+                        idx,
+                        self.tabs.len()
+                    )
+                    .into())
+                }
+            }
 
             AppAction::TabRemove(idx) => self.tabs.remove(idx),
 
@@ -430,11 +467,18 @@ impl App {
             }
 
             AppAction::Help => {
-                self.tabs.add(Tabular::new(
-                    Commands::default().into_data_frame(),
-                    DataFrameReset::Help,
-                ))?;
-                self.tabs.select_last()
+                let idx = self.tabs.iter().enumerate().find_map(|(idx, tab)| {
+                    matches!(tab.tabular_type(), TabularType::Help).then_some(idx)
+                });
+                if let Some(idx) = idx {
+                    self.tabs.select(idx)
+                } else {
+                    self.tabs.add(Tabular::new(
+                        Commands::default().into_data_frame(),
+                        TabularType::Help,
+                    ))?;
+                    self.tabs.select_last()
+                }
             }
 
             AppAction::Quit => self.quit(),

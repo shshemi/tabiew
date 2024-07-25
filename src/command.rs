@@ -99,9 +99,9 @@ impl Default for Commands {
                 parser: command_order,
             },
             CommandEntry {
-                prefix: Prefix::Long(":tables"),
-                usage: ":tables",
-                description: "Show loaded data frame(s) alongside their path(s)",
+                prefix: Prefix::Long(":schema"),
+                usage: ":schema",
+                description: "Show loaded data frame(s), their schmea(s), and their path(s)",
                 parser: command_tables,
             },
             CommandEntry {
@@ -232,7 +232,7 @@ fn command_order(query: &str) -> AppResult<AppAction> {
 }
 
 fn command_tables(_query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::SqlBackendTable)
+    Ok(AppAction::SqlSchema)
 }
 
 fn command_change_view(query: &str) -> AppResult<AppAction> {
