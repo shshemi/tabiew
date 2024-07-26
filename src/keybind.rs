@@ -19,11 +19,6 @@ impl Default for Keybind {
     fn default() -> Self {
         Self {
             map: [
-                // Quit
-                (
-                    StateKey::KeyCode(KeyCode::Char('Q'), KeyModifiers::SHIFT),
-                    AppAction::Quit,
-                ),
                 // Clear error
                 (
                     StateKey::State(AppState::Error),
