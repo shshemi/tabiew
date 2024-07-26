@@ -86,13 +86,12 @@ Installing Tabiew from *Crates.io*:
  ```
 
 ### Build from Source
-Ensure you have the 1.80.0-nightly (or higher) version of Rust installed, then:
+Ensure you have the rustc version 1.80 (or higher) installed, then:
 ```bash
 git clone https://github.com/shshemi/tabiew.git
 cd tabiew
-rustup override set nightly
 cargo build --release
-cp ./target/release/tabiew <system_or_local_bin_path>
+cp ./target/release/tw <system_or_local_bin_path>
 ```
 
 ## Usage
