@@ -4,6 +4,7 @@ use ratatui::{layout::Rect, style::Style, widgets::StatefulWidget};
 pub struct PromptState {
     chars: Vec<Vec<char>>,
     cursor: (usize, usize),
+    offset: usize,
 }
 
 impl PromptState {
@@ -23,7 +24,7 @@ impl PromptState {
     pub fn delete_backward(&mut self) -> &mut Self {
         if self.cursor.1 > 0 {
             self.chars[self.cursor.0].remove(self.cursor.1 - 1);
-            self.cursor.1 -= 1
+            self.cursor.1 -= 1;
         }
         self
     }
@@ -89,6 +90,7 @@ impl From<Vec<String>> for PromptState {
                     .unwrap_or_default(),
             ),
             chars: value.into_iter().map(|str| str.chars().collect()).collect(),
+            offset: 0,
         }
     }
 }
@@ -116,11 +118,33 @@ impl StatefulWidget for Prompt {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        buf.set_string(area.x, area.y, state.command(), self.style);
+        state.offset = state
+            .offset
+            .clamp(
+                state
+                    .cursor
+                    .1
+                    .saturating_sub(area.width.saturating_sub(1).into()),
+                state.cursor.1.min(state.chars[state.cursor.0].len()),
+            )
+            .min(
+                state.chars[state.cursor.0]
+                    .len()
+                    .saturating_sub(area.width.saturating_sub(1).into()),
+            );
+        buf.set_string(
+            area.x,
+            area.y,
+            state.chars[state.cursor.0]
+                .iter()
+                .skip(state.offset)
+                .collect::<String>(),
+            self.style,
+        );
         buf.set_style(area, self.style);
         buf.set_style(
             Rect {
-                x: area.x + state.cursor.1 as u16,
+                x: area.x + state.cursor.1.saturating_sub(state.offset) as u16,
                 y: area.y,
                 width: 1,
                 height: 1,
