@@ -44,6 +44,10 @@ impl SqlBackend {
         .expect("Invalid SQL backed state")
     }
 
+    pub fn contains_dataframe(&self, name: &str) -> bool {
+        self.tables.contains_key(name)
+    }
+
     pub fn register(&mut self, name: &str, data_frame: DataFrame, path: PathBuf) -> String {
         if let Some(name) = TableNameGen::with(name).find(|name| !self.tables.contains_key(name)) {
             self.tables

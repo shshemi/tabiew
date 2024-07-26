@@ -426,8 +426,13 @@ impl App {
             }
 
             AppAction::TabNew(query) => {
-                let df = self.sql.execute(&query)?;
-                self.tabs.add(Tabular::new(df, TabularType::Query(query)))?;
+                if self.sql.contains_dataframe(&query) {
+                    let df = self.sql.execute(&format!("SELECT * FROM {}", query))?;
+                    self.tabs.add(Tabular::new(df, TabularType::Name(query)))?;
+                } else {
+                    let df = self.sql.execute(&query)?;
+                    self.tabs.add(Tabular::new(df, TabularType::Query(query)))?;
+                }
                 self.tabs.select_last()
             }
 
