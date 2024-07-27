@@ -23,12 +23,14 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 | `l` or `Arrow Right`| Move to the next item in sheet view|
 | `Page Up` or  `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
+| `H`| Select previous tab|
+| `L`| Select next tab|
 | `Ctrl+u`| Move up half a page|
 | `Ctrl+d`| Move down half a page|
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
 | `R`| Select a random row|
-| `q`| Quit|
+| `q`| Close current tab|
 | `:`| Command mode|
 
 ## Commands
@@ -38,11 +40,12 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:S` or `:select`| `:S price, area, bedrooms, parking`|Query current data frame for columns/functions|
 |`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Filter current data frame, keeping rows were the condition(s) match|
 |`:O` or `:order`| `:O area`|Sort current data frame by column(s)|
+|`:tabn`| `:tabn SELECT * FORM user WHERE balance > 1000`|Sort current data frame by column(s)|
 |`:goto`| `:goto 10`| Move to the specified line index|
 |`:goup`| `:goup 10`| Move a specified number of lines up|
 |`:godown`| `:godown 10`| Move a specified number of lines down|
 |`:q` or `:quit` |`:q`| Return to table from sheet view otherwise quit|
-|`:tables`| `:tables`| Show loaded data frame(s) alongside their path(s)|
+|`:schema`| `:schema`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|
 
