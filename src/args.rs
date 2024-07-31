@@ -1,11 +1,16 @@
-use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[arg(help = "Path(s) to the file(s) to be opened.", required = true)]
     pub files: Vec<PathBuf>,
+
+    #[arg(long, help = "Select file type", required= true,
+        value_enum,
+        default_value_t = FileType::Csv)]
+    pub filetype: FileType,
 
     #[arg(
         long,
@@ -54,6 +59,12 @@ pub struct Args {
         default_value_t = AppTheme::Monokai
     )]
     pub theme: AppTheme,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum FileType {
+    Csv,
+    Parquet,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
