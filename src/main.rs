@@ -1,18 +1,20 @@
 use clap::Parser;
 use polars::frame::DataFrame;
 use polars::io::csv::read::{CsvParseOptions, CsvReadOptions};
+use polars::io::parquet::read::ParquetReader;
 use polars::io::SerReader;
 use ratatui::backend::CrosstermBackend;
-use tabiew::keybind::Keybind;
 use std::error::Error;
+use std::fs::File;
 use std::io::{self};
 use std::path::PathBuf;
 use tabiew::app::status_bar::StatusBar;
-use tabiew::app::tabular::{TabularType, Tabular};
+use tabiew::app::tabular::{Tabular, TabularType};
 use tabiew::app::{App, AppResult};
-use tabiew::args::{AppTheme, Args, InferSchema};
+use tabiew::args::{AppTheme, Args, FileType, InferSchema};
 use tabiew::command::Commands;
 use tabiew::event::{Event, EventHandler};
+use tabiew::keybind::Keybind;
 use tabiew::sql::SqlBackend;
 use tabiew::theme::{Argonaut, Monokai, Terminal};
 use tabiew::tui::Tui;
@@ -26,25 +28,37 @@ fn main() -> AppResult<()> {
     let mut sql_backend = SqlBackend::new();
 
     // Instantiate app components
-    let tabs = args.files.iter().map(|path|{
-        let name = path.file_stem()
+    let tabs = args
+        .files
+        .iter()
+        .map(|path| {
+            let name = path
+                .file_stem()
                 .expect("Invalid file name")
                 .to_string_lossy()
                 .into_owned();
-        let df = match read_csv(
-                path.clone(),
-                &args.infer_schema,
-                args.quote_char,
-                args.separator,
-                args.no_header,
-                args.ignore_errors,
-            ){
-                Ok(df) => df,
-                Err(err) => panic!("{}", err),
+
+            let df = match args.filetype {
+                FileType::Csv => match read_csv(
+                    path.clone(),
+                    &args.infer_schema,
+                    args.quote_char,
+                    args.separator,
+                    args.no_header,
+                    args.ignore_errors,
+                ) {
+                    Ok(df) => df,
+                    Err(err) => panic!("{}", err),
+                },
+                FileType::Parquet => match read_parquet(path.clone()) {
+                    Ok(df) => df,
+                    Err(err) => panic!("{}", err),
+                },
             };
-        let name = sql_backend.register( &name, df.clone(), path.clone());
-        Tabular::new(df, TabularType::Name(name))
-    }).collect();
+            let name = sql_backend.register(&name, df.clone(), path.clone());
+            Tabular::new(df, TabularType::Name(name))
+        })
+        .collect();
     let status_bar = StatusBar::default();
     let exec_tbl = Commands::default().into_exec();
     let keybind = Keybind::default();
@@ -62,21 +76,13 @@ fn main() -> AppResult<()> {
     // Run the main loop
     while app.running() {
         match args.theme {
-            AppTheme::Monokai => {
-                tui.draw::<Monokai>(&mut app)?
-            }
-            AppTheme::Argonaut => {
-                tui.draw::<Argonaut>(&mut app)?
-            }
-            AppTheme::Terminal => {
-                tui.draw::<Terminal>(&mut app)?
-            }
+            AppTheme::Monokai => tui.draw::<Monokai>(&mut app)?,
+            AppTheme::Argonaut => tui.draw::<Argonaut>(&mut app)?,
+            AppTheme::Terminal => tui.draw::<Terminal>(&mut app)?,
         }
 
         match tui.events.next()? {
-            Event::Tick => {
-                app.tick()?
-            }
+            Event::Tick => app.tick()?,
             Event::Key(key_event) => {
                 #[cfg(target_os = "windows")]
                 {
@@ -122,5 +128,12 @@ fn read_csv(
     if matches!(infer_schema, InferSchema::Safe) {
         infer_schema_safe(&mut df);
     }
+    Ok(df)
+}
+
+fn read_parquet(path: PathBuf) -> Result<DataFrame, Box<dyn Error>> {
+    let file = File::open(&path)?;
+    let reader: ParquetReader<File> = ParquetReader::new(file);
+    let df = reader.finish()?;
     Ok(df)
 }
