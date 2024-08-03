@@ -6,11 +6,10 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 
 ## Features
 
-- 📊 **Table View**: Explore your data with an easy-to-navigate table view.
-- 🔍 **Sheet View**: Dive deep into records with details of individual records.
-- 🛠️ **SQL Query Capability**: Utilize SQL for powerful data querying, such as filtering, sorting, and aggregations.
-- 🗂️ **Multiple Table Support**: Work with multiple tables simultaneously.
-- ⌨️ **Vim Inspired Keybindings**: Navigate through your data effortlessly using Vim-style keybindings.
+- 📊 Easy to Navigate Tables and Sheets
+- 🛠️ SQL Capability
+- 🗂️ Multiple Table Support
+- ⌨️ Vim Inspired Keybindings
 
 ## Keybindings️
 
