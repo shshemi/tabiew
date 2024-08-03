@@ -41,13 +41,14 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Filter current data frame, keeping rows were the condition(s) match|
 |`:O` or `:order`| `:O area`|Sort current data frame by column(s)|
 |`:tabn`| `:tabn SELECT * FORM user WHERE balance > 1000`|Sort current data frame by column(s)|
-|`:goto`| `:goto 10`| Move to the specified line index|
-|`:goup`| `:goup 10`| Move a specified number of lines up|
-|`:godown`| `:godown 10`| Move a specified number of lines down|
 |`:q` or `:quit` |`:q`| Return to table from sheet view otherwise quit|
 |`:schema`| `:schema`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|
+
+## Tutorial
+
+For a guide on using Tabiew, including instructions on opening files, navigating tables, performing queries, and using inline queries, please read to the [tutorial](https://github.com/shshemi/tabiew/blob/main/tutorial/tutorial.md).
 
 ## Installation
 
