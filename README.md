@@ -11,6 +11,10 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 - 🗂️ Multiple Table Support
 - ⌨️ Vim Inspired Keybindings
 
+## Tutorial
+
+For a guide on using Tabiew, including instructions on opening files, navigating tables, performing queries, and using inline queries, kindly visit the [tutorial page](https://github.com/shshemi/tabiew/blob/main/tutorial/tutorial.md).
+
 ## Keybindings️
 
 |Key Combination|Functionality|
@@ -44,10 +48,6 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 |`:schema`| `:schema`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
 |`:help`| `:help`| Show help menu|
-
-## Tutorial
-
-For a guide on using Tabiew, including instructions on opening files, navigating tables, performing queries, and using inline queries, please read to the [tutorial](https://github.com/shshemi/tabiew/blob/main/tutorial/tutorial.md).
 
 ## Installation
 
