@@ -7,7 +7,7 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 ## Features
 
 - 📊 Easy to Navigate Tables and Sheets
-- 🛠️ SQL Capability
+- 🛠️ SQL Support
 - 🗂️ Multiple Table Support
 - ⌨️ Vim Inspired Keybindings
 
