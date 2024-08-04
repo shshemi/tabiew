@@ -19,7 +19,7 @@ To open a single file in Tabiew, simply use the following command:
 tw <file_name>
 ```
 
-For instance, to open the housing price dataset file, use the following command:
+Needless to say that `<file_name>` should be replaced with the name of the file you wish to open. For instance, to open the housing price dataset file, use the following command:
 
 ```shell
 tw housing.csv
@@ -29,13 +29,12 @@ This command will load the `housing.csv` file and display the following page:
 
 ![image not found](images/main_page.png)
 
-The data from housing.csv in the main table, while the status bar at the bottom of the page provides table properties such as name and shape. Furthermore, the status bar also discloses the current tab.
+As shown in the image, the tabular data is displayed the main table, while the status bar at the bottom of the page provides table properties such as name and shape. Furthermore, the status bar also discloses the current tab's information.
 
 ## Command Mode
 
-Command mode can be activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
+Command mode is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
 
-Replace `<file_name>` with the name of the tabular file you wish to view. This command will load the file and display its contents.
 
 ## Table Navigation
 
