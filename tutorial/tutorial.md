@@ -38,26 +38,25 @@ Command mode is activated by pressing `:`. While in command mode, press `enter` 
 
 ## Table Navigation
 
-Navigating through tables in Tabiew is intuitive and efficient with the following key mappings:
+Use these key mappings to navigate through your data:
 
-| Key Combination        | Action                        |
-|------------------------|-------------------------------|
-| `k` or `Arrow Up` | Move up one row in the table  |
-| `j` or `Arrow Down` | Move down one row in the table|
-| `Page Up` or `Ctrl+b` | Move one page up              |
-| `Page Down` or `Ctrl+f`| Move one page down            |
-| `Ctrl+u` | Move up half a page           |
-| `Ctrl+d` | Move down half a page         |
-| `Home` or `g` | Move to the first row         |
-| `End` or `G` | Move to the last row          |
+|Key Combination|Action|
+|-|-|
+| `k` or `Arrow Up`| Move up one row in the table|
+| `j` or `Arrow Down`| Move down one row in the table|
+| `Page Up` or `Ctrl+b`| Move one page up|
+| `Page Down` or `Ctrl+f`| Move one page down|
+| `Ctrl+u`| Move up half a page|
+| `Ctrl+d`| Move down half a page|
+| `Home` or `g`| Move to the first row|
+| `End` or `G`| Move to the last row|
 
-Use these key mappings to efficiently navigate through your data, switch views, and manage multiple open files with ease.
 
-Alternatively, you can use the `:goto` command to jump to a specific row, or just start entering the number, and the app will automatically enter the command for you.
+Alternatively, you can use the `:goto` command to jump to a specific row, or just start entering the row number, and the app will automatically enter the command for you.
 
 ## Sheet View
 
-By default, all rows are visualized in a single line in the table view. Furthermore, the columns are squeezed to fix the screen if the required table width is larger than the screen. Therefore, To enhance readability, you can switch to the **sheet view** by pressing the `v` key. The sheet view allows you to visit each row individually and scroll if it doesn't fit into a page.
+By default, all rows are visualized in a single line in the table view. Furthermore, the columns are squeezed to fix the screen if the required table width is larger than the screen. Therefore, to enhance readability, you can switch to the **sheet view** by pressing the `v` key. The sheet view allows you to visit each row individually and scroll if it doesn't fit into a page.
 
 ![image not found](images/sheet_view.png)
 
@@ -67,12 +66,12 @@ When in sheet view, the following key binding is used to navigate through the da
 
 | Key Combination         | Action                                 |
 |-------------------------|----------------------------------------|
-| `k` or `Arrow Up` | Scroll up in sheet view                |
-| `j` or `Arrow Down` | Scroll down in sheet view              |
-| `h` or `Arrow Left` | Move to the previous item in sheet view|
-| `l` or `Arrow Right` | Move to the next item in sheet view    |
-| `g` or `Home` | Move to the first item in sheet view   |
-| `G` or `End` | Move to the last item in sheet view    |
+| `k` or `Arrow Up` | Scroll up in sheet view|
+| `j` or `Arrow Down` | Scroll down in sheet view|
+| `h` or `Arrow Left` | Move to the previous item|
+| `l` or `Arrow Right` | Move to the next item|
+| `g` or `Home` | Move to the first item|
+| `G` or `End` | Move to the last item|
 
 To go back from the sheet view to the table view, press `q` or `v.`
 
