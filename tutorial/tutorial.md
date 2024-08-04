@@ -91,7 +91,7 @@ Alternatively, you can use a wildcard to open all CSV files in the directory:
 tw *.csv
 ```
 
-This command will open all CSV files in the directory in separate tabs. You can then use `H` (`shift+h`) to move to the previous tab and `L` (`shift+l`) to move to the next tab.
+You can use `H` (`shift+h`) to move to the previous tab and `L` (`shift+l`) to move to the next tab.
 
 ## Query
 
@@ -121,7 +121,7 @@ The table names are their file names without the extension. For instance, the ta
 
 ## Inline Query
 
-Inline queries in Tabiew provide a convenient way to manipulate the current table. These queries are shorter versions of standard SQL queries executed on the data displayed inside the table rather than the entire dataset. Here are the commands to perform inline queries:
+Inline queries provide a convenient way to manipulate the current table. These queries are shorter versions of standard SQL executed on the data displayed in the table rather than the entire dataset. Here are the commands to perform inline queries:
 
 | Command| Example| Description|
 |--------|--------|------------|
@@ -130,13 +130,16 @@ Inline queries in Tabiew provide a convenient way to manipulate the current tabl
 | `:O` or `:order` | `:O area` | Sort the current data frame by the specified column(s).|
 
 For instance, the chain of
-```
+
+```sql
 :S price, area, bedrooms, parking
 :F price > 20000 
 :F bedrooms > 4
 :O area
 ```
-commands on the complete housing table is equivalent to:
+
+on the complete housing table is equivalent to:
+
 ```sql
 SELECT price, area, bedrooms, parking
 FROM housing
@@ -144,9 +147,10 @@ WHERE price > 20000 AND bedrooms > 4
 ORDER BY area;
 ```
 
+If you need to return the table to its original state, you can use the `:reset` command.
 
 ## Help Command
 
-To view all available commands and their descriptions in Tabiew, you can use the `:help` command. This command displays a comprehensive list of commands, along with their usage and examples.
+To view all available commands and their descriptions, use the `:help` command. This command displays a list of all commands, along with their usage and examples.
 
 ![image not found](images/help.png)
