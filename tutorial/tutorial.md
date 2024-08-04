@@ -112,8 +112,10 @@ Or to query `housing.csv` for the average area of houses grouped by the number o
 If it is prefered to open the results in a new tab, use the `:tabn` command followed by your SQL statement. For example:
 
 ```sql
-:tabn SELECT * FROM user WHERE price > 1000000
+:tabn SELECT * FROM user WHERE marriage='Married' AND balance < 10000
 ```
+
+![image not found](images/new_tab.png)
 
 The table names are their file names without the extension. For instance, the table name for `housing.csv` is `housing`. If multiple files have the same name, subsequent files will have `_2`, `_3`, and so on appended to their names. The `:schema` command displays all loaded tables.
 
@@ -143,3 +145,10 @@ FROM housing
 WHERE price > 20000 AND bedrooms > 4
 ORDER BY area;
 ```
+
+
+## Help Command
+
+To view all available commands and their descriptions in Tabiew, you can use the `:help` command. This command displays a comprehensive list of commands, along with their usage and examples.
+
+![image not found](images/help.png)
