@@ -72,12 +72,12 @@ Download the `.rpm` package from the [GitHub releases page](https://github.com/s
  ```
 
 ### MacOS
-Installing Tabiew using [Homebrew](https://brew.sh/):
+Installing Tabiew using [Homebrew](https://brew.sh/) from Homebrew core:
 ```bash
  brew update
  brew install tabiew
 ```
-or:
+or custom tap:
  ```bash
  brew install shshemi/tabiew/tabiew
  ```
