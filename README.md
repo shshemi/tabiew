@@ -77,7 +77,7 @@ Installing Tabiew using [Homebrew](https://brew.sh/) from Homebrew core:
  brew update
  brew install tabiew
 ```
-or custom tap:
+or tap:
  ```bash
  brew install shshemi/tabiew/tabiew
  ```
