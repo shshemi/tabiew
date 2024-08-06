@@ -82,6 +82,8 @@ or custom tap:
  brew install shshemi/tabiew/tabiew
  ```
 
+Note: Please be aware that installing Tabiew from the custom tap involves compiling it from source, which may take some time to complete.
+
 ### Windows
 Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in the system's PATH environment variable.
 
