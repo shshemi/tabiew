@@ -252,7 +252,7 @@ fn paragraph_from_headers_values<'a, Theme: Styler>(
         .sum();
     let prgr = Paragraph::new(lines)
         .block(Block::new().title(title).borders(Borders::ALL))
-        .style(Theme::item_block())
+        .style(Theme::sheet_block())
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: true });
     (prgr, lc)
@@ -269,7 +269,7 @@ fn lines_from_header_value<'a, Theme: Styler>(
     )));
     let value_lines = value
         .lines()
-        .map(|line| Line::from(Span::styled(line, Theme::table_cell(idx, 0))));
+        .map(|line| Line::from(Span::styled(line, Theme::sheet_value())));
     header_line
         .chain(value_lines)
         .chain(std::iter::once(Line::default()))
