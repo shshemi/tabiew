@@ -102,7 +102,7 @@ jobs:
         files: tw-${{matrix.target}}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  upload-to-create-io:
+  upload-to-crate-io:
 
     if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
