@@ -3,7 +3,7 @@ use std::collections::{HashMap, VecDeque};
 use polars::{
     datatypes::{AnyValue, DataType},
     frame::DataFrame,
-    series::Series,
+    series::{ChunkCompare, Series},
 };
 
 #[derive(Debug)]
@@ -280,7 +280,12 @@ pub fn infer_schema_safe(data_frame: &mut DataFrame) {
             dtypes
                 .iter()
                 .filter_map(|dtype| series.cast(dtype).ok())
-                .find(|series| series.null_count() != series.len())
+                .find(|dtype_series| {
+                    series
+                        .is_null()
+                        .equal(&dtype_series.is_null())
+                        .all()
+                })
                 .map(|series| (col_name.to_owned(), series))
         })
         .collect::<HashMap<String, Series>>()
