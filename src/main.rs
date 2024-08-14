@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use tabiew::app::status_bar::StatusBar;
 use tabiew::app::tabular::{Tabular, TabularType};
 use tabiew::app::{App, AppResult};
-use tabiew::args::{AppTheme, Args, FileType, InferSchema};
+use tabiew::args::{AppTheme, Args, Format, InferSchema};
 use tabiew::command::Commands;
 use tabiew::event::{Event, EventHandler};
 use tabiew::keybind::Keybind;
@@ -38,8 +38,8 @@ fn main() -> AppResult<()> {
                 .to_string_lossy()
                 .into_owned();
 
-            let df = match args.filetype {
-                FileType::Csv => match read_csv(
+            let df = match args.format {
+                Format::Csv => match read_csv(
                     path.clone(),
                     &args.infer_schema,
                     args.quote_char,
@@ -50,7 +50,7 @@ fn main() -> AppResult<()> {
                     Ok(df) => df,
                     Err(err) => panic!("{}", err),
                 },
-                FileType::Parquet => match read_parquet(path.clone()) {
+                Format::Parquet => match read_parquet(path.clone()) {
                     Ok(df) => df,
                     Err(err) => panic!("{}", err),
                 },
