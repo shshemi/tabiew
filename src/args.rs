@@ -9,8 +9,8 @@ pub struct Args {
 
     #[arg(long, help = "Select file type", required= true,
         value_enum,
-        default_value_t = FileType::Csv)]
-    pub filetype: FileType,
+        default_value_t = Format::Csv)]
+    pub format: Format,
 
     #[arg(
         long,
@@ -62,7 +62,7 @@ pub struct Args {
 }
 
 #[derive(Debug, Clone, ValueEnum)]
-pub enum FileType {
+pub enum Format {
     Csv,
     Parquet,
 }
