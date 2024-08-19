@@ -14,18 +14,18 @@ name="tw"
 path="src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-crossterm = "0.27.0"
+clap = { version = "4.5.16", features = ["derive"] }
+crossterm = "0.28.1"
 itertools = "0.13.0"
-polars = { version = "0.41.2", features = ["dtype-decimal", "lazy", "polars-sql", "polars-io", "parquet"] }
-polars-sql = "0.41.2"
+polars = { version = "0.42.0", features = ["dtype-decimal", "lazy", "polars-sql", "polars-io", "parquet"] }
+polars-sql = "0.42.0"
 rand = "0.8.5"
-ratatui = "0.27.0"
+ratatui = "0.28.0"
 
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
-clap_mangen = { version = "0.2"}
-clap_complete = { version = "4.5"}
+clap_mangen = { version = "0.2.23"}
+clap_complete = { version = "4.5.19"}
 
 [package.metadata.deb]
 license-file = [ "LICENSE", "4" ]
