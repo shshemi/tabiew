@@ -39,7 +39,7 @@ fn main() -> AppResult<()> {
                 .into_owned();
 
             let df = match args.format {
-                Format::Csv => match read_csv(
+                Format::Dsv => match read_csv(
                     path.clone(),
                     &args.infer_schema,
                     args.quote_char,
@@ -132,8 +132,5 @@ fn read_csv(
 }
 
 fn read_parquet(path: PathBuf) -> Result<DataFrame, Box<dyn Error>> {
-    let file = File::open(&path)?;
-    let reader: ParquetReader<File> = ParquetReader::new(file);
-    let df = reader.finish()?;
-    Ok(df)
+    Ok(ParquetReader::new(File::open(&path)?).set_rechunk(true).finish()?)
 }
