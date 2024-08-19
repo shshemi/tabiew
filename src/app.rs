@@ -131,7 +131,7 @@ impl App {
 
     pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
         let layout =
-            Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.size());
+            Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.area());
 
         // Draw table / item
         let state = self.infer_state();
