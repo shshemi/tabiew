@@ -7,28 +7,28 @@ pub struct Args {
     #[arg(help = "Path(s) to the file(s) to be opened.", required = true)]
     pub files: Vec<PathBuf>,
 
-    #[arg(long, help = "Select file type", required= true,
+    #[arg(short, long, help = "Input file format",
         value_enum,
-        default_value_t = Format::Csv)]
+        default_value_t = Format::Dsv)]
     pub format: Format,
 
     #[arg(
         long,
-        help = "Specify if the file does not contain a header row.",
+        help = "Specify if the DSV file does not contain a header row.",
         default_value_t = false
     )]
     pub no_header: bool,
 
     #[arg(
         long,
-        help = "If set, parsing errors while loading the file will be ignored.",
+        help = "If set, parsing errors while loading the DSV file will be ignored.",
         default_value_t = false
     )]
     pub ignore_errors: bool,
 
     #[arg(
         long,
-        help = "Method to infer the schema while loading the file.",
+        help = "Method to infer the DSV schema while loading the file.",
         required = false,
         value_enum,
         default_value_t = InferSchema::Safe,
@@ -37,7 +37,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Character used as the field separator or delimiter while loading the file.",
+        help = "Character used as the field separator or delimiter while loading the DSV file.",
         required = false,
         default_value_t = ','
     )]
@@ -45,7 +45,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Character used to quote fields while loading the file.",
+        help = "Character used to quote fields while loading the DSV file.",
         required = false,
         default_value_t = '"'
     )]
@@ -63,7 +63,7 @@ pub struct Args {
 
 #[derive(Debug, Clone, ValueEnum)]
 pub enum Format {
-    Csv,
+    Dsv,
     Parquet,
 }
 
