@@ -58,6 +58,9 @@ jobs:
     - name: Checkout to the latest version 
       uses: actions/checkout@v4
 
+    - name: Install GCC
+      run: apt-get update && apt-get install -y --no-install-recommends build-essential clang llvm
+
     - name: Install Rust
       run: rustup target add ${{ matrix.target }}
 
