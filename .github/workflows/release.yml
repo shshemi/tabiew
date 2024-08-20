@@ -58,6 +58,9 @@ jobs:
     - name: Checkout to the latest version 
       uses: actions/checkout@v4
 
+    - name: Install Rust
+      run: rustup target add ${{ matrix.target }}
+
     - name: Build
       run: cargo build --release --verbose --target ${{ matrix.target }}
 
