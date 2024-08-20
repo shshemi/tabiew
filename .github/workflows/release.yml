@@ -45,7 +45,7 @@ jobs:
         files: "tw-x86-linux-gnu;./target/debian/*.deb;./target/generate-rpm/*.rpm"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  build-and-upload-linux-arm-v7:
+  build-and-upload-linux-armv7:
 
     runs-on: ubuntu-latest
     if: startsWith(github.event.release.tag_name, 'v')
@@ -57,14 +57,13 @@ jobs:
     - name: Install build tools
       run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libzstd-dev gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
 
-    - name: Set linker
-      run: export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
-
     - name: Install Rust
       run: rustup target add armv7-unknown-linux-gnueabihf
 
     - name: Build
-      run: cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
+      run: |
+        export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
+        cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
 
     - name: Test
       run: cargo test --all --release
@@ -90,14 +89,13 @@ jobs:
     - name: Install build tools
       run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libzstd-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross
       
-    - name: Set linker
-      run: export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
-
     - name: Install Rust
       run: rustup target add aarch64-unknown-linux-gnu
 
     - name: Build
-      run: cargo build --release --verbose --target aarch64-unknown-linux-gnu
+      run: |
+        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+        cargo build --release --verbose --target aarch64-unknown-linux-gnu
 
     - name: Test
       run: cargo test --all --release
@@ -172,7 +170,7 @@ jobs:
 
     if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
-    needs: [build-and-upload-linux, build-and-upload-macos, build-and-upload-windows]
+    needs: [build-and-upload-linux,build-and-upload-linux-armv7, build-and-upload-linux-aarch64, build-and-upload-macos, build-and-upload-windows]
     steps:
 
     - name: Checkout to the latest version 
