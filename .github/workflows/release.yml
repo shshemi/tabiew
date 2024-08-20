@@ -1,4 +1,4 @@
-name: Rust
+name: Release
 
 on:
   release:
@@ -43,6 +43,34 @@ jobs:
       uses: AButler/upload-release-assets@v3.0
       with:
         files: "tw-x86-linux-gnu;./target/debian/*.deb;./target/generate-rpm/*.rpm"
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-upload-linux-arm-v6-v7-v8:
+
+    if: startsWith(github.event.release.tag_name, 'v')
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        target: [arm-unknown-linux-gnueabihf, armv7-unknown-linux-gnueabihf, aarch64-unknown-linux-gnu]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout to the latest version 
+      uses: actions/checkout@v4
+
+    - name: Build
+      run: cargo build --release --verbose --target ${{ matrix.target }}
+
+    - name: Test
+      run: cargo test --all --release
+
+    - name: Rename before upload
+      run: mv target/${{ matrix.target }}/release/tw.exe tw-${{matrix.target}}.exe
+
+    - name: Upload artifacts to release
+      uses: AButler/upload-release-assets@v3.0
+      with:
+        files: tw-${{matrix.target}}.exe
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-upload-windows:
@@ -102,7 +130,7 @@ jobs:
         files: tw-${{matrix.target}}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  upload-to-crate-io:
+  upload-to-crates-io:
 
     if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
