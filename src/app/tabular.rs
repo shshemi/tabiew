@@ -4,7 +4,10 @@ use rand::Rng;
 use ratatui::{
     layout::{Alignment, Constraint, Margin, Rect},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
+    widgets::{
+        Block, Borders, Cell, List, ListDirection, ListState, Paragraph, Row, Table, TableState,
+        Wrap,
+    },
     Frame,
 };
 
@@ -19,6 +22,7 @@ use super::AppResult;
 pub enum TabularState {
     Table,
     Sheet(Scroll),
+    Chart(ChartState),
 }
 
 #[derive(Debug)]
@@ -40,6 +44,50 @@ pub struct Tabular {
     data_frame: DataFrame,
     state: TabularState,
     tabular_type: TabularType,
+}
+
+#[derive(Debug)]
+struct ListControl {
+    val: List<'static>,
+    selected: usize,
+}
+
+impl ListControl {
+    fn next(&mut self) {
+        if self.selected < self.val.len() - 1 {
+            self.selected += 1;
+        } else {
+            self.selected = 0;
+        }
+    }
+    fn previous(&mut self) {
+        if self.selected > 0 {
+            self.selected -= 1;
+        } else {
+            self.selected = self.val.len() - 1;
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ChartState {
+    x: ListControl,
+    y: ListControl,
+}
+
+impl ChartState {
+    fn new(columns: Vec<String>) -> Self {
+        Self {
+            x: ListControl {
+                val: List::new(columns.clone()),
+                selected: 0,
+            },
+            y: ListControl {
+                val: List::new(columns.clone()),
+                selected: 0,
+            },
+        }
+    }
 }
 
 impl Tabular {
@@ -127,6 +175,7 @@ impl Tabular {
         match self.state {
             TabularState::Table => self.show_sheet(),
             TabularState::Sheet(_) => self.show_table(),
+            TabularState::Chart(_) => self.show_chart(),
         }
     }
 
@@ -137,6 +186,19 @@ impl Tabular {
 
     pub fn show_table(&mut self) -> AppResult<()> {
         self.state = TabularState::Table;
+        Ok(())
+    }
+
+    pub fn show_chart(&mut self) -> AppResult<()> {
+        let a = self
+            .data_frame
+            .get_column_names()
+            .into_iter()
+            .map(ToOwned::to_owned)
+            .collect();
+
+        let chart_state = ChartState::new(a);
+        self.state = TabularState::Chart(chart_state);
         Ok(())
     }
 
@@ -230,6 +292,49 @@ impl Tabular {
 
                 scroll.adjust(line_count, space.height as usize);
                 frame.render_widget(paragraph.scroll((scroll.to_u16(), 0)), layout);
+            }
+            TabularState::Chart(_) => {
+                self.rendered_rows = 0;
+                let columns = vec!["a"];
+
+                let list_column_x = List::new(columns.clone())
+                    .block(
+                        Block::default()
+                            .title("Select x-axis:")
+                            .borders(Borders::ALL),
+                    )
+                    .highlight_symbol(">>")
+                    .repeat_highlight_symbol(true)
+                    .direction(ListDirection::TopToBottom);
+                let list_x_control = ListControl {
+                    val: list_column_x.clone(),
+                    selected: 0,
+                };
+
+                let list_column_y = List::new(columns)
+                    .block(
+                        Block::default()
+                            .title("Select y-axis:")
+                            .borders(Borders::ALL),
+                    )
+                    .highlight_symbol(">>")
+                    .repeat_highlight_symbol(true)
+                    .direction(ListDirection::TopToBottom);
+
+                let list_y_control = ListControl {
+                    val: list_column_y.clone(),
+                    selected: 0,
+                };
+
+                let mut state1 = ListState::default().with_selected(Some(list_x_control.selected));
+                let mut state2 = ListState::default().with_selected(Some(list_y_control.selected));
+
+                let l1_area = Rect::new(0, 0, 20, 20);
+                let l2_area = Rect::new(21, 0, 20, 20);
+                let _l3_area = Rect::new(42, 0, 20, 20);
+
+                frame.render_stateful_widget(list_column_x, l1_area, &mut state1);
+                frame.render_stateful_widget(list_column_y, l2_area, &mut state2);
             }
         }
         Ok(())

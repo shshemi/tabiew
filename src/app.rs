@@ -38,8 +38,18 @@ pub enum AppState {
     Empty,
     Table,
     Sheet,
+    Chart,
     Command,
     Error,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub enum ChartNav {
+    Init,
+    Left,
+    Right,
+    Up,
+    Down,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -49,6 +59,7 @@ pub enum AppAction {
     StatausBarError(String),
     TabularTableView,
     TabularSheetView,
+    TabularChartView(ChartNav),
     TabularSwitchView,
     SqlQuery(String),
     SqlSchema,
@@ -123,6 +134,9 @@ impl App {
             (Some(tabular::TabularState::Sheet(_)), StatusBarState::Info) => AppState::Sheet,
             (Some(tabular::TabularState::Sheet(_)), StatusBarState::Error(_)) => AppState::Error,
             (Some(tabular::TabularState::Sheet(_)), StatusBarState::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularState::Chart(_)), StatusBarState::Info) => AppState::Table,
+            (Some(tabular::TabularState::Chart(_)), StatusBarState::Error(_)) => AppState::Error,
+            (Some(tabular::TabularState::Chart(_)), StatusBarState::Prompt(_)) => AppState::Command,
             (None, StatusBarState::Info) => AppState::Empty,
             (None, StatusBarState::Error(_)) => AppState::Error,
             (None, StatusBarState::Prompt(_)) => AppState::Command,
@@ -248,6 +262,14 @@ impl App {
             AppAction::TabularSheetView => {
                 if let Some(tab) = self.tabs.selected_mut() {
                     tab.show_sheet()
+                } else {
+                    Ok(())
+                }
+            }
+
+            AppAction::TabularChartView(Nav) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    tab.show_chart()
                 } else {
                     Ok(())
                 }
