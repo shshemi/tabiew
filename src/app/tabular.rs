@@ -1,6 +1,7 @@
 use itertools::{izip, Itertools};
 use polars::frame::DataFrame;
 use rand::Rng;
+use ratatui::style::{Modifier, Style};
 use ratatui::{
     layout::{Alignment, Constraint, Margin, Rect},
     text::{Line, Span},
@@ -16,13 +17,13 @@ use crate::{
     utils::{data_frame_widths, line_count, Scroll, TableValues},
 };
 
-use super::AppResult;
+use super::{AppResult, ChartNav};
 
 #[derive(Debug)]
 pub enum TabularState {
     Table,
     Sheet(Scroll),
-    Chart(ChartState),
+    Chart,
 }
 
 #[derive(Debug)]
@@ -44,6 +45,7 @@ pub struct Tabular {
     data_frame: DataFrame,
     state: TabularState,
     tabular_type: TabularType,
+    chart_state: ChartState,
 }
 
 #[derive(Debug)]
@@ -70,9 +72,16 @@ impl ListControl {
 }
 
 #[derive(Debug)]
+enum ListNav {
+    X,
+    Y,
+}
+
+#[derive(Debug)]
 pub struct ChartState {
     x: ListControl,
     y: ListControl,
+    current: ListNav,
 }
 
 impl ChartState {
@@ -86,6 +95,7 @@ impl ChartState {
                             .borders(Borders::ALL),
                     )
                     .highlight_symbol(">>")
+                    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
                     .repeat_highlight_symbol(true)
                     .direction(ListDirection::TopToBottom),
                 selected: 0,
@@ -102,6 +112,34 @@ impl ChartState {
                     .direction(ListDirection::TopToBottom),
                 selected: 0,
             },
+            current: ListNav::X,
+        }
+    }
+    fn nav(&mut self, nav: ChartNav) {
+        match nav {
+            ChartNav::Left => match self.current {
+                ListNav::X => self.x.next(),
+                ListNav::Y => self.y.next(),
+            },
+            ChartNav::Right => match self.current {
+                ListNav::X => self.x.previous(),
+                ListNav::Y => self.y.previous(),
+            },
+            ChartNav::Down => {
+                self.current = match self.current {
+                    ListNav::X => ListNav::Y,
+                    ListNav::Y => ListNav::X,
+                }
+            }
+            ChartNav::Up => {
+                self.current = match self.current {
+                    ListNav::X => ListNav::Y,
+                    ListNav::Y => ListNav::X,
+                }
+            }
+            ChartNav::Init => {
+                self.current = ListNav::X;
+            }
         }
     }
 }
@@ -120,9 +158,16 @@ impl Tabular {
                 .map(ToOwned::to_owned)
                 .collect(),
             table_values: TableValues::from_dataframe(&data_frame),
-            data_frame,
+            data_frame: data_frame.clone(),
             state: TabularState::Table,
             tabular_type: reset,
+            chart_state: ChartState::new(
+                data_frame
+                    .get_column_names()
+                    .into_iter()
+                    .map(ToOwned::to_owned)
+                    .collect(),
+            ),
         }
     }
 
@@ -191,7 +236,7 @@ impl Tabular {
         match self.state {
             TabularState::Table => self.show_sheet(),
             TabularState::Sheet(_) => self.show_table(),
-            TabularState::Chart(_) => self.show_chart(),
+            TabularState::Chart => self.show_chart(),
         }
     }
 
@@ -206,16 +251,11 @@ impl Tabular {
     }
 
     pub fn show_chart(&mut self) -> AppResult<()> {
-        let a = self
-            .data_frame
-            .get_column_names()
-            .into_iter()
-            .map(ToOwned::to_owned)
-            .collect();
-
-        let chart_state = ChartState::new(a);
-        self.state = TabularState::Chart(chart_state);
+        self.state = TabularState::Chart;
         Ok(())
+    }
+    pub fn chart_nav(&mut self, nav: ChartNav) {
+        self.chart_state.nav(nav);
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) -> AppResult<()> {
@@ -309,18 +349,20 @@ impl Tabular {
                 scroll.adjust(line_count, space.height as usize);
                 frame.render_widget(paragraph.scroll((scroll.to_u16(), 0)), layout);
             }
-            TabularState::Chart(chart_state) => {
+            TabularState::Chart => {
                 self.rendered_rows = 0;
 
-                let mut state1 = ListState::default().with_selected(Some(chart_state.x.selected));
-                let mut state2 = ListState::default().with_selected(Some(chart_state.y.selected));
+                let mut state1 =
+                    ListState::default().with_selected(Some(self.chart_state.x.selected));
+                let mut state2 =
+                    ListState::default().with_selected(Some(self.chart_state.y.selected));
 
                 let l1_area = Rect::new(0, 0, 20, 20);
                 let l2_area = Rect::new(21, 0, 20, 20);
                 let _l3_area = Rect::new(42, 0, 20, 20);
 
-                frame.render_stateful_widget(chart_state.x.val.clone(), l1_area, &mut state1);
-                frame.render_stateful_widget(chart_state.y.val.clone(), l2_area, &mut state2);
+                frame.render_stateful_widget(self.chart_state.x.val.clone(), l1_area, &mut state1);
+                frame.render_stateful_widget(self.chart_state.y.val.clone(), l2_area, &mut state2);
             }
         }
         Ok(())

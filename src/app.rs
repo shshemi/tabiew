@@ -134,9 +134,9 @@ impl App {
             (Some(tabular::TabularState::Sheet(_)), StatusBarState::Info) => AppState::Sheet,
             (Some(tabular::TabularState::Sheet(_)), StatusBarState::Error(_)) => AppState::Error,
             (Some(tabular::TabularState::Sheet(_)), StatusBarState::Prompt(_)) => AppState::Command,
-            (Some(tabular::TabularState::Chart(_)), StatusBarState::Info) => AppState::Table,
-            (Some(tabular::TabularState::Chart(_)), StatusBarState::Error(_)) => AppState::Error,
-            (Some(tabular::TabularState::Chart(_)), StatusBarState::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularState::Chart), StatusBarState::Info) => AppState::Chart,
+            (Some(tabular::TabularState::Chart), StatusBarState::Error(_)) => AppState::Error,
+            (Some(tabular::TabularState::Chart), StatusBarState::Prompt(_)) => AppState::Command,
             (None, StatusBarState::Info) => AppState::Empty,
             (None, StatusBarState::Error(_)) => AppState::Error,
             (None, StatusBarState::Prompt(_)) => AppState::Command,
@@ -267,8 +267,9 @@ impl App {
                 }
             }
 
-            AppAction::TabularChartView(Nav) => {
+            AppAction::TabularChartView(nav) => {
                 if let Some(tab) = self.tabs.selected_mut() {
+                    tab.chart_nav(nav);
                     tab.show_chart()
                 } else {
                     Ok(())
