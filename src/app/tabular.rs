@@ -108,6 +108,7 @@ impl ChartState {
                             .borders(Borders::ALL),
                     )
                     .highlight_symbol(">>")
+                    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
                     .repeat_highlight_symbol(true)
                     .direction(ListDirection::TopToBottom),
                 selected: 0,
@@ -117,21 +118,21 @@ impl ChartState {
     }
     fn nav(&mut self, nav: ChartNav) {
         match nav {
-            ChartNav::Left => match self.current {
+            ChartNav::Down => match self.current {
                 ListNav::X => self.x.next(),
                 ListNav::Y => self.y.next(),
             },
-            ChartNav::Right => match self.current {
+            ChartNav::Up => match self.current {
                 ListNav::X => self.x.previous(),
                 ListNav::Y => self.y.previous(),
             },
-            ChartNav::Down => {
+            ChartNav::Right => {
                 self.current = match self.current {
                     ListNav::X => ListNav::Y,
                     ListNav::Y => ListNav::X,
                 }
             }
-            ChartNav::Up => {
+            ChartNav::Left => {
                 self.current = match self.current {
                     ListNav::X => ListNav::Y,
                     ListNav::Y => ListNav::X,

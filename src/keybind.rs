@@ -49,7 +49,7 @@ impl Default for Keybind {
                     AppAction::TabularChartView(ChartNav::Init),
                 ),
                 (
-                    StateKey::Exact(AppState::Chart, KeyCode::Char('i'), KeyModifiers::empty()),
+                    StateKey::Exact(AppState::Chart, KeyCode::Char('c'), KeyModifiers::empty()),
                     AppAction::TabularTableView,
                 ),
                 // Move inside ChartView
