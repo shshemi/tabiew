@@ -79,11 +79,27 @@ impl ChartState {
     fn new(columns: Vec<String>) -> Self {
         Self {
             x: ListControl {
-                val: List::new(columns.clone()),
+                val: List::new(columns.clone())
+                    .block(
+                        Block::default()
+                            .title("Select x-axis:")
+                            .borders(Borders::ALL),
+                    )
+                    .highlight_symbol(">>")
+                    .repeat_highlight_symbol(true)
+                    .direction(ListDirection::TopToBottom),
                 selected: 0,
             },
             y: ListControl {
-                val: List::new(columns.clone()),
+                val: List::new(columns.clone())
+                    .block(
+                        Block::default()
+                            .title("Select y-axis:")
+                            .borders(Borders::ALL),
+                    )
+                    .highlight_symbol(">>")
+                    .repeat_highlight_symbol(true)
+                    .direction(ListDirection::TopToBottom),
                 selected: 0,
             },
         }
@@ -293,48 +309,18 @@ impl Tabular {
                 scroll.adjust(line_count, space.height as usize);
                 frame.render_widget(paragraph.scroll((scroll.to_u16(), 0)), layout);
             }
-            TabularState::Chart(_) => {
+            TabularState::Chart(chart_state) => {
                 self.rendered_rows = 0;
-                let columns = vec!["a"];
 
-                let list_column_x = List::new(columns.clone())
-                    .block(
-                        Block::default()
-                            .title("Select x-axis:")
-                            .borders(Borders::ALL),
-                    )
-                    .highlight_symbol(">>")
-                    .repeat_highlight_symbol(true)
-                    .direction(ListDirection::TopToBottom);
-                let list_x_control = ListControl {
-                    val: list_column_x.clone(),
-                    selected: 0,
-                };
-
-                let list_column_y = List::new(columns)
-                    .block(
-                        Block::default()
-                            .title("Select y-axis:")
-                            .borders(Borders::ALL),
-                    )
-                    .highlight_symbol(">>")
-                    .repeat_highlight_symbol(true)
-                    .direction(ListDirection::TopToBottom);
-
-                let list_y_control = ListControl {
-                    val: list_column_y.clone(),
-                    selected: 0,
-                };
-
-                let mut state1 = ListState::default().with_selected(Some(list_x_control.selected));
-                let mut state2 = ListState::default().with_selected(Some(list_y_control.selected));
+                let mut state1 = ListState::default().with_selected(Some(chart_state.x.selected));
+                let mut state2 = ListState::default().with_selected(Some(chart_state.y.selected));
 
                 let l1_area = Rect::new(0, 0, 20, 20);
                 let l2_area = Rect::new(21, 0, 20, 20);
                 let _l3_area = Rect::new(42, 0, 20, 20);
 
-                frame.render_stateful_widget(list_column_x, l1_area, &mut state1);
-                frame.render_stateful_widget(list_column_y, l2_area, &mut state2);
+                frame.render_stateful_widget(chart_state.x.val.clone(), l1_area, &mut state1);
+                frame.render_stateful_widget(chart_state.y.val.clone(), l2_area, &mut state2);
             }
         }
         Ok(())
