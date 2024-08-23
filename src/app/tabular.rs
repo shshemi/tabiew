@@ -75,12 +75,14 @@ impl ListControl {
 enum ListNav {
     X,
     Y,
+    ChartType,
 }
 
 #[derive(Debug)]
 pub struct ChartState {
     x: ListControl,
     y: ListControl,
+    chart_type: ListControl,
     current: ListNav,
 }
 
@@ -113,29 +115,65 @@ impl ChartState {
                     .direction(ListDirection::TopToBottom),
                 selected: 0,
             },
+            chart_type: ListControl {
+                val: List::new(vec!["Line", "Bar", "Scatter"])
+                    .block(Block::default().title("Chart type").borders(Borders::ALL))
+                    .highlight_symbol(">>")
+                    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+                    .repeat_highlight_symbol(true)
+                    .direction(ListDirection::TopToBottom),
+                selected: 0,
+            },
             current: ListNav::X,
         }
     }
+    fn reload_columns(&mut self, columns: Vec<String>) {
+        self.x.val = List::new(columns.clone())
+            .block(
+                Block::default()
+                    .title("Select x-axis:")
+                    .borders(Borders::ALL),
+            )
+            .highlight_symbol(">>")
+            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .repeat_highlight_symbol(true)
+            .direction(ListDirection::TopToBottom);
+        self.y.val = List::new(columns.clone())
+            .block(
+                Block::default()
+                    .title("Select y-axis:")
+                    .borders(Borders::ALL),
+            )
+            .highlight_symbol(">>")
+            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .repeat_highlight_symbol(true)
+            .direction(ListDirection::TopToBottom);
+    }
+
     fn nav(&mut self, nav: ChartNav) {
         match nav {
             ChartNav::Down => match self.current {
                 ListNav::X => self.x.next(),
                 ListNav::Y => self.y.next(),
+                ListNav::ChartType => self.chart_type.next(),
             },
             ChartNav::Up => match self.current {
                 ListNav::X => self.x.previous(),
                 ListNav::Y => self.y.previous(),
+                ListNav::ChartType => self.chart_type.previous(),
             },
             ChartNav::Right => {
                 self.current = match self.current {
                     ListNav::X => ListNav::Y,
-                    ListNav::Y => ListNav::X,
+                    ListNav::Y => ListNav::ChartType,
+                    ListNav::ChartType => ListNav::X,
                 }
             }
             ChartNav::Left => {
                 self.current = match self.current {
-                    ListNav::X => ListNav::Y,
+                    ListNav::ChartType => ListNav::Y,
                     ListNav::Y => ListNav::X,
+                    ListNav::X => ListNav::ChartType,
                 }
             }
             ChartNav::Init => {
@@ -255,8 +293,24 @@ impl Tabular {
         self.state = TabularState::Chart;
         Ok(())
     }
-    pub fn chart_nav(&mut self, nav: ChartNav) {
+    pub fn chart_update(&mut self, nav: ChartNav) {
         self.chart_state.nav(nav);
+        self.chart_state.reload_columns(
+            self.data_frame
+                .get_column_names()
+                .into_iter()
+                .map(ToOwned::to_owned)
+                .collect(),
+        );
+    }
+    pub fn update_chart_state(&mut self) {
+        self.chart_state = ChartState::new(
+            self.data_frame
+                .get_column_names()
+                .into_iter()
+                .map(ToOwned::to_owned)
+                .collect(),
+        )
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) -> AppResult<()> {
@@ -358,12 +412,20 @@ impl Tabular {
                 let mut state2 =
                     ListState::default().with_selected(Some(self.chart_state.y.selected));
 
+                let mut state_3 =
+                    ListState::default().with_selected(Some(self.chart_state.chart_type.selected));
+
                 let l1_area = Rect::new(0, 0, 20, 20);
                 let l2_area = Rect::new(21, 0, 20, 20);
-                let _l3_area = Rect::new(42, 0, 20, 20);
+                let l3_area = Rect::new(42, 0, 20, 20);
 
                 frame.render_stateful_widget(self.chart_state.x.val.clone(), l1_area, &mut state1);
                 frame.render_stateful_widget(self.chart_state.y.val.clone(), l2_area, &mut state2);
+                frame.render_stateful_widget(
+                    self.chart_state.chart_type.val.clone(),
+                    l3_area,
+                    &mut state_3,
+                );
             }
         }
         Ok(())

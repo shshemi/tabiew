@@ -269,7 +269,7 @@ impl App {
 
             AppAction::TabularChartView(nav) => {
                 if let Some(tab) = self.tabs.selected_mut() {
-                    tab.chart_nav(nav);
+                    tab.chart_update(nav);
                     tab.show_chart()
                 } else {
                     Ok(())
