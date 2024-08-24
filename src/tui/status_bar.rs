@@ -28,15 +28,17 @@ pub enum StatusBarState {
     Prompt(PromptState),
 }
 
-impl<Theme: Styler> StatusBar<Theme> {
-    pub fn new() -> Self {
-        StatusBar {
+impl<Theme: Styler> Default for StatusBar<Theme> {
+    fn default() -> Self {
+        Self {
             state: Default::default(),
             prompt_history: Default::default(),
-            _theme: Default::default(),
+            _theme: PhantomData,
         }
     }
+}
 
+impl<Theme: Styler> StatusBar<Theme> {
     pub fn state(&self) -> &StatusBarState {
         &self.state
     }
@@ -160,12 +162,6 @@ impl<Theme: Styler> StatusBar<Theme> {
             }
         }
         Ok(())
-    }
-}
-
-impl<Theme: Styler> Default for StatusBar<Theme> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

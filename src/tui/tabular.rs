@@ -40,10 +40,10 @@ pub struct Tabular<Theme> {
     data_frame: DataFrame,
     state: TabularState,
     tabular_type: TabularType,
-    _theme: PhantomData<Theme>
+    _theme: PhantomData<Theme>,
 }
 
-impl<Theme:Styler> Tabular<Theme> {
+impl<Theme: Styler> Tabular<Theme> {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, tabular_type: TabularType) -> Self {
         Self {
@@ -60,7 +60,7 @@ impl<Theme:Styler> Tabular<Theme> {
             data_frame,
             state: TabularState::Table,
             tabular_type,
-            _theme: PhantomData::default(),
+            _theme: PhantomData,
         }
     }
 
@@ -176,12 +176,7 @@ impl<Theme:Styler> Tabular<Theme> {
         &self.tabular_type
     }
 
-    pub fn render(
-        &mut self,
-        frame: &mut Frame,
-        layout: Rect,
-        selection: bool,
-    ) -> AppResult<()> {
+    pub fn render(&mut self, frame: &mut Frame, layout: Rect, selection: bool) -> AppResult<()> {
         match &mut self.state {
             TabularState::Table => {
                 self.rendered_rows = layout.height.saturating_sub(1);
