@@ -8,17 +8,16 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{self};
 use std::path::PathBuf;
-use tabiew::app::status_bar::StatusBar;
-use tabiew::app::tabular::{Tabular, TabularType};
-use tabiew::app::{App, AppResult};
+use tabiew::app::App;
 use tabiew::args::{AppTheme, Args, Format, InferSchema};
-use tabiew::command::Commands;
-use tabiew::event::{Event, EventHandler};
-use tabiew::keybind::Keybind;
+use tabiew::handler::command::PresetCommands;
+use tabiew::handler::event::{Event, EventHandler};
+use tabiew::handler::keybind::Keybind;
 use tabiew::sql::SqlBackend;
-use tabiew::theme::{Argonaut, Monokai, Terminal};
-use tabiew::tui::Tui;
+use tabiew::tui::themes;
+use tabiew::tui::{Tabular, TabularType, Terminal};
 use tabiew::utils::{as_ascii, infer_schema_safe};
+use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
     // Parse CLI
@@ -59,15 +58,12 @@ fn main() -> AppResult<()> {
             Tabular::new(df, TabularType::Name(name))
         })
         .collect();
-    let status_bar = StatusBar::default();
-    let exec_tbl = Commands::default().into_exec();
+    let exec_tbl = PresetCommands::default().into_exec();
     let keybind = Keybind::default();
-    let mut app = App::new(tabs, status_bar, sql_backend, exec_tbl, keybind);
-
-    // Command handling
+    let mut app = App::new(tabs, sql_backend, exec_tbl, keybind);
 
     // Initialize the terminal user interface.
-    let mut tui = Tui::new(
+    let mut tui = Terminal::new(
         ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
         EventHandler::new(250),
     );
@@ -76,9 +72,9 @@ fn main() -> AppResult<()> {
     // Run the main loop
     while app.running() {
         match args.theme {
-            AppTheme::Monokai => tui.draw::<Monokai>(&mut app)?,
-            AppTheme::Argonaut => tui.draw::<Argonaut>(&mut app)?,
-            AppTheme::Terminal => tui.draw::<Terminal>(&mut app)?,
+            AppTheme::Monokai => tui.draw::<themes::Monokai>(&mut app)?,
+            AppTheme::Argonaut => tui.draw::<themes::Argonaut>(&mut app)?,
+            AppTheme::Terminal => tui.draw::<themes::Terminal>(&mut app)?,
         }
 
         match tui.events.next()? {
@@ -132,5 +128,7 @@ fn read_csv(
 }
 
 fn read_parquet(path: PathBuf) -> Result<DataFrame, Box<dyn Error>> {
-    Ok(ParquetReader::new(File::open(&path)?).set_rechunk(true).finish()?)
+    Ok(ParquetReader::new(File::open(&path)?)
+        .set_rechunk(true)
+        .finish()?)
 }

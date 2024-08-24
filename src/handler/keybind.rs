@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::{AppAction, AppState};
+use crate::{app::AppAction, app::AppState};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum StateKey {
@@ -20,11 +20,7 @@ impl Default for Keybind {
         Self {
             map: [
                 // Clear error
-                (
-                    StateKey::State(AppState::Error),
-                    AppAction::StatusBarStats,
-                ),
-                
+                (StateKey::State(AppState::Error), AppAction::StatusBarStats),
                 // Close app/tab/sheet
                 (
                     StateKey::Exact(AppState::Empty, KeyCode::Char('q'), KeyModifiers::empty()),
@@ -38,7 +34,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('q'), KeyModifiers::empty()),
                     AppAction::TabRemoveOrQuit,
                 ),
-
                 // Switch tab/sheet
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('v'), KeyModifiers::empty()),
@@ -48,7 +43,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('v'), KeyModifiers::empty()),
                     AppAction::TabularTableView,
                 ),
-
                 // Move half page
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('u'), KeyModifiers::CONTROL),
@@ -58,7 +52,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('d'), KeyModifiers::CONTROL),
                     AppAction::TabularGoDownHalfPage,
                 ),
-
                 // Move full page
                 (
                     StateKey::Exact(AppState::Table, KeyCode::PageUp, KeyModifiers::empty()),
@@ -76,7 +69,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('f'), KeyModifiers::CONTROL),
                     AppAction::TabularGoDownFullPage,
                 ),
-
                 // Move to prev/next record
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Up, KeyModifiers::empty()),
@@ -110,7 +102,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('l'), KeyModifiers::empty()),
                     AppAction::TabularGoDown(1),
                 ),
-
                 // Move to first/last record
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Home, KeyModifiers::empty()),
@@ -144,25 +135,23 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('G'), KeyModifiers::SHIFT),
                     AppAction::TabularGotoLast,
                 ),
-
                 // Scroll up/down in sheets
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Up, KeyModifiers::empty()),
-                    AppAction::SheetScrollUp
+                    AppAction::SheetScrollUp,
                 ),
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Down, KeyModifiers::empty()),
-                    AppAction::SheetScrollDown
+                    AppAction::SheetScrollDown,
                 ),
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('k'), KeyModifiers::empty()),
-                    AppAction::SheetScrollUp
+                    AppAction::SheetScrollUp,
                 ),
                 (
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('j'), KeyModifiers::empty()),
-                    AppAction::SheetScrollDown
+                    AppAction::SheetScrollDown,
                 ),
-
                 // Move prev/next tab
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('H'), KeyModifiers::SHIFT),
@@ -180,7 +169,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('L'), KeyModifiers::SHIFT),
                     AppAction::TabSelectedNext,
                 ),
-
                 // Move to line by number
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('1'), KeyModifiers::empty()),
@@ -218,7 +206,6 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('9'), KeyModifiers::empty()),
                     AppAction::StatusBarCommand("goto 9".to_owned()),
                 ),
-
                 // Select Random
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('R'), KeyModifiers::SHIFT),
@@ -235,7 +222,9 @@ impl Keybind {
     pub fn get_action(&self, state: AppState, key_event: KeyEvent) -> Option<&Action> {
         self.map
             .get(&StateKey::Exact(state, key_event.code, key_event.modifiers))
-            .or(self.map.get(&StateKey::KeyCode(key_event.code, key_event.modifiers)))
+            .or(self
+                .map
+                .get(&StateKey::KeyCode(key_event.code, key_event.modifiers)))
             .or(self.map.get(&StateKey::State(state)))
     }
 }

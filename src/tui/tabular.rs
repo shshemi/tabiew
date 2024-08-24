@@ -8,12 +8,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::{
-    theme::Styler,
-    utils::{data_frame_widths, line_count, Scroll, TableValues},
-};
+use super::utils::{data_frame_widths, line_count, Scroll, TableValues};
+use crate::tui::theme::Styler;
 
-use super::AppResult;
+use crate::AppResult;
 
 #[derive(Debug)]
 pub enum TabularState {
