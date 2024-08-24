@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Rect},
@@ -11,10 +13,11 @@ use crate::tui::theme::Styler;
 use super::widget::{Prompt, PromptState};
 use crate::AppResult;
 
-#[derive(Debug, Default)]
-pub struct StatusBar {
+#[derive(Debug)]
+pub struct StatusBar<Theme> {
     state: StatusBarState,
     prompt_history: Vec<String>,
+    _theme: PhantomData<Theme>,
 }
 
 #[derive(Debug, Default)]
@@ -25,7 +28,15 @@ pub enum StatusBarState {
     Prompt(PromptState),
 }
 
-impl StatusBar {
+impl<Theme: Styler> StatusBar<Theme> {
+    pub fn new() -> Self {
+        StatusBar {
+            state: Default::default(),
+            prompt_history: Default::default(),
+            _theme: Default::default(),
+        }
+    }
+
     pub fn state(&self) -> &StatusBarState {
         &self.state
     }
@@ -111,7 +122,7 @@ impl StatusBar {
         Ok(())
     }
 
-    pub fn render<Theme: Styler>(
+    pub fn render(
         &mut self,
         frame: &mut Frame,
         layout: Rect,
@@ -149,6 +160,12 @@ impl StatusBar {
             }
         }
         Ok(())
+    }
+}
+
+impl<Theme: Styler> Default for StatusBar<Theme> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

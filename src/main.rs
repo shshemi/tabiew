@@ -4,7 +4,6 @@ use polars::io::csv::read::{CsvParseOptions, CsvReadOptions};
 use polars::io::parquet::read::ParquetReader;
 use polars::io::SerReader;
 use ratatui::backend::CrosstermBackend;
-use std::error::Error;
 use std::fs::File;
 use std::io::{self};
 use std::path::PathBuf;
@@ -14,7 +13,7 @@ use tabiew::handler::command::PresetCommands;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::keybind::Keybind;
 use tabiew::sql::SqlBackend;
-use tabiew::tui::themes;
+use tabiew::tui::{themes, Styler};
 use tabiew::tui::{Tabular, TabularType, Terminal};
 use tabiew::utils::{as_ascii, infer_schema_safe};
 use tabiew::AppResult;
@@ -55,8 +54,24 @@ fn main() -> AppResult<()> {
                 },
             };
             let name = sql_backend.register(&name, df.clone(), path.clone());
-            Tabular::new(df, TabularType::Name(name))
+            (df, name)
         })
+        .collect();
+
+    match args.theme {
+        AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend),
+        AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend),
+        AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend),
+    }
+}
+
+fn start_tui<Theme: Styler>(
+    tabs: Vec<(DataFrame, String)>,
+    sql_backend: SqlBackend,
+) -> AppResult<()> {
+    let tabs = tabs
+        .into_iter()
+        .map(|(df, name)| Tabular::new(df, TabularType::Name(name)))
         .collect();
     let exec_tbl = PresetCommands::default().into_exec();
     let keybind = Keybind::default();
@@ -71,11 +86,7 @@ fn main() -> AppResult<()> {
 
     // Run the main loop
     while app.running() {
-        match args.theme {
-            AppTheme::Monokai => tui.draw::<themes::Monokai>(&mut app)?,
-            AppTheme::Argonaut => tui.draw::<themes::Argonaut>(&mut app)?,
-            AppTheme::Terminal => tui.draw::<themes::Terminal>(&mut app)?,
-        }
+        tui.draw::<Theme>(&mut app)?;
 
         match tui.events.next()? {
             Event::Tick => app.tick()?,
@@ -109,7 +120,7 @@ fn read_csv(
     separator_char: char,
     no_header: bool,
     ignore_errors: bool,
-) -> Result<DataFrame, Box<dyn Error>> {
+) -> AppResult<DataFrame> {
     let mut df = CsvReadOptions::default()
         .with_ignore_errors(ignore_errors)
         .with_infer_schema_length(infer_schema.into())
@@ -127,7 +138,7 @@ fn read_csv(
     Ok(df)
 }
 
-fn read_parquet(path: PathBuf) -> Result<DataFrame, Box<dyn Error>> {
+fn read_parquet(path: PathBuf) -> AppResult<DataFrame> {
     Ok(ParquetReader::new(File::open(&path)?)
         .set_rechunk(true)
         .finish()?)

@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use itertools::{izip, Itertools};
 use polars::frame::DataFrame;
 use rand::Rng;
@@ -28,7 +30,7 @@ pub enum TabularType {
 }
 
 #[derive(Debug)]
-pub struct Tabular {
+pub struct Tabular<Theme> {
     offset: usize,
     select: usize,
     rendered_rows: u16,
@@ -38,11 +40,12 @@ pub struct Tabular {
     data_frame: DataFrame,
     state: TabularState,
     tabular_type: TabularType,
+    _theme: PhantomData<Theme>
 }
 
-impl Tabular {
+impl<Theme:Styler> Tabular<Theme> {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame, reset: TabularType) -> Self {
+    pub fn new(data_frame: DataFrame, tabular_type: TabularType) -> Self {
         Self {
             offset: 0,
             select: 0,
@@ -56,7 +59,8 @@ impl Tabular {
             table_values: TableValues::from_dataframe(&data_frame),
             data_frame,
             state: TabularState::Table,
-            tabular_type: reset,
+            tabular_type,
+            _theme: PhantomData::default(),
         }
     }
 
@@ -172,7 +176,7 @@ impl Tabular {
         &self.tabular_type
     }
 
-    pub fn render<Theme: Styler>(
+    pub fn render(
         &mut self,
         frame: &mut Frame,
         layout: Rect,
