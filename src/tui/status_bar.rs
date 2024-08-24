@@ -6,12 +6,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::{
-    theme::Styler,
-    widget::{Prompt, PromptState},
-};
+use crate::tui::theme::Styler;
 
-use super::AppResult;
+use super::widget::{Prompt, PromptState};
+use crate::AppResult;
 
 #[derive(Debug, Default)]
 pub struct StatusBar {
