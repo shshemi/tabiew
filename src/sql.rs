@@ -131,6 +131,9 @@ mod tests {
         .unwrap();
 
         // Expected output
-        assert_eq!(data_frame_structure(&df), "(name str, age i32, space i32, salary f64, married bool)");
+        assert_eq!(
+            data_frame_structure(&df),
+            "(name str, age i32, space i32, salary f64, married bool)"
+        );
     }
 }

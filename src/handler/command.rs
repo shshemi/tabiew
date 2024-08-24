@@ -1,6 +1,7 @@
-use crate::app::{AppAction, AppResult};
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, error::Error};
+
+use crate::{app::AppAction, AppResult};
 
 pub type ParseFn = fn(&str) -> Result<AppAction, Box<dyn Error>>;
 pub type CommandRegistery = HashMap<&'static str, ParseFn>;
@@ -32,9 +33,9 @@ struct CommandEntry {
     parser: ParseFn,
 }
 
-pub struct Commands(Vec<CommandEntry>);
+pub struct PresetCommands(Vec<CommandEntry>);
 
-impl Default for Commands {
+impl Default for PresetCommands {
     fn default() -> Self {
         Self(vec![
             CommandEntry {
@@ -138,7 +139,7 @@ impl Default for Commands {
     }
 }
 
-impl Commands {
+impl PresetCommands {
     pub fn into_exec(self) -> CommandRegistery {
         self.0
             .into_iter()
@@ -250,7 +251,6 @@ fn command_select_random_row(_query: &str) -> AppResult<AppAction> {
 
 fn command_new_tab(query: &str) -> AppResult<AppAction> {
     Ok(AppAction::TabNew(query.to_owned()))
-
 }
 
 fn command_remove_tab(query: &str) -> AppResult<AppAction> {

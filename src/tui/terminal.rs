@@ -1,9 +1,9 @@
-use crate::app::{App, AppResult};
-use crate::event::EventHandler;
-use crate::theme::Styler;
+use crate::app::App;
+use crate::handler::event::EventHandler;
+use crate::tui::Styler;
+use crate::AppResult;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
-use ratatui::Terminal;
 use std::io;
 use std::panic;
 
@@ -12,16 +12,16 @@ use std::panic;
 /// It is responsible for setting up the terminal,
 /// initializing the interface and handling the draw events.
 #[derive(Debug)]
-pub struct Tui<B: Backend> {
+pub struct Terminal<B: Backend> {
     /// Interface to the Terminal.
-    terminal: Terminal<B>,
+    terminal: ratatui::Terminal<B>,
     /// Terminal event handler.
     pub events: EventHandler,
 }
 
-impl<B: Backend> Tui<B> {
+impl<B: Backend> Terminal<B> {
     /// Constructs a new instance of [`Tui`].
-    pub fn new(terminal: Terminal<B>, events: EventHandler) -> Self {
+    pub fn new(terminal: ratatui::Terminal<B>, events: EventHandler) -> Self {
         Self { terminal, events }
     }
 

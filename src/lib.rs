@@ -1,29 +1,21 @@
-/// Application.
-pub mod app;
+use std::error;
 
-/// Terminal events handler.
-pub mod event;
-
-/// Terminal user interface.
+/// User interface.
 pub mod tui;
-
-/// Theme and styling
-pub mod theme;
 
 /// Utils
 pub mod utils;
 
-/// Command
-pub mod command;
-
 /// CLI arguments
 pub mod args;
-
-/// Custom Widgets
-pub mod widget;
 
 /// SQL
 pub mod sql;
 
-/// Key Bindings
-pub mod keybind;
+/// Event, keybind, and commands
+pub mod handler;
+
+/// App
+pub mod app;
+
+pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
