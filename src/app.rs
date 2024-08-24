@@ -85,7 +85,7 @@ impl<Theme: Styler> App<Theme> {
     ) -> Self {
         Self {
             tabs,
-            status_bar: StatusBar::<Theme>::new(),
+            status_bar: StatusBar::<Theme>::default(),
             sql,
             exec_table,
             keybindings: key_bind,
