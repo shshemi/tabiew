@@ -20,9 +20,9 @@ use tui::tabs::Tabs;
 use tui::tabular::{self, Tabular, TabularType};
 use tui::Styler;
 
-pub struct App {
-    tabs: Tabs,
-    status_bar: StatusBar,
+pub struct App<Theme> {
+    tabs: Tabs<Theme>,
+    status_bar: StatusBar<Theme>,
     sql: SqlBackend,
     exec_table: CommandRegistery,
     keybindings: Keybind,
@@ -76,16 +76,16 @@ pub enum AppAction {
     Quit,
 }
 
-impl App {
+impl<Theme: Styler> App<Theme> {
     pub fn new(
-        tabs: Tabs,
+        tabs: Tabs<Theme>,
         sql: SqlBackend,
         exec_table: CommandRegistery,
         key_bind: Keybind,
     ) -> Self {
         Self {
             tabs,
-            status_bar: StatusBar::default(),
+            status_bar: StatusBar::<Theme>::new(),
             sql,
             exec_table,
             keybindings: key_bind,
@@ -124,17 +124,17 @@ impl App {
         }
     }
 
-    pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
+    pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
         let layout =
             Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.area());
 
         // Draw table / item
         let state = self.infer_state();
         if let Some(tab) = self.tabs.selected_mut() {
-            tab.render::<Theme>(frame, layout[0], matches!(state, AppState::Table))?;
+            tab.render(frame, layout[0], matches!(state, AppState::Table))?;
         }
         if let Some(tab) = self.tabs.selected() {
-            self.status_bar.render::<Theme>(
+            self.status_bar.render(
                 frame,
                 layout[1],
                 &[
@@ -180,7 +180,7 @@ impl App {
                 ],
             )
         } else {
-            self.status_bar.render::<Theme>(frame, layout[1], &[])
+            self.status_bar.render(frame, layout[1], &[])
         }
     }
 

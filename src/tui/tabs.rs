@@ -1,15 +1,15 @@
 use crate::AppResult;
 
-use super::tabular::Tabular;
+use super::{tabular::Tabular, Styler};
 
 #[derive(Debug, Default)]
-pub struct Tabs {
-    tabulars: Vec<Tabular>,
+pub struct Tabs<Theme> {
+    tabulars: Vec<Tabular<Theme>>,
     idx: usize,
 }
 
-impl Tabs {
-    pub fn add(&mut self, tabular: Tabular) -> AppResult<()> {
+impl<Theme: Styler> Tabs<Theme> {
+    pub fn add(&mut self, tabular: Tabular<Theme>) -> AppResult<()> {
         self.tabulars.push(tabular);
         Ok(())
     }
@@ -26,11 +26,11 @@ impl Tabs {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&Tabular> {
+    pub fn selected(&self) -> Option<&Tabular<Theme>> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut Tabular> {
+    pub fn selected_mut(&mut self) -> Option<&mut Tabular<Theme>> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -85,13 +85,13 @@ impl Tabs {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Tabular> {
+    pub fn iter(&self) -> impl Iterator<Item = &Tabular<Theme>> {
         self.tabulars.iter()
     }
 }
 
-impl FromIterator<Tabular> for Tabs {
-    fn from_iter<T: IntoIterator<Item = Tabular>>(iter: T) -> Self {
+impl<Theme> FromIterator<Tabular<Theme>> for Tabs<Theme> {
+    fn from_iter<T: IntoIterator<Item = Tabular<Theme>>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
