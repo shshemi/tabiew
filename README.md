@@ -1,6 +1,6 @@
 # Tabiew
 
-Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV or TSV files.
+Tabiew is a lightweight TUI application to view and query tabular data files, such as CSV, TSV, and parquet.
 
 ![Image Alt text](/images/screenshot.png "Screenshot")
 
@@ -82,7 +82,7 @@ or tap:
  brew install shshemi/tabiew/tabiew
  ```
 
-Note: Please be aware that installing Tabiew from the custom tap involves compiling it from source, which may take some time to complete.
+Note: Please be aware that installing Tabiew from the custom tap involves compiling it from the source, which may take some time to complete.
 
 ### Windows
 Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in the system's PATH environment variable.
@@ -117,10 +117,16 @@ Options:
 - `--separator`: Set the separator character.
 - `--theme`: Set the theme.
 
-To open a TSV file use:
+To open TSV file(s), use:
 ```bash
 tw <path_to_tsv(s)> --separator $'\t' --no-header
 ```
+
+To open parquet file(s), use:
+```bash
+tw <path_to_parquet(s)> -f parquet
+```
+
 ## Themes
 ### Monokai (default):
 ![Image Alt text](/images/theme-monokai.png "Monokai")
