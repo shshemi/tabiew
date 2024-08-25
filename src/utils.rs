@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 use polars::{
     datatypes::DataType,
@@ -58,7 +58,7 @@ pub struct ZipIters<Iter> {
 impl<Iter, T> Iterator for ZipIters<Iter>
 where
     Iter: Iterator<Item = T>,
-    T: Clone + Default,
+    T: Default,
 {
     type Item = Vec<T>;
 
@@ -83,38 +83,43 @@ where
     }
 }
 
-pub fn zip_iters<I1: IntoIterator<Item = I2>, I2: Iterator<Item = T>, T: Clone + Default>(
-    iter: I1,
-) -> impl Iterator<Item = Vec<T>> {
-    ZipIters {
-        iterators: iter.into_iter().collect(),
+pub trait ZipItersExt<T> {
+    fn zip_iters(self) -> ZipIters<T>;
+}
+
+impl<I1, I2, T> ZipItersExt<I2> for I1
+where
+    I1: IntoIterator<Item = I2>,
+    I2: Iterator<Item = T>,
+    T: Default,
+{
+    fn zip_iters(self) -> ZipIters<I2> {
+        ZipIters {
+            iterators: self.into_iter().collect(),
+        }
     }
 }
 
-pub fn infer_schema_safe(data_frame: &mut DataFrame) {
-    let dtypes = [
+pub fn safe_infer_schema(data_frame: &mut DataFrame) {
+    for col_name in data_frame.get_column_names_owned() {
+        let col_name = col_name.as_str();
+        if let Some(series) = type_infered_series(data_frame.column(col_name).unwrap()) {
+            data_frame.replace(col_name, series).unwrap();
+        }
+    }
+}
+
+fn type_infered_series(series: &Series) -> Option<Series> {
+    [
         DataType::Int64,
         DataType::Float64,
         DataType::Boolean,
         DataType::Date,
         DataType::Time,
-    ];
-    data_frame
-        .get_column_names()
-        .into_iter()
-        .map(|col_name| (col_name, data_frame.column(col_name).unwrap()))
-        .filter_map(|(col_name, series)| {
-            dtypes
-                .iter()
-                .filter_map(|dtype| series.cast(dtype).ok())
-                .find(|dtype_series| series.is_null().equal(&dtype_series.is_null()).all())
-                .map(|series| (col_name.to_owned(), series))
-        })
-        .collect::<HashMap<String, Series>>()
-        .into_iter()
-        .for_each(|(col_name, series)| {
-            data_frame.replace(col_name.as_str(), series).unwrap();
-        });
+    ]
+    .iter()
+    .filter_map(|dtype| series.cast(dtype).ok())
+    .find(|dtype_series| series.is_null().equal(&dtype_series.is_null()).all())
 }
 
 #[inline]
@@ -167,7 +172,7 @@ mod tests {
         let iter2 = vec![4, 5, 6].into_iter();
         let iter3 = vec![7, 8, 9].into_iter();
 
-        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+        let mut zipped = vec![iter1, iter2, iter3].zip_iters();
 
         assert_eq!(zipped.next(), Some(vec![1, 4, 7]));
         assert_eq!(zipped.next(), Some(vec![2, 5, 8]));
@@ -181,7 +186,7 @@ mod tests {
         let iter2 = vec![4, 5, 6].into_iter();
         let iter3 = vec![7].into_iter();
 
-        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+        let mut zipped = vec![iter1, iter2, iter3].zip_iters();
 
         assert_eq!(zipped.next(), Some(vec![1, 4, 7]));
         assert_eq!(zipped.next(), Some(vec![2, 5, Default::default()]));
@@ -198,7 +203,7 @@ mod tests {
         let iter2 = vec![4, 5, 6].into_iter();
         let iter3 = vec![].into_iter();
 
-        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+        let mut zipped = vec![iter1, iter2, iter3].zip_iters();
 
         assert_eq!(
             zipped.next(),
@@ -219,7 +224,7 @@ mod tests {
     fn test_zip_iters_single_iterator() {
         let iter1 = vec![1, 2, 3].into_iter();
 
-        let mut zipped = zip_iters(vec![iter1]);
+        let mut zipped = vec![iter1].zip_iters();
 
         assert_eq!(zipped.next(), Some(vec![1]));
         assert_eq!(zipped.next(), Some(vec![2]));
@@ -236,7 +241,7 @@ mod tests {
         let iter2 = vec![CustomType(4), CustomType(5), CustomType(6)].into_iter();
         let iter3 = vec![CustomType(7)].into_iter();
 
-        let mut zipped = zip_iters(vec![iter1, iter2, iter3]);
+        let mut zipped = vec![iter1, iter2, iter3].zip_iters();
 
         assert_eq!(
             zipped.next(),
@@ -266,7 +271,7 @@ mod tests {
             "strings"=> ["a", "b", "c", "d"],
         }
         .unwrap();
-        infer_schema_safe(&mut df);
+        safe_infer_schema(&mut df);
 
         assert_eq!(df.column("integers").unwrap().dtype(), &DataType::Int64);
         assert_eq!(df.column("floats").unwrap().dtype(), &DataType::Float64);
