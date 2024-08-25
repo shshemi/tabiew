@@ -15,7 +15,7 @@ use tabiew::handler::keybind::Keybind;
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
 use tabiew::tui::{Tabular, TabularType, Terminal};
-use tabiew::utils::{as_ascii, infer_schema_safe};
+use tabiew::utils::{as_ascii, safe_infer_schema};
 use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
@@ -133,7 +133,7 @@ fn read_csv(
         .try_into_reader_with_file_path(path.into())?
         .finish()?;
     if matches!(infer_schema, InferSchema::Safe) {
-        infer_schema_safe(&mut df);
+        safe_infer_schema(&mut df);
     }
     Ok(df)
 }
