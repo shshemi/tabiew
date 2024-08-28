@@ -3,13 +3,13 @@ use crate::AppResult;
 use super::{tabular::Tabular, Styler};
 
 #[derive(Debug, Default)]
-pub struct Tabs<Theme> {
-    tabulars: Vec<Tabular<Theme>>,
+pub struct Tabs<'a, Theme> {
+    tabulars: Vec<Tabular<'a, Theme>>,
     idx: usize,
 }
 
-impl<Theme: Styler> Tabs<Theme> {
-    pub fn add(&mut self, tabular: Tabular<Theme>) -> AppResult<()> {
+impl<'a, Theme: Styler> Tabs<'a, Theme> {
+    pub fn add(&mut self, tabular: Tabular<'a, Theme>) -> AppResult<()> {
         self.tabulars.push(tabular);
         Ok(())
     }
@@ -30,7 +30,7 @@ impl<Theme: Styler> Tabs<Theme> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut Tabular<Theme>> {
+    pub fn selected_mut(&mut self) -> Option<&mut Tabular<'a, Theme>> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -90,8 +90,8 @@ impl<Theme: Styler> Tabs<Theme> {
     }
 }
 
-impl<Theme> FromIterator<Tabular<Theme>> for Tabs<Theme> {
-    fn from_iter<T: IntoIterator<Item = Tabular<Theme>>>(iter: T) -> Self {
+impl<'a, Theme> FromIterator<Tabular<'a, Theme>> for Tabs<'a, Theme> {
+    fn from_iter<T: IntoIterator<Item = Tabular<'a, Theme>>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
