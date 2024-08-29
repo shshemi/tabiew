@@ -67,7 +67,7 @@ pub enum Format {
     Parquet,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum InferSchema {
     No,
     Fast,
@@ -82,9 +82,9 @@ pub enum AppTheme {
     Terminal,
 }
 
-impl From<&InferSchema> for Option<usize> {
-    fn from(value: &InferSchema) -> Self {
-        match value {
+impl InferSchema {
+    pub fn to_infer_schema_length(&self) -> Option<usize> {
+        match self {
             InferSchema::No => Some(0),
             InferSchema::Fast => Some(128),
             InferSchema::Full => None,
