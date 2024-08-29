@@ -20,8 +20,8 @@ use tui::tabs::Tabs;
 use tui::tabular::{self, Tabular, TabularType};
 use tui::Styler;
 
-pub struct App<'a, Theme> {
-    tabs: Tabs<'a, Theme>,
+pub struct App<Theme> {
+    tabs: Tabs<Theme>,
     status_bar: StatusBar<Theme>,
     sql: SqlBackend,
     exec_table: CommandRegistery,
@@ -76,9 +76,9 @@ pub enum AppAction {
     Quit,
 }
 
-impl<'a, Theme: Styler> App<'a, Theme> {
+impl<Theme: Styler> App<Theme> {
     pub fn new(
-        tabs: Tabs<'a, Theme>,
+        tabs: Tabs<Theme>,
         sql: SqlBackend,
         exec_table: CommandRegistery,
         key_bind: Keybind,
@@ -166,15 +166,15 @@ impl<'a, Theme: Styler> App<'a, Theme> {
                         &format!(
                             "{:>width$}",
                             tab.selected() + 1,
-                            width = tab.data_frame().height().to_string().len()
+                            width = tab.table_values().height().to_string().len()
                         ),
                     ),
                     (
                         "Shape",
                         &format!(
                             "{} x {}",
-                            tab.data_frame().height(),
-                            tab.data_frame().width()
+                            tab.table_values().height(),
+                            tab.table_values().width()
                         ),
                     ),
                 ],
