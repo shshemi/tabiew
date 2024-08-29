@@ -5,8 +5,8 @@ use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::{
     layout::{Alignment, Constraint, Margin, Rect},
-    text::{Line, Span},
-    widgets::{Block, Borders, Cell, ListItem, Paragraph, Row, Table, TableState, Wrap},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
     Frame,
 };
 
@@ -116,14 +116,6 @@ impl<'a, Theme: Styler> Tabular<'a, Theme> {
     pub fn page_len(&self) -> usize {
         self.rendered_rows.into()
     }
-
-    // pub fn adjust_offset(&mut self) {
-    //     self.offset = self.offset.clamp(
-    //         self.select
-    //             .saturating_sub(self.rendered_rows.saturating_sub(1).into()),
-    //         self.select,
-    //     );
-    // }
 
     pub fn switch_view(&mut self) -> AppResult<()> {
         match self.state {
@@ -253,12 +245,18 @@ pub fn tabulate<'a, Theme: Styler>(data_frame: &DataFrame) -> Table<'a> {
     Table::new(
         data_frame
             .iter()
-            .map(|series| series.iter())
+            .map(|series| series.iter().map(any_value_into_string))
             .zip_iters()
             .enumerate()
             .map(|(idx, values)| {
-                Row::new(values.into_iter().map(any_value_into_string).map(Cell::new))
-                    .style(Theme::table_row(idx))
+                Row::new(
+                    values
+                        .into_iter()
+                        // .map(any_value_into_string)
+                        .map(Text::from)
+                        .map(Cell::new),
+                )
+                .style(Theme::table_row(idx))
             }),
         data_frame_widths(data_frame)
             .into_iter()
