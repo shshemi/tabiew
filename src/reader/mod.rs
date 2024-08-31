@@ -3,7 +3,7 @@ use std::{fs::File, path::PathBuf};
 use polars::{
     frame::DataFrame,
     io::SerReader,
-    prelude::{CsvParseOptions, CsvReadOptions, ParquetReader},
+    prelude::{CsvParseOptions, CsvReadOptions, JsonLineReader, JsonReader, ParquetReader},
 };
 
 use crate::{
@@ -23,8 +23,10 @@ pub trait BuildReader {
 impl BuildReader for Args {
     fn build_reader(&self) -> Box<dyn ReadToDataFrame> {
         match self.format {
-            crate::args::Format::Dsv => Box::new(CsvToDataFrame::try_from_args(self)),
+            crate::args::Format::Dsv => Box::new(CsvToDataFrame::from_args(self)),
             crate::args::Format::Parquet => Box::new(ParquetToDataFrame),
+            crate::args::Format::Jsonl => Box::new(JsonLineToDataFrame::from_args(self)),
+            crate::args::Format::Json => Box::new(JsonToDataFrame::from_args(self)),
         }
     }
 }
@@ -38,7 +40,7 @@ pub struct CsvToDataFrame {
 }
 
 impl CsvToDataFrame {
-    pub fn try_from_args(args: &Args) -> CsvToDataFrame {
+    pub fn from_args(args: &Args) -> Self {
         Self {
             infer_schema: args.infer_schema,
             quote_char: args.quote_char,
@@ -53,7 +55,7 @@ impl ReadToDataFrame for CsvToDataFrame {
     fn read_to_data_frame(&self, file: PathBuf) -> AppResult<DataFrame> {
         let mut df = CsvReadOptions::default()
             .with_ignore_errors(self.ignore_errors)
-            .with_infer_schema_length(self.infer_schema.to_infer_schema_length())
+            .with_infer_schema_length(self.infer_schema.to_csv_infer_schema_length())
             .with_has_header(!self.no_header)
             .with_parse_options(
                 CsvParseOptions::default()
@@ -76,5 +78,67 @@ impl ReadToDataFrame for ParquetToDataFrame {
         Ok(ParquetReader::new(File::open(&file)?)
             .set_rechunk(true)
             .finish()?)
+    }
+}
+
+pub struct JsonLineToDataFrame {
+    infer_schema: InferSchema,
+    ignore_errors: bool,
+}
+
+impl JsonLineToDataFrame {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            infer_schema: args.infer_schema,
+            ignore_errors: args.ignore_errors,
+        }
+    }
+}
+
+impl ReadToDataFrame for JsonLineToDataFrame {
+    fn read_to_data_frame(&self, file: PathBuf) -> AppResult<DataFrame> {
+        let mut df = JsonLineReader::new(File::open(file)?)
+            .with_rechunk(true)
+            .infer_schema_len(None)
+            .with_ignore_errors(self.ignore_errors)
+            .finish()?;
+        if matches!(
+            self.infer_schema,
+            InferSchema::Safe | InferSchema::Full | InferSchema::Fast
+        ) {
+            safe_infer_schema(&mut df);
+        }
+        Ok(df)
+    }
+}
+
+pub struct JsonToDataFrame {
+    infer_schema: InferSchema,
+    ignore_errors: bool,
+}
+
+impl JsonToDataFrame {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            infer_schema: args.infer_schema,
+            ignore_errors: args.ignore_errors,
+        }
+    }
+}
+
+impl ReadToDataFrame for JsonToDataFrame {
+    fn read_to_data_frame(&self, file: PathBuf) -> AppResult<DataFrame> {
+        let mut df = JsonReader::new(File::open(file)?)
+            .set_rechunk(true)
+            .infer_schema_len(None)
+            .with_ignore_errors(self.ignore_errors)
+            .finish()?;
+        if matches!(
+            self.infer_schema,
+            InferSchema::Safe | InferSchema::Full | InferSchema::Fast
+        ) {
+            safe_infer_schema(&mut df);
+        }
+        Ok(df)
     }
 }
