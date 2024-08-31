@@ -66,7 +66,8 @@ pub enum Format {
     Dsv,
     Parquet,
     Jsonl,
-    Json
+    Json,
+    Arrow,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

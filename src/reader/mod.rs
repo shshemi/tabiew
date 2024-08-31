@@ -3,7 +3,9 @@ use std::{fs::File, path::PathBuf};
 use polars::{
     frame::DataFrame,
     io::SerReader,
-    prelude::{CsvParseOptions, CsvReadOptions, JsonLineReader, JsonReader, ParquetReader},
+    prelude::{
+        CsvParseOptions, CsvReadOptions, IpcReader, JsonLineReader, JsonReader, ParquetReader,
+    },
 };
 
 use crate::{
@@ -27,6 +29,7 @@ impl BuildReader for Args {
             crate::args::Format::Parquet => Box::new(ParquetToDataFrame),
             crate::args::Format::Jsonl => Box::new(JsonLineToDataFrame::from_args(self)),
             crate::args::Format::Json => Box::new(JsonToDataFrame::from_args(self)),
+            crate::args::Format::Arrow => Box::new(ArrowIpcToDataFrame),
         }
     }
 }
@@ -140,5 +143,15 @@ impl ReadToDataFrame for JsonToDataFrame {
             safe_infer_schema(&mut df);
         }
         Ok(df)
+    }
+}
+
+pub struct ArrowIpcToDataFrame;
+
+impl ReadToDataFrame for ArrowIpcToDataFrame {
+    fn read_to_data_frame(&self, file: PathBuf) -> AppResult<DataFrame> {
+        Ok(IpcReader::new(File::open(file)?)
+            .set_rechunk(true)
+            .finish()?)
     }
 }
