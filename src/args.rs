@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use std::path::PathBuf;
+use std::{num::NonZero, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -65,6 +65,8 @@ pub struct Args {
 pub enum Format {
     Dsv,
     Parquet,
+    Jsonl,
+    Json
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -83,12 +85,21 @@ pub enum AppTheme {
 }
 
 impl InferSchema {
-    pub fn to_infer_schema_length(&self) -> Option<usize> {
+    pub fn to_csv_infer_schema_length(&self) -> Option<usize> {
         match self {
             InferSchema::No => Some(0),
             InferSchema::Fast => Some(128),
             InferSchema::Full => None,
             InferSchema::Safe => Some(0),
+        }
+    }
+
+    pub fn to_json_infer_schema_length(&self) -> Option<NonZero<usize>> {
+        match self {
+            InferSchema::No => None,
+            InferSchema::Fast => Some(NonZero::new(128).unwrap()),
+            InferSchema::Full => None,
+            InferSchema::Safe => None,
         }
     }
 }
