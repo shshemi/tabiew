@@ -100,6 +100,54 @@ where
     }
 }
 
+pub struct SplitByLength<'a, WidthIter> {
+    slice: &'a str,
+    width_iter: WidthIter,
+    start: usize,
+}
+
+impl<'a, WI> Iterator for SplitByLength<'a, WI>
+where
+    WI: Iterator<Item = usize>,
+{
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.width_iter.next().map(|width| {
+            if let Some(end) = self.slice[self.start..]
+                .char_indices().nth(width)
+                .map(|(offset, _)| self.start + offset)
+            {
+                let slice = &self.slice[self.start..end];
+                self.start = end;
+                slice
+            } else {
+                let slice = &self.slice[self.start..];
+                self.start = self.slice.len();
+                slice
+            }
+        })
+    }
+}
+
+pub trait SplitByLengthExt<'a, WidthIter, IntoWidthIter> {
+    fn split_by_length(&'a self, width: IntoWidthIter) -> SplitByLength<'a, WidthIter>;
+}
+
+impl<'a, WidthIter, IntoWidthIter> SplitByLengthExt<'a, WidthIter, IntoWidthIter> for str
+where
+    WidthIter: Iterator<Item = usize>,
+    IntoWidthIter: IntoIterator<IntoIter = WidthIter>,
+{
+    fn split_by_length(&'a self, width: IntoWidthIter) -> SplitByLength<'a, WidthIter> {
+        SplitByLength {
+            slice: self,
+            width_iter: width.into_iter(),
+            start: 0,
+        }
+    }
+}
+
 pub fn safe_infer_schema(data_frame: &mut DataFrame) {
     for col_name in data_frame.get_column_names_owned() {
         let col_name = col_name.as_str();
@@ -130,6 +178,7 @@ pub fn as_ascii(c: char) -> Option<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use itertools::Itertools;
     use polars::prelude::*;
 
     #[test]
@@ -260,6 +309,19 @@ mod tests {
             ])
         );
         assert_eq!(zipped.next(), None);
+    }
+
+    #[test]
+    fn test_split_by_length() {
+        let slice = "123ab9999";
+        let c = slice
+            .split_by_length([3, 2, 4, 1, 2])
+            .collect_vec();
+        assert_eq!(c[0], "123");
+        assert_eq!(c[1], "ab");
+        assert_eq!(c[2], "9999");
+        assert_eq!(c[3], "");
+        assert_eq!(c[4], "");
     }
 
     #[test]

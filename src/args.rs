@@ -53,6 +53,30 @@ pub struct Args {
 
     #[arg(
         long,
+        help = "A comma-separeted list of widths, which should contain the separator spaces if any, to parse FWF files.",
+        required = false,
+        default_value_t = String::default(),
+    )]
+    pub widths: String,
+
+    #[arg(
+        long,
+        help = "The length of the separator used in FWF files.",
+        required = false,
+        default_value_t = 1_usize,
+    )]
+    pub separator_length: usize,
+
+    #[arg(
+        long,
+        help = "If set, FWF files are going have strict column width restrictions",
+        required = false,
+        default_value_t = false,
+    )]
+    pub no_flexible_width: bool,
+
+    #[arg(
+        long,
         help = "Tabiew theme",
         required = false,
         value_enum,
@@ -68,6 +92,7 @@ pub enum Format {
     Jsonl,
     Json,
     Arrow,
+    Fwf,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

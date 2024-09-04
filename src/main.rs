@@ -21,7 +21,7 @@ fn main() -> AppResult<()> {
     let mut sql_backend = SqlBackend::new();
 
     // Loading files to data frames
-    let reader = args.build_reader();
+    let reader = args.build_reader()?;
     let tabs = args
         .files
         .iter()
