@@ -698,6 +698,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fwf-rs"
+version = "0.1.0"
+source = "git+https://github.com/shshemi/fwf-rs#1659ea64dcbe90bf64a1e10d9fd23babfba7985d"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2187,6 +2195,7 @@ dependencies = [
  "clap_complete",
  "clap_mangen",
  "crossterm 0.28.1",
+ "fwf-rs",
  "itertools 0.13.0",
  "polars",
  "polars-sql",

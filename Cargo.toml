@@ -16,6 +16,7 @@ path="src/main.rs"
 [dependencies]
 clap = { version = "4.5.16", features = ["derive"] }
 crossterm = "0.28.1"
+fwf-rs = { git = "https://github.com/shshemi/fwf-rs"}
 itertools = "0.13.0"
 polars = { version = "0.42.0", features = ["dtype-decimal", "lazy", "polars-sql", "polars-io", "parquet", "json", "ipc"] }
 polars-sql = "0.42.0"
