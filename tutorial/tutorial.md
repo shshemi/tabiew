@@ -31,6 +31,14 @@ This command will load the `housing.csv` file and display the following page:
 
 As shown in the image, the tabular data is displayed the main table, while the status bar at the bottom of the page provides table properties such as name and shape. Furthermore, the status bar also discloses the current tab's information.
 
+### Supported formats
+
+Other than `csv`, Tabiew also supports other formats such as Parquet, JSON, JSON-Line, Arrow, and FWF. For instance, to open a parquet file named `sample.parquet`, use the following command:
+
+```shell
+tw sample.parquet -f parquet
+```
+
 ## Command Mode
 
 Command mode is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
