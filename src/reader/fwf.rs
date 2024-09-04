@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::read_to_string,
     iter::once,
 };

@@ -158,7 +158,7 @@ impl<Theme: Styler> App<Theme> {
                             "{:>width$} / {}",
                             self.tabs.idx() + 1,
                             self.tabs.len(),
-                            width = tab.page_len().to_string().len()
+                            width = self.tabs.len().to_string().len()
                         ),
                     ),
                     (
