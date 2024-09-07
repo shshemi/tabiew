@@ -1,8 +1,4 @@
-use std::{
-    collections::HashSet,
-    fs::read_to_string,
-    iter::once,
-};
+use std::{collections::HashSet, fs::read_to_string, iter::once};
 
 use fwf_rs::FwfFileReader;
 use itertools::Itertools;

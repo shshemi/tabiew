@@ -115,7 +115,8 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.width_iter.next().map(|width| {
             if let Some(end) = self.slice[self.start..]
-                .char_indices().nth(width)
+                .char_indices()
+                .nth(width)
                 .map(|(offset, _)| self.start + offset)
             {
                 let slice = &self.slice[self.start..end];
@@ -314,9 +315,7 @@ mod tests {
     #[test]
     fn test_split_by_length() {
         let slice = "123ab9999";
-        let c = slice
-            .split_by_length([3, 2, 4, 1, 2])
-            .collect_vec();
+        let c = slice.split_by_length([3, 2, 4, 1, 2]).collect_vec();
         assert_eq!(c[0], "123");
         assert_eq!(c[1], "ab");
         assert_eq!(c[2], "9999");
