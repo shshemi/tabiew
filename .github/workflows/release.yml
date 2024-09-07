@@ -109,35 +109,6 @@ jobs:
         files: tw-aarch64-unknown-linux-gnu
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  # build-and-upload-windows:
-
-  #   if: startsWith(github.event.release.tag_name, 'v')
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest]
-  #       target: [i686-pc-windows-msvc, x86_64-pc-windows-msvc]
-  #   runs-on: ${{ matrix.os }}
-
-  #   steps:
-  #   - name: Checkout to the latest version 
-  #     uses: actions/checkout@v4
-
-  #   - name: Build
-  #     run: cargo build --release --verbose --target ${{ matrix.target }}
-
-  #   - name: Test
-  #     run: cargo test --all --release
-
-  #   - name: Rename before upload
-  #     run: mv target/${{ matrix.target }}/release/tw.exe tw-${{matrix.target}}.exe
-  #     shell: powershell
-
-  #   - name: Upload artifacts to release
-  #     uses: AButler/upload-release-assets@v3.0
-  #     with:
-  #       files: tw-${{matrix.target}}.exe
-  #       repo-token: ${{ secrets.GITHUB_TOKEN }}
-
   build-and-upload-macos:
 
     if: startsWith(github.event.release.tag_name, 'v')
