@@ -82,12 +82,8 @@ or tap:
  brew install shshemi/tabiew/tabiew
  ```
 
-Note: Please be aware that installing Tabiew from the custom tap involves compiling it from the source, which may take some time to complete.
+Note: Please be aware that installing Tabiew from the tap involves compiling it from the source, which may take some time to complete.
 
-### Windows
-Download the `.exe` file from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and place it in a directory that is included in the system's PATH environment variable.
-
-**Disclaimer:** The Windows version may experience performance lag.
 
 ### Cargo
 Installing Tabiew from *Crates.io*:
