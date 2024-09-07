@@ -63,7 +63,7 @@ pub struct Args {
         long,
         help = "The length of the separator used in FWF files.",
         required = false,
-        default_value_t = 1_usize,
+        default_value_t = 1_usize
     )]
     pub separator_length: usize,
 
@@ -71,7 +71,7 @@ pub struct Args {
         long,
         help = "If set, FWF files are going have strict column width restrictions",
         required = false,
-        default_value_t = false,
+        default_value_t = false
     )]
     pub no_flexible_width: bool,
 
