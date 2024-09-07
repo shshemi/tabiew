@@ -700,7 +700,8 @@ dependencies = [
 [[package]]
 name = "fwf-rs"
 version = "0.1.0"
-source = "git+https://github.com/shshemi/fwf-rs#1659ea64dcbe90bf64a1e10d9fd23babfba7985d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36de2cd1349e7a0d5252ae50b25a3f0a8c95f604cb2230c2fdbdc0512d9deedb"
 dependencies = [
  "thiserror",
 ]
