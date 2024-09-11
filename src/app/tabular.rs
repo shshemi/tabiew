@@ -1,7 +1,9 @@
 use itertools::{izip, Itertools};
 use polars::frame::DataFrame;
 use rand::Rng;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Modifier, Style, Stylize};
+use ratatui::symbols;
+use ratatui::widgets::{Axis, Chart, Dataset, GraphType};
 use ratatui::{
     layout::{Alignment, Constraint, Margin, Rect},
     text::{Line, Span},
@@ -51,10 +53,27 @@ pub struct Tabular {
 #[derive(Debug)]
 struct ListControl {
     val: List<'static>,
+    list_option: Vec<String>,
     selected: usize,
 }
 
 impl ListControl {
+    fn new(title: &str, val: Vec<String>) -> Self {
+        Self {
+            val: List::new(val.clone())
+                .block(
+                    Block::default()
+                        .title(title.to_owned())
+                        .borders(Borders::ALL),
+                )
+                .highlight_symbol(">>")
+                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+                .repeat_highlight_symbol(true)
+                .direction(ListDirection::TopToBottom),
+            list_option: val,
+            selected: 0,
+        }
+    }
     fn next(&mut self) {
         if self.selected < self.val.len() - 1 {
             self.selected += 1;
@@ -68,6 +87,9 @@ impl ListControl {
         } else {
             self.selected = self.val.len() - 1;
         }
+    }
+    fn get_selected(&self) -> &str {
+        self.list_option[self.selected].as_str()
     }
 }
 
@@ -89,41 +111,12 @@ pub struct ChartState {
 impl ChartState {
     fn new(columns: Vec<String>) -> Self {
         Self {
-            x: ListControl {
-                val: List::new(columns.clone())
-                    .block(
-                        Block::default()
-                            .title("Select x-axis:")
-                            .borders(Borders::ALL),
-                    )
-                    .highlight_symbol(">>")
-                    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-                    .repeat_highlight_symbol(true)
-                    .direction(ListDirection::TopToBottom),
-                selected: 0,
-            },
-            y: ListControl {
-                val: List::new(columns.clone())
-                    .block(
-                        Block::default()
-                            .title("Select y-axis:")
-                            .borders(Borders::ALL),
-                    )
-                    .highlight_symbol(">>")
-                    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-                    .repeat_highlight_symbol(true)
-                    .direction(ListDirection::TopToBottom),
-                selected: 0,
-            },
-            chart_type: ListControl {
-                val: List::new(vec!["Line", "Bar", "Scatter"])
-                    .block(Block::default().title("Chart type").borders(Borders::ALL))
-                    .highlight_symbol(">>")
-                    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-                    .repeat_highlight_symbol(true)
-                    .direction(ListDirection::TopToBottom),
-                selected: 0,
-            },
+            x: ListControl::new("Select x-axis:", columns.clone()),
+            y: ListControl::new("Select y-axis:", columns.clone()),
+            chart_type: ListControl::new(
+                "Select chart type:",
+                vec!["Line".to_string(), "Bar".to_string(), "Scatter".to_string()],
+            ),
             current: ListNav::X,
         }
     }
@@ -418,6 +411,58 @@ impl Tabular {
                 let l1_area = Rect::new(0, 0, 20, 20);
                 let l2_area = Rect::new(21, 0, 20, 20);
                 let l3_area = Rect::new(42, 0, 20, 20);
+                let chart_area = Rect::new(0, 20, 60, 20);
+
+                let data = self.data_frame();
+                let x_vec = data
+                    .column(self.chart_state.x.get_selected())
+                    .unwrap()
+                    .i64()
+                    .unwrap();
+                let y_vec = data
+                    .column(self.chart_state.y.get_selected())
+                    .unwrap()
+                    .i64()
+                    .unwrap();
+                let dataset = x_vec
+                    .into_iter()
+                    .zip(y_vec.into_iter())
+                    .map(|(x, y)| (x.unwrap() as f64, y.unwrap() as f64))
+                    .collect::<Vec<(f64, f64)>>();
+
+                let x_axis = Axis::default()
+                    .title("X Axis".red())
+                    .style(Style::default().white())
+                    .bounds([0.0, 10.0])
+                    .labels(vec!["0.0".bold(), "5".into(), "10".into()]);
+
+                // Create the Y axis and define its properties
+                let y_axis = Axis::default()
+                    .title("Y Axis".red())
+                    .style(Style::default().white())
+                    .bounds([0.0, 10.0])
+                    .labels(vec!["0.0".bold(), "5".into(), "10".into()]);
+
+                let datasets = vec![
+                    // Scatter chart
+                    Dataset::default()
+                        .name("data1")
+                        .marker(symbols::Marker::Dot)
+                        .graph_type(GraphType::Scatter)
+                        .style(Style::default().white())
+                        .data(&dataset),
+                ];
+
+                let chart = match self.chart_state.chart_type.get_selected() {
+                    "Line" => Chart::new(datasets)
+                        .block(Block::default().title("Chart"))
+                        .x_axis(x_axis)
+                        .y_axis(y_axis),
+                    _ => todo!(),
+                };
+                // scatter: x,y: only numeric
+                // line: x,y: only numeric
+                // bar: y: categorical, x: numeric
 
                 frame.render_stateful_widget(self.chart_state.x.val.clone(), l1_area, &mut state1);
                 frame.render_stateful_widget(self.chart_state.y.val.clone(), l2_area, &mut state2);
@@ -426,6 +471,8 @@ impl Tabular {
                     l3_area,
                     &mut state_3,
                 );
+
+                frame.render_widget(chart, chart_area)
             }
         }
         Ok(())
