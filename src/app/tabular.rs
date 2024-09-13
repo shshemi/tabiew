@@ -408,10 +408,34 @@ impl Tabular {
                 let mut state_3 =
                     ListState::default().with_selected(Some(self.chart_state.chart_type.selected));
 
-                let l1_area = Rect::new(0, 0, 20, 20);
-                let l2_area = Rect::new(21, 0, 20, 20);
-                let l3_area = Rect::new(42, 0, 20, 20);
-                let chart_area = Rect::new(0, 20, 60, 20);
+                let list_width = layout.width / 3 - 1;
+                let list_height = layout.height / 3;
+
+                let l1_area = Rect::new(
+                    layout.x,
+                    layout.y,
+                    layout.x + list_width,
+                    layout.y + list_height,
+                );
+                //let l1_area = Rect::new(0, 0, 20, 20);
+                let l2_area = Rect::new(
+                    layout.x + list_width,
+                    layout.y,
+                    list_width,
+                    layout.y + list_height,
+                );
+                let l3_area = Rect::new(
+                    layout.x + list_width * 2,
+                    layout.y,
+                    list_width,
+                    layout.y + list_height,
+                );
+                let chart_area = Rect::new(
+                    layout.x,
+                    layout.y + list_height,
+                    layout.x + layout.width,
+                    layout.y + list_height * 2,
+                );
 
                 let data = self.data_frame();
                 let x_vec = data
@@ -443,23 +467,26 @@ impl Tabular {
                     .bounds([0.0, 10.0])
                     .labels(vec!["0.0".bold(), "5".into(), "10".into()]);
 
+                let chart_type = match self.chart_state.chart_type.get_selected() {
+                    "Scatter" => GraphType::Scatter,
+                    "Line" => GraphType::Line,
+                    "Bar" => GraphType::Bar,
+                    _ => GraphType::Scatter,
+                };
                 let datasets = vec![
                     // Scatter chart
                     Dataset::default()
                         .name("data1")
                         .marker(symbols::Marker::Dot)
-                        .graph_type(GraphType::Scatter)
+                        .graph_type(chart_type)
                         .style(Style::default().white())
                         .data(&dataset),
                 ];
 
-                let chart = match self.chart_state.chart_type.get_selected() {
-                    "Line" => Chart::new(datasets)
-                        .block(Block::default().title("Chart"))
-                        .x_axis(x_axis)
-                        .y_axis(y_axis),
-                    _ => todo!(),
-                };
+                let chart = Chart::new(datasets)
+                    .block(Block::default().title("Chart"))
+                    .x_axis(x_axis)
+                    .y_axis(y_axis);
                 // scatter: x,y: only numeric
                 // line: x,y: only numeric
                 // bar: y: categorical, x: numeric
