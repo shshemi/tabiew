@@ -1,4 +1,7 @@
+use std::f64;
+
 use itertools::{izip, Itertools};
+use polars::chunked_array::ops::ChunkAgg;
 use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::style::{Modifier, Style, Stylize};
@@ -438,34 +441,41 @@ impl Tabular {
                 );
 
                 let data = self.data_frame();
-                let x_vec = data
-                    .column(self.chart_state.x.get_selected())
-                    .unwrap()
-                    .i64()
-                    .unwrap();
-                let y_vec = data
-                    .column(self.chart_state.y.get_selected())
-                    .unwrap()
-                    .i64()
-                    .unwrap();
+
+                let x_vec = data.column(self.chart_state.x.get_selected())?.i64()?;
+
+                let y_vec = data.column(self.chart_state.y.get_selected())?.i64()?;
+
                 let dataset = x_vec
                     .into_iter()
                     .zip(y_vec.into_iter())
                     .map(|(x, y)| (x.unwrap() as f64, y.unwrap() as f64))
                     .collect::<Vec<(f64, f64)>>();
 
+                let x_axis_bound = [x_vec.min().unwrap() as f64, x_vec.max().unwrap() as f64];
+                let y_axis_bound = [y_vec.min().unwrap() as f64, y_vec.max().unwrap() as f64];
+
+                let labels_x = x_axis_bound
+                    .iter()
+                    .map(|x| x.to_string().bold())
+                    .collect::<Vec<_>>();
+                let labels_y = y_axis_bound
+                    .iter()
+                    .map(|y| y.to_string().bold())
+                    .collect::<Vec<_>>();
+
                 let x_axis = Axis::default()
                     .title("X Axis".red())
                     .style(Style::default().white())
-                    .bounds([0.0, 10.0])
-                    .labels(vec!["0.0".bold(), "5".into(), "10".into()]);
+                    .bounds(x_axis_bound)
+                    .labels(labels_x);
 
                 // Create the Y axis and define its properties
                 let y_axis = Axis::default()
                     .title("Y Axis".red())
                     .style(Style::default().white())
                     .bounds([0.0, 10.0])
-                    .labels(vec!["0.0".bold(), "5".into(), "10".into()]);
+                    .labels(labels_y);
 
                 let chart_type = match self.chart_state.chart_type.get_selected() {
                     "Scatter" => GraphType::Scatter,
