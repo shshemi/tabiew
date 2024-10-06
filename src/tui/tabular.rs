@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use itertools::{izip, Itertools};
-use polars::frame::DataFrame;
+use polars::{frame::DataFrame, series::Series};
 use rand::Rng;
 use ratatui::{
     layout::{Alignment, Constraint, Margin, Rect},
@@ -10,8 +10,11 @@ use ratatui::{
     Frame,
 };
 
-use super::utils::{data_frame_widths, line_count, Scroll, TableValues};
-use crate::tui::theme::Styler;
+use super::utils::{data_frame_widths, line_count, Scroll};
+use crate::{
+    tui::{theme::Styler, utils::any_value_into_string},
+    utils::ZipItersExt,
+};
 
 use crate::AppResult;
 
@@ -36,7 +39,6 @@ pub struct Tabular<Theme> {
     rendered_rows: u16,
     widths: Vec<usize>,
     headers: Vec<String>,
-    table_values: TableValues,
     data_frame: DataFrame,
     state: TabularState,
     tabular_type: TabularType,
@@ -56,7 +58,6 @@ impl<Theme: Styler> Tabular<Theme> {
                 .into_iter()
                 .map(ToOwned::to_owned)
                 .collect(),
-            table_values: TableValues::from_dataframe(&data_frame),
             data_frame,
             state: TabularState::Table,
             tabular_type,
@@ -87,11 +88,11 @@ impl<Theme: Styler> Tabular<Theme> {
 
     pub fn select_random(&mut self) -> AppResult<()> {
         let mut rng = rand::thread_rng();
-        self.select(rng.gen_range(0..self.table_values.height()))
+        self.select(rng.gen_range(0..self.data_frame.height()))
     }
 
     pub fn select(&mut self, select: usize) -> AppResult<()> {
-        self.select = select.min(self.table_values.height().saturating_sub(1));
+        self.select = select.min(self.data_frame.height().saturating_sub(1));
         Ok(())
     }
 
@@ -151,7 +152,6 @@ impl<Theme: Styler> Tabular<Theme> {
             .into_iter()
             .map(ToOwned::to_owned)
             .collect();
-        self.table_values.replace_dataframe(&data_frame);
         self.data_frame = data_frame;
         Ok(())
     }
@@ -166,10 +166,6 @@ impl<Theme: Styler> Tabular<Theme> {
 
     pub fn selected(&self) -> usize {
         self.select
-    }
-
-    pub fn table_values(&self) -> &TableValues {
-        &self.table_values
     }
 
     pub fn tabular_type(&self) -> &TabularType {
@@ -189,11 +185,11 @@ impl<Theme: Styler> Tabular<Theme> {
 
                     frame.render_stateful_widget(
                         tabulate::<Theme>(
-                            &self.table_values,
+                            self.data_frame
+                                .slice(self.offset as i64, self.rendered_rows as usize),
                             &self.widths,
                             &self.headers,
                             self.offset,
-                            self.rendered_rows as usize,
                         ),
                         layout,
                         &mut local_st,
@@ -201,11 +197,11 @@ impl<Theme: Styler> Tabular<Theme> {
                 } else {
                     frame.render_widget(
                         tabulate::<Theme>(
-                            &self.table_values,
+                            self.data_frame
+                                .slice(self.offset as i64, self.rendered_rows as usize),
                             &self.widths,
                             &self.headers,
-                            self.offset,
-                            self.rendered_rows as usize,
+                            self.offset
                         ),
                         layout,
                     );
@@ -216,7 +212,12 @@ impl<Theme: Styler> Tabular<Theme> {
                 let space = layout.inner(Margin::new(1, 1));
                 let title = format!(" {} ", self.select + 1);
 
-                let values = self.table_values.get_row(self.select);
+                // let values = self.table_values.get_row(self.select);
+                let values = self
+                    .data_frame
+                    .get(self.select)
+                    .map(|row| row.into_iter().map(any_value_into_string).collect_vec())
+                    .unwrap_or_default();
 
                 let (paragraph, line_count) = paragraph_from_headers_values::<Theme>(
                     &title,
@@ -236,7 +237,7 @@ impl<Theme: Styler> Tabular<Theme> {
 fn paragraph_from_headers_values<'a, Theme: Styler>(
     title: &'a str,
     headers: &'a [String],
-    values: &'a [&str],
+    values: &'a [String],
     width: u16,
 ) -> (Paragraph<'a>, usize) {
     let lines = izip!(headers, values.iter())
@@ -274,17 +275,20 @@ fn lines_from_header_value<'a, Theme: Styler>(
 }
 
 pub fn tabulate<'a, Theme: Styler>(
-    value_pool: &'a TableValues,
+    data_frame: DataFrame,
     widths: &'a [usize],
     headers: &'a [String],
     offset: usize,
-    length: usize,
 ) -> Table<'a> {
     Table::new(
-        (offset..offset + length)
-            .map(|row_idx| {
-                Row::new(value_pool.get_row(row_idx).into_iter().map(Cell::new))
-                    .style(Theme::table_row(row_idx))
+        data_frame
+            .iter()
+            .map(Series::iter)
+            .zip_iters()
+            .enumerate()
+            .map(|(ridx, vals)| {
+                Row::new(vals.into_iter().map(any_value_into_string).map(Cell::new))
+                    .style(Theme::table_row(ridx + offset))
             })
             .collect_vec(),
         widths

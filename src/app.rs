@@ -166,15 +166,15 @@ impl<Theme: Styler> App<Theme> {
                         &format!(
                             "{:>width$}",
                             tab.selected() + 1,
-                            width = tab.table_values().height().to_string().len()
+                            width = tab.data_frame().height().to_string().len()
                         ),
                     ),
                     (
                         "Shape",
                         &format!(
                             "{} x {}",
-                            tab.table_values().height(),
-                            tab.table_values().width()
+                            tab.data_frame().height(),
+                            tab.data_frame().width()
                         ),
                     ),
                 ],
