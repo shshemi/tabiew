@@ -6,10 +6,10 @@ Tabiew is a lightweight TUI application to view and query tabular data files, su
 
 ## Features
 
-- 📊 Easy to Navigate Tables and Sheets
-- 🛠️ SQL Support
-- 🗂️ Multiple Table Support
-- ⌨️ Vim Inspired Keybindings
+- ⌨️ Vim-style keybindings
+- 🛠️ SQL support
+- 🗂️ Multi-table functionality
+- 📊 Supports for CSV, Parquet, JSON, JSONL, Arrow, and FWF
 
 ## Tutorial
 
