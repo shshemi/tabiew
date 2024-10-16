@@ -4,7 +4,7 @@ use ratatui::backend::CrosstermBackend;
 use std::io::{self};
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
-use tabiew::handler::command::PresetCommands;
+use tabiew::handler::command::Commands;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::keybind::Keybind;
 use tabiew::reader::BuildReader;
@@ -55,7 +55,7 @@ fn start_tui<Theme: Styler>(
         .into_iter()
         .map(|(df, name)| Tabular::new(df, TabularType::Name(name)))
         .collect();
-    let exec_tbl = PresetCommands::default().into_exec();
+    let exec_tbl = Commands::default().into_exec();
     let keybind = Keybind::default();
     let mut app = App::new(tabs, sql_backend, exec_tbl, keybind);
 
