@@ -21,4 +21,7 @@ pub mod app;
 /// Readers
 pub mod reader;
 
+/// Writers
+pub mod writer;
+
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;

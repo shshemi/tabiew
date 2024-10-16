@@ -160,6 +160,10 @@ impl<Theme: Styler> Tabular<Theme> {
         &self.data_frame
     }
 
+    pub fn data_frame_mut(&mut self) -> &mut DataFrame {
+        &mut self.data_frame
+    }
+
     pub fn state(&self) -> &TabularState {
         &self.state
     }

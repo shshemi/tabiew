@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::{ops::Div, path::PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
@@ -8,11 +8,9 @@ use ratatui::{
 
 use crate::{
     handler::{
-        command::{Registery, Commands},
+        command::{Commands, Registery},
         keybind::{Action, Keybind},
-    },
-    sql::SqlBackend,
-    tui, AppResult,
+    }, sql::SqlBackend, tui, writer::{WriteToCsv, WriteToFile}, AppResult
 };
 
 use tui::status_bar::{StatusBar, StatusBarState};
@@ -72,6 +70,12 @@ pub enum AppAction {
     TabSelectedNext,
     TabRemoveOrQuit,
     TabRename(usize, String),
+    ExportCSVDataFrame {
+        path: PathBuf,
+        separator: char,
+        quote: char,
+        header: bool,
+    },
     Help,
     Quit,
 }
@@ -466,6 +470,18 @@ impl<Theme: Styler> App<Theme> {
                 }
             }
 
+            AppAction::ExportCSVDataFrame { path, separator, quote, header } => {
+                if let Some(tab) = self.tabs.selected_mut(){
+                    WriteToCsv::default()
+                    .with_separator_char(separator)
+                    .with_quote_char(quote)
+                    .with_header(header)
+                    .write_to_file(path, tab.data_frame_mut())
+                } else {
+                    Err("Unable to export the data frame".into())
+                }
+            },
+
             AppAction::Help => {
                 let idx = self.tabs.iter().enumerate().find_map(|(idx, tab)| {
                     matches!(tab.tabular_type(), TabularType::Help).then_some(idx)
@@ -482,6 +498,7 @@ impl<Theme: Styler> App<Theme> {
             }
 
             AppAction::Quit => self.quit(),
+
         }
     }
 }
