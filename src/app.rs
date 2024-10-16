@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     handler::{
-        command::{CommandRegistery, PresetCommands},
+        command::{Registery, Commands},
         keybind::{Action, Keybind},
     },
     sql::SqlBackend,
@@ -24,7 +24,7 @@ pub struct App<Theme> {
     tabs: Tabs<Theme>,
     status_bar: StatusBar<Theme>,
     sql: SqlBackend,
-    exec_table: CommandRegistery,
+    exec_table: Registery,
     keybindings: Keybind,
     running: bool,
 }
@@ -80,7 +80,7 @@ impl<Theme: Styler> App<Theme> {
     pub fn new(
         tabs: Tabs<Theme>,
         sql: SqlBackend,
-        exec_table: CommandRegistery,
+        exec_table: Registery,
         key_bind: Keybind,
     ) -> Self {
         Self {
@@ -376,7 +376,7 @@ impl<Theme: Styler> App<Theme> {
             AppAction::TabularReset => {
                 if let Some(tab) = self.tabs.selected_mut() {
                     tab.set_data_frame(match tab.tabular_type() {
-                        TabularType::Help => PresetCommands::default().into_data_frame(),
+                        TabularType::Help => Commands::default().into_data_frame(),
                         TabularType::Schema => self.sql.schema(),
                         TabularType::Name(name) => self
                             .sql
@@ -474,7 +474,7 @@ impl<Theme: Styler> App<Theme> {
                     self.tabs.select(idx)
                 } else {
                     self.tabs.add(Tabular::new(
-                        PresetCommands::default().into_data_frame(),
+                        Commands::default().into_data_frame(),
                         TabularType::Help,
                     ))?;
                     self.tabs.select_last()
