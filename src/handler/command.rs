@@ -1,5 +1,6 @@
+use itertools::Itertools;
 use polars::{df, frame::DataFrame};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{app::AppAction, AppResult};
 
@@ -26,19 +27,19 @@ impl Prefix {
     }
 }
 
-struct CommandEntry {
+struct Entry {
     prefix: Prefix,
     usage: &'static str,
     description: &'static str,
     parser: ParseFn,
 }
 
-pub struct Commands(Vec<CommandEntry>);
+pub struct Commands(Vec<Entry>);
 
 impl Default for Commands {
     fn default() -> Self {
         Self(vec![
-            CommandEntry {
+            Entry {
                 prefix: Prefix::ShortAndLong(":Q", ":query"),
                 usage: ":Q <query>",
                 description:
@@ -47,7 +48,7 @@ impl Default for Commands {
                     Ok(AppAction::SqlQuery(query.to_owned()))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::ShortAndLong(":q", ":quit"),
                 usage: ":q",
                 description: "Quit Tabiew",
@@ -55,7 +56,7 @@ impl Default for Commands {
                     Ok(AppAction::Quit)
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":goto"),
                 usage: ":goto <line_index>",
                 description: "Jumps to the <line_index> line",
@@ -65,7 +66,7 @@ impl Default for Commands {
                     ))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":goup"),
                 usage: ":goup <lines>",
                 description: "Jump <lines> line(s) up",
@@ -77,7 +78,7 @@ impl Default for Commands {
                     })
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":godown"),
                 usage: ":godown <lines>",
                 description: "Jump <lines> line(s) down",
@@ -89,7 +90,7 @@ impl Default for Commands {
                     })
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":reset"),
                 usage: ":reset",
                 description: "Reset the original data frame",
@@ -97,7 +98,7 @@ impl Default for Commands {
                     Ok(AppAction::TabularReset)
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":help"),
                 usage: ":help",
                 description: "Show help menu",
@@ -105,7 +106,7 @@ impl Default for Commands {
                     Ok(AppAction::Help)
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::ShortAndLong(":S", ":select"),
                 usage: ":select <column_name(s)>",
                 description: "Query current data frame for columns/functions",
@@ -113,7 +114,7 @@ impl Default for Commands {
                     Ok(AppAction::TabularSelect(query.to_owned()))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::ShortAndLong(":F", ":filter"),
                 usage: ":filter <condition(s)>",
                 description: "Filter current data frame, keeping rows were the condition(s) match",
@@ -121,7 +122,7 @@ impl Default for Commands {
                     Ok(AppAction::TabularFilter(query.to_owned()))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::ShortAndLong(":O", ":order"),
                 usage: ":order <column(s)_and_order(s)>",
                 description: "Sort current data frame by column(s)",
@@ -129,7 +130,7 @@ impl Default for Commands {
                     Ok(AppAction::TabularOrder(query.to_owned()))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":schema"),
                 usage: ":schema",
                 description: "Show loaded data frame(s), their schmea(s), and their path(s)",
@@ -137,7 +138,7 @@ impl Default for Commands {
                     Ok(AppAction::SqlSchema)
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":rand"),
                 usage: ":rand",
                 description: "Select a random row from current data frame",
@@ -145,7 +146,7 @@ impl Default for Commands {
                     Ok(AppAction::TabularGotoRandom)
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":view"),
                 usage: ":view (table | sheet | switch)",
                 description: "Change tabular's view to table or sheet",
@@ -158,7 +159,7 @@ impl Default for Commands {
                     })
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":tabn"),
                 usage: ":tabn <query>",
                 description: "Create a new tab with the query",
@@ -166,7 +167,7 @@ impl Default for Commands {
                     Ok(AppAction::TabNew(query.to_owned()))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":tabr"),
                 usage: ":tabr <tab_index>",
                 description: "Remove the tab at the index",
@@ -174,12 +175,36 @@ impl Default for Commands {
                     Ok(AppAction::TabRemove(query.parse()?))
                 },
             },
-            CommandEntry {
+            Entry {
                 prefix: Prefix::Long(":tab"),
                 usage: ":tab <tab_index>",
                 description: "Select the tab at the index",
                 parser: |query|{
                     Ok(AppAction::TabSelect(query.parse()?))
+                },
+            },
+            Entry {
+                prefix: Prefix::Long(":export"),
+                usage: ":export <format> <path>",
+                description: "Select the tab at the index",
+                parser: |query| {
+                    let (fmt, path_str) = query.split_once(' ')
+                        .ok_or("Export argument should only contain format and path")?;
+                    match fmt {
+                        "csv" => {
+                            Ok(
+                                AppAction::ExportCSVDataFrame{
+                                    path: path_str.into() ,
+                                    separator: ',',
+                                    quote: '"',
+                                    header: true }
+                            )
+                        }
+
+                        _ => {
+                            Err("Invalid format".into())
+                        }
+                    }
                 },
             },
         ])
