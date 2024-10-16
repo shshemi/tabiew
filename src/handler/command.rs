@@ -1,10 +1,10 @@
 use polars::{df, frame::DataFrame};
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
 use crate::{app::AppAction, AppResult};
 
-pub type ParseFn = fn(&str) -> Result<AppAction, Box<dyn Error>>;
-pub type CommandRegistery = HashMap<&'static str, ParseFn>;
+pub type ParseFn = fn(&str) -> AppResult<AppAction>;
+pub type Registery = HashMap<&'static str, ParseFn>;
 pub enum Prefix {
     Long(&'static str),
     ShortAndLong(&'static str, &'static str),
@@ -33,9 +33,9 @@ struct CommandEntry {
     parser: ParseFn,
 }
 
-pub struct PresetCommands(Vec<CommandEntry>);
+pub struct Commands(Vec<CommandEntry>);
 
-impl Default for PresetCommands {
+impl Default for Commands {
     fn default() -> Self {
         Self(vec![
             CommandEntry {
@@ -43,104 +43,151 @@ impl Default for PresetCommands {
                 usage: ":Q <query>",
                 description:
                     "Query the data in Structured Query Language(SQL). The table name is the file name without extension",
-                parser: command_query,
+                parser: |query|{
+                    Ok(AppAction::SqlQuery(query.to_owned()))
+                },
             },
             CommandEntry {
                 prefix: Prefix::ShortAndLong(":q", ":quit"),
                 usage: ":q",
                 description: "Quit Tabiew",
-                parser: command_quit,
+                parser: |_|{
+                    Ok(AppAction::Quit)
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":goto"),
                 usage: ":goto <line_index>",
                 description: "Jumps to the <line_index> line",
-                parser: command_goto,
+                parser: |line|{
+                    Ok(AppAction::TabularGoto(
+                        line.parse::<usize>()?.saturating_sub(1),
+                    ))
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":goup"),
                 usage: ":goup <lines>",
                 description: "Jump <lines> line(s) up",
-                parser: command_select_up,
+                parser: |lines|{
+                    Ok(match lines {
+                        "page" => AppAction::TabularGoUpFullPage,
+                        "half" => AppAction::TabularGoUpHalfPage,
+                        _ => AppAction::TabularGoUp(lines.parse()?),
+                    })
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":godown"),
                 usage: ":godown <lines>",
                 description: "Jump <lines> line(s) down",
-                parser: command_select_down,
+                parser: |lines|{
+                    Ok(match lines {
+                        "page" => AppAction::TabularGoDownFullPage,
+                        "half" => AppAction::TabularGoDownHalfPage,
+                        _ => AppAction::TabularGoDown(lines.parse()?),
+                    })
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":reset"),
                 usage: ":reset",
                 description: "Reset the original data frame",
-                parser: command_reset,
+                parser: |_|{
+                    Ok(AppAction::TabularReset)
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":help"),
                 usage: ":help",
                 description: "Show help menu",
-                parser: command_help,
+                parser: |_|{
+                    Ok(AppAction::Help)
+                },
             },
             CommandEntry {
                 prefix: Prefix::ShortAndLong(":S", ":select"),
                 usage: ":select <column_name(s)>",
                 description: "Query current data frame for columns/functions",
-                parser: command_select,
+                parser: |query|{
+                    Ok(AppAction::TabularSelect(query.to_owned()))
+                },
             },
             CommandEntry {
                 prefix: Prefix::ShortAndLong(":F", ":filter"),
                 usage: ":filter <condition(s)>",
                 description: "Filter current data frame, keeping rows were the condition(s) match",
-                parser: command_filter,
+                parser: |query|{
+                    Ok(AppAction::TabularFilter(query.to_owned()))
+                },
             },
             CommandEntry {
                 prefix: Prefix::ShortAndLong(":O", ":order"),
                 usage: ":order <column(s)_and_order(s)>",
                 description: "Sort current data frame by column(s)",
-                parser: command_order,
+                parser: |query|{
+                    Ok(AppAction::TabularOrder(query.to_owned()))
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":schema"),
                 usage: ":schema",
                 description: "Show loaded data frame(s), their schmea(s), and their path(s)",
-                parser: command_tables,
+                parser: |_|{
+                    Ok(AppAction::SqlSchema)
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":rand"),
                 usage: ":rand",
                 description: "Select a random row from current data frame",
-                parser: command_select_random_row,
+                parser: |_|{
+                    Ok(AppAction::TabularGotoRandom)
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":view"),
                 usage: ":view (table | sheet | switch)",
                 description: "Change tabular's view to table or sheet",
-                parser: command_change_view,
+                parser: |query|{
+                    Ok(match query {
+                        "table" => AppAction::TabularTableView,
+                        "sheet" => AppAction::TabularSheetView,
+                        "switch" => AppAction::TabularSwitchView,
+                        _ => Err("Invalid view")?,
+                    })
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":tabn"),
                 usage: ":tabn <query>",
                 description: "Create a new tab with the query",
-                parser: command_new_tab,
+                parser: |query|{
+                    Ok(AppAction::TabNew(query.to_owned()))
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":tabr"),
                 usage: ":tabr <tab_index>",
                 description: "Remove the tab at the index",
-                parser: command_remove_tab,
+                parser: |query|{
+                    Ok(AppAction::TabRemove(query.parse()?))
+                },
             },
             CommandEntry {
                 prefix: Prefix::Long(":tab"),
                 usage: ":tab <tab_index>",
                 description: "Select the tab at the index",
-                parser: command_select_tab,
+                parser: |query|{
+                    Ok(AppAction::TabSelect(query.parse()?))
+                },
             },
         ])
     }
 }
 
-impl PresetCommands {
-    pub fn into_exec(self) -> CommandRegistery {
+impl Commands {
+    pub fn into_exec(self) -> Registery {
         self.0
             .into_iter()
             .flat_map(|cmd| {
@@ -180,83 +227,4 @@ impl PresetCommands {
         }
         .unwrap()
     }
-}
-
-fn command_query(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::SqlQuery(query.to_owned()))
-}
-
-fn command_quit(_query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::Quit)
-}
-
-fn command_goto(line: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabularGoto(
-        line.parse::<usize>()?.saturating_sub(1),
-    ))
-}
-
-fn command_select_up(lines: &str) -> AppResult<AppAction> {
-    Ok(match lines {
-        "page" => AppAction::TabularGoUpFullPage,
-        "half" => AppAction::TabularGoUpHalfPage,
-        _ => AppAction::TabularGoUp(lines.parse()?),
-    })
-}
-
-fn command_select_down(lines: &str) -> AppResult<AppAction> {
-    Ok(match lines {
-        "page" => AppAction::TabularGoDownFullPage,
-        "half" => AppAction::TabularGoDownHalfPage,
-        _ => AppAction::TabularGoDown(lines.parse()?),
-    })
-}
-
-fn command_reset(_: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabularReset)
-}
-
-fn command_help(_: &str) -> AppResult<AppAction> {
-    Ok(AppAction::Help)
-}
-
-fn command_select(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabularSelect(query.to_owned()))
-}
-
-fn command_filter(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabularFilter(query.to_owned()))
-}
-
-fn command_order(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabularOrder(query.to_owned()))
-}
-
-fn command_tables(_query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::SqlSchema)
-}
-
-fn command_change_view(query: &str) -> AppResult<AppAction> {
-    Ok(match query {
-        "table" => AppAction::TabularTableView,
-        "sheet" => AppAction::TabularSheetView,
-        "switch" => AppAction::TabularSwitchView,
-        _ => Err("Invalid view")?,
-    })
-}
-
-fn command_select_random_row(_query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabularGotoRandom)
-}
-
-fn command_new_tab(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabNew(query.to_owned()))
-}
-
-fn command_remove_tab(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabRemove(query.parse()?))
-}
-
-fn command_select_tab(query: &str) -> AppResult<AppAction> {
-    Ok(AppAction::TabSelect(query.parse()?))
 }
