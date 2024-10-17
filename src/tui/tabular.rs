@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use itertools::{izip, Itertools};
-use polars::{frame::DataFrame, series::Series};
+use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
 use rand::Rng;
 use ratatui::{
     layout::{Alignment, Constraint, Margin, Rect},
@@ -56,7 +56,7 @@ impl<Theme: Styler> Tabular<Theme> {
             headers: data_frame
                 .get_column_names()
                 .into_iter()
-                .map(ToOwned::to_owned)
+                .map(PlSmallStr::to_string)
                 .collect(),
             data_frame,
             state: TabularState::Table,
@@ -150,7 +150,7 @@ impl<Theme: Styler> Tabular<Theme> {
         self.headers = data_frame
             .get_column_names()
             .into_iter()
-            .map(ToOwned::to_owned)
+            .map(PlSmallStr::to_string)
             .collect();
         self.data_frame = data_frame;
         Ok(())
