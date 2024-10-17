@@ -80,7 +80,7 @@ impl ReadToDataFrame for ReadFwfToDataFrame {
             header
                 .into_iter()
                 .zip(columns)
-                .map(|(name, values)| Series::new(&name, values))
+                .map(|(name, values)| Series::new(name.into(), values))
                 .collect_vec(),
         )?;
 

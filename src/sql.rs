@@ -35,9 +35,9 @@ impl SqlBackend {
 
         DataFrame::new(
             [
-                Series::new("Table", tables),
-                Series::new("Structure", structures),
-                Series::new("Path", paths),
+                Series::new("Table".into(), tables),
+                Series::new("Structure".into(), structures),
+                Series::new("Path".into(), paths),
             ]
             .into(),
         )
