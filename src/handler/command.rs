@@ -219,7 +219,7 @@ impl Default for Commands {
                         }
 
                         "jsonl" => {
-                            Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json))
+                            Ok(AppAction::ExportJson(path_str.into(), JsonFormat::JsonLine))
                         }
 
                         "arrow" => {
