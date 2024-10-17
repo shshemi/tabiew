@@ -70,7 +70,7 @@ pub enum AppAction {
     TabSelectedNext,
     TabRemoveOrQuit,
     TabRename(usize, String),
-    ExportCSVDataFrame {
+    ExportDsv {
         path: PathBuf,
         separator: char,
         quote: char,
@@ -470,7 +470,7 @@ impl<Theme: Styler> App<Theme> {
                 }
             }
 
-            AppAction::ExportCSVDataFrame { path, separator, quote, header } => {
+            AppAction::ExportDsv { path, separator, quote, header } => {
                 if let Some(tab) = self.tabs.selected_mut(){
                     WriteToCsv::default()
                     .with_separator_char(separator)
