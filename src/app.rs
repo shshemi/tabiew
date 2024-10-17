@@ -10,7 +10,11 @@ use crate::{
     handler::{
         command::{Commands, Registery},
         keybind::{Action, Keybind},
-    }, sql::SqlBackend, tui, writer::{WriteToCsv, WriteToFile}, AppResult
+    },
+    sql::SqlBackend,
+    tui,
+    writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
+    AppResult,
 };
 
 use tui::status_bar::{StatusBar, StatusBarState};
@@ -76,6 +80,9 @@ pub enum AppAction {
         quote: char,
         header: bool,
     },
+    ExportParquet(PathBuf),
+    ExportJson(PathBuf, JsonFormat),
+    ExportArrow(PathBuf),
     Help,
     Quit,
 }
@@ -470,17 +477,46 @@ impl<Theme: Styler> App<Theme> {
                 }
             }
 
-            AppAction::ExportDsv { path, separator, quote, header } => {
-                if let Some(tab) = self.tabs.selected_mut(){
+            AppAction::ExportDsv {
+                path,
+                separator,
+                quote,
+                header,
+            } => {
+                if let Some(tab) = self.tabs.selected_mut() {
                     WriteToCsv::default()
-                    .with_separator_char(separator)
-                    .with_quote_char(quote)
-                    .with_header(header)
-                    .write_to_file(path, tab.data_frame_mut())
+                        .with_separator_char(separator)
+                        .with_quote_char(quote)
+                        .with_header(header)
+                        .write_to_file(path, tab.data_frame_mut())
                 } else {
                     Err("Unable to export the data frame".into())
                 }
-            },
+            }
+
+            AppAction::ExportParquet(path) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    WriteToParquet::default().write_to_file(path, tab.data_frame_mut())
+                } else {
+                    Err("Unable to export the data frame".into())
+                }
+            }
+            AppAction::ExportJson(path, fmt) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    WriteToJson::default()
+                        .with_format(fmt)
+                        .write_to_file(path, tab.data_frame_mut())
+                } else {
+                    Err("Unable to export the data frame".into())
+                }
+            }
+            AppAction::ExportArrow(path) => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    WriteToArrow::default().write_to_file(path, tab.data_frame_mut())
+                } else {
+                    Err("Unable to export the data frame".into())
+                }
+            }
 
             AppAction::Help => {
                 let idx = self.tabs.iter().enumerate().find_map(|(idx, tab)| {
@@ -498,7 +534,6 @@ impl<Theme: Styler> App<Theme> {
             }
 
             AppAction::Quit => self.quit(),
-
         }
     }
 }

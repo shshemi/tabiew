@@ -1,7 +1,7 @@
 use polars::{df, frame::DataFrame};
 use std::collections::HashMap;
 
-use crate::{app::AppAction, AppResult};
+use crate::{app::AppAction, writer::JsonFormat, AppResult};
 
 pub type ParseFn = fn(&str) -> AppResult<AppAction>;
 pub type Registery = HashMap<&'static str, ParseFn>;
@@ -210,8 +210,24 @@ impl Default for Commands {
                             )
                         }
 
+                        "parquet" => {
+                            Ok(AppAction::ExportParquet(path_str.into()))
+                        }
+
+                        "json" => {
+                            Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json))
+                        }
+
+                        "jsonl" => {
+                            Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json))
+                        }
+
+                        "arrow" => {
+                            Ok(AppAction::ExportArrow(path_str.into()))
+                        }
+
                         _ => {
-                            Err("Invalid format".into())
+                            Err("Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow".into())
                         }
                     }
                 },
