@@ -1,6 +1,5 @@
-use itertools::Itertools;
 use polars::{df, frame::DataFrame};
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
 use crate::{app::AppAction, AppResult};
 
@@ -193,9 +192,19 @@ impl Default for Commands {
                     match fmt {
                         "csv" => {
                             Ok(
-                                AppAction::ExportCSVDataFrame{
+                                AppAction::ExportDsv{
                                     path: path_str.into() ,
                                     separator: ',',
+                                    quote: '"',
+                                    header: true }
+                            )
+                        }
+
+                        "tsv" => {
+                            Ok(
+                                AppAction::ExportDsv{
+                                    path: path_str.into() ,
+                                    separator: '\t',
                                     quote: '"',
                                     header: true }
                             )
