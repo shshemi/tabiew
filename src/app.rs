@@ -496,7 +496,7 @@ impl<Theme: Styler> App<Theme> {
 
             AppAction::ExportParquet(path) => {
                 if let Some(tab) = self.tabs.selected_mut() {
-                    WriteToParquet::default().write_to_file(path, tab.data_frame_mut())
+                    WriteToParquet.write_to_file(path, tab.data_frame_mut())
                 } else {
                     Err("Unable to export the data frame".into())
                 }
@@ -512,7 +512,7 @@ impl<Theme: Styler> App<Theme> {
             }
             AppAction::ExportArrow(path) => {
                 if let Some(tab) = self.tabs.selected_mut() {
-                    WriteToArrow::default().write_to_file(path, tab.data_frame_mut())
+                    WriteToArrow.write_to_file(path, tab.data_frame_mut())
                 } else {
                     Err("Unable to export the data frame".into())
                 }
