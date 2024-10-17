@@ -1,6 +1,10 @@
 use std::{fs::File, path::PathBuf};
 
-use polars::{frame::DataFrame, io::SerWriter, prelude::CsvWriter};
+use polars::{
+    frame::DataFrame,
+    io::SerWriter,
+    prelude::{CsvWriter, IpcWriter, JsonWriter, ParquetWriter},
+};
 
 use crate::AppResult;
 
@@ -45,5 +49,59 @@ impl WriteToFile for WriteToCsv {
             .with_quote_char(self.quote.try_into()?)
             .include_header(self.header)
             .finish(data_frame)?)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct WriteToParquet;
+
+impl WriteToFile for WriteToParquet {
+    fn write_to_file(&self, path: PathBuf, data_frame: &mut DataFrame) -> AppResult<()> {
+        ParquetWriter::new(File::create(path)?).finish(data_frame)?;
+        Ok(())
+    }
+}
+
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum JsonFormat{
+    #[default]
+    Json,
+    JsonLine,
+}
+
+impl From<JsonFormat> for polars::prelude::JsonFormat {
+    fn from(value: JsonFormat) -> Self {
+        match value {
+            JsonFormat::Json => polars::prelude::JsonFormat::Json,
+            JsonFormat::JsonLine => polars::prelude::JsonFormat::JsonLines,
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct WriteToJson{
+    fmt: JsonFormat
+}
+
+impl WriteToJson {
+    pub fn with_format(mut self, fmt: JsonFormat) -> Self {
+        self.fmt = fmt;
+        self
+    }
+}
+
+impl WriteToFile for WriteToJson {
+    fn write_to_file(&self, path: PathBuf, data_frame: &mut DataFrame) -> AppResult<()> {
+        Ok(JsonWriter::new(File::create(path)?).with_json_format(self.fmt.into()).finish(data_frame)?)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct WriteToArrow;
+
+impl WriteToFile for WriteToArrow {
+    fn write_to_file(&self, path: PathBuf, data_frame: &mut DataFrame) -> AppResult<()> {
+        Ok(IpcWriter::new(File::create(path)?).finish(data_frame)?)
     }
 }
