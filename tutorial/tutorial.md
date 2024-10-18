@@ -157,8 +157,17 @@ ORDER BY area;
 
 If you need to return the table to its original state, you can use the `:reset` command.
 
+## Exporting
+
+At any time during explorations, it is possible to export the current data frame to `csv`, `tsv`, `parquet`, `json`, `jsonl`, and `arrow` using the following command:
+
+```sql
+:export <format> <path>
+```
+
 ## Help Command
 
 To view all available commands and their descriptions, use the `:help` command. This command displays a list of all commands, along with their usage and examples.
 
 ![image not found](images/help.png)
+
