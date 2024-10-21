@@ -6,7 +6,7 @@ use polars::{
     frame::DataFrame,
     io::SerReader,
     prelude::{
-        CsvParseOptions, CsvReadOptions, IpcReader, JsonLineReader, JsonReader, ParquetReader,
+        CsvParseOptions, CsvReadOptions, IpcReader, JsonLineReader, JsonReader, ParquetReader
     },
 };
 
@@ -21,19 +21,19 @@ pub trait ReadToDataFrame {
 }
 
 pub trait BuildReader {
-    fn build_reader(&self) -> AppResult<Box<dyn ReadToDataFrame>>;
+    fn build_reader(&self) -> Box<dyn ReadToDataFrame>;
 }
 
 impl BuildReader for Args {
-    fn build_reader(&self) -> AppResult<Box<dyn ReadToDataFrame>> {
-        Ok(match self.format {
-            Format::Dsv => Box::new(CsvToDataFrame::try_from_args(self)),
+    fn build_reader(&self) -> Box<dyn ReadToDataFrame> {
+        match self.format {
+            Format::Dsv => Box::new(CsvToDataFrame::from_args(self)),
             Format::Parquet => Box::new(ParquetToDataFrame),
-            Format::Jsonl => Box::new(JsonLineToDataFrame::try_from_args(self)),
-            Format::Json => Box::new(JsonToDataFrame::try_from_args(self)),
+            Format::Jsonl => Box::new(JsonLineToDataFrame::from_args(self)),
+            Format::Json => Box::new(JsonToDataFrame::from_args(self)),
             Format::Arrow => Box::new(ArrowIpcToDataFrame),
-            Format::Fwf => Box::new(ReadFwfToDataFrame::try_from_args(self)?),
-        })
+            Format::Fwf => Box::new(ReadFwfToDataFrame::from_args(self)),
+        }
     }
 }
 
@@ -46,7 +46,7 @@ pub struct CsvToDataFrame {
 }
 
 impl CsvToDataFrame {
-    pub fn try_from_args(args: &Args) -> Self {
+    pub fn from_args(args: &Args) -> Self {
         Self {
             infer_schema: args.infer_schema,
             quote_char: args.quote_char,
@@ -93,7 +93,7 @@ pub struct JsonLineToDataFrame {
 }
 
 impl JsonLineToDataFrame {
-    pub fn try_from_args(args: &Args) -> Self {
+    pub fn from_args(args: &Args) -> Self {
         Self {
             infer_schema: args.infer_schema,
             ignore_errors: args.ignore_errors,
@@ -124,7 +124,7 @@ pub struct JsonToDataFrame {
 }
 
 impl JsonToDataFrame {
-    pub fn try_from_args(args: &Args) -> Self {
+    pub fn from_args(args: &Args) -> Self {
         Self {
             infer_schema: args.infer_schema,
             ignore_errors: args.ignore_errors,

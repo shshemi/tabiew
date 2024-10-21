@@ -21,14 +21,14 @@ pub struct ReadFwfToDataFrame {
 }
 
 impl ReadFwfToDataFrame {
-    pub fn try_from_args(args: &Args) -> AppResult<Self> {
-        Ok(Self {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
             width_str: args.widths.to_owned(),
             has_header: !args.no_header,
             separator_length: args.separator_length,
             flexible_width: !args.no_flexible_width,
             infer_schema: args.infer_schema,
-        })
+        }
     }
 }
 
