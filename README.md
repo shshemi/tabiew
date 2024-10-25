@@ -43,7 +43,7 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 |`:S` or `:select`| `:S price, area, bedrooms, parking`|Query current data frame for columns/functions|
 |`:F` or `:filter`| `:F price < 20000 AND bedrooms > 4`|Filter current data frame, keeping rows were the condition(s) match|
 |`:O` or `:order`| `:O area`|Sort current data frame by column(s)|
-|`:tabn`| `:tabn SELECT * FORM user WHERE balance > 1000`|Sort current data frame by column(s)|
+|`:tabn`| `:tabn SELECT * FORM user WHERE balance > 1000`|Create a new tab with the given query|
 |`:q` or `:quit` |`:q`| Return to table from sheet view otherwise quit|
 |`:schema`| `:schema`| Show loaded data frame(s) alongside their path(s)|
 |`:reset`| `:reset`| Reset the table to the original data frame|
