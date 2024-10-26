@@ -1,6 +1,8 @@
-use std::{collections::HashSet, fs::read_to_string, iter::once};
+use std::{
+    collections::HashSet, io::{Cursor, Read}, iter::once
+};
 
-use fwf_rs::FwfFileReader;
+use fwf_rs::Reader;
 use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 
@@ -32,10 +34,14 @@ impl ReadFwfToDataFrame {
     }
 }
 
-impl ReadToDataFrame for ReadFwfToDataFrame {
-    fn read_to_data_frame(&self, file: std::path::PathBuf) -> AppResult<DataFrame> {
+impl<R:Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
+    fn read_to_data_frame(&self, mut reader: R) -> AppResult<DataFrame> {
+        let file_content = {
+            let mut buf = String::new();
+            reader.read_to_string(&mut buf)?;
+            buf
+        };
         let widths = if self.width_str.is_empty() {
-            let file_content = read_to_string(file.clone())?;
             let common_space_indices = file_content
                 .lines()
                 .map(|line| {
@@ -55,24 +61,33 @@ impl ReadToDataFrame for ReadFwfToDataFrame {
             parse_width(&self.width_str)?
         };
 
-        let reader = FwfFileReader::new(file, widths.clone())
-            .with_has_header(self.has_header)
-            .with_separator_length(self.separator_length)
-            .with_flexible_width(self.flexible_width);
-        let header = match (self.has_header, reader.header()?) {
-            (true, Some(header)) => header
-                .iter()
-                .map(|slice| slice.trim().to_owned())
-                .collect_vec(),
-            _ => (0..widths.len())
-                .map(|idx| format!("column_{}", idx + 1))
-                .collect_vec(),
-        };
+        let reader = Reader::new(
+            Cursor::new(file_content),
+            widths.clone(),
+            self.separator_length,
+            self.flexible_width,
+            self.has_header,
+        )?;
+        let header = reader
+            .header()
+            .map(|rec| rec.iter().map(|slice| slice.trim().to_owned()).collect())
+            .unwrap_or_else(|| {
+                (0..widths.len())
+                    .map(|idx| format!("column_{}", idx + 1))
+                    .collect_vec()
+            });
 
-        let records = reader.records()?.filter_map(Result::ok).collect_vec();
-        let columns = records
-            .iter()
-            .map(|record| record.iter().map(str::trim))
+        let columns = reader
+            .records()
+            .filter_map(Result::ok)
+            .map(|record| {
+                record
+                    .iter()
+                    .map(str::trim)
+                    .map(ToOwned::to_owned)
+                    .collect_vec()
+                    .into_iter()
+            })
             .zip_iters()
             .collect_vec();
 
