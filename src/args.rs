@@ -4,7 +4,7 @@ use std::{num::NonZero, path::PathBuf};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(help = "Path(s) to the file(s) to be opened.", required = true)]
+    #[arg(help = "Path(s) to the file(s) to be opened.", required = false)]
     pub files: Vec<PathBuf>,
 
     #[arg(short, long, help = "Input file format",
