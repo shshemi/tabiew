@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     handler::{
-        command::{Commands, Registery},
+        command::{commands_help_data_frame, parse_into_action},
         keybind::{Action, Keybind},
     },
     sql::SqlBackend,
@@ -26,7 +26,6 @@ pub struct App<Theme> {
     tabs: Tabs<Theme>,
     status_bar: StatusBar<Theme>,
     sql: SqlBackend,
-    exec_table: Registery,
     keybindings: Keybind,
     running: bool,
 }
@@ -88,17 +87,11 @@ pub enum AppAction {
 }
 
 impl<Theme: Styler> App<Theme> {
-    pub fn new(
-        tabs: Tabs<Theme>,
-        sql: SqlBackend,
-        exec_table: Registery,
-        key_bind: Keybind,
-    ) -> Self {
+    pub fn new(tabs: Tabs<Theme>, sql: SqlBackend, key_bind: Keybind) -> Self {
         Self {
             tabs,
             status_bar: StatusBar::<Theme>::default(),
             sql,
-            exec_table,
             keybindings: key_bind,
             running: true,
         }
@@ -202,16 +195,14 @@ impl<Theme: Styler> App<Theme> {
             (AppState::Command | AppState::Error, KeyCode::Esc) => self.status_bar.show_info(),
 
             (AppState::Command, KeyCode::Enter) => {
-                if let Some(command) = self.status_bar.commit_prompt() {
-                    let (s1, s2) = command.split_once(' ').unwrap_or((command.as_ref(), ""));
-                    if let Some(parse_fn) = self.exec_table.get(s1) {
-                        match parse_fn(s2).and_then(|action| self.invoke(action)) {
-                            Ok(_) => self.status_bar.show_info(),
-                            Err(error) => self.status_bar.show_error(error),
-                        }
-                    } else {
-                        self.status_bar.show_error("Command not found")
-                    }
+                if let Some(cmd) = self.status_bar.commit_prompt() {
+                    let _ = parse_into_action(cmd)
+                        .and_then(|action| self.invoke(action))
+                        .and_then(|_| self.status_bar.show_info())
+                        .inspect_err(|err| {
+                            let _ = self.status_bar.show_error(err);
+                        });
+                    Ok(())
                 } else {
                     self.status_bar
                         .show_error("Invalid state; consider restarting Tabiew")
@@ -235,7 +226,8 @@ impl<Theme: Styler> App<Theme> {
             }
         }
     }
-    fn invoke(&mut self, action: Action) -> AppResult<()> {
+
+    pub fn invoke(&mut self, action: Action) -> AppResult<()> {
         match action {
             AppAction::StatusBarStats => self.status_bar.show_info(),
 
@@ -387,7 +379,7 @@ impl<Theme: Styler> App<Theme> {
             AppAction::TabularReset => {
                 if let Some(tab) = self.tabs.selected_mut() {
                     tab.set_data_frame(match tab.tabular_type() {
-                        TabularType::Help => Commands::default().into_data_frame(),
+                        TabularType::Help => commands_help_data_frame(),
                         TabularType::Schema => self.sql.schema(),
                         TabularType::Name(name) => self
                             .sql
@@ -526,7 +518,7 @@ impl<Theme: Styler> App<Theme> {
                     self.tabs.select(idx)
                 } else {
                     self.tabs.add(Tabular::new(
-                        Commands::default().into_data_frame(),
+                        commands_help_data_frame(),
                         TabularType::Help,
                     ))?;
                     self.tabs.select_last()
