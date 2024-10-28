@@ -2,13 +2,13 @@ use clap::Parser;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Cursor, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
-use tabiew::handler::command::Commands;
+use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::keybind::Keybind;
 use tabiew::reader::BuildReader;
@@ -52,24 +52,26 @@ fn main() -> AppResult<()> {
         tabs.push((df, name));
     }
 
+    let script = fs::read_to_string(args.script).unwrap_or_default();
+
     match args.theme {
-        AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend),
-        AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend),
-        AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend),
+        AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend, script),
+        AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend, script),
+        AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script),
     }
 }
 
 fn start_tui<Theme: Styler>(
     tabs: Vec<(DataFrame, String)>,
     sql_backend: SqlBackend,
+    script: String,
 ) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(df, name)| Tabular::new(df, TabularType::Name(name)))
         .collect();
-    let exec_tbl = Commands::default().into_exec();
     let keybind = Keybind::default();
-    let mut app = App::new(tabs, sql_backend, exec_tbl, keybind);
+    let mut app = App::new(tabs, sql_backend, keybind);
 
     // Initialize the terminal user interface.
     let mut tui = Terminal::new(
@@ -77,6 +79,12 @@ fn start_tui<Theme: Styler>(
         EventHandler::new(250),
     );
     tui.init()?;
+
+    tui.draw::<Theme>(&mut app)?;
+    for line in script.lines().filter(|line| !line.is_empty()) {
+        let action = parse_into_action(line).unwrap_or_else(|err| panic!("{}", err));
+        app.invoke(action).unwrap_or_else(|err| panic!("{}", err));
+    }
 
     // Run the main loop
     while app.running() {

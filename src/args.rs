@@ -7,6 +7,9 @@ pub struct Args {
     #[arg(help = "Path(s) to the file(s) to be opened.", required = false)]
     pub files: Vec<PathBuf>,
 
+    #[arg(short, long, help = "Path(s) to the startup script.", required = false)]
+    pub script: PathBuf,
+
     #[arg(short, long, help = "Input file format",
         value_enum,
         default_value_t = Format::Dsv)]
