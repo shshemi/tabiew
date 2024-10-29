@@ -52,7 +52,11 @@ fn main() -> AppResult<()> {
         tabs.push((df, name));
     }
 
-    let script = fs::read_to_string(args.script).unwrap_or_default();
+    let script = if let Some(path) = args.script {
+        fs::read_to_string(path).unwrap_or_else(|err| panic!("{}", err))
+    } else {
+        Default::default()
+    };
 
     match args.theme {
         AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend, script),
@@ -82,8 +86,10 @@ fn start_tui<Theme: Styler>(
 
     tui.draw::<Theme>(&mut app)?;
     for line in script.lines().filter(|line| !line.is_empty()) {
-        let action = parse_into_action(line).unwrap_or_else(|err| panic!("{}", err));
-        app.invoke(action).unwrap_or_else(|err| panic!("{}", err));
+        let action = parse_into_action(line)
+            .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
+        app.invoke(action)
+            .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
     }
 
     // Run the main loop
