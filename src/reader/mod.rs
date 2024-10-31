@@ -1,5 +1,7 @@
 mod fwf;
 
+use std::path::Path;
+
 use fwf::ReadFwfToDataFrame;
 use polars::{
     frame::DataFrame,
@@ -20,18 +22,31 @@ pub trait ReadToDataFrame<R> {
 }
 
 pub trait BuildReader<R> {
-    fn build_reader(&self) -> Box<dyn ReadToDataFrame<R>>;
+    fn build_reader<P: AsRef<Path>>(&self, path: P) -> Box<dyn ReadToDataFrame<R>>;
 }
 
 impl<R: MmapBytesReader> BuildReader<R> for Args {
-    fn build_reader(&self) -> Box<dyn ReadToDataFrame<R>> {
+    fn build_reader<P: AsRef<Path>>(&self, path: P) -> Box<dyn ReadToDataFrame<R>> {
         match self.format {
-            Format::Dsv => Box::new(CsvToDataFrame::from_args(self)),
-            Format::Parquet => Box::new(ParquetToDataFrame),
-            Format::Jsonl => Box::new(JsonLineToDataFrame::from_args(self)),
-            Format::Json => Box::new(JsonToDataFrame::from_args(self)),
-            Format::Arrow => Box::new(ArrowIpcToDataFrame),
-            Format::Fwf => Box::new(ReadFwfToDataFrame::from_args(self)),
+            Some(Format::Dsv) => Box::new(CsvToDataFrame::from_args(self)),
+            Some(Format::Parquet) => Box::new(ParquetToDataFrame),
+            Some(Format::Json) => Box::new(JsonToDataFrame::from_args(self)),
+            Some(Format::Jsonl) => Box::new(JsonLineToDataFrame::from_args(self)),
+            Some(Format::Arrow) => Box::new(ArrowIpcToDataFrame),
+            Some(Format::Fwf) => Box::new(ReadFwfToDataFrame::from_args(self)),
+            None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
+                Some("tsv") => {
+                    let mut reader = CsvToDataFrame::from_args(self);
+                    reader.separator_char = '\t';
+                    Box::new(reader)
+                }
+                Some("parquet") => Box::new(ParquetToDataFrame),
+                Some("json") => Box::new(JsonToDataFrame::from_args(self)),
+                Some("jsonl") => Box::new(JsonLineToDataFrame::from_args(self)),
+                Some("arrow") => Box::new(ArrowIpcToDataFrame),
+                Some("fwf") => Box::new(ReadFwfToDataFrame::from_args(self)),
+                _ => Box::new(CsvToDataFrame::from_args(self)),
+            },
         }
     }
 }
