@@ -10,7 +10,7 @@ use ratatui::{
 
 use crate::tui::theme::Styler;
 
-use super::widget::{Prompt, PromptState};
+use super::widget::prompt::{Prompt, PromptState};
 use crate::AppResult;
 
 #[derive(Debug)]

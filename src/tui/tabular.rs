@@ -1,20 +1,20 @@
 use std::marker::PhantomData;
 
 use itertools::{izip, Itertools};
-use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
+use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::{
-    layout::{Alignment, Constraint, Margin, Rect},
+    layout::{Alignment, Margin, Rect},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
+    widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
 
-use super::utils::{data_frame_widths, line_count, Scroll};
-use crate::{
-    tui::{theme::Styler, utils::any_value_into_string},
-    utils::ZipItersExt,
+use super::{
+    utils::{line_count, Scroll},
+    widget::data_frame_table::{DataFrameTable, DataFrameTableState},
 };
+use crate::tui::{theme::Styler, utils::any_value_into_string};
 
 use crate::AppResult;
 
@@ -34,12 +34,7 @@ pub enum TabularType {
 
 #[derive(Debug)]
 pub struct Tabular<Theme> {
-    offset: usize,
-    select: usize,
-    rendered_rows: u16,
-    widths: Vec<usize>,
-    headers: Vec<String>,
-    data_frame: DataFrame,
+    table_state: DataFrameTableState,
     state: TabularState,
     tabular_type: TabularType,
     _theme: PhantomData<Theme>,
@@ -49,16 +44,7 @@ impl<Theme: Styler> Tabular<Theme> {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, tabular_type: TabularType) -> Self {
         Self {
-            offset: 0,
-            select: 0,
-            rendered_rows: 0,
-            widths: data_frame_widths(&data_frame),
-            headers: data_frame
-                .get_column_names()
-                .into_iter()
-                .map(PlSmallStr::to_string)
-                .collect(),
-            data_frame,
+            table_state: DataFrameTableState::new(data_frame),
             state: TabularState::Table,
             tabular_type,
             _theme: PhantomData,
@@ -71,28 +57,34 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn select_up(&mut self, len: usize) -> AppResult<()> {
-        self.select(self.select.saturating_sub(len))
+        self.table_state.select_up(len);
+        Ok(())
     }
 
     pub fn select_down(&mut self, len: usize) -> AppResult<()> {
-        self.select(self.select + len)
+        self.table_state.select_down(len);
+        Ok(())
     }
 
     pub fn select_first(&mut self) -> AppResult<()> {
-        self.select(usize::MIN)
+        self.table_state.select_first();
+        Ok(())
     }
 
     pub fn select_last(&mut self) -> AppResult<()> {
-        self.select(usize::MAX)
+        self.table_state.select_last();
+        Ok(())
     }
 
     pub fn select_random(&mut self) -> AppResult<()> {
         let mut rng = rand::thread_rng();
-        self.select(rng.gen_range(0..self.data_frame.height()))
+        self.table_state
+            .select(rng.gen_range(0..self.table_state.height()));
+        Ok(())
     }
 
     pub fn select(&mut self, select: usize) -> AppResult<()> {
-        self.select = select.min(self.data_frame.height().saturating_sub(1));
+        self.table_state.select(select);
         Ok(())
     }
 
@@ -115,15 +107,7 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn page_len(&self) -> usize {
-        self.rendered_rows.into()
-    }
-
-    pub fn adjust_offset(&mut self) {
-        self.offset = self.offset.clamp(
-            self.select
-                .saturating_sub(self.rendered_rows.saturating_sub(1).into()),
-            self.select,
-        );
+        self.table_state.rendered_rows().into()
     }
 
     pub fn switch_view(&mut self) -> AppResult<()> {
@@ -144,24 +128,16 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) -> AppResult<()> {
-        self.widths = data_frame_widths(&data_frame);
-        self.offset = 0;
-        self.select = 0;
-        self.headers = data_frame
-            .get_column_names()
-            .into_iter()
-            .map(PlSmallStr::to_string)
-            .collect();
-        self.data_frame = data_frame;
+        self.table_state.set_data_frame(data_frame);
         Ok(())
     }
 
     pub fn data_frame(&self) -> &DataFrame {
-        &self.data_frame
+        self.table_state.data_frame()
     }
 
     pub fn data_frame_mut(&mut self) -> &mut DataFrame {
-        &mut self.data_frame
+        self.table_state.data_frame_mut()
     }
 
     pub fn state(&self) -> &TabularState {
@@ -169,7 +145,7 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn selected(&self) -> usize {
-        self.select
+        self.table_state.selected()
     }
 
     pub fn tabular_type(&self) -> &TabularType {
@@ -179,53 +155,27 @@ impl<Theme: Styler> Tabular<Theme> {
     pub fn render(&mut self, frame: &mut Frame, layout: Rect, selection: bool) -> AppResult<()> {
         match &mut self.state {
             TabularState::Table => {
-                self.rendered_rows = layout.height.saturating_sub(1);
-                self.adjust_offset();
-
-                if selection {
-                    let mut local_st = TableState::new()
-                        .with_offset(0)
-                        .with_selected(self.select.saturating_sub(self.offset));
-
-                    frame.render_stateful_widget(
-                        tabulate::<Theme>(
-                            self.data_frame
-                                .slice(self.offset as i64, self.rendered_rows as usize),
-                            &self.widths,
-                            &self.headers,
-                            self.offset,
-                        ),
-                        layout,
-                        &mut local_st,
-                    );
-                } else {
-                    frame.render_widget(
-                        tabulate::<Theme>(
-                            self.data_frame
-                                .slice(self.offset as i64, self.rendered_rows as usize),
-                            &self.widths,
-                            &self.headers,
-                            self.offset
-                        ),
-                        layout,
-                    );
-                }
+                frame.render_stateful_widget(
+                    DataFrameTable::<Theme>::new()
+                        .with_selection(selection)
+                        .with_column_space(2),
+                    layout,
+                    &mut self.table_state,
+                );
             }
             TabularState::Sheet(scroll) => {
-                self.rendered_rows = 0;
                 let space = layout.inner(Margin::new(1, 1));
-                let title = format!(" {} ", self.select + 1);
-
-                // let values = self.table_values.get_row(self.select);
+                let title = format!(" {} ", self.table_state.selected() + 1);
                 let values = self
-                    .data_frame
-                    .get(self.select)
+                    .table_state
+                    .data_frame()
+                    .get(self.table_state.selected())
                     .map(|row| row.into_iter().map(any_value_into_string).collect_vec())
                     .unwrap_or_default();
 
                 let (paragraph, line_count) = paragraph_from_headers_values::<Theme>(
                     &title,
-                    &self.headers,
+                    self.table_state.headers(),
                     &values,
                     space.width,
                 );
@@ -276,44 +226,4 @@ fn lines_from_header_value<'a, Theme: Styler>(
         .chain(value_lines)
         .chain(std::iter::once(Line::default()))
         .collect_vec()
-}
-
-pub fn tabulate<'a, Theme: Styler>(
-    data_frame: DataFrame,
-    widths: &'a [usize],
-    headers: &'a [String],
-    offset: usize,
-) -> Table<'a> {
-    Table::new(
-        data_frame
-            .iter()
-            .map(Series::iter)
-            .zip_iters()
-            .enumerate()
-            .map(|(ridx, vals)| {
-                Row::new(vals.into_iter().map(any_value_into_string).map(Cell::new))
-                    .style(Theme::table_row(ridx + offset))
-            })
-            .collect_vec(),
-        widths
-            .iter()
-            .copied()
-            .map(|w| Constraint::Length(w as u16))
-            .collect::<Vec<_>>(),
-    )
-    .header(header_row::<Theme>(headers))
-    .highlight_style(Theme::table_highlight())
-    .column_spacing(2)
-}
-
-fn header_row<Theme: Styler>(df: &[String]) -> Row {
-    Row::new(
-        df.iter()
-            .enumerate()
-            .map(|(col_idx, name)| {
-                Cell::new(name.as_str()).style(Theme::table_header_cell(col_idx))
-            })
-            .collect::<Vec<_>>(),
-    )
-    .style(Theme::table_header())
 }
