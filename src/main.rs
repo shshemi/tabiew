@@ -25,11 +25,11 @@ fn main() -> AppResult<()> {
     let mut sql_backend = SqlBackend::new();
 
     // Loading files to data frames
-    let reader = args.build_reader();
     let mut tabs = args
         .files
         .iter()
         .map(|path| {
+            let reader = args.build_reader(path);
             let name = path
                 .file_stem()
                 .expect("Invalid file name")
@@ -44,7 +44,7 @@ fn main() -> AppResult<()> {
         })
         .collect_vec();
     if tabs.is_empty() {
-        let reader = args.build_reader();
+        let reader = args.build_reader("stdin");
         let mut buf = Vec::new();
         io::stdin().read_to_end(&mut buf)?;
         let df = reader.read_to_data_frame(Cursor::new(buf))?;
