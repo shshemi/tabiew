@@ -13,28 +13,28 @@ pub struct Args {
     #[arg(
         short,
         long,
-        help = "Input file format",
-        value_enum,
-        default_value_t = Format::Dsv)]
-    pub format: Format,
+        help = "Specifies the input format. By default, the format is selected based on the file extension",
+        value_enum
+    )]
+    pub format: Option<Format>,
 
     #[arg(
         long,
-        help = "Specify if the DSV file does not contain a header row.",
+        help = "Specifies if the input does not contain a header row.",
         default_value_t = false
     )]
     pub no_header: bool,
 
     #[arg(
         long,
-        help = "If set, parsing errors while loading the DSV file will be ignored.",
+        help = "Ignores parsing errors while loading.",
         default_value_t = false
     )]
     pub ignore_errors: bool,
 
     #[arg(
         long,
-        help = "Method to infer the DSV schema while loading the file.",
+        help = "Specifies the method to infer the schema.",
         required = false,
         value_enum,
         default_value_t = InferSchema::Safe,
@@ -43,7 +43,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Character used as the field separator or delimiter while loading the DSV file.",
+        help = "Character used as the field separator or delimiter while loading DSV files.",
         required = false,
         default_value_t = ','
     )]
@@ -51,7 +51,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Character used to quote fields while loading the DSV file.",
+        help = "Character used to quote fields while loading DSV files.",
         required = false,
         default_value_t = '"'
     )]
@@ -59,7 +59,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "A comma-separeted list of widths, which should contain the separator spaces if any, to parse FWF files.",
+        help = "A comma-separeted list of widths, which specifies the column widths for FWF files.",
         required = false,
         default_value_t = String::default(),
     )]
@@ -67,7 +67,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "The length of the separator used in FWF files.",
+        help = "Specifies the separator length for FWF files.",
         required = false,
         default_value_t = 1_usize
     )]
@@ -75,7 +75,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "If set, FWF files are going have strict column width restrictions",
+        help = "Sets strict column width restrictions for FWF files.",
         required = false,
         default_value_t = false
     )]
