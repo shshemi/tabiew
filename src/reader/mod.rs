@@ -5,8 +5,7 @@ use polars::{
     frame::DataFrame,
     io::{mmap::MmapBytesReader, SerReader},
     prelude::{
-        CsvParseOptions, CsvReadOptions, IpcReader, JsonLineReader, JsonReader,
-        ParquetReader,
+        CsvParseOptions, CsvReadOptions, IpcReader, JsonLineReader, JsonReader, ParquetReader,
     },
 };
 

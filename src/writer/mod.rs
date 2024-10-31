@@ -62,9 +62,8 @@ impl WriteToFile for WriteToParquet {
     }
 }
 
-
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum JsonFormat{
+pub enum JsonFormat {
     #[default]
     Json,
     JsonLine,
@@ -80,8 +79,8 @@ impl From<JsonFormat> for polars::prelude::JsonFormat {
 }
 
 #[derive(Debug, Default)]
-pub struct WriteToJson{
-    fmt: JsonFormat
+pub struct WriteToJson {
+    fmt: JsonFormat,
 }
 
 impl WriteToJson {
@@ -93,7 +92,9 @@ impl WriteToJson {
 
 impl WriteToFile for WriteToJson {
     fn write_to_file(&self, path: PathBuf, data_frame: &mut DataFrame) -> AppResult<()> {
-        Ok(JsonWriter::new(File::create(path)?).with_json_format(self.fmt.into()).finish(data_frame)?)
+        Ok(JsonWriter::new(File::create(path)?)
+            .with_json_format(self.fmt.into())
+            .finish(data_frame)?)
     }
 }
 

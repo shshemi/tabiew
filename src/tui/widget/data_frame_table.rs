@@ -50,17 +50,17 @@ impl DataFrameTableState {
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
-        self.offset =0;
+        self.offset = 0;
         self.select = 0;
         self.widths = data_frame_widths(&data_frame);
         self.headers = data_frame
-                .get_column_names()
-                .into_iter()
-                .map(PlSmallStr::to_string)
-                .collect();
+            .get_column_names()
+            .into_iter()
+            .map(PlSmallStr::to_string)
+            .collect();
         self.data_frame = data_frame;
     }
-    
+
     pub fn headers(&self) -> &[String] {
         &self.headers
     }

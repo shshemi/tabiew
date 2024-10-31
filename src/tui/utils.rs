@@ -1,6 +1,5 @@
 use polars::{prelude::AnyValue, series::Series};
 
-
 #[derive(Debug, Default, Clone)]
 pub struct Scroll(usize);
 

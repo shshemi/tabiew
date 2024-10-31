@@ -7,12 +7,7 @@ pub struct Args {
     #[arg(help = "Path(s) to the file(s) to be opened.", required = false)]
     pub files: Vec<PathBuf>,
 
-    #[arg(
-        short,
-        long,
-        help = "Path to the startup script.",
-        required = false
-    )]
+    #[arg(short, long, help = "Path to the startup script.", required = false)]
     pub script: Option<PathBuf>,
 
     #[arg(
