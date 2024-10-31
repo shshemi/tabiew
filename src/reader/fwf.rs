@@ -1,5 +1,7 @@
 use std::{
-    collections::HashSet, io::{Cursor, Read}, iter::once
+    collections::HashSet,
+    io::{Cursor, Read},
+    iter::once,
 };
 
 use fwf_rs::Reader;
@@ -34,7 +36,7 @@ impl ReadFwfToDataFrame {
     }
 }
 
-impl<R:Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
+impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
     fn read_to_data_frame(&self, mut reader: R) -> AppResult<DataFrame> {
         let file_content = {
             let mut buf = String::new();
