@@ -517,10 +517,8 @@ impl<Theme: Styler> App<Theme> {
                 if let Some(idx) = idx {
                     self.tabs.select(idx)
                 } else {
-                    self.tabs.add(Tabular::new(
-                        commands_help_data_frame(),
-                        TabularType::Help,
-                    ))?;
+                    self.tabs
+                        .add(Tabular::new(commands_help_data_frame(), TabularType::Help))?;
                     self.tabs.select_last()
                 }
             }
