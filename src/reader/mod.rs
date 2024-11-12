@@ -82,6 +82,7 @@ impl<R: MmapBytesReader> ReadToDataFrame<R> for CsvToDataFrame {
                     .with_quote_char(as_ascii(self.quote_char))
                     .with_separator(as_ascii(self.separator_char).expect("Invalid separator")),
             )
+            .with_rechunk(true)
             .into_reader_with_file_handle(reader)
             .finish()?;
         if matches!(self.infer_schema, InferSchema::Safe) {

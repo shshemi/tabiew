@@ -32,16 +32,13 @@ impl SqlBackend {
                 (vt, vs, vp)
             },
         );
-
-        DataFrame::new(
-            [
-                Series::new("Table".into(), tables),
-                Series::new("Structure".into(), structures),
-                Series::new("Path".into(), paths),
-            ]
-            .into(),
-        )
-        .expect("Invalid SQL backed state")
+        [
+            Series::new("Table".into(), tables),
+            Series::new("Structure".into(), structures),
+            Series::new("Path".into(), paths),
+        ]
+        .into_iter()
+        .collect()
     }
 
     pub fn contains_dataframe(&self, name: &str) -> bool {

@@ -182,7 +182,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                 .collect::<Vec<_>>(),
         )
         .header(header)
-        .highlight_style(Theme::table_highlight())
+        .row_highlight_style(Theme::table_highlight())
         .column_spacing(2);
 
         if self.selection {

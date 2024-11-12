@@ -10,27 +10,35 @@ documentation = "https://docs.rs/tabiew"
 homepage = "https://github.com/shshemi/tabiew"
 
 [[bin]]
-name="tw"
-path="src/main.rs"
+name = "tw"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.17", features = ["derive"] }
 crossterm = "0.28.1"
 fwf-rs = "0.2.0"
 itertools = "0.13.0"
-polars = { version = "0.43.1", features = ["dtype-decimal", "lazy", "polars-sql", "polars-io", "parquet", "json", "ipc"] }
-polars-sql = "0.43.1"
-polars-lazy = "0.43.1"
+polars = { version = "0.44.2", features = [
+    "dtype-decimal",
+    "lazy",
+    "polars-sql",
+    "polars-io",
+    "parquet",
+    "json",
+    "ipc",
+] }
+polars-sql = "0.44.2"
+polars-lazy = "0.44.2"
 rand = "0.8.5"
-ratatui = "0.28.1"
+ratatui = "0.29.0"
 
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
-clap_mangen = { version = "0.2.24"}
-clap_complete = { version = "4.5.33"}
+clap_mangen = { version = "0.2.24" }
+clap_complete = { version = "4.5.37" }
 
 [package.metadata.deb]
-license-file = [ "LICENSE", "4" ]
+license-file = ["LICENSE", "4"]
 depends = "$auto"
 extended-description = """
 Tabiew is a lightweight, terminal-based application to view and query delimiter separated value formatted documents, such as CSV and TSV files.
@@ -38,12 +46,36 @@ Tabiew is a lightweight, terminal-based application to view and query delimiter 
 section = "utils"
 priority = "optional"
 assets = [
-    [ "target/release/tw", "/usr/bin/tw", "0755" ],
-    [ "target/manual/tabiew.1", "/usr/share/man/man1/tw.1", "0644" ],
-    [ "target/manual/tabiew.1", "/usr/share/man/man1/tabiew.1", "0644" ],
-    [ "target/completion/tw.bash", "/usr/share/bash-completion/completions/tw.bash", "0644" ],
-    [ "target/completion/_tw", "/usr/share/zsh/vendor-completions/_tw", "0644" ],
-    [ "target/completion/tw.fish", "/usr/share/fish/completions/tw.fish", "0644" ],
+    [
+        "target/release/tw",
+        "/usr/bin/tw",
+        "0755",
+    ],
+    [
+        "target/manual/tabiew.1",
+        "/usr/share/man/man1/tw.1",
+        "0644",
+    ],
+    [
+        "target/manual/tabiew.1",
+        "/usr/share/man/man1/tabiew.1",
+        "0644",
+    ],
+    [
+        "target/completion/tw.bash",
+        "/usr/share/bash-completion/completions/tw.bash",
+        "0644",
+    ],
+    [
+        "target/completion/_tw",
+        "/usr/share/zsh/vendor-completions/_tw",
+        "0644",
+    ],
+    [
+        "target/completion/tw.fish",
+        "/usr/share/fish/completions/tw.fish",
+        "0644",
+    ],
 ]
 
 [package.metadata.generate-rpm]
@@ -62,4 +94,3 @@ strip = true
 opt-level = 3
 codegen-units = 1
 panic = 'abort'
-
