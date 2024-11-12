@@ -197,7 +197,7 @@ impl SixColorsTwoRowsStyler for Nord {
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BF616A);
 
-    const STATUS_BAR_PROMPT: Color = Color::from_u32(0x00A3BE8C);
+    const STATUS_BAR_PROMPT: Color = Color::from_u32(0x0093AE7C);
 
     const STATUS_BAR_INFO: Color = Color::from_u32(0x002E3440);
 }
