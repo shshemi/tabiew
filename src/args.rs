@@ -113,6 +113,7 @@ pub enum InferSchema {
 pub enum AppTheme {
     Monokai,
     Argonaut,
+    Nord,
     Terminal,
 }
 
