@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
 use ratatui::{
-    layout::Constraint,
-    widgets::{Cell, Row, StatefulWidget, Table, TableState, Widget},
+    layout::Constraint, widgets::{Cell, Row, StatefulWidget, Table, TableState, Widget}
 };
 
 use crate::{
@@ -183,6 +182,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
         )
         .header(header)
         .row_highlight_style(Theme::table_highlight())
+        .style(Theme::table_header())
         .column_spacing(2);
 
         if self.selection {
