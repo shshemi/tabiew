@@ -1,9 +1,10 @@
 use std::collections::VecDeque;
 
+use itertools::Itertools;
 use polars::{
     datatypes::DataType,
     frame::DataFrame,
-    series::{ChunkCompare, Series},
+    series::{ChunkCompareEq, Series},
 };
 
 #[derive(Debug)]
@@ -150,12 +151,15 @@ where
 }
 
 pub fn safe_infer_schema(data_frame: &mut DataFrame) {
-    for col_name in data_frame.get_column_names_owned() {
-        let col_name = col_name.as_str();
-        if let Some(series) = type_infered_series(data_frame.column(col_name).unwrap()) {
-            data_frame.replace(col_name, series).unwrap();
-        }
-    }
+    data_frame
+        .iter()
+        .filter_map(type_infered_series)
+        .map(|series| (series.name().to_owned(), series))
+        .collect_vec()
+        .into_iter()
+        .for_each(|(name, series)| {
+            data_frame.replace(name.as_str(), series).unwrap();
+        });
 }
 
 fn type_infered_series(series: &Series) -> Option<Series> {

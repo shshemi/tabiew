@@ -52,11 +52,7 @@ pub fn line_count(text: &str, width: usize) -> usize {
 }
 
 pub fn data_frame_widths(df: &polars::frame::DataFrame) -> Vec<usize> {
-    df.get_column_names()
-        .into_iter()
-        .zip(df.get_columns())
-        .map(|(col, series)| col.len().max(series_width(series)))
-        .collect::<Vec<_>>()
+        df.iter().map(series_width).collect()
 }
 
 pub fn series_width(series: &Series) -> usize {
@@ -71,6 +67,7 @@ pub fn series_width(series: &Series) -> usize {
         })
         .max()
         .unwrap_or_default()
+        .max(series.name().len())
 }
 
 pub fn any_value_into_string(value: polars::datatypes::AnyValue) -> String {

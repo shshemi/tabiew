@@ -6,7 +6,11 @@ use std::{
 
 use fwf_rs::Reader;
 use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
+use polars::{
+    frame::DataFrame,
+    prelude::NamedFrom,
+    series::Series,
+};
 
 use crate::{
     args::{Args, InferSchema},
@@ -93,13 +97,11 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
             .zip_iters()
             .collect_vec();
 
-        let mut df = DataFrame::new(
-            header
-                .into_iter()
-                .zip(columns)
-                .map(|(name, values)| Series::new(name.into(), values))
-                .collect_vec(),
-        )?;
+        let mut df = header
+            .into_iter()
+            .zip(columns)
+            .map(|(name, vals)| Series::new(name.into(), vals))
+            .collect();
 
         if matches!(
             self.infer_schema,
