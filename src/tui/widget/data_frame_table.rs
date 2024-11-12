@@ -3,7 +3,8 @@ use std::marker::PhantomData;
 use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
 use ratatui::{
-    layout::Constraint, widgets::{Cell, Row, StatefulWidget, Table, TableState, Widget}
+    layout::Constraint,
+    widgets::{Cell, Row, StatefulWidget, Table, TableState, Widget},
 };
 
 use crate::{

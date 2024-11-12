@@ -52,7 +52,7 @@ pub fn line_count(text: &str, width: usize) -> usize {
 }
 
 pub fn data_frame_widths(df: &polars::frame::DataFrame) -> Vec<usize> {
-        df.iter().map(series_width).collect()
+    df.iter().map(series_width).collect()
 }
 
 pub fn series_width(series: &Series) -> usize {

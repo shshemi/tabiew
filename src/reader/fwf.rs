@@ -6,11 +6,7 @@ use std::{
 
 use fwf_rs::Reader;
 use itertools::Itertools;
-use polars::{
-    frame::DataFrame,
-    prelude::NamedFrom,
-    series::Series,
-};
+use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 
 use crate::{
     args::{Args, InferSchema},
