@@ -130,6 +130,9 @@ tw <path_to_parquet(s)> -f parquet
 ### Argonaut:
 ![Image Alt text](/images/theme-argonaut.png "Argonaut")
 
+### Nord:
+![Image Alt text](/images/theme-nord.png "Nord")
+
 ### Terminal:
 ![Image Alt text](/images/theme-terminal.png "Terminal")
 
