@@ -39,6 +39,8 @@ Other than `csv`, Tabiew also supports other formats such as Parquet, JSON, JSON
 tw sample.parquet -f parquet
 ```
 
+If no specific format is provided in the argument, Tabiew attempts to infer it based on the file extension.
+
 ## Command Mode
 
 Command mode is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
@@ -164,6 +166,18 @@ At any time during explorations, it is possible to export the current data frame
 ```sql
 :export <format> <path>
 ```
+
+## Scripting
+
+Tabiew supports basic scripting functionality. By adding `--script <script_file>` to the command-line arguments, the script is executed at startup. The script must be consists of commands only, each beginning with a colon. For example, the following script filters houses with an area between 7500 and 10000, exports the results to `results.csv`, and then exits the application:
+
+```plaintext
+:F area > 7500
+:F area < 10000
+:export csv results.csv
+:q
+```
+
 
 ## Help Command
 

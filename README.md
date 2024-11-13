@@ -10,6 +10,7 @@ Tabiew is a lightweight TUI application that allows users to view and query tabu
 - 🛠️ SQL support
 - 🗂️ Multi-table functionality
 - 📊 Supports for CSV, Parquet, JSON, JSONL, Arrow, and FWF
+- 📝 Scripting support
 
 ## Tutorial
 
