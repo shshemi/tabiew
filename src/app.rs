@@ -383,7 +383,7 @@ impl<Theme: Styler> App<Theme> {
                         TabularType::Schema => self.sql.schema(),
                         TabularType::Name(name) => self
                             .sql
-                            .execute(format!("SELECT * FROM {}", name).as_str())?,
+                            .execute(format!("SELECT * FROM '{}'", name).as_str())?,
                         TabularType::Query(query) => self.sql.execute(query)?,
                     })
                 } else {
@@ -425,7 +425,7 @@ impl<Theme: Styler> App<Theme> {
 
             AppAction::TabNew(query) => {
                 if self.sql.contains_dataframe(&query) {
-                    let df = self.sql.execute(&format!("SELECT * FROM {}", query))?;
+                    let df = self.sql.execute(&format!("SELECT * FROM '{}'", query))?;
                     self.tabs.add(Tabular::new(df, TabularType::Name(query)))?;
                 } else {
                     let df = self.sql.execute(&query)?;
