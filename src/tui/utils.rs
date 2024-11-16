@@ -1,35 +1,27 @@
 use polars::{prelude::AnyValue, series::Series};
 
 #[derive(Debug, Default, Clone)]
-pub struct Scroll(usize);
-
-impl From<Scroll> for usize {
-    fn from(val: Scroll) -> Self {
-        val.0
-    }
-}
-
-impl From<Scroll> for u16 {
-    fn from(val: Scroll) -> Self {
-        val.0 as u16
-    }
+pub struct Scroll {
+    val: usize,
+    max: usize,
 }
 
 impl Scroll {
     pub fn up(&mut self) {
-        self.0 = self.0.saturating_sub(1);
+        self.val = self.val.saturating_sub(1);
     }
 
     pub fn down(&mut self) {
-        self.0 = self.0.saturating_add(1);
+        self.val = self.val.saturating_add(1).min(self.max);
     }
 
-    pub fn adjust(&mut self, lines: usize, space: usize) {
-        self.0 = self.0.min(lines.saturating_sub(space))
+    pub fn adjust(&mut self, lines: usize, height: u16) {
+        self.max = lines.saturating_sub(height.into());
+        self.val = self.val.min(self.max);
     }
 
-    pub fn to_u16(&self) -> u16 {
-        self.0 as u16
+    pub fn val_u16(&self) -> u16 {
+        self.val as u16
     }
 }
 
