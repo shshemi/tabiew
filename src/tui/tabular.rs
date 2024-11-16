@@ -1,18 +1,13 @@
 use std::marker::PhantomData;
 
-use itertools::{izip, Itertools};
+use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
-use ratatui::{
-    layout::{Alignment, Margin, Rect},
-    text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Wrap},
-    Frame,
-};
+use ratatui::{layout::Rect, Frame};
 
-use super::{
-    utils::{line_count, Scroll},
-    widget::data_frame_table::{DataFrameTable, DataFrameTableState},
+use super::widget::{
+    data_frame_table::{DataFrameTable, DataFrameTableState},
+    sheet::{Sheet, SheetBlock, SheetState},
 };
 use crate::tui::{theme::Styler, utils::any_value_into_string};
 
@@ -21,7 +16,7 @@ use crate::AppResult;
 #[derive(Debug)]
 pub enum TabularState {
     Table,
-    Sheet(Scroll),
+    Sheet(SheetState),
 }
 
 #[derive(Debug)]
@@ -90,7 +85,7 @@ impl<Theme: Styler> Tabular<Theme> {
 
     pub fn scroll_up(&mut self) -> AppResult<()> {
         if let TabularState::Sheet(scroll) = &mut self.state {
-            scroll.up();
+            scroll.scroll_up();
             Ok(())
         } else {
             Err("Not in table view".into())
@@ -99,7 +94,7 @@ impl<Theme: Styler> Tabular<Theme> {
 
     pub fn scroll_down(&mut self) -> AppResult<()> {
         if let TabularState::Sheet(scroll) = &mut self.state {
-            scroll.down();
+            scroll.scroll_down();
             Ok(())
         } else {
             Err("Not in table view".into())
@@ -118,7 +113,7 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn show_sheet(&mut self) -> AppResult<()> {
-        self.state = TabularState::Sheet(Scroll::default());
+        self.state = TabularState::Sheet(Default::default());
         Ok(())
     }
 
@@ -163,67 +158,27 @@ impl<Theme: Styler> Tabular<Theme> {
                     &mut self.table_state,
                 );
             }
-            TabularState::Sheet(scroll) => {
-                let space = layout.inner(Margin::new(1, 1));
+            TabularState::Sheet(sheet_state) => {
                 let title = format!(" {} ", self.table_state.selected() + 1);
-                let values = self
-                    .table_state
-                    .data_frame()
-                    .get(self.table_state.selected())
-                    .map(|row| row.into_iter().map(any_value_into_string).collect_vec())
-                    .unwrap_or_default();
-
-                let (paragraph, line_count) = paragraph_from_headers_values::<Theme>(
-                    &title,
-                    self.table_state.headers(),
-                    &values,
-                    space.width,
+                let sheet = Sheet::<Theme>::new(
+                    title,
+                    self.table_state
+                        .headers()
+                        .iter()
+                        .cloned()
+                        .zip(
+                            self.table_state
+                                .data_frame()
+                                .get(self.table_state.selected())
+                                .map(|row| row.into_iter().map(any_value_into_string).collect_vec())
+                                .unwrap_or_default(),
+                        )
+                        .map(|(header, content)| SheetBlock::new(header, content))
+                        .collect_vec(),
                 );
-
-                scroll.adjust(line_count, space.height as usize);
-                frame.render_widget(paragraph.scroll((scroll.to_u16(), 0)), layout);
+                frame.render_stateful_widget(sheet, layout, sheet_state);
             }
         }
         Ok(())
     }
-}
-
-fn paragraph_from_headers_values<'a, Theme: Styler>(
-    title: &'a str,
-    headers: &'a [String],
-    values: &'a [String],
-    width: u16,
-) -> (Paragraph<'a>, usize) {
-    let lines = izip!(headers, values.iter())
-        .enumerate()
-        .flat_map(|(idx, (header, value))| lines_from_header_value::<Theme>(idx, header, value))
-        .collect_vec();
-    let lc = lines
-        .iter()
-        .map(|line| line_count(&line.to_string(), width as usize))
-        .sum();
-    let prgr = Paragraph::new(lines)
-        .block(Block::new().title(title).borders(Borders::ALL))
-        .style(Theme::sheet_block())
-        .alignment(Alignment::Left)
-        .wrap(Wrap { trim: true });
-    (prgr, lc)
-}
-
-fn lines_from_header_value<'a, Theme: Styler>(
-    idx: usize,
-    header: &'a str,
-    value: &'a str,
-) -> Vec<Line<'a>> {
-    let header_line = std::iter::once(Line::from(Span::styled(
-        header,
-        Theme::table_header_cell(idx),
-    )));
-    let value_lines = value
-        .lines()
-        .map(|line| Line::from(Span::styled(line, Theme::sheet_value())));
-    header_line
-        .chain(value_lines)
-        .chain(std::iter::once(Line::default()))
-        .collect_vec()
 }
