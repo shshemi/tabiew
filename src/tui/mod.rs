@@ -4,9 +4,11 @@ pub mod tabular;
 pub mod terminal;
 pub mod theme;
 mod utils;
-pub mod widget;
+pub mod data_frame_table;
+pub mod prompt;
+pub mod sheet;
 
-pub use tabular::{Tabular, TabularType};
+pub use tabular::{TabularState, TabularType};
 pub use terminal::Terminal;
 pub use theme::Styler;
 

@@ -14,7 +14,7 @@ use tabiew::handler::keybind::Keybind;
 use tabiew::reader::BuildReader;
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
-use tabiew::tui::{Tabular, TabularType, Terminal};
+use tabiew::tui::{TabularState, TabularType, Terminal};
 use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
@@ -24,7 +24,7 @@ fn main() -> AppResult<()> {
     // Create the sql backend.
     let mut sql_backend = SqlBackend::new();
 
-    // Loading files to data frames
+    // Load files to data frames
     let mut tabs = args
         .files
         .iter()
@@ -73,7 +73,7 @@ fn start_tui<Theme: Styler>(
 ) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(df, name)| Tabular::new(df, TabularType::Name(name)))
+        .map(|(df, name)| TabularState::new(df, TabularType::Name(name)))
         .collect();
     let keybind = Keybind::default();
     let mut app = App::new(tabs, sql_backend, keybind);
@@ -85,7 +85,10 @@ fn start_tui<Theme: Styler>(
     );
     tui.init()?;
 
+    // Draw once before startup script
     tui.draw::<Theme>(&mut app)?;
+
+    // Run startup script
     for line in script.lines().filter(|line| !line.is_empty()) {
         let action = parse_into_action(line)
             .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
@@ -93,7 +96,7 @@ fn start_tui<Theme: Styler>(
             .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
     }
 
-    // Run the main loop
+    // Main loop
     while app.running() {
         tui.draw::<Theme>(&mut app)?;
 
