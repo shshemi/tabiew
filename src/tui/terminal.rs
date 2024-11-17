@@ -49,9 +49,9 @@ impl<B: Backend> Terminal<B> {
     ///
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
-    pub fn draw<Theme: Styler>(&mut self, app: &mut App<Theme>) -> AppResult<()> {
+    pub fn draw<Theme: Styler>(&mut self, app: &mut App) -> AppResult<()> {
         self.terminal.draw(|frame| {
-            let _ = app.draw(frame);
+            let _ = app.draw::<Theme>(frame);
         })?;
         Ok(())
     }

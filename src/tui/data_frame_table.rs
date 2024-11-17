@@ -15,7 +15,7 @@ use crate::{
     utils::ZipItersExt,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DataFrameTableState {
     offset: usize,
     select: usize,
