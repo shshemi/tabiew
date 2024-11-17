@@ -1,4 +1,5 @@
 use polars::{prelude::AnyValue, series::Series};
+use ratatui::style::Style;
 
 #[derive(Debug, Default, Clone)]
 pub struct Scroll {
@@ -69,6 +70,11 @@ pub fn any_value_into_string(value: polars::datatypes::AnyValue) -> String {
         AnyValue::String(v) => v.to_string(),
         _ => value.to_string(),
     }
+}
+
+pub fn invert_style(mut style: Style) -> Style {
+    std::mem::swap(&mut style.bg, &mut style.fg);
+    style
 }
 
 #[cfg(test)]

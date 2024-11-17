@@ -9,22 +9,26 @@ use ratatui::{
 use crate::{
     handler::{
         command::{commands_help_data_frame, parse_into_action},
-        keybind::{Action, Keybind},
+        keybind::Keybind,
     },
     sql::SqlBackend,
-    tui,
+    tui::{
+        self,
+        status_bar::{StatusBar, StatusBarState},
+        tabs::Tabs,
+    },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
     AppResult,
 };
 
-use tui::status_bar::{StatusBar, StatusBarState};
-use tui::tabs::Tabs;
-use tui::tabular::{self, Tabular, TabularType};
+use tui::status_bar::StatusBarView;
+use tui::tabs::TabsState;
+use tui::tabular::{self, TabularState, TabularType};
 use tui::Styler;
 
-pub struct App<Theme> {
-    tabs: Tabs<Theme>,
-    status_bar: StatusBar<Theme>,
+pub struct App {
+    tabs: TabsState,
+    status_bar: StatusBarState,
     sql: SqlBackend,
     keybindings: Keybind,
     running: bool,
@@ -86,11 +90,11 @@ pub enum AppAction {
     Quit,
 }
 
-impl<Theme: Styler> App<Theme> {
-    pub fn new(tabs: Tabs<Theme>, sql: SqlBackend, key_bind: Keybind) -> Self {
+impl App {
+    pub fn new(tabs: TabsState, sql: SqlBackend, key_bind: Keybind) -> Self {
         Self {
             tabs,
-            status_bar: StatusBar::<Theme>::default(),
+            status_bar: StatusBarState::new(),
             sql,
             keybindings: key_bind,
             running: true,
@@ -113,35 +117,36 @@ impl<Theme: Styler> App<Theme> {
 
     pub fn infer_state(&self) -> AppState {
         match (
-            self.tabs.selected().map(Tabular::state),
-            self.status_bar.state(),
+            self.tabs.selected().map(TabularState::view),
+            self.status_bar.view(),
         ) {
-            (Some(tabular::TabularState::Table), StatusBarState::Info) => AppState::Table,
-            (Some(tabular::TabularState::Table), StatusBarState::Error(_)) => AppState::Error,
-            (Some(tabular::TabularState::Table), StatusBarState::Prompt(_)) => AppState::Command,
-            (Some(tabular::TabularState::Sheet(_)), StatusBarState::Info) => AppState::Sheet,
-            (Some(tabular::TabularState::Sheet(_)), StatusBarState::Error(_)) => AppState::Error,
-            (Some(tabular::TabularState::Sheet(_)), StatusBarState::Prompt(_)) => AppState::Command,
-            (None, StatusBarState::Info) => AppState::Empty,
-            (None, StatusBarState::Error(_)) => AppState::Error,
-            (None, StatusBarState::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularView::Table), StatusBarView::Info) => AppState::Table,
+            (Some(tabular::TabularView::Table), StatusBarView::Error(_)) => AppState::Error,
+            (Some(tabular::TabularView::Table), StatusBarView::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Info) => AppState::Sheet,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Error(_)) => AppState::Error,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Prompt(_)) => AppState::Command,
+            (None, StatusBarView::Info) => AppState::Empty,
+            (None, StatusBarView::Error(_)) => AppState::Error,
+            (None, StatusBarView::Prompt(_)) => AppState::Command,
         }
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
+    pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
         let layout =
             Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.area());
 
         // Draw table / item
         let state = self.infer_state();
-        if let Some(tab) = self.tabs.selected_mut() {
-            tab.render(frame, layout[0], matches!(state, AppState::Table))?;
-        }
+        frame.render_stateful_widget(
+            Tabs::<Theme>::new().selection(matches!(state, AppState::Table)),
+            layout[0],
+            &mut self.tabs,
+        );
+
         if let Some(tab) = self.tabs.selected() {
-            self.status_bar.render(
-                frame,
-                layout[1],
-                &[
+            frame.render_stateful_widget(
+                StatusBar::<Theme>::new(&[
                     (
                         match tab.tabular_type() {
                             TabularType::Help => "Table",
@@ -152,8 +157,8 @@ impl<Theme: Styler> App<Theme> {
                         match tab.tabular_type() {
                             TabularType::Help => "Help",
                             TabularType::Schema => "Schema",
-                            TabularType::Name(name) => name,
-                            TabularType::Query(query) => query,
+                            TabularType::Name(name) => name.as_str(),
+                            TabularType::Query(query) => query.as_str(),
                         },
                     ),
                     (
@@ -181,37 +186,44 @@ impl<Theme: Styler> App<Theme> {
                             tab.data_frame().width()
                         ),
                     ),
-                ],
-            )
+                ]),
+                layout[1],
+                &mut self.status_bar,
+            );
         } else {
-            self.status_bar.render(frame, layout[1], &[])
+            frame.render_stateful_widget(
+                StatusBar::<Theme>::new(&[]),
+                layout[1],
+                &mut self.status_bar,
+            );
         }
+        Ok(())
     }
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> AppResult<()> {
         let state = self.infer_state();
         let key_code = key_event.code;
         match (state, key_code) {
-            (AppState::Command | AppState::Error, KeyCode::Esc) => self.status_bar.show_info(),
+            (AppState::Command | AppState::Error, KeyCode::Esc) => self.status_bar.switch_info(),
 
             (AppState::Command, KeyCode::Enter) => {
                 if let Some(cmd) = self.status_bar.commit_prompt() {
                     let _ = parse_into_action(cmd)
                         .and_then(|action| self.invoke(action))
-                        .and_then(|_| self.status_bar.show_info())
+                        .and_then(|_| self.status_bar.switch_info())
                         .inspect_err(|err| {
-                            let _ = self.status_bar.show_error(err);
+                            let _ = self.status_bar.switch_error(err);
                         });
                     Ok(())
                 } else {
                     self.status_bar
-                        .show_error("Invalid state; consider restarting Tabiew")
+                        .switch_error("Invalid state; consider restarting Tabiew")
                 }
             }
 
             (AppState::Command, _) => self.status_bar.input(key_event),
 
-            (_, KeyCode::Char(':')) => self.status_bar.show_prompt(""),
+            (_, KeyCode::Char(':')) => self.status_bar.switch_prompt(""),
 
             _ => {
                 match self
@@ -220,20 +232,20 @@ impl<Theme: Styler> App<Theme> {
                     .cloned()
                     .map(|action| self.invoke(action))
                 {
-                    Some(Err(error)) => self.status_bar.show_error(error),
+                    Some(Err(error)) => self.status_bar.switch_error(error),
                     _ => Ok(()),
                 }
             }
         }
     }
 
-    pub fn invoke(&mut self, action: Action) -> AppResult<()> {
+    pub fn invoke(&mut self, action: AppAction) -> AppResult<()> {
         match action {
-            AppAction::StatusBarStats => self.status_bar.show_info(),
+            AppAction::StatusBarStats => self.status_bar.switch_info(),
 
-            AppAction::StatusBarCommand(prefix) => self.status_bar.show_prompt(prefix),
+            AppAction::StatusBarCommand(prefix) => self.status_bar.switch_prompt(prefix),
 
-            AppAction::StatausBarError(msg) => self.status_bar.show_error(msg),
+            AppAction::StatausBarError(msg) => self.status_bar.switch_error(msg),
 
             AppAction::TabularTableView => {
                 if let Some(tab) = self.tabs.selected_mut() {
@@ -275,7 +287,7 @@ impl<Theme: Styler> App<Theme> {
                     self.tabs.select(idx)
                 } else {
                     self.tabs
-                        .add(Tabular::new(self.sql.schema(), TabularType::Schema))?;
+                        .add(TabularState::new(self.sql.schema(), TabularType::Schema))?;
                     self.tabs.select_last()
                 }
             }
@@ -426,10 +438,12 @@ impl<Theme: Styler> App<Theme> {
             AppAction::TabNew(query) => {
                 if self.sql.contains_dataframe(&query) {
                     let df = self.sql.execute(&format!("SELECT * FROM '{}'", query))?;
-                    self.tabs.add(Tabular::new(df, TabularType::Name(query)))?;
+                    self.tabs
+                        .add(TabularState::new(df, TabularType::Name(query)))?;
                 } else {
                     let df = self.sql.execute(&query)?;
-                    self.tabs.add(Tabular::new(df, TabularType::Query(query)))?;
+                    self.tabs
+                        .add(TabularState::new(df, TabularType::Query(query)))?;
                 }
                 self.tabs.select_last()
             }
@@ -517,8 +531,10 @@ impl<Theme: Styler> App<Theme> {
                 if let Some(idx) = idx {
                     self.tabs.select(idx)
                 } else {
-                    self.tabs
-                        .add(Tabular::new(commands_help_data_frame(), TabularType::Help))?;
+                    self.tabs.add(TabularState::new(
+                        commands_help_data_frame(),
+                        TabularType::Help,
+                    ))?;
                     self.tabs.select_last()
                 }
             }

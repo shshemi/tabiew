@@ -3,9 +3,9 @@ use std::marker::PhantomData;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
-use ratatui::{layout::Rect, Frame};
+use ratatui::{layout::Rect, widgets::StatefulWidget};
 
-use super::widget::{
+use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
     sheet::{Sheet, SheetBlock, SheetState},
 };
@@ -14,7 +14,7 @@ use crate::tui::{theme::Styler, utils::any_value_into_string};
 use crate::AppResult;
 
 #[derive(Debug)]
-pub enum TabularState {
+pub enum TabularView {
     Table,
     Sheet(SheetState),
 }
@@ -28,21 +28,19 @@ pub enum TabularType {
 }
 
 #[derive(Debug)]
-pub struct Tabular<Theme> {
+pub struct TabularState {
     table_state: DataFrameTableState,
-    state: TabularState,
+    view: TabularView,
     tabular_type: TabularType,
-    _theme: PhantomData<Theme>,
 }
 
-impl<Theme: Styler> Tabular<Theme> {
+impl TabularState {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, tabular_type: TabularType) -> Self {
         Self {
             table_state: DataFrameTableState::new(data_frame),
-            state: TabularState::Table,
+            view: TabularView::Table,
             tabular_type,
-            _theme: PhantomData,
         }
     }
 
@@ -84,7 +82,7 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn scroll_up(&mut self) -> AppResult<()> {
-        if let TabularState::Sheet(scroll) = &mut self.state {
+        if let TabularView::Sheet(scroll) = &mut self.view {
             scroll.scroll_up();
             Ok(())
         } else {
@@ -93,7 +91,7 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn scroll_down(&mut self) -> AppResult<()> {
-        if let TabularState::Sheet(scroll) = &mut self.state {
+        if let TabularView::Sheet(scroll) = &mut self.view {
             scroll.scroll_down();
             Ok(())
         } else {
@@ -106,19 +104,19 @@ impl<Theme: Styler> Tabular<Theme> {
     }
 
     pub fn switch_view(&mut self) -> AppResult<()> {
-        match self.state {
-            TabularState::Table => self.show_sheet(),
-            TabularState::Sheet(_) => self.show_table(),
+        match self.view {
+            TabularView::Table => self.show_sheet(),
+            TabularView::Sheet(_) => self.show_table(),
         }
     }
 
     pub fn show_sheet(&mut self) -> AppResult<()> {
-        self.state = TabularState::Sheet(Default::default());
+        self.view = TabularView::Sheet(Default::default());
         Ok(())
     }
 
     pub fn show_table(&mut self) -> AppResult<()> {
-        self.state = TabularState::Table;
+        self.view = TabularView::Table;
         Ok(())
     }
 
@@ -135,8 +133,8 @@ impl<Theme: Styler> Tabular<Theme> {
         self.table_state.data_frame_mut()
     }
 
-    pub fn state(&self) -> &TabularState {
-        &self.state
+    pub fn view(&self) -> &TabularView {
+        &self.view
     }
 
     pub fn selected(&self) -> usize {
@@ -146,39 +144,71 @@ impl<Theme: Styler> Tabular<Theme> {
     pub fn tabular_type(&self) -> &TabularType {
         &self.tabular_type
     }
+}
 
-    pub fn render(&mut self, frame: &mut Frame, layout: Rect, selection: bool) -> AppResult<()> {
-        match &mut self.state {
-            TabularState::Table => {
-                frame.render_stateful_widget(
+pub struct Tabular<Theme> {
+    selection: bool,
+    _theme: PhantomData<Theme>,
+}
+
+impl<Theme: Styler> Tabular<Theme> {
+    pub fn new() -> Self {
+        Self {
+            selection: false,
+            _theme: Default::default(),
+        }
+    }
+
+    pub fn with_selection(mut self, selection: bool) -> Self {
+        self.selection = selection;
+        self
+    }
+}
+
+impl<Theme: Styler> Default for Tabular<Theme> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Theme: Styler> StatefulWidget for Tabular<Theme> {
+    type State = TabularState;
+
+    fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
+        match &mut state.view {
+            TabularView::Table => {
+                StatefulWidget::render(
                     DataFrameTable::<Theme>::new()
-                        .with_selection(selection)
+                        .with_selection(self.selection)
                         .with_column_space(2),
-                    layout,
-                    &mut self.table_state,
+                    area,
+                    buf,
+                    &mut state.table_state,
                 );
             }
-            TabularState::Sheet(sheet_state) => {
-                let title = format!(" {} ", self.table_state.selected() + 1);
+
+            TabularView::Sheet(sheet_state) => {
+                let title = format!(" {} ", state.table_state.selected() + 1);
                 let sheet = Sheet::<Theme>::new(
                     title,
-                    self.table_state
+                    state
+                        .table_state
                         .headers()
                         .iter()
                         .cloned()
                         .zip(
-                            self.table_state
+                            state
+                                .table_state
                                 .data_frame()
-                                .get(self.table_state.selected())
+                                .get(state.table_state.selected())
                                 .map(|row| row.into_iter().map(any_value_into_string).collect_vec())
                                 .unwrap_or_default(),
                         )
                         .map(|(header, content)| SheetBlock::new(header, content))
                         .collect_vec(),
                 );
-                frame.render_stateful_widget(sheet, layout, sheet_state);
+                StatefulWidget::render(sheet, area, buf, sheet_state);
             }
         }
-        Ok(())
     }
 }

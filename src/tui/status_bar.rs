@@ -3,65 +3,62 @@ use std::marker::PhantomData;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Rect},
-    style::Style,
     text::{Line, Span},
-    Frame,
+    widgets::{StatefulWidget, Widget},
 };
 
 use crate::tui::theme::Styler;
 
-use super::widget::prompt::{Prompt, PromptState};
+use super::{
+    utils::invert_style,
+    prompt::{Prompt, PromptState},
+};
 use crate::AppResult;
 
 #[derive(Debug)]
-pub struct StatusBar<Theme> {
-    state: StatusBarState,
-    prompt_history: Vec<String>,
-    _theme: PhantomData<Theme>,
-}
-
-#[derive(Debug, Default)]
-pub enum StatusBarState {
-    #[default]
+pub enum StatusBarView {
     Info,
     Error(String),
     Prompt(PromptState),
 }
 
-impl<Theme: Styler> Default for StatusBar<Theme> {
-    fn default() -> Self {
-        Self {
-            state: Default::default(),
-            prompt_history: Default::default(),
-            _theme: PhantomData,
-        }
-    }
+#[derive(Debug)]
+pub struct StatusBarState {
+    view: StatusBarView,
+    prompt_history: Vec<String>,
 }
 
-impl<Theme: Styler> StatusBar<Theme> {
-    pub fn state(&self) -> &StatusBarState {
-        &self.state
+impl StatusBarState {
+    pub fn new() -> Self {
+        Self {
+            view: StatusBarView::Info,
+            prompt_history: Default::default(),
+        }
     }
 
-    pub fn show_info(&mut self) -> AppResult<()> {
-        self.state = StatusBarState::Info;
+    pub fn view(&self) -> &StatusBarView {
+        &self.view
+    }
+
+    pub fn switch_info(&mut self) -> AppResult<()> {
+        self.view = StatusBarView::Info;
         Ok(())
     }
 
-    pub fn show_error(&mut self, msg: impl ToString) -> AppResult<()> {
-        self.state = StatusBarState::Error(msg.to_string());
+    pub fn switch_error(&mut self, msg: impl ToString) -> AppResult<()> {
+        self.view = StatusBarView::Error(msg.to_string());
         Ok(())
     }
 
-    pub fn show_prompt(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
+    pub fn switch_prompt(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
         let mut history = self.prompt_history.clone();
         history.push(format!(":{}", prefix.as_ref()));
-        self.state = StatusBarState::Prompt(history.into());
+        self.view = StatusBarView::Prompt(history.into());
         Ok(())
     }
 
     pub fn commit_prompt(&mut self) -> Option<String> {
-        if let StatusBarState::Prompt(prompt) = &self.state {
+        if let StatusBarView::Prompt(prompt) = &self.view {
             let command = prompt.command();
             self.prompt_history.push(command.clone());
             Some(command)
@@ -75,7 +72,7 @@ impl<Theme: Styler> StatusBar<Theme> {
     }
 
     pub fn input(&mut self, input: KeyEvent) -> AppResult<()> {
-        if let StatusBarState::Prompt(prompt) = &mut self.state {
+        if let StatusBarView::Prompt(prompt) = &mut self.view {
             match input.code {
                 KeyCode::Up => {
                     prompt.move_up().move_eol();
@@ -94,7 +91,7 @@ impl<Theme: Styler> StatusBar<Theme> {
 
                 KeyCode::Backspace => {
                     if prompt.command_len() == 1 {
-                        self.show_info()?;
+                        self.switch_info()?;
                     } else if prompt.cursor().1 > 1 {
                         prompt.delete_backward();
                     }
@@ -123,56 +120,66 @@ impl<Theme: Styler> StatusBar<Theme> {
         }
         Ok(())
     }
+}
 
-    pub fn render(
-        &mut self,
-        frame: &mut Frame,
-        layout: Rect,
-        info: &[(&str, &str)],
-    ) -> AppResult<()> {
-        match &mut self.state {
-            StatusBarState::Info => frame.render_widget(
+impl Default for StatusBarState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+pub struct StatusBar<'a, Theme> {
+    info: &'a [(&'a str, &'a str)],
+    _theme: PhantomData<Theme>,
+}
+
+impl<'a, Theme: Styler> StatusBar<'a, Theme> {
+    pub fn new(info: &'a [(&'a str, &'a str)]) -> Self {
+        Self {
+            info,
+            _theme: Default::default(),
+        }
+    }
+}
+
+impl<'a, Theme: Styler> StatefulWidget for StatusBar<'a, Theme> {
+    type State = StatusBarState;
+
+    fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
+        match &mut state.view {
+            StatusBarView::Info => Widget::render(
                 Line::default()
-                    .spans(
-                        info.iter()
-                            .enumerate()
-                            .flat_map(|(i, (k, v))| info_key_value::<Theme>(i, k, v)),
-                    )
+                    .spans(self.info.iter().enumerate().flat_map(|(i, (k, v))| {
+                        [
+                            Span::raw(format!(" {} ", k)).style(Theme::status_bar_info_key(i)),
+                            Span::raw(format!(" {} ", v)).style(Theme::status_bar_info_val(i)),
+                            Span::raw(" "),
+                        ]
+                    }))
                     .alignment(Alignment::Right)
                     .style(Theme::status_bar_info()),
-                layout,
+                area,
+                buf,
             ),
 
-            StatusBarState::Error(msg) => frame.render_widget(
+            StatusBarView::Error(msg) => Widget::render(
                 Line::raw(msg.as_str())
                     .alignment(Alignment::Center)
                     .style(Theme::status_bar_error()),
-                layout,
+                area,
+                buf,
             ),
 
-            StatusBarState::Prompt(text) => {
-                frame.render_stateful_widget(
+            StatusBarView::Prompt(text) => {
+                StatefulWidget::render(
                     Prompt::new(
                         Theme::status_bar_prompt(),
                         invert_style(Theme::status_bar_prompt()),
                     ),
-                    layout,
+                    area,
+                    buf,
                     text,
                 );
             }
         }
-        Ok(())
     }
-}
-
-fn info_key_value<'a, Theme: Styler>(idx: usize, key: &'a str, value: &'a str) -> [Span<'a>; 3] {
-    [
-        Span::raw(format!(" {} ", key)).style(Theme::status_bar_info_key(idx)),
-        Span::raw(format!(" {} ", value)).style(Theme::status_bar_info_val(idx)),
-        Span::raw(" "),
-    ]
-}
-fn invert_style(mut style: Style) -> Style {
-    std::mem::swap(&mut style.bg, &mut style.fg);
-    style
 }

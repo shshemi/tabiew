@@ -1,15 +1,22 @@
+use std::marker::PhantomData;
+
+use ratatui::widgets::StatefulWidget;
+
 use crate::AppResult;
 
-use super::{tabular::Tabular, Styler};
+use super::{
+    tabular::{Tabular, TabularState},
+    Styler,
+};
 
-#[derive(Debug, Default)]
-pub struct Tabs<Theme> {
-    tabulars: Vec<Tabular<Theme>>,
+#[derive(Debug)]
+pub struct TabsState {
+    tabulars: Vec<TabularState>,
     idx: usize,
 }
 
-impl<Theme: Styler> Tabs<Theme> {
-    pub fn add(&mut self, tabular: Tabular<Theme>) -> AppResult<()> {
+impl TabsState {
+    pub fn add(&mut self, tabular: TabularState) -> AppResult<()> {
         self.tabulars.push(tabular);
         Ok(())
     }
@@ -26,11 +33,11 @@ impl<Theme: Styler> Tabs<Theme> {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&Tabular<Theme>> {
+    pub fn selected(&self) -> Option<&TabularState> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut Tabular<Theme>> {
+    pub fn selected_mut(&mut self) -> Option<&mut TabularState> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -85,16 +92,61 @@ impl<Theme: Styler> Tabs<Theme> {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Tabular<Theme>> {
+    pub fn iter(&self) -> impl Iterator<Item = &TabularState> {
         self.tabulars.iter()
     }
 }
 
-impl<Theme> FromIterator<Tabular<Theme>> for Tabs<Theme> {
-    fn from_iter<T: IntoIterator<Item = Tabular<Theme>>>(iter: T) -> Self {
+impl FromIterator<TabularState> for TabsState {
+    fn from_iter<T: IntoIterator<Item = TabularState>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
+        }
+    }
+}
+
+pub struct Tabs<Theme> {
+    selection: bool,
+    _theme: PhantomData<Theme>,
+}
+
+impl<Theme> Tabs<Theme> {
+    pub fn new() -> Self {
+        Self {
+            selection: false,
+            _theme: Default::default(),
+        }
+    }
+
+    pub fn selection(mut self, selection: bool) -> Self {
+        self.selection = selection;
+        self
+    }
+}
+
+impl<Theme> Default for Tabs<Theme> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
+    type State = TabsState;
+
+    fn render(
+        self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        state: &mut Self::State,
+    ) {
+        if let Some(tabular) = state.selected_mut() {
+            StatefulWidget::render(
+                Tabular::<Theme>::new().with_selection(self.selection),
+                area,
+                buf,
+                tabular,
+            );
         }
     }
 }

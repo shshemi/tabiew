@@ -10,7 +10,7 @@ enum StateKey {
     KeyCode(KeyCode, KeyModifiers),
     State(AppState),
 }
-pub type Action = AppAction;
+type Action = AppAction;
 pub struct Keybind {
     map: HashMap<StateKey, Action>,
 }
@@ -206,10 +206,15 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('9'), KeyModifiers::empty()),
                     AppAction::StatusBarCommand("goto 9".to_owned()),
                 ),
-                // Select Random
+                // Select random
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('R'), KeyModifiers::SHIFT),
                     AppAction::TabularGotoRandom,
+                ),
+                // Reset dataframe
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Char('r'), KeyModifiers::CONTROL),
+                    AppAction::TabularReset,
                 ),
             ]
             .into_iter()
