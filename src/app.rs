@@ -14,7 +14,7 @@ use crate::{
     sql::SqlBackend,
     tui::{
         self,
-        status_bar::{StatusBar, StatusBarState},
+        status_bar::{StatusBar, StatusBarState, StatusBarTag},
         tabs::Tabs,
     },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
@@ -147,11 +147,11 @@ impl App {
         if let Some(tab) = self.tabs.selected() {
             frame.render_stateful_widget(
                 StatusBar::<Theme>::new(&[
-                    (
+                    StatusBarTag::new(
                         match tab.tabular_type() {
-                            TabularType::Help => "Table",
-                            TabularType::Schema => "Table",
-                            TabularType::Name(_) => "Table",
+                            TabularType::Help | TabularType::Schema | TabularType::Name(_) => {
+                                "Table"
+                            }
                             TabularType::Query(_) => "SQL",
                         },
                         match tab.tabular_type() {
@@ -161,7 +161,7 @@ impl App {
                             TabularType::Query(query) => query.as_str(),
                         },
                     ),
-                    (
+                    StatusBarTag::new(
                         "Tab",
                         &format!(
                             "{:>width$} / {}",
@@ -170,7 +170,7 @@ impl App {
                             width = self.tabs.len().to_string().len()
                         ),
                     ),
-                    (
+                    StatusBarTag::new(
                         "Row",
                         &format!(
                             "{:>width$}",
@@ -178,7 +178,7 @@ impl App {
                             width = tab.data_frame().height().to_string().len()
                         ),
                     ),
-                    (
+                    StatusBarTag::new(
                         "Shape",
                         &format!(
                             "{} x {}",
