@@ -34,6 +34,7 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
 | `R`| Select a random row|
+| `Ctrl+r`| Reset the data frame|
 | `q`| Close current tab|
 | `:`| Command mode|
 
