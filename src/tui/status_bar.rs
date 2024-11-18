@@ -10,8 +10,8 @@ use ratatui::{
 use crate::tui::theme::Styler;
 
 use super::{
-    utils::invert_style,
     prompt::{Prompt, PromptState},
+    utils::invert_style,
 };
 use crate::AppResult;
 
@@ -128,14 +128,39 @@ impl Default for StatusBarState {
     }
 }
 pub struct StatusBar<'a, Theme> {
-    info: &'a [(&'a str, &'a str)],
+    // info: &'a [(&'a str, &'a str)],
+    tags: &'a [StatusBarTag<'a, Theme>],
     _theme: PhantomData<Theme>,
 }
 
-impl<'a, Theme: Styler> StatusBar<'a, Theme> {
-    pub fn new(info: &'a [(&'a str, &'a str)]) -> Self {
+pub struct StatusBarTag<'a, Theme> {
+    key: &'a str,
+    value: &'a str,
+    _theme: PhantomData<Theme>,
+}
+
+impl<'a, Theme: Styler> StatusBarTag<'a, Theme> {
+    pub fn new(key: &'a str, value: &'a str) -> Self {
         Self {
-            info,
+            key,
+            value,
+            _theme: Default::default(),
+        }
+    }
+
+    fn spans(&self, position: usize) -> [Span; 3] {
+        [
+            Span::raw(format!(" {} ", self.key)).style(Theme::status_bar_info_key(position)),
+            Span::raw(format!(" {} ", self.value)).style(Theme::status_bar_info_val(position)),
+            Span::raw(" "),
+        ]
+    }
+}
+
+impl<'a, Theme: Styler> StatusBar<'a, Theme> {
+    pub fn new(tags: &'a [StatusBarTag<Theme>]) -> Self {
+        Self {
+            tags,
             _theme: Default::default(),
         }
     }
@@ -148,13 +173,12 @@ impl<'a, Theme: Styler> StatefulWidget for StatusBar<'a, Theme> {
         match &mut state.view {
             StatusBarView::Info => Widget::render(
                 Line::default()
-                    .spans(self.info.iter().enumerate().flat_map(|(i, (k, v))| {
-                        [
-                            Span::raw(format!(" {} ", k)).style(Theme::status_bar_info_key(i)),
-                            Span::raw(format!(" {} ", v)).style(Theme::status_bar_info_val(i)),
-                            Span::raw(" "),
-                        ]
-                    }))
+                    .spans(
+                        self.tags
+                            .iter()
+                            .enumerate()
+                            .flat_map(|(i, tag)| tag.spans(i)),
+                    )
                     .alignment(Alignment::Right)
                     .style(Theme::status_bar_info()),
                 area,
