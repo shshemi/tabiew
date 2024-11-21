@@ -9,7 +9,7 @@ use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
     sheet::{Sheet, SheetBlock, SheetState},
 };
-use crate::tui::{theme::Styler, utils::any_value_into_string};
+use crate::{tui::theme::Styler, utils::polars_ext::IntoString};
 
 use crate::AppResult;
 
@@ -201,7 +201,9 @@ impl<Theme: Styler> StatefulWidget for Tabular<Theme> {
                                 .table_state
                                 .data_frame()
                                 .get(state.table_state.selected())
-                                .map(|row| row.into_iter().map(any_value_into_string).collect_vec())
+                                .map(|row| {
+                                    row.into_iter().map(IntoString::into_string).collect_vec()
+                                })
                                 .unwrap_or_default(),
                         )
                         .map(|(header, content)| SheetBlock::new(header, content))
