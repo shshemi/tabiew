@@ -10,7 +10,7 @@ use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 
 use crate::{
     args::{Args, InferSchema},
-    utils::{safe_infer_schema, ZipItersExt},
+    utils::{polars_ext::SafeInferSchema, zip_iter::ZipItersExt},
     AppResult,
 };
 
@@ -93,7 +93,7 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
             .zip_iters()
             .collect_vec();
 
-        let mut df = header
+        let mut df: DataFrame = header
             .into_iter()
             .zip(columns)
             .map(|(name, vals)| Series::new(name.into(), vals))
@@ -103,7 +103,7 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
             self.infer_schema,
             InferSchema::Fast | InferSchema::Full | InferSchema::Safe
         ) {
-            safe_infer_schema(&mut df);
+            df.safe_infer_schema();
         }
 
         Ok(df)

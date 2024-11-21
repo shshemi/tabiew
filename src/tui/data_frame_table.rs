@@ -8,11 +8,11 @@ use ratatui::{
 };
 
 use crate::{
-    tui::{
-        utils::{any_value_into_string, data_frame_widths},
-        Styler,
+    tui::Styler,
+    utils::{
+        polars_ext::{IntoString, TuiWidths},
+        zip_iter::ZipItersExt,
     },
-    utils::ZipItersExt,
 };
 
 #[derive(Debug, Default)]
@@ -31,7 +31,7 @@ impl DataFrameTableState {
             offset: 0,
             select: 0,
             rendered_rows: 0,
-            widths: data_frame_widths(&data_frame),
+            widths: data_frame.tui_widths(),
             headers: data_frame
                 .get_column_names()
                 .into_iter()
@@ -52,7 +52,7 @@ impl DataFrameTableState {
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
         self.offset = 0;
         self.select = 0;
-        self.widths = data_frame_widths(&data_frame);
+        self.widths = data_frame.tui_widths();
         self.headers = data_frame
             .get_column_names()
             .into_iter()
@@ -170,7 +170,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                 .zip_iters()
                 .enumerate()
                 .map(|(ridx, vals)| {
-                    Row::new(vals.into_iter().map(any_value_into_string).map(Cell::new))
+                    Row::new(vals.into_iter().map(IntoString::into_string).map(Cell::new))
                         .style(Theme::table_row(ridx + state.offset))
                 })
                 .collect_vec(),
