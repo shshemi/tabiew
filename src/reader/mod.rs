@@ -13,7 +13,7 @@ use polars::{
 
 use crate::{
     args::{Args, Format, InferSchema},
-    utils::{as_ascii, safe_infer_schema},
+    utils::{polars_ext::SafeInferSchema, type_ext::ToAscii},
     AppResult,
 };
 
@@ -79,14 +79,14 @@ impl<R: MmapBytesReader> ReadToDataFrame<R> for CsvToDataFrame {
             .with_has_header(!self.no_header)
             .with_parse_options(
                 CsvParseOptions::default()
-                    .with_quote_char(as_ascii(self.quote_char))
-                    .with_separator(as_ascii(self.separator_char).expect("Invalid separator")),
+                    .with_quote_char(self.quote_char.to_ascii())
+                    .with_separator(self.separator_char.to_ascii().expect("Invalid separator")),
             )
             .with_rechunk(true)
             .into_reader_with_file_handle(reader)
             .finish()?;
         if matches!(self.infer_schema, InferSchema::Safe) {
-            safe_infer_schema(&mut df);
+            df.safe_infer_schema();
         }
         Ok(df)
     }
@@ -125,7 +125,7 @@ impl<R: MmapBytesReader> ReadToDataFrame<R> for JsonLineToDataFrame {
             self.infer_schema,
             InferSchema::Safe | InferSchema::Full | InferSchema::Fast
         ) {
-            safe_infer_schema(&mut df);
+            df.safe_infer_schema();
         }
         Ok(df)
     }
@@ -156,7 +156,7 @@ impl<R: MmapBytesReader> ReadToDataFrame<R> for JsonToDataFrame {
             self.infer_schema,
             InferSchema::Safe | InferSchema::Full | InferSchema::Fast
         ) {
-            safe_infer_schema(&mut df);
+            df.safe_infer_schema();
         }
         Ok(df)
     }

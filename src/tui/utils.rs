@@ -1,4 +1,3 @@
-use polars::{prelude::AnyValue, series::Series};
 use ratatui::style::Style;
 
 #[derive(Debug, Default, Clone)]
@@ -42,34 +41,6 @@ pub fn line_count(text: &str, width: usize) -> usize {
         }
     }
     line_count
-}
-
-pub fn data_frame_widths(df: &polars::frame::DataFrame) -> Vec<usize> {
-    df.iter().map(series_width).collect()
-}
-
-pub fn series_width(series: &Series) -> usize {
-    series
-        .iter()
-        .map(|any_value| {
-            any_value_into_string(any_value)
-                .lines()
-                .next()
-                .map(str::len)
-                .unwrap_or(0)
-        })
-        .max()
-        .unwrap_or_default()
-        .max(series.name().len())
-}
-
-pub fn any_value_into_string(value: polars::datatypes::AnyValue) -> String {
-    match value {
-        AnyValue::Null => "".to_owned(),
-        AnyValue::StringOwned(v) => v.to_string(),
-        AnyValue::String(v) => v.to_string(),
-        _ => value.to_string(),
-    }
 }
 
 pub fn invert_style(mut style: Style) -> Style {
