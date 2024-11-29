@@ -259,9 +259,9 @@ impl App {
                 }
             }
 
-            (_, KeyCode::Char(':')) => self.status_bar.switch_prompt(""),
+            (AppState::Table | AppState::Sheet, KeyCode::Char(':')) => self.status_bar.switch_prompt(""),
 
-            (_, KeyCode::Char('/')) => self.status_bar.switch_search(""),
+            (AppState::Table, KeyCode::Char('/')) => self.status_bar.switch_search(""),
 
             _ => {
                 match self
