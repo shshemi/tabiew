@@ -8,6 +8,7 @@ pub trait Styler {
     fn sheet_value() -> Style;
     fn status_bar_error() -> Style;
     fn status_bar_prompt() -> Style;
+    fn status_bar_search() -> Style;
     fn status_bar_info() -> Style;
     fn sheet_block() -> Style;
     fn status_bar_info_key(idx: usize) -> Style;
@@ -27,6 +28,7 @@ pub trait SixColorsTwoRowsStyler {
 
     const STATUS_BAR_ERROR: Color;
     const STATUS_BAR_PROMPT: Color;
+    const STATUS_BAR_SEARCH: Color;
     const STATUS_BAR_INFO: Color;
 }
 
@@ -70,6 +72,12 @@ where
         Style::default()
             .bg(Self::STATUS_BAR_PROMPT)
             .fg(Self::FOREGROUND)
+    }
+    
+    fn status_bar_search() -> Style {
+        Style::default()
+        .bg(Self::STATUS_BAR_SEARCH)
+        .fg(Self::FOREGROUND)
     }
 
     fn status_bar_info() -> Style {
@@ -130,6 +138,7 @@ impl SixColorsTwoRowsStyler for Monokai {
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d02d00);
     const STATUS_BAR_PROMPT: Color = Color::from_u32(0x00008f1f);
+    const STATUS_BAR_SEARCH: Color = Color::from_u32(0x006c99bb);
     const STATUS_BAR_INFO: Color = Self::BACKGROUND;
 }
 
@@ -161,6 +170,7 @@ impl SixColorsTwoRowsStyler for Argonaut {
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00dd0000);
     const STATUS_BAR_PROMPT: Color = Color::from_u32(0x006cc100);
+    const STATUS_BAR_SEARCH: Color = Color::from_u32(0x006f20eb);
     const STATUS_BAR_INFO: Color = Self::BACKGROUND;
 }
 
@@ -199,6 +209,8 @@ impl SixColorsTwoRowsStyler for Nord {
 
     const STATUS_BAR_PROMPT: Color = Color::from_u32(0x0093AE7C);
 
+    const STATUS_BAR_SEARCH: Color = Color::from_u32(0x005E81AC);
+
     const STATUS_BAR_INFO: Color = Color::from_u32(0x002E3440);
 }
 
@@ -229,6 +241,10 @@ impl Styler for Terminal {
 
     fn status_bar_prompt() -> Style {
         Style::default().bg(Color::Green).fg(Color::White)
+    }
+    
+    fn status_bar_search() -> Style {
+        Style::default().bg(Color::Blue).fg(Color::White)
     }
 
     fn status_bar_info() -> Style {
