@@ -11,6 +11,7 @@ use crate::{
         command::{commands_help_data_frame, parse_into_action},
         keybind::Keybind,
     },
+    search::Search,
     sql::SqlBackend,
     tui::{
         self,
@@ -32,6 +33,7 @@ pub struct App {
     sql: SqlBackend,
     keybindings: Keybind,
     running: bool,
+    search: Option<Search>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -41,6 +43,7 @@ pub enum AppState {
     Sheet,
     Command,
     Error,
+    Search,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -69,6 +72,9 @@ pub enum AppAction {
     TabularSelect(String),
     TabularOrder(String),
     TabularFilter(String),
+    SearchPattern(String),
+    SearchRollback,
+    SearchCommit,
     TabNew(String),
     TabSelect(usize),
     TabRemove(usize),
@@ -98,6 +104,7 @@ impl App {
             sql,
             keybindings: key_bind,
             running: true,
+            search: None,
         }
     }
 
@@ -106,6 +113,14 @@ impl App {
     }
 
     pub fn tick(&mut self) -> AppResult<()> {
+        if let Some(ser) = &self.search {
+            let _ = self
+                .tabs
+                .selected_mut()
+                .unwrap()
+                .set_data_frame(ser.latest());
+        }
+
         self.tabs.selected_mut().map(|tab| tab.tick());
         self.status_bar.tick()
     }
@@ -123,14 +138,21 @@ impl App {
             (Some(tabular::TabularView::Table), StatusBarView::Info) => AppState::Table,
             (Some(tabular::TabularView::Table), StatusBarView::Error(_)) => AppState::Error,
             (Some(tabular::TabularView::Table), StatusBarView::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularView::Table), StatusBarView::Search(_)) => AppState::Search,
             (Some(tabular::TabularView::Sheet(_)), StatusBarView::Info) => AppState::Sheet,
             (Some(tabular::TabularView::Sheet(_)), StatusBarView::Error(_)) => AppState::Error,
             (Some(tabular::TabularView::Sheet(_)), StatusBarView::Prompt(_)) => AppState::Command,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Search(_)) => AppState::Sheet,
             (None, StatusBarView::Info) => AppState::Empty,
             (None, StatusBarView::Error(_)) => AppState::Error,
             (None, StatusBarView::Prompt(_)) => AppState::Command,
+            (None, StatusBarView::Search(_)) => AppState::Empty,
         }
     }
+
+    pub fn start_search(&mut self) {}
+
+    pub fn stop_search(&mut self) {}
 
     pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
         let layout =
@@ -223,7 +245,23 @@ impl App {
 
             (AppState::Command, _) => self.status_bar.input(key_event),
 
+            (AppState::Search, KeyCode::Esc) => self.invoke(AppAction::SearchRollback),
+
+            (AppState::Search, KeyCode::Enter) => self.invoke(AppAction::SearchCommit),
+
+            (AppState::Search, _) => {
+                let _ = self.status_bar.input(key_event);
+                if let StatusBarView::Search(prompt) = self.status_bar.view() {
+                    let pattern = prompt.skip_command(1);
+                    self.invoke(AppAction::SearchPattern(pattern))
+                } else {
+                    self.invoke(AppAction::SearchRollback)
+                }
+            }
+
             (_, KeyCode::Char(':')) => self.status_bar.switch_prompt(""),
+
+            (_, KeyCode::Char('/')) => self.status_bar.switch_search(""),
 
             _ => {
                 match self
@@ -433,6 +471,40 @@ impl App {
                 } else {
                     Ok(())
                 }
+            }
+
+            AppAction::SearchPattern(pattern) => {
+                if !matches!(self.status_bar.view(), StatusBarView::Search(_)) {
+                    let _ = self.status_bar.switch_search(&pattern);
+                }
+                if let Some(tab) = self.tabs.selected_mut() {
+                    if let Some(search) = &self.search {
+                        search.search(pattern);
+                    } else {
+                        let search = Search::new(tab.data_frame().clone());
+                        search.search(pattern);
+                        self.search = search.into();
+                    }
+                }
+                Ok(())
+            }
+
+            AppAction::SearchRollback => {
+                if let Some(df) = self.search.take().map(|ser| ser.into_original_data_frame()) {
+                    if let Some(tab) = self.tabs.selected_mut() {
+                        let _ = tab.set_data_frame(df);
+                    }
+                }
+                self.status_bar.switch_info()
+            }
+
+            AppAction::SearchCommit => {
+                if let Some(df) = self.search.take().map(|ser| ser.latest()) {
+                    if let Some(tab) = self.tabs.selected_mut() {
+                        let _ = tab.set_data_frame(df);
+                    }
+                }
+                self.status_bar.switch_info()
             }
 
             AppAction::TabNew(query) => {

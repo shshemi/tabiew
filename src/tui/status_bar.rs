@@ -20,6 +20,7 @@ pub enum StatusBarView {
     Info,
     Error(String),
     Prompt(PromptState),
+    Search(PromptState),
 }
 
 #[derive(Debug)]
@@ -57,6 +58,11 @@ impl StatusBarState {
         Ok(())
     }
 
+    pub fn switch_search(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
+        self.view = StatusBarView::Search(vec![format!("/{}", prefix.as_ref())].into());
+        Ok(())
+    }
+
     pub fn commit_prompt(&mut self) -> Option<String> {
         if let StatusBarView::Prompt(prompt) = &self.view {
             let command = prompt.command();
@@ -67,12 +73,20 @@ impl StatusBarState {
         }
     }
 
+    pub fn search_string(&self) -> Option<String> {
+        if let StatusBarView::Search(prompt) = &self.view {
+            Some(prompt.command())
+        } else {
+            None
+        }
+    }
+
     pub fn tick(&mut self) -> AppResult<()> {
         Ok(())
     }
 
     pub fn input(&mut self, input: KeyEvent) -> AppResult<()> {
-        if let StatusBarView::Prompt(prompt) = &mut self.view {
+        if let StatusBarView::Prompt(prompt) | StatusBarView::Search(prompt) = &mut self.view {
             match input.code {
                 KeyCode::Up => {
                     prompt.move_up().move_eol();
@@ -194,6 +208,17 @@ impl<'a, Theme: Styler> StatefulWidget for StatusBar<'a, Theme> {
             ),
 
             StatusBarView::Prompt(text) => {
+                StatefulWidget::render(
+                    Prompt::new(
+                        Theme::status_bar_prompt(),
+                        invert_style(Theme::status_bar_prompt()),
+                    ),
+                    area,
+                    buf,
+                    text,
+                );
+            }
+            StatusBarView::Search(text) => {
                 StatefulWidget::render(
                     Prompt::new(
                         Theme::status_bar_prompt(),

@@ -3135,6 +3135,7 @@ dependencies = [
  "polars-sql",
  "rand",
  "ratatui",
+ "rayon",
 ]
 
 [[package]]

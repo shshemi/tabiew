@@ -63,6 +63,10 @@ impl PromptState {
         self.chars[self.cursor.0].iter().collect()
     }
 
+    pub fn skip_command(&self, skip: usize) -> String {
+        self.chars[self.cursor.0].iter().skip(skip).collect()
+    }
+
     pub fn command_len(&self) -> usize {
         self.chars[self.cursor.0].len()
     }

@@ -24,4 +24,7 @@ pub mod reader;
 /// Writers
 pub mod writer;
 
+/// Search
+pub mod search;
+
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;

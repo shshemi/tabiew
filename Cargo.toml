@@ -31,6 +31,7 @@ polars-sql = "0.44.2"
 polars-lazy = "0.44.2"
 rand = "0.8.5"
 ratatui = "0.29.0"
+rayon = "1.10.0"
 
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
