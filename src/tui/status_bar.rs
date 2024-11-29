@@ -142,7 +142,6 @@ impl Default for StatusBarState {
     }
 }
 pub struct StatusBar<'a, Theme> {
-    // info: &'a [(&'a str, &'a str)],
     tags: &'a [StatusBarTag<'a, Theme>],
     _theme: PhantomData<Theme>,
 }
@@ -221,8 +220,8 @@ impl<'a, Theme: Styler> StatefulWidget for StatusBar<'a, Theme> {
             StatusBarView::Search(text) => {
                 StatefulWidget::render(
                     Prompt::new(
-                        Theme::status_bar_prompt(),
-                        invert_style(Theme::status_bar_prompt()),
+                        Theme::status_bar_search(),
+                        invert_style(Theme::status_bar_search()),
                     ),
                     area,
                     buf,
