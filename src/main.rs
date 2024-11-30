@@ -81,7 +81,7 @@ fn start_tui<Theme: Styler>(
     // Initialize the terminal user interface.
     let mut tui = Terminal::new(
         ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
-        EventHandler::new(250),
+        EventHandler::new(100),
     );
     tui.init()?;
 
