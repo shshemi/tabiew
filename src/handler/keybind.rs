@@ -34,7 +34,11 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Table, KeyCode::Char('q'), KeyModifiers::empty()),
                     AppAction::TabRemoveOrQuit,
                 ),
-                // Switch tab/sheet
+                // Switch tab/sheet/enter
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Enter, KeyModifiers::empty()),
+                    AppAction::TabularEnterPress,
+                ),
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('v'), KeyModifiers::empty()),
                     AppAction::TabularSheetView,

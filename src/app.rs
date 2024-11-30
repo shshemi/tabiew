@@ -66,6 +66,7 @@ pub enum AppAction {
     TabularGoDown(usize),
     TabularGoDownHalfPage,
     TabularGoDownFullPage,
+    TabularEnterPress,
     SheetScrollUp,
     SheetScrollDown,
     TabularReset,
@@ -472,6 +473,20 @@ impl App {
                     Ok(())
                 }
             }
+
+            AppAction::TabularEnterPress => {
+                if let Some(tab) = self.tabs.selected_mut() {
+                    match tab.tabular_type() {
+                        TabularType::Help |
+                        TabularType::Schema |
+                        TabularType::Name(_) |
+                        TabularType::Query(_) => self.invoke(AppAction::TabularSheetView),
+                    }
+                } else {
+                    Ok(())
+                }
+
+            },
 
             AppAction::SearchPattern(pattern) => {
                 if !matches!(self.status_bar.view(), StatusBarView::Search(_)) {
