@@ -5,6 +5,8 @@ use polars::{
     series::{ChunkCompareEq, Series},
 };
 
+use super::type_ext::HasSubsequence;
+
 pub trait SafeInferSchema {
     fn safe_infer_schema(&mut self);
 }
@@ -15,6 +17,10 @@ pub trait IntoString {
 
 pub trait TuiWidths {
     fn tui_widths(&self) -> Vec<usize>;
+}
+
+pub trait FuzzyCmp {
+    fn fuzzy_cmp(self, other: &str) -> bool;
 }
 
 impl SafeInferSchema for DataFrame {
@@ -74,6 +80,48 @@ fn series_width(series: &Series) -> usize {
         .max()
         .unwrap_or_default()
         .max(series.name().len())
+}
+
+impl<'a> FuzzyCmp for AnyValue<'a> {
+    fn fuzzy_cmp(self, other: &str) -> bool {
+        match self {
+            AnyValue::Null => false,
+            AnyValue::Boolean(val) => {
+                if val {
+                    ["T", "Tr", "Tru", "True", "t", "tr", "tru", "true"].contains(&other)
+                } else {
+                    [
+                        "F", "Fa", "Fal", "Fals", "False", "f", "fa", "fal", "fals", "false",
+                    ]
+                    .contains(&other)
+                }
+            }
+            AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other, other.len()),
+            AnyValue::String(val) => val.has_subsequence(other, other.len()),
+            AnyValue::UInt8(_)|
+            AnyValue::UInt16(_)|
+            AnyValue::UInt32(_)|
+            AnyValue::UInt64(_)|
+            AnyValue::Int8(_)|
+            AnyValue::Int16(_)|
+            AnyValue::Int32(_)|
+            AnyValue::Int64(_)|
+            AnyValue::Float32(_)|
+            AnyValue::Float64(_)|
+            AnyValue::Date(_)|
+            AnyValue::Decimal(_, _)|
+            AnyValue::Datetime(_, _, _)|
+            AnyValue::DatetimeOwned(_, _, _)|
+            AnyValue::Duration(_, _)|
+            AnyValue::Time(_) => self.into_string().has_subsequence(other, other.len()),
+
+            AnyValue::List(_) => false,
+            AnyValue::Struct(_, _, _) => false,
+            AnyValue::Binary(_) => false,
+            AnyValue::BinaryOwned(_) => false,
+            AnyValue::StructOwned(_) => false,
+        }
+    }
 }
 
 #[cfg(test)]
