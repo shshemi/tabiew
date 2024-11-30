@@ -137,8 +137,8 @@ impl SixColorsTwoRowsStyler for Monokai {
     const HIGHTLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d02d00);
-    const STATUS_BAR_PROMPT: Color = Color::from_u32(0x00008f1f);
-    const STATUS_BAR_SEARCH: Color = Color::from_u32(0x006c99bb);
+    const STATUS_BAR_PROMPT: Color = Color::from_u32(0x00109f2f);
+    const STATUS_BAR_SEARCH: Color = Color::from_u32(0x00369aa6);
     const STATUS_BAR_INFO: Color = Self::BACKGROUND;
 }
 
