@@ -260,7 +260,9 @@ impl App {
                 }
             }
 
-            (AppState::Table | AppState::Sheet, KeyCode::Char(':')) => self.status_bar.switch_prompt(""),
+            (AppState::Table | AppState::Sheet, KeyCode::Char(':')) => {
+                self.status_bar.switch_prompt("")
+            }
 
             (AppState::Table, KeyCode::Char('/')) => self.status_bar.switch_search(""),
 
@@ -477,16 +479,15 @@ impl App {
             AppAction::TabularEnterPress => {
                 if let Some(tab) = self.tabs.selected_mut() {
                     match tab.tabular_type() {
-                        TabularType::Help |
-                        TabularType::Schema |
-                        TabularType::Name(_) |
-                        TabularType::Query(_) => self.invoke(AppAction::TabularSheetView),
+                        TabularType::Help
+                        | TabularType::Schema
+                        | TabularType::Name(_)
+                        | TabularType::Query(_) => self.invoke(AppAction::TabularSheetView),
                     }
                 } else {
                     Ok(())
                 }
-
-            },
+            }
 
             AppAction::SearchPattern(pattern) => {
                 if !matches!(self.status_bar.view(), StatusBarView::Search(_)) {

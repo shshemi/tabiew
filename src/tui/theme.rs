@@ -73,11 +73,11 @@ where
             .bg(Self::STATUS_BAR_PROMPT)
             .fg(Self::FOREGROUND)
     }
-    
+
     fn status_bar_search() -> Style {
         Style::default()
-        .bg(Self::STATUS_BAR_SEARCH)
-        .fg(Self::FOREGROUND)
+            .bg(Self::STATUS_BAR_SEARCH)
+            .fg(Self::FOREGROUND)
     }
 
     fn status_bar_info() -> Style {
@@ -242,7 +242,7 @@ impl Styler for Terminal {
     fn status_bar_prompt() -> Style {
         Style::default().bg(Color::Green).fg(Color::White)
     }
-    
+
     fn status_bar_search() -> Style {
         Style::default().bg(Color::Blue).fg(Color::White)
     }

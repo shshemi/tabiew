@@ -6,10 +6,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use polars::{
-    frame::DataFrame,
-    prelude::BooleanChunked,
-};
+use polars::{frame::DataFrame, prelude::BooleanChunked};
 
 use rayon::prelude::*;
 
@@ -36,15 +33,15 @@ impl Search {
                     for idx in Task::new(df.clone(), pat).iter() {
                         mask[idx] = true;
 
-                        *latest.lock().unwrap() =
-                            df.filter(&BooleanChunked::from_iter(mask.iter().copied())).unwrap();
+                        *latest.lock().unwrap() = df
+                            .filter(&BooleanChunked::from_iter(mask.iter().copied()))
+                            .unwrap();
 
                         if recv.check() {
                             break;
                         }
                     }
-                    *latest.lock().unwrap() =
-                        df.filter(&BooleanChunked::from_iter(mask)).unwrap();
+                    *latest.lock().unwrap() = df.filter(&BooleanChunked::from_iter(mask)).unwrap();
                 }
                 df
             }

@@ -98,22 +98,22 @@ impl<'a> FuzzyCmp for AnyValue<'a> {
             }
             AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other, other.len()),
             AnyValue::String(val) => val.has_subsequence(other, other.len()),
-            AnyValue::UInt8(_)|
-            AnyValue::UInt16(_)|
-            AnyValue::UInt32(_)|
-            AnyValue::UInt64(_)|
-            AnyValue::Int8(_)|
-            AnyValue::Int16(_)|
-            AnyValue::Int32(_)|
-            AnyValue::Int64(_)|
-            AnyValue::Float32(_)|
-            AnyValue::Float64(_)|
-            AnyValue::Date(_)|
-            AnyValue::Decimal(_, _)|
-            AnyValue::Datetime(_, _, _)|
-            AnyValue::DatetimeOwned(_, _, _)|
-            AnyValue::Duration(_, _)|
-            AnyValue::Time(_) => self.into_string().has_subsequence(other, other.len()),
+            AnyValue::UInt8(_)
+            | AnyValue::UInt16(_)
+            | AnyValue::UInt32(_)
+            | AnyValue::UInt64(_)
+            | AnyValue::Int8(_)
+            | AnyValue::Int16(_)
+            | AnyValue::Int32(_)
+            | AnyValue::Int64(_)
+            | AnyValue::Float32(_)
+            | AnyValue::Float64(_)
+            | AnyValue::Date(_)
+            | AnyValue::Decimal(_, _)
+            | AnyValue::Datetime(_, _, _)
+            | AnyValue::DatetimeOwned(_, _, _)
+            | AnyValue::Duration(_, _)
+            | AnyValue::Time(_) => self.into_string().has_subsequence(other, other.len()),
 
             AnyValue::List(_) => false,
             AnyValue::Struct(_, _, _) => false,
