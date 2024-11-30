@@ -21,6 +21,7 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 |Key Combination|Functionality|
 |-|-|
 | `v`| Switch view|
+| `enter`| Show row in sheet view|
 | `k` or `Arrow Up`| Move up in the table or scroll up in sheet view|
 | `j` or `Arrow Down`| Move down in the table or scroll down in sheet view|
 | `h` or `Arrow Left`| Move to the previous item in sheet view|
@@ -37,6 +38,7 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 | `Ctrl+r`| Reset the data frame|
 | `q`| Close current tab|
 | `:`| Command mode|
+| `/`| Search mode|
 
 ## Commands
 |Command|Example|Description|
