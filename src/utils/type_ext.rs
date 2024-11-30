@@ -87,8 +87,9 @@ mod tests {
         assert!("a b c d e f".has_subsequence("abcdef", 5));
         assert!(!"abcdef".has_subsequence("a b c", 0));
         assert!("abacabadabacaba".has_subsequence("ababa", 5));
-        assert!(!"abacabadabacaba".has_subsequence("ababa", 4));
+        assert!("abacabadabacaba".has_subsequence("ababa", 4));
         assert!("xyxyxyxyxy".has_subsequence("yyy", 3));
-        assert!(!"xyxyxyxyxy".has_subsequence("yyy", 2));
+        assert!("xyxyxyxyxy".has_subsequence("yyy", 1));
+        assert!(!"xyxyxyxyxy".has_subsequence("yyy", 0));
     }
 }
