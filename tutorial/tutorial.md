@@ -66,7 +66,7 @@ Alternatively, you can use the `:goto` command to jump to a specific row, or jus
 
 ## Sheet View
 
-By default, all rows are visualized in a single line in the table view. Furthermore, the columns are squeezed to fix the screen if the required table width is larger than the screen. Therefore, to enhance readability, you can switch to the **sheet view** by pressing the `v` key. The sheet view allows you to visit each row individually and scroll if it doesn't fit into a page.
+By default, all rows are visualized in a single line in the table view. Furthermore, the columns are squeezed to fix the screen if the required table width is larger than the screen. Therefore, to enhance readability, you can switch to the **sheet view** by pressing the `v` or `enter` key. The sheet view allows you to visit each row individually and scroll if it doesn't fit into a page.
 
 ![image not found](images/sheet_view.png)
 
@@ -93,7 +93,7 @@ If you enter multiple file names after the `tw` command, all files will open in 
 tw housing.csv user.csv
 ```
 
-will open `housing.csv` and `user.csv` in separate tabs, allowing you to easily switch between them and view or compare the contents.
+opens `housing.csv` and `user.csv` in separate tabs, allowing you to switch between them and view or compare the contents.
 
 Alternatively, you can use a wildcard to open all CSV files in the directory:
 
@@ -167,9 +167,15 @@ At any time during explorations, it is possible to export the current data frame
 :export <format> <path>
 ```
 
+## Fuzzy Search
+
+Tabiew can perform fast fuzzy searches across all columns of the visible data frame. Press `/` to enter the fuzzy search mode. Typing while in search mode filters the data frame according to the entered term. Press `enter` to apply the filter to the data frame, or rollback by pressing `esc` or deleting the entire search term, including `/`.
+
+![image not found](images/search.png)
+
 ## Scripting
 
-Tabiew supports basic scripting functionality. By adding `--script <script_file>` to the command-line arguments, the script is executed at startup. The script must be consists of commands only, each beginning with a colon. For example, the following script filters houses with an area between 7500 and 10000, exports the results to `results.csv`, and then exits the application:
+Tabiew supports basic scripting functionality. The script is executed at startup by adding `--script <script_file>` to the command-line arguments. The script must consist of commands only, each beginning with a colon. For example, the following script filters houses with an area between 7500 and 10000, exports the results to `results.csv`, and then exits the application:
 
 ```plaintext
 :F area > 7500
@@ -184,4 +190,3 @@ Tabiew supports basic scripting functionality. By adding `--script <script_file>
 To view all available commands and their descriptions, use the `:help` command. This command displays a list of all commands, along with their usage and examples.
 
 ![image not found](images/help.png)
-
