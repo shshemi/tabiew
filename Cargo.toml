@@ -14,7 +14,7 @@ name = "tw"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.17", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 crossterm = "0.28.1"
 fwf-rs = "0.2.0"
 itertools = "0.13.0"
@@ -36,7 +36,7 @@ rayon = "1.10.0"
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 clap_mangen = { version = "0.2.24" }
-clap_complete = { version = "4.5.37" }
+clap_complete = { version = "4.5.38" }
 
 [package.metadata.deb]
 license-file = ["LICENSE", "4"]
