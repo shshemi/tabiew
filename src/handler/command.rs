@@ -96,7 +96,7 @@ static ENTRIES: [Entry; 18] =  [
         prefix: Prefix::ShortAndLong(":Q", ":query"),
         usage: ":Q <query>",
         description:
-            "Query the data in Structured Query Language(SQL). The table name is the file name without extension",
+            "Query the data in Structured Query Language(SQL).",
         parser: |query|{
             Ok(AppAction::SqlQuery(query.to_owned()))
         },
@@ -104,7 +104,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::ShortAndLong(":q", ":quit"),
         usage: ":q",
-        description: "Quit Tabiew",
+        description: "Close all tabls and quit Tabiew",
         parser: |_|{
             Ok(AppAction::Quit)
         },
@@ -112,7 +112,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":goto"),
         usage: ":goto <line_index>",
-        description: "Jumps to the <line_index> line",
+        description: "Jumps to the specified line",
         parser: |line|{
             Ok(AppAction::TabularGoto(
                 line.parse::<usize>()?.saturating_sub(1),
@@ -122,7 +122,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":goup"),
         usage: ":goup <lines>",
-        description: "Jump <lines> line(s) up",
+        description: "Jump specified number of line(s) up",
         parser: |lines|{
             Ok(match lines {
                 "page" => AppAction::TabularGoUpFullPage,
@@ -134,7 +134,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":godown"),
         usage: ":godown <lines>",
-        description: "Jump <lines> line(s) down",
+        description: "Jump specified number of line(s) down",
         parser: |lines|{
             Ok(match lines {
                 "page" => AppAction::TabularGoDownFullPage,
@@ -146,7 +146,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":reset"),
         usage: ":reset",
-        description: "Reset the original data frame",
+        description: "Reset the data frame to its original state, removing all filters, orders, searches, selects, and aggregations effects.",
         parser: |_|{
             Ok(AppAction::TabularReset)
         },
@@ -154,7 +154,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":help"),
         usage: ":help",
-        description: "Show help menu",
+        description: "Show help",
         parser: |_|{
             Ok(AppAction::Help)
         },
@@ -162,7 +162,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::ShortAndLong(":S", ":select"),
         usage: ":select <column_name(s)>",
-        description: "Query current data frame for columns/functions",
+        description: "Query the data frame for columns / functions",
         parser: |query|{
             Ok(AppAction::TabularSelect(query.to_owned()))
         },
@@ -170,7 +170,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::ShortAndLong(":F", ":filter"),
         usage: ":filter <condition(s)>",
-        description: "Filter current data frame, keeping rows were the condition(s) match",
+        description: "Filter the data frame, keeping rows were the condition(s) match",
         parser: |query|{
             Ok(AppAction::TabularFilter(query.to_owned()))
         },
@@ -178,7 +178,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::ShortAndLong(":O", ":order"),
         usage: ":order <column(s)_and_order(s)>",
-        description: "Sort current data frame by column(s)",
+        description: "Sort the data frame by column(s)",
         parser: |query|{
             Ok(AppAction::TabularOrder(query.to_owned()))
         },
@@ -186,7 +186,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":schema"),
         usage: ":schema",
-        description: "Show loaded data frame(s), their schmea(s), and their path(s)",
+        description: "Show loaded data frame(s) and their schmea(s)",
         parser: |_|{
             Ok(AppAction::SqlSchema)
         },
@@ -202,7 +202,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":view"),
         usage: ":view (table | sheet | switch)",
-        description: "Change tabular's view to table or sheet",
+        description: "Switch between table and sheet views",
         parser: |query|{
             Ok(match query {
                 "table" => AppAction::TabularTableView,
@@ -215,7 +215,7 @@ static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::Long(":tabn"),
         usage: ":tabn <query>",
-        description: "Create a new tab with the query",
+        description: "Create a new tab using the query",
         parser: |query|{
             Ok(AppAction::TabNew(query.to_owned()))
         },
@@ -249,7 +249,7 @@ mod export {
         Entry {
             prefix: Prefix::Long(":export"),
             usage: ":export <format> <path>",
-            description: "Select the tab at the index",
+            description: "Export the data frame to a format specified file",
             parser: |query| {
                 let (fmt, path_str) = query
                     .split_once(' ')
@@ -315,7 +315,7 @@ mod import {
         Entry {
             prefix: Prefix::Long(":import"),
             usage: ":import <format> <path>",
-            description: "Loads a new data frame into the sql engine",
+            description: "Import data frame from a file into the sql engine",
             parser: |query| {
                 let lock: OnceLock<[(Regex, ParseFn); 8]> = OnceLock::new();
                 lock.get_or_init(|| {
