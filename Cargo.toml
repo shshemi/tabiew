@@ -14,11 +14,11 @@ name = "tw"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 crossterm = "0.28.1"
 fwf-rs = "0.2.0"
 itertools = "0.13.0"
-polars = { version = "0.44.2", features = [
+polars = { version = "0.45.1", features = [
     "dtype-decimal",
     "lazy",
     "polars-sql",
@@ -27,8 +27,8 @@ polars = { version = "0.44.2", features = [
     "json",
     "ipc",
 ] }
-polars-sql = "0.44.2"
-polars-lazy = "0.44.2"
+polars-sql = "0.45.1"
+polars-lazy = "0.45.1"
 rand = "0.8.5"
 ratatui = "0.29.0"
 rayon = "1.10.0"
