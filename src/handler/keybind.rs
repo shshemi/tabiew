@@ -173,6 +173,22 @@ impl Default for Keybind {
                     StateKey::Exact(AppState::Sheet, KeyCode::Char('L'), KeyModifiers::SHIFT),
                     AppAction::TabSelectedNext,
                 ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Left, KeyModifiers::SHIFT),
+                    AppAction::TabSelectedPrev,
+                ),
+                (
+                    StateKey::Exact(AppState::Table, KeyCode::Right, KeyModifiers::SHIFT),
+                    AppAction::TabSelectedNext,
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Left, KeyModifiers::SHIFT),
+                    AppAction::TabSelectedPrev,
+                ),
+                (
+                    StateKey::Exact(AppState::Sheet, KeyCode::Right, KeyModifiers::SHIFT),
+                    AppAction::TabSelectedNext,
+                ),
                 // Move to line by number
                 (
                     StateKey::Exact(AppState::Table, KeyCode::Char('1'), KeyModifiers::empty()),
