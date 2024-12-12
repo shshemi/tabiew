@@ -210,7 +210,7 @@ At any time during explorations, you can export the current data frame to `csv`,
 
 ## Fuzzy Search
 
-Tabiew can perform fast fuzzy searches across all columns of the visible data frame. Press `/` to enter the fuzzy search mode. Typing while in search mode filters the data frame according to the entered term. Press `enter` to apply the filter to the data frame, or rollback by pressing `esc` or deleting the entire search term, including `/`.
+You can perform fast fuzzy searches across all columns while in table view by pressing `/` to enter the fuzzy search mode. Typing while in search mode filters the data frame according to the entered term. Press `enter` to apply the filter to the data frame. Otherwise, rollback by pressing `esc` or deleting the entire search term, including `/`.
 
 ![image not found](images/search.png)
 
