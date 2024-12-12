@@ -159,9 +159,50 @@ ORDER BY area;
 
 If you need to return the table to its original state, you can use the `:reset` command.
 
+## Importing
+
+After opening Tabiew, you can use the `:import` command to import new data frames. The general syntax of the command is as follows:
+
+```sql
+:import <format> <path>
+```
+
+For example, to import a `parquet` file, you would use the following command:
+
+```sql
+:import parquet sample.parquet
+```
+
+Some formats, like `csv` and `fwf`, require additional arguments for proper reading. These arguments can be specified within square brackets `[]` immediately after the format. For example, to import a TSV file, you can use the following command:
+
+```sh
+:import csv[\t no-header] sample.tsv
+```
+
+It goes without saying that, Not providing arguments for `csv` or `fwf` results in using defaults instead.
+
+### Arguments for `csv` Format
+
+When importing `csv` files, the following rules apply:
+
+- Including `no-header` or `nh` indicates that the target file does not contain a header.
+- The first character in the arguments is treated as the separator character.
+- The second character in the arguments is treated as the quote character.
+- Only `\t` is supported from the escape characters.
+
+### Arguments for `fwf` Format
+
+When importing `fwf` files, the following rules apply:
+
+- Including `no-header` or `nh` indicates that the target file does not contain a header.
+- Including `flexible-width` or `fw` allows the file to be read with flexible column widths.
+- The first positive integer specifies the separator length between columns.
+- Any subsequent positive integers specify the widths of the columns.
+
+
 ## Exporting
 
-At any time during explorations, it is possible to export the current data frame to `csv`, `tsv`, `parquet`, `json`, `jsonl`, and `arrow` using the following command:
+At any time during explorations, you can export the current data frame to `csv`, `tsv`, `parquet`, `json`, `jsonl`, and `arrow` using the following command:
 
 ```sql
 :export <format> <path>

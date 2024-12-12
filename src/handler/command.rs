@@ -1,7 +1,7 @@
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::{app::AppAction, writer::JsonFormat, AppResult};
+use crate::{app::AppAction, AppResult};
 
 pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
     let (s1, s2) = cmd.as_ref().split_once(' ').unwrap_or((cmd.as_ref(), ""));
@@ -11,7 +11,7 @@ pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
             Err(error) => Err(error),
         }
     } else {
-        Err(format!("Invalid command {}", cmd.as_ref()).into())
+        Err(format!("Invalid command '{}'", cmd.as_ref()).into())
     }
 }
 
@@ -91,7 +91,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 17] =  [
+static ENTRIES: [Entry; 18] =  [
     Entry {
         prefix: Prefix::ShortAndLong(":Q", ":query"),
         usage: ":Q <query>",
@@ -236,14 +236,25 @@ static ENTRIES: [Entry; 17] =  [
             Ok(AppAction::TabSelect(query.parse()?))
         },
     },
-    Entry {
-        prefix: Prefix::Long(":export"),
-        usage: ":export <format> <path>",
-        description: "Select the tab at the index",
-        parser: |query| {
-            let (fmt, path_str) = query.split_once(' ')
-                .ok_or("Export argument should only contain format and path")?;
-            match fmt {
+    export::entry(),
+    import::entry(),
+];
+
+mod export {
+    use crate::{app::AppAction, writer::JsonFormat};
+
+    use super::{Entry, Prefix};
+
+    pub const fn entry() -> Entry {
+        Entry {
+            prefix: Prefix::Long(":export"),
+            usage: ":export <format> <path>",
+            description: "Select the tab at the index",
+            parser: |query| {
+                let (fmt, path_str) = query
+                    .split_once(' ')
+                    .ok_or("Export should provide format and path")?;
+                match fmt {
                 "csv" => {
                     Ok(
                         AppAction::ExportDsv{
@@ -284,6 +295,256 @@ static ENTRIES: [Entry; 17] =  [
                     Err("Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow".into())
                 }
             }
-        },
-    },
-];
+            },
+        }
+    }
+}
+
+mod import {
+    use std::sync::OnceLock;
+
+    use regex::{Captures, Regex};
+
+    use crate::{app::AppAction, writer::JsonFormat, AppResult};
+
+    use super::{Entry, Prefix};
+
+    type ParseFn = fn(Captures) -> AppResult<AppAction>;
+
+    pub const fn entry() -> Entry {
+        Entry {
+            prefix: Prefix::Long(":import"),
+            usage: ":import <format> <path>",
+            description: "Loads a new data frame into the sql engine",
+            parser: |query| {
+                let lock: OnceLock<[(Regex, ParseFn); 8]> = OnceLock::new();
+                lock.get_or_init(|| {
+                    [
+                        (Regex::new(r"csv\s+(?<path>.*)").unwrap(), csv_no_args),
+                        (
+                            Regex::new(r"csv\s*\[(?<args>.+)\]\s+(?<path>.*)").unwrap(),
+                            csv_with_args,
+                        ),
+                        (
+                            Regex::new(r"parquet\s+(?<path>.*)").unwrap(),
+                            parquet_no_args,
+                        ),
+                        (Regex::new(r"json\s+(?<path>.*)").unwrap(), json_no_args),
+                        (Regex::new(r"jsonl\s+(?<path>.*)").unwrap(), jsonl_no_args),
+                        (Regex::new(r"arrow\s+(?<path>.*)").unwrap(), arrow_no_args),
+                        (Regex::new(r"fwf\s+(?<path>.*)").unwrap(), fwf_no_args),
+                        (
+                            Regex::new(r"fwf\s*\[(?<args>.*)\]\s+(?<path>.*)").unwrap(),
+                            fwf_with_args,
+                        ),
+                    ]
+                })
+                .iter()
+                .find_map(|(re, func)| re.captures(query).map(|cap| func(cap)))
+                .unwrap_or(Err("Import should provide format and path".into()))
+            },
+        }
+    }
+
+    fn csv_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportDsv {
+            path: path.into(),
+            separator: ',',
+            quote: '"',
+            has_header: true,
+        })
+    }
+
+    fn csv_with_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+
+        let args = caps
+            .name("args")
+            .ok_or("Empty arguments")?
+            .as_str()
+            .split(' ')
+            .map(str::trim)
+            .filter(|slice| !slice.is_empty())
+            .try_fold(CsvImportArgs::default(), |args, slice| args.update(slice))?;
+
+        Ok(AppAction::ImportDsv {
+            path: path.into(),
+            separator: args.separator.unwrap_or(','),
+            has_header: args.has_header.unwrap_or(true),
+            quote: args.quote.unwrap_or('"'),
+        })
+    }
+
+    fn parquet_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportParquet(path.into()))
+    }
+
+    fn json_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportJson(path.into(), JsonFormat::Json))
+    }
+
+    fn jsonl_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportJson(path.into(), JsonFormat::JsonLine))
+    }
+
+    fn arrow_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportArrow(path.into()))
+    }
+
+    fn fwf_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportFwf {
+            path: path.into(),
+            widths: Vec::default(),
+            separator_length: 0,
+            flexible_width: false,
+            has_header: true,
+        })
+    }
+
+    fn fwf_with_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        let args = caps
+            .name("args")
+            .ok_or("Empty arguments")?
+            .as_str()
+            .split(' ')
+            .map(str::trim)
+            .filter(|slice| !slice.is_empty())
+            .try_fold(FwfImportArgs::default(), |args, slice| args.update(slice))?;
+        Ok(AppAction::ImportFwf {
+            path: path.into(),
+            widths: args.widths,
+            separator_length: args.separator_length.unwrap_or_default(),
+            flexible_width: args.flexible_width.unwrap_or(false),
+            has_header: args.has_header.unwrap_or(true),
+        })
+    }
+
+    #[derive(Debug, Default)]
+    struct CsvImportArgs {
+        separator: Option<char>,
+        quote: Option<char>,
+        has_header: Option<bool>,
+    }
+
+    impl CsvImportArgs {
+        fn update(mut self, arg: &str) -> AppResult<Self> {
+            match arg {
+                "no-header" | "nh" => {
+                    if self.has_header.is_none() {
+                        self.has_header = false.into();
+                        Ok(self)
+                    } else {
+                        Err("no-header is allowed only once".into())
+                    }
+                }
+                "\\t" => {
+                    if self.separator.is_none() {
+                        self.separator = '\t'.into();
+                        Ok(self)
+                    } else if self.quote.is_none() {
+                        self.quote = '\t'.into();
+                        Ok(self)
+                    } else {
+                        Err(format!("More than two character arguments provided: {}", arg).into())
+                    }
+                }
+                _ if arg.len() == 1 && arg.is_ascii() => {
+                    if self.separator.is_none() {
+                        self.separator = arg.chars().next().unwrap().into();
+                        Ok(self)
+                    } else if self.quote.is_none() {
+                        self.quote = arg.chars().next().unwrap().into();
+                        Ok(self)
+                    } else {
+                        Err(format!("More than two character arguments provided: {}", arg).into())
+                    }
+                }
+                _ => Err(format!("Invalid argument: '{}'", arg).into()),
+            }
+        }
+    }
+
+    #[derive(Debug, Default)]
+    struct FwfImportArgs {
+        widths: Vec<usize>,
+        separator_length: Option<usize>,
+        flexible_width: Option<bool>,
+        has_header: Option<bool>,
+    }
+
+    impl FwfImportArgs {
+        fn update(mut self, arg: &str) -> AppResult<Self> {
+            match arg {
+                "flexible-width" | "fw" => {
+                    if self.flexible_width.is_none() {
+                        self.flexible_width = true.into();
+                        Ok(self)
+                    } else {
+                        Err("flexible-width is allowed only once".into())
+                    }
+                }
+
+                "no-header" | "nh" => {
+                    if self.has_header.is_none() {
+                        self.has_header = false.into();
+                        Ok(self)
+                    } else {
+                        Err("no-header is allowed only once".into())
+                    }
+                }
+
+                _ => {
+                    if let Ok(w) = arg.parse::<usize>() {
+                        if self.separator_length.is_none() {
+                            self.separator_length = w.into();
+                        } else {
+                            self.widths.push(w);
+                        }
+                        Ok(self)
+                    } else {
+                        Err(format!("Invalid argument: '{}'", arg).into())
+                    }
+                }
+            }
+        }
+    }
+}

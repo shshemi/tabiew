@@ -1,5 +1,4 @@
 use clap::Parser;
-use itertools::Itertools;
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
 use std::fs::{self, File};
@@ -29,10 +28,11 @@ fn main() -> AppResult<()> {
         .files
         .iter()
         .map(|path| {
-            let reader = args.build_reader(path);
+            let reader = args.build_reader(path)?;
+
             let name = path
                 .file_stem()
-                .expect("Invalid file name")
+                .ok_or("Invalid file name")?
                 .to_string_lossy()
                 .into_owned();
 
@@ -40,11 +40,11 @@ fn main() -> AppResult<()> {
                 .read_to_data_frame(File::open(path).unwrap_or_else(|err| panic!("{}", err)))
                 .unwrap_or_else(|err| panic!("{}", err));
             let name = sql_backend.register(&name, df.clone(), path.clone());
-            (df, name)
+            Ok((df, name))
         })
-        .collect_vec();
+        .collect::<AppResult<Vec<(DataFrame, String)>>>()?;
     if tabs.is_empty() {
-        let reader = args.build_reader("stdin");
+        let reader = args.build_reader("stdin")?;
         let mut buf = Vec::new();
         io::stdin().read_to_end(&mut buf)?;
         let df = reader.read_to_data_frame(Cursor::new(buf))?;
