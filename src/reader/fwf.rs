@@ -6,10 +6,15 @@ use std::{
 
 use fwf_rs::Reader;
 use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
+use polars::{
+    frame::DataFrame,
+    prelude::NamedFrom,
+    series::Series,
+};
 
 use crate::{
     args::{Args, InferSchema},
+    sql::TableNameGen,
     utils::{polars_ext::SafeInferSchema, zip_iter::ZipItersExt},
     AppResult,
 };
@@ -17,7 +22,7 @@ use crate::{
 use super::ReadToDataFrame;
 
 pub struct ReadFwfToDataFrame {
-    width_str: String,
+    widths: Vec<usize>,
     has_header: bool,
     separator_length: usize,
     flexible_width: bool,
@@ -25,13 +30,45 @@ pub struct ReadFwfToDataFrame {
 }
 
 impl ReadFwfToDataFrame {
-    pub fn from_args(args: &Args) -> Self {
-        Self {
-            width_str: args.widths.to_owned(),
+    pub fn from_args(args: &Args) -> AppResult<Self> {
+        Ok(Self {
+            widths: parse_width(&args.widths)?,
             has_header: !args.no_header,
             separator_length: args.separator_length,
             flexible_width: !args.no_flexible_width,
             infer_schema: args.infer_schema,
+        })
+    }
+
+    pub fn with_widths(mut self, widths: Vec<usize>) -> Self {
+        self.widths = widths;
+        self
+    }
+
+    pub fn with_has_header(mut self, has_header: bool) -> Self {
+        self.has_header = has_header;
+        self
+    }
+
+    pub fn with_separator_length(mut self, separator_length: usize) -> Self {
+        self.separator_length = separator_length;
+        self
+    }
+
+    pub fn with_flexible_width(mut self, flexible_width: bool) -> Self {
+        self.flexible_width = flexible_width;
+        self
+    }
+}
+
+impl Default for ReadFwfToDataFrame {
+    fn default() -> Self {
+        Self {
+            widths: Vec::default(),
+            has_header: true,
+            separator_length: 0,
+            flexible_width: true,
+            infer_schema: InferSchema::Safe,
         }
     }
 }
@@ -43,7 +80,8 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
             reader.read_to_string(&mut buf)?;
             buf
         };
-        let widths = if self.width_str.is_empty() {
+
+        let widths = if self.widths.is_empty() {
             let common_space_indices = file_content
                 .lines()
                 .map(|line| {
@@ -60,7 +98,7 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
                 .unwrap_or_default();
             infer_widths(common_space_indices)
         } else {
-            parse_width(&self.width_str)?
+            self.widths.clone()
         };
 
         let reader = Reader::new(
@@ -72,7 +110,16 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
         )?;
         let header = reader
             .header()
-            .map(|rec| rec.iter().map(|slice| slice.trim().to_owned()).collect())
+            .map(|rec| {
+                rec.iter().fold(Vec::new(), |mut vec, slice| {
+                    if let Some(name) = TableNameGen::with(slice).find(|name| !vec.contains(name)) {
+                        vec.push(name);
+                    } else {
+                        panic!("Not implemented")
+                    }
+                    vec
+                })
+            })
             .unwrap_or_else(|| {
                 (0..widths.len())
                     .map(|idx| format!("column_{}", idx + 1))
