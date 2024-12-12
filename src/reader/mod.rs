@@ -2,7 +2,7 @@ mod fwf;
 
 use std::path::Path;
 
-use fwf::ReadFwfToDataFrame;
+pub use fwf::ReadFwfToDataFrame;
 use polars::{
     frame::DataFrame,
     io::{mmap::MmapBytesReader, SerReader},
@@ -22,30 +22,30 @@ pub trait ReadToDataFrame<R> {
 }
 
 pub trait BuildReader<R> {
-    fn build_reader<P: AsRef<Path>>(&self, path: P) -> Box<dyn ReadToDataFrame<R>>;
+    fn build_reader<P: AsRef<Path>>(&self, path: P) -> AppResult<Box<dyn ReadToDataFrame<R>>>;
 }
 
 impl<R: MmapBytesReader> BuildReader<R> for Args {
-    fn build_reader<P: AsRef<Path>>(&self, path: P) -> Box<dyn ReadToDataFrame<R>> {
+    fn build_reader<P: AsRef<Path>>(&self, path: P) -> AppResult<Box<dyn ReadToDataFrame<R>>> {
         match self.format {
-            Some(Format::Dsv) => Box::new(CsvToDataFrame::from_args(self)),
-            Some(Format::Parquet) => Box::new(ParquetToDataFrame),
-            Some(Format::Json) => Box::new(JsonToDataFrame::from_args(self)),
-            Some(Format::Jsonl) => Box::new(JsonLineToDataFrame::from_args(self)),
-            Some(Format::Arrow) => Box::new(ArrowIpcToDataFrame),
-            Some(Format::Fwf) => Box::new(ReadFwfToDataFrame::from_args(self)),
+            Some(Format::Dsv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
+            Some(Format::Parquet) => Ok(Box::new(ParquetToDataFrame)),
+            Some(Format::Json) => Ok(Box::new(JsonToDataFrame::from_args(self))),
+            Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
+            Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
+            Some(Format::Fwf) => Ok(Box::new(ReadFwfToDataFrame::from_args(self)?)),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let mut reader = CsvToDataFrame::from_args(self);
                     reader.separator_char = '\t';
-                    Box::new(reader)
+                    Ok(Box::new(reader))
                 }
-                Some("parquet") => Box::new(ParquetToDataFrame),
-                Some("json") => Box::new(JsonToDataFrame::from_args(self)),
-                Some("jsonl") => Box::new(JsonLineToDataFrame::from_args(self)),
-                Some("arrow") => Box::new(ArrowIpcToDataFrame),
-                Some("fwf") => Box::new(ReadFwfToDataFrame::from_args(self)),
-                _ => Box::new(CsvToDataFrame::from_args(self)),
+                Some("parquet") => Ok(Box::new(ParquetToDataFrame)),
+                Some("json") => Ok(Box::new(JsonToDataFrame::from_args(self))),
+                Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
+                Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
+                Some("fwf") => Ok(Box::new(ReadFwfToDataFrame::from_args(self)?)),
+                _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
         }
     }
@@ -69,6 +69,33 @@ impl CsvToDataFrame {
             ignore_errors: args.ignore_errors,
         }
     }
+
+    pub fn with_separator(mut self, c: char) -> Self {
+        self.separator_char = c;
+        self
+    }
+
+    pub fn with_no_header(mut self, no_header: bool) -> Self {
+        self.no_header = no_header;
+        self
+    }
+
+    pub fn with_quote_char(mut self, c: char) -> Self {
+        self.quote_char = c;
+        self
+    }
+}
+
+impl Default for CsvToDataFrame {
+    fn default() -> Self {
+        Self {
+            infer_schema: InferSchema::Safe,
+            quote_char: '"',
+            separator_char: ',',
+            no_header: false,
+            ignore_errors: true,
+        }
+    }
 }
 
 impl<R: MmapBytesReader> ReadToDataFrame<R> for CsvToDataFrame {
@@ -80,7 +107,7 @@ impl<R: MmapBytesReader> ReadToDataFrame<R> for CsvToDataFrame {
             .with_parse_options(
                 CsvParseOptions::default()
                     .with_quote_char(self.quote_char.to_ascii())
-                    .with_separator(self.separator_char.to_ascii().expect("Invalid separator")),
+                    .with_separator(self.separator_char.to_ascii().ok_or("Invalid separator")?),
             )
             .with_rechunk(true)
             .into_reader_with_file_handle(reader)
@@ -114,6 +141,15 @@ impl JsonLineToDataFrame {
     }
 }
 
+impl Default for JsonLineToDataFrame {
+    fn default() -> Self {
+        Self {
+            infer_schema: InferSchema::Safe,
+            ignore_errors: true,
+        }
+    }
+}
+
 impl<R: MmapBytesReader> ReadToDataFrame<R> for JsonLineToDataFrame {
     fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame> {
         let mut df = JsonLineReader::new(reader)
@@ -141,6 +177,15 @@ impl JsonToDataFrame {
         Self {
             infer_schema: args.infer_schema,
             ignore_errors: args.ignore_errors,
+        }
+    }
+}
+
+impl Default for JsonToDataFrame {
+    fn default() -> Self {
+        Self {
+            infer_schema: InferSchema::Full,
+            ignore_errors: true,
         }
     }
 }

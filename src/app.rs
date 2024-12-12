@@ -1,4 +1,4 @@
-use std::{ops::Div, path::PathBuf};
+use std::{fs::File, ops::Div, path::PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
@@ -10,6 +10,10 @@ use crate::{
     handler::{
         command::{commands_help_data_frame, parse_into_action},
         keybind::Keybind,
+    },
+    reader::{
+        ArrowIpcToDataFrame, CsvToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
+        ParquetToDataFrame, ReadFwfToDataFrame, ReadToDataFrame,
     },
     search::Search,
     sql::SqlBackend,
@@ -93,6 +97,22 @@ pub enum AppAction {
     ExportParquet(PathBuf),
     ExportJson(PathBuf, JsonFormat),
     ExportArrow(PathBuf),
+    ImportDsv {
+        path: PathBuf,
+        separator: char,
+        has_header: bool,
+        quote: char,
+    },
+    ImportParquet(PathBuf),
+    ImportJson(PathBuf, JsonFormat),
+    ImportArrow(PathBuf),
+    ImportFwf {
+        path: PathBuf,
+        widths: Vec<usize>,
+        separator_length: usize,
+        flexible_width: bool,
+        has_header: bool,
+    },
     Help,
     Quit,
 }
@@ -610,6 +630,94 @@ impl App {
                 } else {
                     Err("Unable to export the data frame".into())
                 }
+            }
+
+            AppAction::ImportDsv {
+                path,
+                separator,
+                has_header,
+                quote,
+            } => {
+                let name = path
+                    .file_stem()
+                    .expect("Invalid file name")
+                    .to_string_lossy()
+                    .into_owned();
+                let df = CsvToDataFrame::default()
+                    .with_separator(separator)
+                    .with_quote_char(quote)
+                    .with_no_header(!has_header)
+                    .read_to_data_frame(File::open(path.clone())?)?;
+                let name = self.sql.register(&name, df.clone(), path);
+                self.tabs
+                    .add(TabularState::new(df, TabularType::Name(name)))?;
+                self.tabs.select_last()
+            }
+            AppAction::ImportParquet(path) => {
+                let name = path
+                    .file_stem()
+                    .expect("Invalid file name")
+                    .to_string_lossy()
+                    .into_owned();
+                let df = ParquetToDataFrame.read_to_data_frame(File::open(path.clone())?)?;
+                let name = self.sql.register(&name, df.clone(), path);
+                self.tabs
+                    .add(TabularState::new(df, TabularType::Name(name)))?;
+                self.tabs.select_last()
+            }
+            AppAction::ImportJson(path, json_format) => {
+                let name = path
+                    .file_stem()
+                    .expect("Invalid file name")
+                    .to_string_lossy()
+                    .into_owned();
+                let df = match json_format {
+                    JsonFormat::Json => {
+                        JsonToDataFrame::default().read_to_data_frame(File::open(&path)?)?
+                    }
+                    JsonFormat::JsonLine => {
+                        JsonLineToDataFrame::default().read_to_data_frame(File::open(&path)?)?
+                    }
+                };
+                let name = self.sql.register(&name, df.clone(), path);
+                self.tabs
+                    .add(TabularState::new(df, TabularType::Name(name)))?;
+                self.tabs.select_last()
+            }
+            AppAction::ImportArrow(path) => {
+                let name = path
+                    .file_stem()
+                    .expect("Invalid file name")
+                    .to_string_lossy()
+                    .into_owned();
+                let df = ArrowIpcToDataFrame.read_to_data_frame(File::open(&path)?)?;
+                let name = self.sql.register(&name, df.clone(), path);
+                self.tabs
+                    .add(TabularState::new(df, TabularType::Name(name)))?;
+                self.tabs.select_last()
+            }
+            AppAction::ImportFwf {
+                path,
+                widths,
+                separator_length,
+                flexible_width,
+                has_header,
+            } => {
+                let name = path
+                    .file_stem()
+                    .expect("Invalid file name")
+                    .to_string_lossy()
+                    .into_owned();
+                let df = ReadFwfToDataFrame::default()
+                    .with_widths(widths)
+                    .with_separator_length(separator_length)
+                    .with_flexible_width(flexible_width)
+                    .with_has_header(has_header)
+                    .read_to_data_frame(File::open(path.clone())?)?;
+                let name = self.sql.register(&name, df.clone(), path);
+                self.tabs
+                    .add(TabularState::new(df, TabularType::Name(name)))?;
+                self.tabs.select_last()
             }
 
             AppAction::Help => {

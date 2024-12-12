@@ -39,6 +39,41 @@ impl HasSubsequence for str {
     }
 }
 
+pub struct SnakeCaseNameGen<'a> {
+    base: &'a str,
+    stage: u32,
+}
+
+impl<'a> SnakeCaseNameGen<'a> {
+    pub fn with(base: &'a str) -> Self {
+        Self { base, stage: 0 }
+    }
+}
+
+impl<'a> Iterator for SnakeCaseNameGen<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.stage += 1;
+        match self.stage {
+            1 => self.base.to_owned().into(),
+            2.. => format!("{}_{}", self.base, self.stage).into(),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+pub trait SnakeCaseNameGenExt {
+    fn snake_case_names(&self) -> SnakeCaseNameGen;
+}
+
+impl SnakeCaseNameGenExt for str {
+    fn snake_case_names(&self) -> SnakeCaseNameGen {
+        SnakeCaseNameGen::with(self)
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,5 +126,14 @@ mod tests {
         assert!("xyxyxyxyxy".has_subsequence("yyy", 3));
         assert!("xyxyxyxyxy".has_subsequence("yyy", 1));
         assert!(!"xyxyxyxyxy".has_subsequence("yyy", 0));
+    }
+
+    #[test]
+    fn test_table_name_gen() {
+        let mut name_gen = SnakeCaseNameGen::with("student");
+        assert_eq!(name_gen.next().unwrap(), "student");
+        assert_eq!(name_gen.next().unwrap(), "student_2");
+        assert_eq!(name_gen.next().unwrap(), "student_3");
+        assert_eq!(name_gen.next().unwrap(), "student_4");
     }
 }
