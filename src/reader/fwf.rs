@@ -14,8 +14,7 @@ use polars::{
 
 use crate::{
     args::{Args, InferSchema},
-    sql::TableNameGen,
-    utils::{polars_ext::SafeInferSchema, zip_iter::ZipItersExt},
+    utils::{polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt, zip_iter::ZipItersExt},
     AppResult,
 };
 
@@ -112,7 +111,7 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
             .header()
             .map(|rec| {
                 rec.iter().fold(Vec::new(), |mut vec, slice| {
-                    if let Some(name) = TableNameGen::with(slice).find(|name| !vec.contains(name)) {
+                    if let Some(name) = slice.snake_case_names().find(|name| !vec.contains(name)) {
                         vec.push(name);
                     } else {
                         panic!("Not implemented")
