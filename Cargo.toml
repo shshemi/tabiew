@@ -26,6 +26,7 @@ polars = { version = "0.45.1", features = [
     "parquet",
     "json",
     "ipc",
+    "dtype-categorical"
 ] }
 polars-sql = "0.45.1"
 polars-lazy = "0.45.1"
