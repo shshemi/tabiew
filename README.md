@@ -22,15 +22,15 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 |Key Combination|Functionality|
 |-|-|
 | `v`| Switch view|
-| `enter`| Show row in sheet view|
+| `Enter`| Show row in sheet view|
 | `k` or `Arrow Up`| Move up in the table or scroll up in sheet view|
 | `j` or `Arrow Down`| Move down in the table or scroll down in sheet view|
 | `h` or `Arrow Left`| Move to the previous item in sheet view|
 | `l` or `Arrow Right`| Move to the next item in sheet view|
 | `Page Up` or  `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
-| `H`| Select previous tab|
-| `L`| Select next tab|
+| `H` or `Shift+Arrow Left`| Select previous tab|
+| `L` or `Shift+Arrow Right`| Select next tab|
 | `Ctrl+u`| Move up half a page|
 | `Ctrl+d`| Move down half a page|
 | `Home` or `g`| Move to the first row|
