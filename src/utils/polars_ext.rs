@@ -118,16 +118,16 @@ impl<'a> FuzzyCmp for AnyValue<'a> {
             | AnyValue::Time(_)
             | AnyValue::Categorical(_, _, _)
             | AnyValue::CategoricalOwned(_, _, _)
+            | AnyValue::List(_)
+            | AnyValue::Struct(_, _, _)
+            | AnyValue::Binary(_)
+            | AnyValue::BinaryOwned(_)
+            | AnyValue::StructOwned(_)
             | AnyValue::Enum(_, _, _)
             | AnyValue::EnumOwned(_, _, _) => {
                 self.into_string().has_subsequence(other, other.len())
             }
 
-            AnyValue::List(_) => false,
-            AnyValue::Struct(_, _, _) => false,
-            AnyValue::Binary(_) => false,
-            AnyValue::BinaryOwned(_) => false,
-            AnyValue::StructOwned(_) => false,
         }
     }
 }
