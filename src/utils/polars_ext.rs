@@ -55,6 +55,8 @@ impl IntoString for AnyValue<'_> {
             AnyValue::Null => "".to_owned(),
             AnyValue::StringOwned(v) => v.to_string(),
             AnyValue::String(v) => v.to_string(),
+            AnyValue::Categorical(idx, rev_map, _) => rev_map.get(idx).to_owned(),
+            AnyValue::CategoricalOwned(idx, rev_map, _) => rev_map.get(idx).to_owned(),
             _ => self.to_string(),
         }
     }
@@ -113,7 +115,13 @@ impl<'a> FuzzyCmp for AnyValue<'a> {
             | AnyValue::Datetime(_, _, _)
             | AnyValue::DatetimeOwned(_, _, _)
             | AnyValue::Duration(_, _)
-            | AnyValue::Time(_) => self.into_string().has_subsequence(other, other.len()),
+            | AnyValue::Time(_)
+            | AnyValue::Categorical(_, _, _)
+            | AnyValue::CategoricalOwned(_, _, _)
+            | AnyValue::Enum(_, _, _)
+            | AnyValue::EnumOwned(_, _, _) => {
+                self.into_string().has_subsequence(other, other.len())
+            }
 
             AnyValue::List(_) => false,
             AnyValue::Struct(_, _, _) => false,
