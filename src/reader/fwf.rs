@@ -14,7 +14,7 @@ use polars::{
 
 use crate::{
     args::{Args, InferSchema},
-    utils::{polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt, zip_iter::ZipItersExt},
+    utils::{polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt, iter_ext::ZipItersExt},
     AppResult,
 };
 
