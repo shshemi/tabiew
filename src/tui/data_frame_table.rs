@@ -11,7 +11,7 @@ use crate::{
     tui::Styler,
     utils::{
         polars_ext::{IntoString, TuiWidths},
-        zip_iter::ZipItersExt,
+        iter_ext::ZipItersExt,
     },
 };
 
