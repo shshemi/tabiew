@@ -50,7 +50,7 @@ impl<'a> SnakeCaseNameGen<'a> {
     }
 }
 
-impl<'a> Iterator for SnakeCaseNameGen<'a> {
+impl Iterator for SnakeCaseNameGen<'_> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {

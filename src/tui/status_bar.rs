@@ -179,7 +179,7 @@ impl<'a, Theme: Styler> StatusBar<'a, Theme> {
     }
 }
 
-impl<'a, Theme: Styler> StatefulWidget for StatusBar<'a, Theme> {
+impl<Theme: Styler> StatefulWidget for StatusBar<'_, Theme> {
     type State = StatusBarState;
 
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
