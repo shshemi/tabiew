@@ -15,7 +15,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
-crossterm = "0.28.1"
+crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 fwf-rs = "0.2.0"
 itertools = "0.13.0"
 polars = { version = "0.45.1", features = [
