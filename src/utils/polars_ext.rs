@@ -84,7 +84,7 @@ fn series_width(series: &Series) -> usize {
         .max(series.name().len())
 }
 
-impl<'a> FuzzyCmp for AnyValue<'a> {
+impl FuzzyCmp for AnyValue<'_> {
     fn fuzzy_cmp(self, other: &str) -> bool {
         match self {
             AnyValue::Null => false,
