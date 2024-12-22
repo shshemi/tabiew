@@ -36,7 +36,7 @@ pub fn default_keymap() -> KeyMap {
     // Clear error
     key_map.add(
         Keybind::StateOnly(AppState::Error),
-        AppAction::StatusBarStats,
+        AppAction::StatusBarInfo,
     );
     // Close app/tab/sheet
     key_map.add(
@@ -268,7 +268,7 @@ pub fn default_keymap() -> KeyMap {
     );
     key_map.add(
         Keybind::Exact(AppState::Command, KeyCode::Esc, KeyModifiers::empty()),
-        AppAction::StatusBarStats,
+        AppAction::StatusBarInfo,
     );
     key_map.add(
         Keybind::Exact(AppState::Command, KeyCode::Enter, KeyModifiers::empty()),
@@ -289,10 +289,10 @@ pub fn default_keymap() -> KeyMap {
     );
     // Keyboard input in command and search
     key_map.add(Keybind::StateOnly(AppState::Search), |_, key_event| {
-        AppAction::StatusBarHandleSearch(key_event)
+        AppAction::StatusBarHandle(key_event)
     });
     key_map.add(Keybind::StateOnly(AppState::Command), |_, key_event| {
-        AppAction::StatusBarHandleCommand(key_event)
+        AppAction::StatusBarHandle(key_event)
     });
     key_map
 }

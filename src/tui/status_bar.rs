@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Rect},
     text::{Line, Span},
@@ -39,6 +38,10 @@ impl StatusBarState {
 
     pub fn view(&self) -> &StatusBarView {
         &self.view
+    }
+
+    pub fn view_mut(&mut self) -> &mut StatusBarView {
+        &mut self.view
     }
 
     pub fn switch_info(&mut self) -> AppResult<()> {
@@ -82,56 +85,6 @@ impl StatusBarState {
     }
 
     pub fn tick(&mut self) -> AppResult<()> {
-        Ok(())
-    }
-
-    pub fn input(&mut self, input: KeyEvent) -> AppResult<()> {
-        if let StatusBarView::Prompt(prompt) | StatusBarView::Search(prompt) = &mut self.view {
-            match input.code {
-                KeyCode::Up => {
-                    prompt.move_up().move_eol();
-                }
-                KeyCode::Down => {
-                    prompt.move_down().move_eol();
-                }
-                KeyCode::Left => {
-                    if prompt.cursor().1 > 1 {
-                        prompt.move_left();
-                    }
-                }
-                KeyCode::Right => {
-                    prompt.move_right();
-                }
-
-                KeyCode::Backspace => {
-                    if prompt.command_len() == 1 {
-                        self.switch_info()?;
-                    } else if prompt.cursor().1 > 1 {
-                        prompt.delete_backward();
-                    }
-                }
-
-                KeyCode::Delete => {
-                    prompt.delete();
-                }
-
-                KeyCode::Home => {
-                    prompt.move_bol().move_right();
-                }
-
-                KeyCode::End => {
-                    prompt.move_eol();
-                }
-
-                KeyCode::PageUp | KeyCode::PageDown => (),
-
-                KeyCode::Char(c) => {
-                    prompt.input_char(c);
-                }
-
-                _ => (),
-            }
-        }
         Ok(())
     }
 }
