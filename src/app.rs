@@ -1,6 +1,6 @@
 use std::{fs::File, ops::Div, path::PathBuf};
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::KeyEvent;
 use ratatui::{
     layout::{Constraint, Layout},
     Frame,
@@ -9,7 +9,7 @@ use ratatui::{
 use crate::{
     handler::{
         command::{commands_help_data_frame, parse_into_action},
-        keybind::Keybind,
+        keybind::KeyMap,
     },
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
@@ -35,7 +35,7 @@ pub struct App {
     tabs: TabsState,
     status_bar: StatusBarState,
     sql: SqlBackend,
-    keybindings: Keybind,
+    keybindings: KeyMap,
     running: bool,
     search: Option<Search>,
 }
@@ -55,6 +55,9 @@ pub enum AppAction {
     StatusBarStats,
     StatusBarCommand(String),
     StatausBarError(String),
+    StatusBarSearch(String),
+    StatusBarHandleCommand(KeyEvent),
+    StatusBarHandleSearch(KeyEvent),
     TabularTableView,
     TabularSheetView,
     TabularSwitchView,
@@ -80,6 +83,7 @@ pub enum AppAction {
     SearchPattern(String),
     SearchRollback,
     SearchCommit,
+    PromptCommit,
     TabNew(String),
     TabSelect(usize),
     TabRemove(usize),
@@ -118,7 +122,7 @@ pub enum AppAction {
 }
 
 impl App {
-    pub fn new(tabs: TabsState, sql: SqlBackend, key_bind: Keybind) -> Self {
+    pub fn new(tabs: TabsState, sql: SqlBackend, key_bind: KeyMap) -> Self {
         Self {
             tabs,
             status_bar: StatusBarState::new(),
@@ -170,10 +174,6 @@ impl App {
             (None, StatusBarView::Search(_)) => AppState::Empty,
         }
     }
-
-    pub fn start_search(&mut self) {}
-
-    pub fn stop_search(&mut self) {}
 
     pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
         let layout =
@@ -245,58 +245,14 @@ impl App {
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> AppResult<()> {
         let state = self.infer_state();
-        let key_code = key_event.code;
-        match (state, key_code) {
-            (AppState::Command | AppState::Error, KeyCode::Esc) => self.status_bar.switch_info(),
-
-            (AppState::Command, KeyCode::Enter) => {
-                if let Some(cmd) = self.status_bar.commit_prompt() {
-                    let _ = parse_into_action(cmd)
-                        .and_then(|action| self.invoke(action))
-                        .and_then(|_| self.status_bar.switch_info())
-                        .inspect_err(|err| {
-                            let _ = self.status_bar.switch_error(err);
-                        });
-                    Ok(())
-                } else {
-                    self.status_bar
-                        .switch_error("Invalid state; consider restarting Tabiew")
-                }
-            }
-
-            (AppState::Command, _) => self.status_bar.input(key_event),
-
-            (AppState::Search, KeyCode::Esc) => self.invoke(AppAction::SearchRollback),
-
-            (AppState::Search, KeyCode::Enter) => self.invoke(AppAction::SearchCommit),
-
-            (AppState::Search, _) => {
-                let _ = self.status_bar.input(key_event);
-                if let StatusBarView::Search(prompt) = self.status_bar.view() {
-                    let pattern = prompt.skip_command(1);
-                    self.invoke(AppAction::SearchPattern(pattern))
-                } else {
-                    self.invoke(AppAction::SearchRollback)
-                }
-            }
-
-            (AppState::Table | AppState::Sheet, KeyCode::Char(':')) => {
-                self.status_bar.switch_prompt("")
-            }
-
-            (AppState::Table, KeyCode::Char('/')) => self.status_bar.switch_search(""),
-
-            _ => {
-                match self
-                    .keybindings
-                    .get_action(state, key_event)
-                    .cloned()
-                    .map(|action| self.invoke(action))
-                {
-                    Some(Err(error)) => self.status_bar.switch_error(error),
-                    _ => Ok(()),
-                }
-            }
+        match self
+            .keybindings
+            .get(state, key_event)
+            .map(|action| self.invoke(action))
+        {
+            Some(Ok(())) => Ok(()),
+            Some(Err(msg)) => self.invoke(AppAction::StatausBarError(format!("Error: {}", msg))),
+            None => Ok(()),
         }
     }
 
@@ -307,6 +263,20 @@ impl App {
             AppAction::StatusBarCommand(prefix) => self.status_bar.switch_prompt(prefix),
 
             AppAction::StatausBarError(msg) => self.status_bar.switch_error(msg),
+
+            AppAction::StatusBarSearch(query) => self.status_bar.switch_search(query),
+
+            AppAction::StatusBarHandleCommand(event) => self.status_bar.input(event),
+
+            AppAction::StatusBarHandleSearch(event) => {
+                let _ = self.status_bar.input(event);
+                if let StatusBarView::Search(prompt) = self.status_bar.view() {
+                    let pattern = prompt.skipped_line(1);
+                    self.invoke(AppAction::SearchPattern(pattern))
+                } else {
+                    self.invoke(AppAction::SearchRollback)
+                }
+            }
 
             AppAction::TabularTableView => {
                 if let Some(tab) = self.tabs.selected_mut() {
@@ -541,6 +511,16 @@ impl App {
                     }
                 }
                 self.status_bar.switch_info()
+            }
+
+            AppAction::PromptCommit => {
+                if let Some(cmd) = self.status_bar.commit_prompt() {
+                    parse_into_action(cmd)
+                        .and_then(|action| self.invoke(action))
+                        .and_then(|_| self.status_bar.switch_info())
+                } else {
+                    Ok(())
+                }
             }
 
             AppAction::TabNew(query) => {
