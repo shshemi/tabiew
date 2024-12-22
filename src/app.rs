@@ -52,12 +52,11 @@ pub enum AppState {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum AppAction {
-    StatusBarStats,
+    StatusBarInfo,
     StatusBarCommand(String),
     StatausBarError(String),
     StatusBarSearch(String),
-    StatusBarHandleCommand(KeyEvent),
-    StatusBarHandleSearch(KeyEvent),
+    StatusBarHandle(KeyEvent),
     TabularTableView,
     TabularSheetView,
     TabularSwitchView,
@@ -258,7 +257,7 @@ impl App {
 
     pub fn invoke(&mut self, action: AppAction) -> AppResult<()> {
         match action {
-            AppAction::StatusBarStats => self.status_bar.switch_info(),
+            AppAction::StatusBarInfo => self.status_bar.switch_info(),
 
             AppAction::StatusBarCommand(prefix) => self.status_bar.switch_prompt(prefix),
 
@@ -266,17 +265,28 @@ impl App {
 
             AppAction::StatusBarSearch(query) => self.status_bar.switch_search(query),
 
-            AppAction::StatusBarHandleCommand(event) => self.status_bar.input(event),
-
-            AppAction::StatusBarHandleSearch(event) => {
-                let _ = self.status_bar.input(event);
-                if let StatusBarView::Search(prompt) = self.status_bar.view() {
-                    let pattern = prompt.skipped_line(1);
-                    self.invoke(AppAction::SearchPattern(pattern))
-                } else {
-                    self.invoke(AppAction::SearchRollback)
+            AppAction::StatusBarHandle(event) => match self.status_bar.view_mut() {
+                StatusBarView::Prompt(prompt_state) => {
+                    prompt_state.handle(event);
+                    if prompt_state.command_len() == 0 {
+                        self.invoke(AppAction::StatusBarInfo)
+                    } else {
+                        Ok(())
+                    }
                 }
-            }
+
+                StatusBarView::Search(prompt_state) => {
+                    prompt_state.handle(event);
+
+                    if prompt_state.command_len() > 0 {
+                        let pattern = prompt_state.skipped_line(1);
+                        self.invoke(AppAction::SearchPattern(pattern))
+                    } else {
+                        self.invoke(AppAction::SearchRollback)
+                    }
+                }
+                _ => Ok(()),
+            },
 
             AppAction::TabularTableView => {
                 if let Some(tab) = self.tabs.selected_mut() {

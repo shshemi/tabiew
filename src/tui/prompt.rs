@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, style::Style, widgets::StatefulWidget};
 
 #[derive(Debug)]
@@ -80,6 +81,51 @@ impl PromptState {
         let x0 = x0.min(self.chars.len().saturating_sub(1));
         let x1 = x1.min(self.chars[x0].len());
         self.cursor = (x0, x1);
+    }
+
+    pub fn handle(&mut self, input: KeyEvent) {
+        match input.code {
+            KeyCode::Up => {
+                self.move_up().move_eol();
+            }
+            KeyCode::Down => {
+                self.move_down().move_eol();
+            }
+            KeyCode::Left => {
+                if self.cursor().1 > 1 {
+                    self.move_left();
+                }
+            }
+            KeyCode::Right => {
+                self.move_right();
+            }
+
+            KeyCode::Backspace => {
+                if (self.command_len() != 0 && self.cursor().1 > 1) || self.command_len() == 1 {
+                    self.delete_backward();
+                }
+            }
+
+            KeyCode::Delete => {
+                self.delete();
+            }
+
+            KeyCode::Home => {
+                self.move_bol().move_right();
+            }
+
+            KeyCode::End => {
+                self.move_eol();
+            }
+
+            KeyCode::PageUp | KeyCode::PageDown => (),
+
+            KeyCode::Char(c) => {
+                self.input_char(c);
+            }
+
+            _ => (),
+        }
     }
 }
 
