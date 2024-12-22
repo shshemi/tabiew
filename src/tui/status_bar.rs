@@ -65,7 +65,7 @@ impl StatusBarState {
 
     pub fn commit_prompt(&mut self) -> Option<String> {
         if let StatusBarView::Prompt(prompt) = &self.view {
-            let command = prompt.command();
+            let command = prompt.line();
             self.prompt_history.push(command.clone());
             Some(command)
         } else {
@@ -75,7 +75,7 @@ impl StatusBarState {
 
     pub fn search_string(&self) -> Option<String> {
         if let StatusBarView::Search(prompt) = &self.view {
-            Some(prompt.command())
+            Some(prompt.line())
         } else {
             None
         }
