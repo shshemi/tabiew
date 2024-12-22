@@ -59,11 +59,11 @@ impl PromptState {
         self
     }
 
-    pub fn command(&self) -> String {
+    pub fn line(&self) -> String {
         self.chars[self.cursor.0].iter().collect()
     }
 
-    pub fn skip_command(&self, skip: usize) -> String {
+    pub fn skipped_line(&self, skip: usize) -> String {
         self.chars[self.cursor.0].iter().skip(skip).collect()
     }
 
@@ -165,11 +165,11 @@ mod tests {
     #[test]
     fn state_test() {
         let mut state = PromptState::from(vec!["".to_owned()]);
-        println!("{}", state.command());
+        println!("{}", state.line());
         state.input_char('c');
         state.input_char('h');
         state.input_char('a');
         state.input_char('r');
-        assert_eq!(state.command(), "char")
+        assert_eq!(state.line(), "char")
     }
 }

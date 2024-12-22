@@ -9,7 +9,7 @@ use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
-use tabiew::handler::keybind::Keybind;
+use tabiew::handler::keybind::default_keymap;
 use tabiew::reader::BuildReader;
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
@@ -75,7 +75,7 @@ fn start_tui<Theme: Styler>(
         .into_iter()
         .map(|(df, name)| TabularState::new(df, TabularType::Name(name)))
         .collect();
-    let keybind = Keybind::default();
+    let keybind = default_keymap();
     let mut app = App::new(tabs, sql_backend, keybind);
 
     // Initialize the terminal user interface.
