@@ -17,7 +17,7 @@ use crate::{
 
 use super::{Input, NamedFrames, ReadToDataFrames};
 
-pub struct ReadFwfToDataFrame {
+pub struct FwfToDataFrame {
     widths: Vec<usize>,
     has_header: bool,
     separator_length: usize,
@@ -25,7 +25,7 @@ pub struct ReadFwfToDataFrame {
     infer_schema: InferSchema,
 }
 
-impl ReadFwfToDataFrame {
+impl FwfToDataFrame {
     pub fn from_args(args: &Args) -> AppResult<Self> {
         Ok(Self {
             widths: parse_width(&args.widths)?,
@@ -57,7 +57,7 @@ impl ReadFwfToDataFrame {
     }
 }
 
-impl Default for ReadFwfToDataFrame {
+impl Default for FwfToDataFrame {
     fn default() -> Self {
         Self {
             widths: Vec::default(),
@@ -69,7 +69,7 @@ impl Default for ReadFwfToDataFrame {
     }
 }
 
-impl ReadToDataFrames for ReadFwfToDataFrame {
+impl ReadToDataFrames for FwfToDataFrame {
     fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
         let file_content = match input {
             Input::File(path) => read_to_string(path)?,

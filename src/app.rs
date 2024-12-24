@@ -13,7 +13,7 @@ use crate::{
     },
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, Input, JsonLineToDataFrame, JsonToDataFrame,
-        ParquetToDataFrame, ReadFwfToDataFrame, ReadToDataFrames,
+        ParquetToDataFrame, FwfToDataFrame, ReadToDataFrames,
     },
     search::Search,
     sql::SqlBackend,
@@ -709,7 +709,7 @@ impl App {
                 flexible_width,
                 has_header,
             } => {
-                let frames = ReadFwfToDataFrame::default()
+                let frames = FwfToDataFrame::default()
                     .with_widths(widths)
                     .with_separator_length(separator_length)
                     .with_flexible_width(flexible_width)
