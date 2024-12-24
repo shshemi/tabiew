@@ -12,7 +12,8 @@ use crate::{
         keybind::KeyMap,
     },
     reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame, JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames
+        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame,
+        JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
     search::Search,
     sql::SqlBackend,
@@ -99,7 +100,6 @@ pub enum AppAction {
     ExportParquet(PathBuf),
     ExportJson(PathBuf, JsonFormat),
     ExportArrow(PathBuf),
-    ExportSqlite(PathBuf),
     ImportDsv {
         path: PathBuf,
         separator: char,
@@ -623,10 +623,6 @@ impl App {
                 }
             }
 
-            AppAction::ExportSqlite(path) => {
-                todo!()
-            }
-
             AppAction::ImportDsv {
                 path,
                 separator,
@@ -652,6 +648,7 @@ impl App {
                 }
                 self.tabs.select_last()
             }
+
             AppAction::ImportParquet(path) => {
                 let frames = ParquetToDataFrame.named_frames(Input::File(path.clone()))?;
                 for (name, df) in frames {
@@ -668,6 +665,7 @@ impl App {
                 }
                 self.tabs.select_last()
             }
+
             AppAction::ImportJson(path, json_format) => {
                 let frames = match json_format {
                     JsonFormat::Json => {
@@ -691,6 +689,7 @@ impl App {
                 }
                 self.tabs.select_last()
             }
+
             AppAction::ImportArrow(path) => {
                 let frames = ArrowIpcToDataFrame.named_frames(Input::File(path.clone()))?;
                 for (name, df) in frames {
@@ -707,6 +706,7 @@ impl App {
                 }
                 self.tabs.select_last()
             }
+
             AppAction::ImportSqlite(path) => {
                 let frames = SqliteToDataFrames.named_frames(Input::File(path.clone()))?;
                 for (name, df) in frames {
@@ -723,6 +723,7 @@ impl App {
                 }
                 self.tabs.select_last()
             }
+
             AppAction::ImportFwf {
                 path,
                 widths,
