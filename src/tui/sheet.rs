@@ -76,6 +76,7 @@ where
             for line in content.lines() {
                 lines.push(Line::from(Span::styled(line, Theme::sheet_value())));
             }
+            lines.push(Line::raw("\n"));
         }
 
         state.scroll.adjust(
