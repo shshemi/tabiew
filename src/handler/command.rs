@@ -317,7 +317,7 @@ mod import {
             usage: ":import <format> <path>",
             description: "Import data frame from a file into the sql engine",
             parser: |query| {
-                let lock: OnceLock<[(Regex, ParseFn); 8]> = OnceLock::new();
+                let lock: OnceLock<[(Regex, ParseFn); 9]> = OnceLock::new();
                 lock.get_or_init(|| {
                     [
                         (Regex::new(r"csv\s+(?<path>.*)").unwrap(), csv_no_args),
@@ -332,6 +332,7 @@ mod import {
                         (Regex::new(r"json\s+(?<path>.*)").unwrap(), json_no_args),
                         (Regex::new(r"jsonl\s+(?<path>.*)").unwrap(), jsonl_no_args),
                         (Regex::new(r"arrow\s+(?<path>.*)").unwrap(), arrow_no_args),
+                        (Regex::new(r"sqlite\s+(?<path>.*)").unwrap(), sqlite_no_args),
                         (Regex::new(r"fwf\s+(?<path>.*)").unwrap(), fwf_no_args),
                         (
                             Regex::new(r"fwf\s*\[(?<args>.*)\]\s+(?<path>.*)").unwrap(),
@@ -418,6 +419,15 @@ mod import {
             .as_str()
             .to_owned();
         Ok(AppAction::ImportArrow(path.into()))
+    }
+
+    fn sqlite_no_args(caps: Captures) -> AppResult<AppAction> {
+        let path = caps
+            .name("path")
+            .ok_or("Import path not found")?
+            .as_str()
+            .to_owned();
+        Ok(AppAction::ImportSqlite(path.into()))
     }
 
     fn fwf_no_args(caps: Captures) -> AppResult<AppAction> {
