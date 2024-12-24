@@ -1,7 +1,7 @@
 mod fwf;
 mod sqlite;
 
-pub use fwf::ReadFwfToDataFrame;
+pub use fwf::FwfToDataFrame;
 pub use sqlite::SqliteToDataFrames;
 
 use std::{
@@ -50,7 +50,7 @@ impl BuildReader for Args {
             Some(Format::Json) => Ok(Box::new(JsonToDataFrame::from_args(self))),
             Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
             Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
-            Some(Format::Fwf) => Ok(Box::new(ReadFwfToDataFrame::from_args(self)?)),
+            Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
             Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames)),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
@@ -62,7 +62,7 @@ impl BuildReader for Args {
                 Some("json") => Ok(Box::new(JsonToDataFrame::from_args(self))),
                 Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
                 Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
-                Some("fwf") => Ok(Box::new(ReadFwfToDataFrame::from_args(self)?)),
+                Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
                 Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames)),
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
