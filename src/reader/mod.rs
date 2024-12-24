@@ -1,8 +1,15 @@
 mod fwf;
-
-use std::path::Path;
+mod sqlite;
 
 pub use fwf::ReadFwfToDataFrame;
+pub use sqlite::SqliteToDataFrames;
+
+use std::{
+    fs::File,
+    io::{self},
+    path::{Path, PathBuf},
+};
+
 use polars::{
     frame::DataFrame,
     io::{mmap::MmapBytesReader, SerReader},
@@ -13,20 +20,30 @@ use polars::{
 
 use crate::{
     args::{Args, Format, InferSchema},
-    utils::{polars_ext::SafeInferSchema, type_ext::ToAscii},
+    utils::{
+        polars_ext::SafeInferSchema,
+        type_ext::{ReadToCursor, ToAscii},
+    },
     AppResult,
 };
 
-pub trait ReadToDataFrame<R> {
-    fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame>;
+type NamedFrames = Box<[(Option<String>, DataFrame)]>;
+
+#[derive(Debug)]
+pub enum Input {
+    File(PathBuf),
+    Stdin,
+}
+pub trait ReadToDataFrames {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames>;
 }
 
-pub trait BuildReader<R> {
-    fn build_reader<P: AsRef<Path>>(&self, path: P) -> AppResult<Box<dyn ReadToDataFrame<R>>>;
+pub trait BuildReader {
+    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>>;
 }
 
-impl<R: MmapBytesReader> BuildReader<R> for Args {
-    fn build_reader<P: AsRef<Path>>(&self, path: P) -> AppResult<Box<dyn ReadToDataFrame<R>>> {
+impl BuildReader for Args {
+    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>> {
         match self.format {
             Some(Format::Dsv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
             Some(Format::Parquet) => Ok(Box::new(ParquetToDataFrame)),
@@ -34,6 +51,7 @@ impl<R: MmapBytesReader> BuildReader<R> for Args {
             Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
             Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
             Some(Format::Fwf) => Ok(Box::new(ReadFwfToDataFrame::from_args(self)?)),
+            Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames)),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let mut reader = CsvToDataFrame::from_args(self);
@@ -45,6 +63,7 @@ impl<R: MmapBytesReader> BuildReader<R> for Args {
                 Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
                 Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
                 Some("fwf") => Ok(Box::new(ReadFwfToDataFrame::from_args(self)?)),
+                Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames)),
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
         }
@@ -84,22 +103,8 @@ impl CsvToDataFrame {
         self.quote_char = c;
         self
     }
-}
 
-impl Default for CsvToDataFrame {
-    fn default() -> Self {
-        Self {
-            infer_schema: InferSchema::Safe,
-            quote_char: '"',
-            separator_char: ',',
-            no_header: false,
-            ignore_errors: true,
-        }
-    }
-}
-
-impl<R: MmapBytesReader> ReadToDataFrame<R> for CsvToDataFrame {
-    fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame> {
+    fn try_into_frames(&self, reader: impl MmapBytesReader) -> AppResult<NamedFrames> {
         let mut df = CsvReadOptions::default()
             .with_ignore_errors(self.ignore_errors)
             .with_infer_schema_length(self.infer_schema.to_csv_infer_schema_length())
@@ -115,15 +120,51 @@ impl<R: MmapBytesReader> ReadToDataFrame<R> for CsvToDataFrame {
         if matches!(self.infer_schema, InferSchema::Safe) {
             df.safe_infer_schema();
         }
-        Ok(df)
+        Ok([(None, df)].into())
+    }
+}
+
+impl Default for CsvToDataFrame {
+    fn default() -> Self {
+        Self {
+            infer_schema: InferSchema::Safe,
+            quote_char: '"',
+            separator_char: ',',
+            no_header: false,
+            ignore_errors: true,
+        }
+    }
+}
+
+impl ReadToDataFrames for CsvToDataFrame {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
+        match input {
+            Input::File(path) => self.try_into_frames(File::open(path)?),
+            Input::Stdin => self.try_into_frames(io::stdin().read_to_cursor()?),
+        }
     }
 }
 
 pub struct ParquetToDataFrame;
 
-impl<R: MmapBytesReader> ReadToDataFrame<R> for ParquetToDataFrame {
-    fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame> {
-        Ok(ParquetReader::new(reader).set_rechunk(true).finish()?)
+impl ReadToDataFrames for ParquetToDataFrame {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
+        Ok(match input {
+            Input::File(path) => [(
+                None,
+                ParquetReader::new(File::open(path)?)
+                    .set_rechunk(true)
+                    .finish()?,
+            )]
+            .into(),
+            Input::Stdin => [(
+                None,
+                ParquetReader::new(io::stdin().read_to_cursor()?)
+                    .set_rechunk(true)
+                    .finish()?,
+            )]
+            .into(),
+        })
     }
 }
 
@@ -150,20 +191,27 @@ impl Default for JsonLineToDataFrame {
     }
 }
 
-impl<R: MmapBytesReader> ReadToDataFrame<R> for JsonLineToDataFrame {
-    fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame> {
-        let mut df = JsonLineReader::new(reader)
-            .with_rechunk(true)
-            .infer_schema_len(None)
-            .with_ignore_errors(self.ignore_errors)
-            .finish()?;
+impl ReadToDataFrames for JsonLineToDataFrame {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
+        let mut df = match input {
+            Input::File(path) => JsonLineReader::new(File::open(path)?)
+                .with_rechunk(true)
+                .infer_schema_len(None)
+                .with_ignore_errors(self.ignore_errors)
+                .finish()?,
+            Input::Stdin => JsonLineReader::new(io::stdin().read_to_cursor()?)
+                .with_rechunk(true)
+                .infer_schema_len(None)
+                .with_ignore_errors(self.ignore_errors)
+                .finish()?,
+        };
         if matches!(
             self.infer_schema,
             InferSchema::Safe | InferSchema::Full | InferSchema::Fast
         ) {
             df.safe_infer_schema();
         }
-        Ok(df)
+        Ok([(None, df)].into())
     }
 }
 
@@ -190,27 +238,49 @@ impl Default for JsonToDataFrame {
     }
 }
 
-impl<R: MmapBytesReader> ReadToDataFrame<R> for JsonToDataFrame {
-    fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame> {
-        let mut df = JsonReader::new(reader)
-            .set_rechunk(true)
-            .infer_schema_len(None)
-            .with_ignore_errors(self.ignore_errors)
-            .finish()?;
+impl ReadToDataFrames for JsonToDataFrame {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
+        let mut df = match input {
+            Input::File(path) => JsonReader::new(File::open(path)?)
+                .set_rechunk(true)
+                .infer_schema_len(None)
+                .with_ignore_errors(self.ignore_errors)
+                .finish()?,
+            Input::Stdin => JsonReader::new(io::stdin().read_to_cursor()?)
+                .set_rechunk(true)
+                .infer_schema_len(None)
+                .with_ignore_errors(self.ignore_errors)
+                .finish()?,
+        };
         if matches!(
             self.infer_schema,
             InferSchema::Safe | InferSchema::Full | InferSchema::Fast
         ) {
             df.safe_infer_schema();
         }
-        Ok(df)
+        Ok([(None, df)].into())
     }
 }
 
 pub struct ArrowIpcToDataFrame;
 
-impl<R: MmapBytesReader> ReadToDataFrame<R> for ArrowIpcToDataFrame {
-    fn read_to_data_frame(&self, reader: R) -> AppResult<DataFrame> {
-        Ok(IpcReader::new(reader).set_rechunk(true).finish()?)
+impl ReadToDataFrames for ArrowIpcToDataFrame {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
+        Ok(match input {
+            Input::File(path) => [(
+                None,
+                IpcReader::new(File::open(path)?)
+                    .set_rechunk(true)
+                    .finish()?,
+            )]
+            .into(),
+            Input::Stdin => [(
+                None,
+                IpcReader::new(io::stdin().read_to_cursor()?)
+                    .set_rechunk(true)
+                    .finish()?,
+            )]
+            .into(),
+        })
     }
 }

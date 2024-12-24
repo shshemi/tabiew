@@ -90,10 +90,7 @@ impl FuzzyCmp for AnyValue<'_> {
             AnyValue::Null => false,
             AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other, other.len()),
             AnyValue::String(val) => val.has_subsequence(other, other.len()),
-            _ => {
-                self.into_string().has_subsequence(other, other.len())
-            }
-
+            _ => self.into_string().has_subsequence(other, other.len()),
         }
     }
 }

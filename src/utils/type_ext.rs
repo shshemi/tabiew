@@ -1,3 +1,7 @@
+use std::io::{Cursor, Read, Stdin};
+
+use crate::AppResult;
+
 pub trait ToAscii {
     fn to_ascii(self) -> Option<u8>;
 }
@@ -73,6 +77,17 @@ impl SnakeCaseNameGenExt for str {
     }
 }
 
+pub trait ReadToCursor {
+    fn read_to_cursor(&mut self) -> AppResult<Cursor<Vec<u8>>>;
+}
+
+impl ReadToCursor for Stdin {
+    fn read_to_cursor(&mut self) -> AppResult<Cursor<Vec<u8>>> {
+        let mut buf = Vec::new();
+        self.read_to_end(&mut buf)?;
+        Ok(Cursor::new(buf))
+    }
+}
 
 #[cfg(test)]
 mod tests {

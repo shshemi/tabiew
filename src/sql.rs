@@ -48,7 +48,10 @@ impl SqlBackend {
     }
 
     pub fn register(&mut self, name: &str, data_frame: DataFrame, path: PathBuf) -> String {
-        if let Some(name) = name.snake_case_names().find(|name| !self.tables.contains_key(name)) {
+        if let Some(name) = name
+            .snake_case_names()
+            .find(|name| !self.tables.contains_key(name))
+        {
             self.tables
                 .insert(name.clone(), (data_frame_structure(&data_frame), path));
             self.sql.register(&name, data_frame.lazy());
@@ -68,7 +71,6 @@ impl Default for SqlBackend {
         Self::new()
     }
 }
-
 
 fn data_frame_structure(df: &DataFrame) -> String {
     format!(

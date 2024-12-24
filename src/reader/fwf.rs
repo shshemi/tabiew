@@ -1,24 +1,21 @@
 use std::{
     collections::HashSet,
-    io::{Cursor, Read},
+    fs::read_to_string,
+    io::{self, Cursor, Read},
     iter::once,
 };
 
 use fwf_rs::Reader;
 use itertools::Itertools;
-use polars::{
-    frame::DataFrame,
-    prelude::NamedFrom,
-    series::Series,
-};
+use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 
 use crate::{
     args::{Args, InferSchema},
-    utils::{polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt, iter_ext::ZipItersExt},
+    utils::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
     AppResult,
 };
 
-use super::ReadToDataFrame;
+use super::{Input, NamedFrames, ReadToDataFrames};
 
 pub struct ReadFwfToDataFrame {
     widths: Vec<usize>,
@@ -72,12 +69,15 @@ impl Default for ReadFwfToDataFrame {
     }
 }
 
-impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
-    fn read_to_data_frame(&self, mut reader: R) -> AppResult<DataFrame> {
-        let file_content = {
-            let mut buf = String::new();
-            reader.read_to_string(&mut buf)?;
-            buf
+impl ReadToDataFrames for ReadFwfToDataFrame {
+    fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
+        let file_content = match input {
+            Input::File(path) => read_to_string(path)?,
+            Input::Stdin => {
+                let mut buf = String::new();
+                io::stdin().read_to_string(&mut buf)?;
+                buf
+            }
         };
 
         let widths = if self.widths.is_empty() {
@@ -152,7 +152,7 @@ impl<R: Read> ReadToDataFrame<R> for ReadFwfToDataFrame {
             df.safe_infer_schema();
         }
 
-        Ok(df)
+        Ok([(None, df)].into())
     }
 }
 
