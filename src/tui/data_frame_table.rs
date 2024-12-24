@@ -10,8 +10,8 @@ use ratatui::{
 use crate::{
     tui::Styler,
     utils::{
-        polars_ext::{IntoString, TuiWidths},
         iter_ext::ZipItersExt,
+        polars_ext::{IntoString, TuiWidths},
     },
 };
 

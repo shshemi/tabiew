@@ -99,6 +99,7 @@ pub enum Format {
     Json,
     Arrow,
     Fwf,
+    Sqlite,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
