@@ -12,8 +12,7 @@ use crate::{
         keybind::KeyMap,
     },
     reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, Input, JsonLineToDataFrame, JsonToDataFrame,
-        ParquetToDataFrame, FwfToDataFrame, ReadToDataFrames,
+        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame, JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames
     },
     search::Search,
     sql::SqlBackend,
@@ -100,6 +99,7 @@ pub enum AppAction {
     ExportParquet(PathBuf),
     ExportJson(PathBuf, JsonFormat),
     ExportArrow(PathBuf),
+    ExportSqlite(PathBuf),
     ImportDsv {
         path: PathBuf,
         separator: char,
@@ -109,6 +109,7 @@ pub enum AppAction {
     ImportParquet(PathBuf),
     ImportJson(PathBuf, JsonFormat),
     ImportArrow(PathBuf),
+    ImportSqlite(PathBuf),
     ImportFwf {
         path: PathBuf,
         widths: Vec<usize>,
@@ -622,6 +623,10 @@ impl App {
                 }
             }
 
+            AppAction::ExportSqlite(path) => {
+                todo!()
+            }
+
             AppAction::ImportDsv {
                 path,
                 separator,
@@ -688,6 +693,22 @@ impl App {
             }
             AppAction::ImportArrow(path) => {
                 let frames = ArrowIpcToDataFrame.named_frames(Input::File(path.clone()))?;
+                for (name, df) in frames {
+                    let name = name.unwrap_or(
+                        path.clone()
+                            .file_stem()
+                            .expect("Invalid file name")
+                            .to_string_lossy()
+                            .into_owned(),
+                    );
+                    let name = self.sql.register(&name, df.clone(), path.clone());
+                    self.tabs
+                        .add(TabularState::new(df, TabularType::Name(name)))?;
+                }
+                self.tabs.select_last()
+            }
+            AppAction::ImportSqlite(path) => {
+                let frames = SqliteToDataFrames.named_frames(Input::File(path.clone()))?;
                 for (name, df) in frames {
                     let name = name.unwrap_or(
                         path.clone()
