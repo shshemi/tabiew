@@ -1,8 +1,8 @@
 use clap::Parser;
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
-use std::fs::{self, File};
-use std::io::{self, Cursor, Read};
+use std::fs::{self};
+use std::io::{self};
 use std::path::PathBuf;
 use std::str::FromStr;
 use tabiew::app::App;
@@ -10,7 +10,7 @@ use tabiew::args::{AppTheme, Args};
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::keybind::default_keymap;
-use tabiew::reader::BuildReader;
+use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
 use tabiew::tui::{TabularState, TabularType, Terminal};
@@ -24,32 +24,30 @@ fn main() -> AppResult<()> {
     let mut sql_backend = SqlBackend::new();
 
     // Load files to data frames
-    let mut tabs = args
-        .files
-        .iter()
-        .map(|path| {
-            let reader = args.build_reader(path)?;
-
-            let name = path
-                .file_stem()
-                .ok_or("Invalid file name")?
-                .to_string_lossy()
-                .into_owned();
-
-            let df = reader
-                .read_to_data_frame(File::open(path).unwrap_or_else(|err| panic!("{}", err)))
-                .unwrap_or_else(|err| panic!("{}", err));
+    let mut tabs = Vec::new();
+    for path in args.files.iter() {
+        let reader = args.build_reader(path)?;
+        let frames = reader
+            .named_frames(Input::File(path.to_path_buf()))
+            .unwrap_or_else(|err| panic!("{}", err));
+        for (name, df) in frames {
+            let name = name.unwrap_or(
+                path.file_stem()
+                    .ok_or("Invalid file name")?
+                    .to_string_lossy()
+                    .into_owned(),
+            );
             let name = sql_backend.register(&name, df.clone(), path.clone());
-            Ok((df, name))
-        })
-        .collect::<AppResult<Vec<(DataFrame, String)>>>()?;
+            tabs.push((df, name));
+        }
+    }
     if tabs.is_empty() {
         let reader = args.build_reader("stdin")?;
-        let mut buf = Vec::new();
-        io::stdin().read_to_end(&mut buf)?;
-        let df = reader.read_to_data_frame(Cursor::new(buf))?;
-        let name = sql_backend.register("stdin", df.clone(), PathBuf::from_str("stdin")?);
-        tabs.push((df, name));
+        let frames = reader.named_frames(Input::Stdin)?;
+        for (_, df) in frames {
+            let name = sql_backend.register("stdin", df.clone(), PathBuf::from_str("stdin")?);
+            tabs.push((df, name));
+        }
     }
 
     let script = if let Some(path) = args.script {
