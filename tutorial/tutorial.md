@@ -33,7 +33,7 @@ As shown in the image, the tabular data is displayed the main table, while the s
 
 ### Supported formats
 
-Other than `csv`, Tabiew also supports other formats such as Parquet, JSON, JSON-Line, Arrow, and FWF. For instance, to open a parquet file named `sample.parquet`, use the following command:
+Other than `csv`, Tabiew also supports other formats such as Parquet, JSON, JSON-Line, Arrow, FWF, and Sqlite. For instance, to open a parquet file named `sample.parquet`, use the following command:
 
 ```shell
 tw sample.parquet -f parquet
