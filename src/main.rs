@@ -3,8 +3,6 @@ use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
 use std::fs::{self};
 use std::io::{self};
-use std::path::PathBuf;
-use std::str::FromStr;
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
 use tabiew::handler::command::parse_into_action;
@@ -24,32 +22,38 @@ fn main() -> AppResult<()> {
     let mut sql_backend = SqlBackend::new();
 
     // Load files to data frames
-    let mut tabs = Vec::new();
-    for path in args.files.iter() {
-        let reader = args.build_reader(path)?;
-        let frames = reader
-            .named_frames(Input::File(path.to_path_buf()))
-            .unwrap_or_else(|err| panic!("{}", err));
-        for (name, df) in frames {
-            let name = name.unwrap_or(
-                path.file_stem()
-                    .ok_or("Invalid file name")?
-                    .to_string_lossy()
-                    .into_owned(),
-            );
-            let name = sql_backend.register(&name, df.clone(), path.clone());
-            tabs.push((df, name));
+    let tabs = if args.files.is_empty() {
+        let mut vec = Vec::new();
+        for (name, df) in args.build_reader("")?.named_frames(Input::Stdin)? {
+            vec.push((
+                df.clone(),
+                sql_backend.register(&name.unwrap_or("stdin".to_owned()), df, "stdin".into()),
+            ))
         }
-    }
-    if tabs.is_empty() {
-        let reader = args.build_reader("stdin")?;
-        let frames = reader.named_frames(Input::Stdin)?;
-        for (_, df) in frames {
-            let name = sql_backend.register("stdin", df.clone(), PathBuf::from_str("stdin")?);
-            tabs.push((df, name));
+        vec
+    } else {
+        let mut vec = Vec::new();
+        for path in args.files.iter() {
+            let reader = args.build_reader(path)?;
+            let frames = reader
+                .named_frames(Input::File(path.to_path_buf()))
+                .unwrap_or_else(|err| panic!("{}", err));
+            for (name, df) in frames {
+                let name = sql_backend.register(
+                    &name.unwrap_or(
+                        path.file_stem()
+                            .ok_or("Invalid file name")?
+                            .to_string_lossy()
+                            .into_owned(),
+                    ),
+                    df.clone(),
+                    path.clone(),
+                );
+                vec.push((df, name))
+            }
         }
-    }
-
+        vec
+    };
     let script = if let Some(path) = args.script {
         fs::read_to_string(path).unwrap_or_else(|err| panic!("{}", err))
     } else {
