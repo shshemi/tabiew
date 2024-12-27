@@ -55,11 +55,10 @@ fn main() -> AppResult<()> {
         vec
     };
     let script = if let Some(path) = args.script {
-        fs::read_to_string(path).unwrap_or_else(|err| panic!("{}", err))
+        fs::read_to_string(path)?
     } else {
         Default::default()
     };
-
     match args.theme {
         AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend, script),
         AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend, script),
