@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use anyhow::anyhow;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
@@ -86,7 +87,7 @@ impl TabularState {
             scroll.scroll_up();
             Ok(())
         } else {
-            Err("Not in table view".into())
+            Err(anyhow!("Not in table view"))
         }
     }
 
@@ -95,7 +96,7 @@ impl TabularState {
             scroll.scroll_down();
             Ok(())
         } else {
-            Err("Not in table view".into())
+            Err(anyhow!("Not in table view"))
         }
     }
 

@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use anyhow::anyhow;
 use ratatui::widgets::StatefulWidget;
 
 use crate::AppResult;
@@ -80,15 +81,14 @@ impl TabsState {
 
     fn validate_index(&self, idx: usize) -> AppResult<()> {
         if self.tabulars.is_empty() {
-            Err("no tab is currently available".into())
+            Err(anyhow!("no tab is currently available"))
         } else if idx < self.tabulars.len() {
             Ok(())
         } else {
-            Err(format!(
+            Err(anyhow!(
                 "invalid tab index, valid index range is between 0 and {}",
                 self.tabulars.len()
-            )
-            .into())
+            ))
         }
     }
 

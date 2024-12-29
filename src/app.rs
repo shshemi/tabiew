@@ -1,5 +1,6 @@
 use std::{ops::Div, path::PathBuf};
 
+use anyhow::anyhow;
 use crossterm::event::KeyEvent;
 use ratatui::{
     layout::{Constraint, Layout},
@@ -549,16 +550,15 @@ impl App {
 
             AppAction::TabSelect(idx) => {
                 if idx == 0 {
-                    Err("zero is not a valid tab".into())
+                    Err(anyhow!("zero is not a valid tab"))
                 } else if idx <= self.tabs.len() {
                     self.tabs.select(idx.saturating_sub(1))
                 } else {
-                    Err(format!(
+                    Err(anyhow!(
                         "index {} is out of bound, maximum is {}",
                         idx,
                         self.tabs.len()
-                    )
-                    .into())
+                    ))
                 }
             }
 
@@ -595,7 +595,7 @@ impl App {
                         .with_header(header)
                         .write_to_file(path, tab.data_frame_mut())
                 } else {
-                    Err("Unable to export the data frame".into())
+                    Err(anyhow!("Unable to export the data frame"))
                 }
             }
 
@@ -603,7 +603,7 @@ impl App {
                 if let Some(tab) = self.tabs.selected_mut() {
                     WriteToParquet.write_to_file(path, tab.data_frame_mut())
                 } else {
-                    Err("Unable to export the data frame".into())
+                    Err(anyhow!("Unable to export the data frame"))
                 }
             }
             AppAction::ExportJson(path, fmt) => {
@@ -612,14 +612,14 @@ impl App {
                         .with_format(fmt)
                         .write_to_file(path, tab.data_frame_mut())
                 } else {
-                    Err("Unable to export the data frame".into())
+                    Err(anyhow!("Unable to export the data frame"))
                 }
             }
             AppAction::ExportArrow(path) => {
                 if let Some(tab) = self.tabs.selected_mut() {
                     WriteToArrow.write_to_file(path, tab.data_frame_mut())
                 } else {
-                    Err("Unable to export the data frame".into())
+                    Err(anyhow!("Unable to export the data frame"))
                 }
             }
 
