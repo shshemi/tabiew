@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
@@ -6,12 +7,9 @@ use crate::{app::AppAction, AppResult};
 pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
     let (s1, s2) = cmd.as_ref().split_once(' ').unwrap_or((cmd.as_ref(), ""));
     if let Some(parse_fn) = registary().get(s1) {
-        match parse_fn(s2) {
-            Ok(action) => Ok(action),
-            Err(error) => Err(error),
-        }
+        parse_fn(s2)
     } else {
-        Err(format!("Invalid command '{}'", cmd.as_ref()).into())
+        Err(anyhow!("Invalid command '{}'", cmd.as_ref()))
     }
 }
 
@@ -208,7 +206,7 @@ static ENTRIES: [Entry; 18] =  [
                 "table" => AppAction::TabularTableView,
                 "sheet" => AppAction::TabularSheetView,
                 "switch" => AppAction::TabularSwitchView,
-                _ => Err("Invalid view")?,
+                _ => Err(anyhow!("Invalid view"))?,
             })
         },
     },
@@ -241,6 +239,8 @@ static ENTRIES: [Entry; 18] =  [
 ];
 
 mod export {
+    use anyhow::anyhow;
+
     use crate::{app::AppAction, writer::JsonFormat};
 
     use super::{Entry, Prefix};
@@ -253,7 +253,7 @@ mod export {
             parser: |query| {
                 let (fmt, path_str) = query
                     .split_once(' ')
-                    .ok_or("Export should provide format and path")?;
+                    .ok_or(anyhow!("Export should provide format and path"))?;
                 match fmt {
                 "csv" => {
                     Ok(
@@ -292,7 +292,7 @@ mod export {
                 }
 
                 _ => {
-                    Err("Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow".into())
+                    Err(anyhow!("Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow"))
                 }
             }
             },
@@ -303,6 +303,7 @@ mod export {
 mod import {
     use std::sync::OnceLock;
 
+    use anyhow::anyhow;
     use regex::{Captures, Regex};
 
     use crate::{app::AppAction, writer::JsonFormat, AppResult};
@@ -342,7 +343,7 @@ mod import {
                 })
                 .iter()
                 .find_map(|(re, func)| re.captures(query).map(|cap| func(cap)))
-                .unwrap_or(Err("Import should provide format and path".into()))
+                .unwrap_or(Err(anyhow!("Import should provide format and path")))
             },
         }
     }
@@ -350,7 +351,7 @@ mod import {
     fn csv_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportDsv {
@@ -364,13 +365,13 @@ mod import {
     fn csv_with_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
 
         let args = caps
             .name("args")
-            .ok_or("Empty arguments")?
+            .ok_or(anyhow!("Empty arguments"))?
             .as_str()
             .split(' ')
             .map(str::trim)
@@ -388,7 +389,7 @@ mod import {
     fn parquet_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportParquet(path.into()))
@@ -397,7 +398,7 @@ mod import {
     fn json_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportJson(path.into(), JsonFormat::Json))
@@ -406,7 +407,7 @@ mod import {
     fn jsonl_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportJson(path.into(), JsonFormat::JsonLine))
@@ -415,7 +416,7 @@ mod import {
     fn arrow_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportArrow(path.into()))
@@ -424,7 +425,7 @@ mod import {
     fn sqlite_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportSqlite(path.into()))
@@ -433,7 +434,7 @@ mod import {
     fn fwf_no_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         Ok(AppAction::ImportFwf {
@@ -448,12 +449,12 @@ mod import {
     fn fwf_with_args(caps: Captures) -> AppResult<AppAction> {
         let path = caps
             .name("path")
-            .ok_or("Import path not found")?
+            .ok_or(anyhow!("Import path not found"))?
             .as_str()
             .to_owned();
         let args = caps
             .name("args")
-            .ok_or("Empty arguments")?
+            .ok_or(anyhow!("Empty arguments"))?
             .as_str()
             .split(' ')
             .map(str::trim)
@@ -483,7 +484,7 @@ mod import {
                         self.has_header = false.into();
                         Ok(self)
                     } else {
-                        Err("no-header is allowed only once".into())
+                        Err(anyhow!("no-header is allowed only once"))
                     }
                 }
                 "\\t" => {
@@ -494,7 +495,10 @@ mod import {
                         self.quote = '\t'.into();
                         Ok(self)
                     } else {
-                        Err(format!("More than two character arguments provided: {}", arg).into())
+                        Err(anyhow!(
+                            "More than two character arguments provided: {}",
+                            arg
+                        ))
                     }
                 }
                 _ if arg.len() == 1 && arg.is_ascii() => {
@@ -505,10 +509,13 @@ mod import {
                         self.quote = arg.chars().next().unwrap().into();
                         Ok(self)
                     } else {
-                        Err(format!("More than two character arguments provided: {}", arg).into())
+                        Err(anyhow!(
+                            "More than two character arguments provided: {}",
+                            arg
+                        ))
                     }
                 }
-                _ => Err(format!("Invalid argument: '{}'", arg).into()),
+                _ => Err(anyhow!("Invalid argument: '{}'", arg)),
             }
         }
     }
@@ -529,7 +536,7 @@ mod import {
                         self.flexible_width = true.into();
                         Ok(self)
                     } else {
-                        Err("flexible-width is allowed only once".into())
+                        Err(anyhow!("flexible-width is allowed only once"))
                     }
                 }
 
@@ -538,7 +545,7 @@ mod import {
                         self.has_header = false.into();
                         Ok(self)
                     } else {
-                        Err("no-header is allowed only once".into())
+                        Err(anyhow!("no-header is allowed only once"))
                     }
                 }
 
@@ -551,7 +558,7 @@ mod import {
                         }
                         Ok(self)
                     } else {
-                        Err(format!("Invalid argument: '{}'", arg).into())
+                        Err(anyhow!("Invalid argument: '{}'", arg))
                     }
                 }
             }
