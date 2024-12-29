@@ -1,4 +1,3 @@
-use std::error;
 
 /// User interface.
 pub mod tui;
@@ -27,4 +26,4 @@ pub mod writer;
 /// Search
 pub mod search;
 
-pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type AppResult<T> = anyhow::Result<T>;

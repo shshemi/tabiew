@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use clap::Parser;
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
@@ -42,7 +43,7 @@ fn main() -> AppResult<()> {
                 let name = sql_backend.register(
                     &name.unwrap_or(
                         path.file_stem()
-                            .ok_or("Invalid file name")?
+                            .ok_or(anyhow!("Invalid file name"))?
                             .to_string_lossy()
                             .into_owned(),
                     ),

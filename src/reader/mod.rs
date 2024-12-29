@@ -1,6 +1,7 @@
 mod fwf;
 mod sqlite;
 
+use anyhow::anyhow;
 pub use fwf::FwfToDataFrame;
 pub use sqlite::SqliteToDataFrames;
 
@@ -112,7 +113,7 @@ impl CsvToDataFrame {
             .with_parse_options(
                 CsvParseOptions::default()
                     .with_quote_char(self.quote_char.to_ascii())
-                    .with_separator(self.separator_char.to_ascii().ok_or("Invalid separator")?),
+                    .with_separator(self.separator_char.to_ascii().ok_or(anyhow!("non-ASCII separator character"))?),
             )
             .with_rechunk(true)
             .into_reader_with_file_handle(reader)
