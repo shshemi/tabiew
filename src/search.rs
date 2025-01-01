@@ -6,11 +6,12 @@ use std::{
     thread::JoinHandle,
 };
 
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use polars::{frame::DataFrame, prelude::BooleanChunked};
 
 use rayon::prelude::*;
 
-use crate::utils::polars_ext::FuzzyCmp;
+use crate::utils::polars_ext::IntoString;
 
 #[derive(Debug)]
 pub struct Search {
@@ -100,13 +101,14 @@ struct Task {
 
 impl Task {
     fn new(df: DataFrame, pat: String) -> Self {
+        let matcher = SkimMatcherV2::default();
         let (send, recv) = channel::<usize>();
         let hndl = std::thread::spawn(move || {
             let _ = df
                 .iter()
                 .flat_map(|series| series.iter().enumerate())
                 .par_bridge()
-                .filter_map(|(idx, value)| (value.fuzzy_cmp(&pat)).then_some(idx))
+                .filter_map(|(idx, value)| matcher.fuzzy_match(&value.into_string(), &pat).map(|_|idx))
                 .try_for_each(|idx| send.send(idx));
             df
         });
