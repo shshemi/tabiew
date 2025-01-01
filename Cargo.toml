@@ -37,6 +37,7 @@ regex = "1.11.1"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 tempfile = "3.14.0"
 anyhow = "1.0.95"
+fuzzy-matcher = "0.3.7"
 
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
