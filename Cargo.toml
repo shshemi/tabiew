@@ -17,7 +17,7 @@ path = "src/main.rs"
 clap = { version = "4.5.23", features = ["derive"] }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 fwf-rs = "0.2.0"
-itertools = "0.13.0"
+itertools = "0.14.0"
 polars = { version = "0.45.1", features = [
     "dtype-decimal",
     "lazy",
@@ -42,7 +42,7 @@ fuzzy-matcher = "0.3.7"
 [build-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 clap_mangen = { version = "0.2.24" }
-clap_complete = { version = "4.5.38" }
+clap_complete = { version = "4.5.40" }
 
 [package.metadata.deb]
 license-file = ["LICENSE", "4"]
