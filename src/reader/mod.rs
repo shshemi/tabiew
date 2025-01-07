@@ -77,6 +77,7 @@ pub struct CsvToDataFrame {
     separator_char: char,
     no_header: bool,
     ignore_errors: bool,
+    truncate_ragged_lines: bool,
 }
 
 impl CsvToDataFrame {
@@ -87,6 +88,7 @@ impl CsvToDataFrame {
             separator_char: args.separator,
             no_header: args.no_header,
             ignore_errors: args.ignore_errors,
+            truncate_ragged_lines: args.truncate_ragged_lines,
         }
     }
 
@@ -112,8 +114,13 @@ impl CsvToDataFrame {
             .with_has_header(!self.no_header)
             .with_parse_options(
                 CsvParseOptions::default()
+                    .with_truncate_ragged_lines(self.truncate_ragged_lines)
                     .with_quote_char(self.quote_char.to_ascii())
-                    .with_separator(self.separator_char.to_ascii().ok_or(anyhow!("non-ASCII separator character"))?),
+                    .with_separator(
+                        self.separator_char
+                            .to_ascii()
+                            .ok_or(anyhow!("non-ASCII separator character"))?,
+                    ),
             )
             .with_rechunk(true)
             .into_reader_with_file_handle(reader)
@@ -133,6 +140,7 @@ impl Default for CsvToDataFrame {
             separator_char: ',',
             no_header: false,
             ignore_errors: true,
+            truncate_ragged_lines: false,
         }
     }
 }
