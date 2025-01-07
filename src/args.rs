@@ -83,6 +83,14 @@ pub struct Args {
 
     #[arg(
         long,
+        help = "Truncate ragged lines while reading the file.",
+        required = false,
+        default_value_t = false
+    )]
+    pub truncate_ragged_lines: bool,
+
+    #[arg(
+        long,
         help = "Tabiew theme",
         required = false,
         value_enum,
