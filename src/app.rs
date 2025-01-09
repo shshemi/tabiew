@@ -42,7 +42,7 @@ pub struct App {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum AppState {
+pub enum AppStatus {
     Empty,
     Table,
     Sheet,
@@ -140,11 +140,9 @@ impl App {
 
     pub fn tick(&mut self) -> AppResult<()> {
         if let Some(ser) = &self.search {
-            let _ = self
-                .tabs
-                .selected_mut()
-                .unwrap()
-                .set_data_frame(ser.latest());
+            if let Some(df) = ser.latest() {
+                let _ = self.tabs.selected_mut().unwrap().set_data_frame(df);
+            }
         }
 
         self.tabs.selected_mut().map(|tab| tab.tick());
@@ -156,23 +154,23 @@ impl App {
         Ok(())
     }
 
-    pub fn infer_state(&self) -> AppState {
+    pub fn status(&self) -> AppStatus {
         match (
             self.tabs.selected().map(TabularState::view),
             self.status_bar.view(),
         ) {
-            (Some(tabular::TabularView::Table), StatusBarView::Info) => AppState::Table,
-            (Some(tabular::TabularView::Table), StatusBarView::Error(_)) => AppState::Error,
-            (Some(tabular::TabularView::Table), StatusBarView::Prompt(_)) => AppState::Command,
-            (Some(tabular::TabularView::Table), StatusBarView::Search(_)) => AppState::Search,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Info) => AppState::Sheet,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Error(_)) => AppState::Error,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Prompt(_)) => AppState::Command,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Search(_)) => AppState::Sheet,
-            (None, StatusBarView::Info) => AppState::Empty,
-            (None, StatusBarView::Error(_)) => AppState::Error,
-            (None, StatusBarView::Prompt(_)) => AppState::Command,
-            (None, StatusBarView::Search(_)) => AppState::Empty,
+            (Some(tabular::TabularView::Table), StatusBarView::Info) => AppStatus::Table,
+            (Some(tabular::TabularView::Table), StatusBarView::Error(_)) => AppStatus::Error,
+            (Some(tabular::TabularView::Table), StatusBarView::Prompt(_)) => AppStatus::Command,
+            (Some(tabular::TabularView::Table), StatusBarView::Search(_)) => AppStatus::Search,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Info) => AppStatus::Sheet,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Error(_)) => AppStatus::Error,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Prompt(_)) => AppStatus::Command,
+            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Search(_)) => AppStatus::Sheet,
+            (None, StatusBarView::Info) => AppStatus::Empty,
+            (None, StatusBarView::Error(_)) => AppStatus::Error,
+            (None, StatusBarView::Prompt(_)) => AppStatus::Command,
+            (None, StatusBarView::Search(_)) => AppStatus::Empty,
         }
     }
 
@@ -181,9 +179,9 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).split(frame.area());
 
         // Draw table / item
-        let state = self.infer_state();
+        let state = self.status();
         frame.render_stateful_widget(
-            Tabs::<Theme>::new().selection(matches!(state, AppState::Table)),
+            Tabs::<Theme>::new().selection(matches!(state, AppStatus::Table)),
             layout[0],
             &mut self.tabs,
         );
@@ -245,7 +243,7 @@ impl App {
     }
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> AppResult<()> {
-        let state = self.infer_state();
+        let state = self.status();
         match self
             .keybindings
             .get(state, key_event)
@@ -517,7 +515,7 @@ impl App {
             }
 
             AppAction::SearchCommit => {
-                if let Some(df) = self.search.take().map(|ser| ser.latest()) {
+                if let Some(df) = self.search.take().and_then(|ser| ser.latest()) {
                     if let Some(tab) = self.tabs.selected_mut() {
                         let _ = tab.set_data_frame(df);
                     }
