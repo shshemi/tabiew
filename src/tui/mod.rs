@@ -1,4 +1,5 @@
 pub mod data_frame_table;
+pub mod pallete;
 pub mod prompt;
 pub mod sheet;
 pub mod status_bar;
