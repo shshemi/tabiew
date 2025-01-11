@@ -2354,6 +2354,7 @@ dependencies = [
  "regex",
  "rusqlite",
  "tempfile",
+ "tui-input",
 ]
 
 [[package]]
@@ -2451,6 +2452,16 @@ dependencies = [
  "futures-sink",
  "pin-project-lite",
  "tokio",
+]
+
+[[package]]
+name = "tui-input"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5d1733c47f1a217b7deff18730ff7ca4ecafc5771368f715ab072d679a36114"
+dependencies = [
+ "ratatui",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]
