@@ -97,10 +97,8 @@ Installing Tabiew from *Crates.io*:
  ```
 
 ### Build from Source
-Ensure you have the rustc version 1.80 (or higher) installed, then:
+Ensure you have rustc version 1.80 (or higher) installed. Download the desired source version from the [release page](https://github.com/shshemi/tabiew/releases). Extract the downloaded file and navigate into the extracted directory. Then run the following command:
 ```bash
-git clone https://github.com/shshemi/tabiew.git
-cd tabiew
 cargo build --release
 cp ./target/release/tw <system_or_local_bin_path>
 ```
