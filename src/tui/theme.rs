@@ -13,6 +13,9 @@ pub trait Styler {
     fn sheet_block() -> Style;
     fn status_bar_info_key(idx: usize) -> Style;
     fn status_bar_info_val(idx: usize) -> Style;
+    fn pallete_text() -> Style;
+    fn pallete_hightlight() -> Style;
+    fn pallete() -> Style;
 }
 pub trait SixColorsTwoRowsStyler {
     const BACKGROUND: Color;
@@ -102,6 +105,22 @@ where
         Style::default()
             .bg(Self::LIGHT_BACKGROUND)
             .fg(Self::COLORS[idx % Self::COLORS.len()])
+    }
+
+    fn pallete_text() -> Style {
+        Style::default().bg(Self::BACKGROUND).fg(Self::FOREGROUND)
+    }
+
+    fn pallete_hightlight() -> Style {
+        Style::default()
+            .bg(Self::HIGHTLIGHT_BACKGROUND)
+            .fg(Self::HIGHTLIGHT_FOREGROUND)
+    }
+
+    fn pallete() -> Style {
+        Style::default()
+            .bg(Self::STATUS_BAR_INFO)
+            .fg(Self::HIGHTLIGHT_BACKGROUND)
     }
 }
 
@@ -260,6 +279,18 @@ impl Styler for Terminal {
     }
 
     fn status_bar_info_val(_idx: usize) -> Style {
+        Style::default()
+    }
+
+    fn pallete_text() -> Style {
+        Style::default()
+    }
+
+    fn pallete_hightlight() -> Style {
+        Style::default().bg(Color::Yellow).fg(Color::Black)
+    }
+
+    fn pallete() -> Style {
         Style::default()
     }
 }

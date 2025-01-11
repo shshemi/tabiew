@@ -20,8 +20,10 @@ use crate::{
     sql::SqlBackend,
     tui::{
         self,
+        pallete::{Pallete, PalleteState},
         status_bar::{StatusBar, StatusBarState, StatusBarTag},
         tabs::Tabs,
+        tabular::TabularView,
     },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
     AppResult,
@@ -29,7 +31,7 @@ use crate::{
 
 use tui::status_bar::StatusBarView;
 use tui::tabs::TabsState;
-use tui::tabular::{self, TabularState, TabularType};
+use tui::tabular::{TabularState, TabularType};
 use tui::Styler;
 
 pub struct App {
@@ -39,20 +41,23 @@ pub struct App {
     keybindings: KeyMap,
     running: bool,
     search: Option<Search>,
+    pallete: Option<PalleteState>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum AppStatus {
+pub enum AppContext {
     Empty,
     Table,
     Sheet,
     Command,
     Error,
     Search,
+    Pallete,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum AppAction {
+    NoAction,
     StatusBarInfo,
     StatusBarCommand(String),
     StatausBarError(String),
@@ -118,6 +123,17 @@ pub enum AppAction {
         flexible_width: bool,
         has_header: bool,
     },
+    CommandPalleteShow,
+    CommandPalleteHide,
+    CommandPalleteNext,
+    CommandPalletePrev,
+    CommandPalleteStart,
+    CommandPalleteEnd,
+    CommandPalleteAbove,
+    CommandPalleteBelow,
+    CommandPalleteDeleteNext,
+    CommandPalleteDeletePrev,
+    CommandPalleteInsert(char),
     Help,
     Quit,
 }
@@ -131,6 +147,7 @@ impl App {
             keybindings: key_bind,
             running: true,
             search: None,
+            pallete: Default::default(),
         }
     }
 
@@ -154,23 +171,31 @@ impl App {
         Ok(())
     }
 
-    pub fn status(&self) -> AppStatus {
+    pub fn status(&self) -> AppContext {
         match (
-            self.tabs.selected().map(TabularState::view),
+            self.pallete.as_ref(),
             self.status_bar.view(),
+            self.tabs.selected().map(TabularState::view),
         ) {
-            (Some(tabular::TabularView::Table), StatusBarView::Info) => AppStatus::Table,
-            (Some(tabular::TabularView::Table), StatusBarView::Error(_)) => AppStatus::Error,
-            (Some(tabular::TabularView::Table), StatusBarView::Prompt(_)) => AppStatus::Command,
-            (Some(tabular::TabularView::Table), StatusBarView::Search(_)) => AppStatus::Search,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Info) => AppStatus::Sheet,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Error(_)) => AppStatus::Error,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Prompt(_)) => AppStatus::Command,
-            (Some(tabular::TabularView::Sheet(_)), StatusBarView::Search(_)) => AppStatus::Sheet,
-            (None, StatusBarView::Info) => AppStatus::Empty,
-            (None, StatusBarView::Error(_)) => AppStatus::Error,
-            (None, StatusBarView::Prompt(_)) => AppStatus::Command,
-            (None, StatusBarView::Search(_)) => AppStatus::Empty,
+            (Some(_), _, _) => AppContext::Pallete,
+            (_, StatusBarView::Error(_), _) => AppContext::Error,
+            (_, StatusBarView::Prompt(_), _) => AppContext::Command,
+            (_, StatusBarView::Search(_), _) => AppContext::Search,
+            (_, _, Some(TabularView::Sheet(_))) => AppContext::Sheet,
+            (_, _, Some(TabularView::Table)) => AppContext::Table,
+            (_, _, None) => AppContext::Empty,
+            // (Some(tabular::TabularView::Table), StatusBarView::Info) => AppContext::Table,
+            // (Some(tabular::TabularView::Table), StatusBarView::Error(_)) => AppContext::Error,
+            // (Some(tabular::TabularView::Table), StatusBarView::Prompt(_)) => AppContext::Command,
+            // (Some(tabular::TabularView::Table), StatusBarView::Search(_)) => AppContext::Search,
+            // (Some(tabular::TabularView::Sheet(_)), StatusBarView::Info) => AppContext::Sheet,
+            // (Some(tabular::TabularView::Sheet(_)), StatusBarView::Error(_)) => AppContext::Error,
+            // (Some(tabular::TabularView::Sheet(_)), StatusBarView::Prompt(_)) => AppContext::Command,
+            // (Some(tabular::TabularView::Sheet(_)), StatusBarView::Search(_)) => AppContext::Sheet,
+            // (None, StatusBarView::Info) => AppContext::Empty,
+            // (None, StatusBarView::Error(_)) => AppContext::Error,
+            // (None, StatusBarView::Prompt(_)) => AppContext::Command,
+            // (None, StatusBarView::Search(_)) => AppContext::Empty,
         }
     }
 
@@ -181,7 +206,7 @@ impl App {
         // Draw table / item
         let state = self.status();
         frame.render_stateful_widget(
-            Tabs::<Theme>::new().selection(matches!(state, AppStatus::Table)),
+            Tabs::<Theme>::new().selection(matches!(state, AppContext::Table)),
             layout[0],
             &mut self.tabs,
         );
@@ -239,6 +264,17 @@ impl App {
                 &mut self.status_bar,
             );
         }
+
+        if let Some(state) = &mut self.pallete {
+            frame.render_stateful_widget(
+                Pallete::<Theme>::new()
+                    .with_horizontal_pad(5)
+                    .with_items((0..10).map(|idx| format!("Item {}", idx))),
+                frame.area(),
+                state,
+            );
+        }
+
         Ok(())
     }
 
@@ -257,6 +293,7 @@ impl App {
 
     pub fn invoke(&mut self, action: AppAction) -> AppResult<()> {
         match action {
+            AppAction::NoAction => Ok(()),
             AppAction::StatusBarInfo => self.status_bar.switch_info(),
 
             AppAction::StatusBarCommand(prefix) => self.status_bar.switch_prompt(prefix),
@@ -748,6 +785,71 @@ impl App {
                         .add(TabularState::new(df, TabularType::Name(name)))?;
                 }
                 self.tabs.select_last()
+            }
+
+            AppAction::CommandPalleteShow => {
+                self.pallete = Some(Default::default());
+                Ok(())
+            }
+
+            AppAction::CommandPalleteHide => {
+                self.pallete = None;
+                Ok(())
+            }
+
+            AppAction::CommandPalleteNext => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.goto_next();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalletePrev => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.goto_prev();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteStart => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.goto_start();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteEnd => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.goto_end();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteAbove => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.goto_above();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteBelow => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.goto_below();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteDeleteNext => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.delete_next();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteDeletePrev => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.delete_prev();
+                }
+                Ok(())
+            }
+            AppAction::CommandPalleteInsert(c) => {
+                if let Some(pallete) = self.pallete.as_mut() {
+                    pallete.insert(c);
+                }
+                Ok(())
             }
 
             AppAction::Help => {
