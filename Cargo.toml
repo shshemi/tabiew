@@ -20,13 +20,14 @@ fwf-rs = "0.2.0"
 itertools = "0.14.0"
 polars = { version = "0.45.1", features = [
     "dtype-decimal",
+    "dtype-u8",
     "lazy",
     "polars-sql",
     "polars-io",
     "parquet",
     "json",
     "ipc",
-    "dtype-categorical"
+    "dtype-categorical",
 ] }
 polars-sql = "0.45.1"
 polars-lazy = "0.45.1"
