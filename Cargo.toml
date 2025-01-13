@@ -18,17 +18,7 @@ clap = { version = "4.5.23", features = ["derive"] }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 fwf-rs = "0.2.0"
 itertools = "0.14.0"
-polars = { version = "0.45.1", features = [
-    "dtype-decimal",
-    "dtype-u8",
-    "lazy",
-    "polars-sql",
-    "polars-io",
-    "parquet",
-    "json",
-    "ipc",
-    "dtype-categorical",
-] }
+polars = { version = "0.45.1", features = ["full"] }
 polars-sql = "0.45.1"
 polars-lazy = "0.45.1"
 rand = "0.8.5"
