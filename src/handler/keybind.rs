@@ -294,11 +294,11 @@ pub fn default_keymap() -> KeyMap {
     key_map.add(Keybind::StateOnly(AppContext::Command), |_, key_event| {
         AppAction::StatusBarHandle(key_event)
     });
-    // Command Pallete
-    key_map.add(
-        Keybind::Exact(AppContext::Table, KeyCode::Char('P'), KeyModifiers::SHIFT),
-        AppAction::CommandPalleteShow,
-    );
+    // Pallete
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Table, KeyCode::Char('P'), KeyModifiers::SHIFT),
+    //     AppAction::CommandPalleteShow,
+    // );
     key_map.add(
         Keybind::Exact(AppContext::Pallete, KeyCode::Enter, KeyModifiers::NONE),
         AppAction::CommandPalleteHide,
