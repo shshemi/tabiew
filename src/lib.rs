@@ -1,4 +1,3 @@
-
 /// User interface.
 pub mod tui;
 
