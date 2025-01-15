@@ -123,6 +123,7 @@ pub enum AppTheme {
     Monokai,
     Argonaut,
     Nord,
+    Catppuccin,
     Terminal,
 }
 
