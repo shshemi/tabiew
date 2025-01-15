@@ -129,6 +129,7 @@ pub struct Argonaut;
 pub struct Terminal;
 pub struct Nord;
 pub struct Catppuccin;
+pub struct TokioNight;
 
 impl SixColorsTwoRowsStyler for Monokai {
     const BACKGROUND: Color = Color::from_u32(0x001c191d);
@@ -272,6 +273,46 @@ impl SixColorsTwoRowsStyler for Catppuccin {
     const STATUS_BAR_SEARCH: Color = Color::from_u32(0x004497bc);
 
     const STATUS_BAR_INFO: Color = Color::from_u32(0x0011111b);
+}
+
+impl SixColorsTwoRowsStyler for TokioNight {
+    const BACKGROUND: Color = Color::from_u32(0x001f2335);
+
+    const LIGHT_BACKGROUND: Color = Color::from_u32(0x00292e42);
+
+    const FOREGROUND: Color = Color::from_u32(0x00dfe3f5);
+
+    const COLORS: [Color; 6] = [
+        Color::from_u32(0x00c53b53),
+        Color::from_u32(0x00ff757f),
+        Color::from_u32(0x00ff9e64),
+        Color::from_u32(0x007aa2f7),
+        Color::from_u32(0x009d7cd8),
+        Color::from_u32(0x0041a6b5),
+    ];
+
+    const DARK_COLORS: [Color; 6] = [
+        Color::from_u32(0x00c53b53),
+        Color::from_u32(0x00ff757f),
+        Color::from_u32(0x00ff9e64),
+        Color::from_u32(0x007aa2f7),
+        Color::from_u32(0x009d7cd8),
+        Color::from_u32(0x0041a6b5),
+    ];
+
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00292e42), Color::from_u32(0x0024283b)];
+
+    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00ffc777);
+
+    const HIGHTLIGHT_FOREGROUND: Color = Color::from_u32(0x001f2335);
+
+    const STATUS_BAR_ERROR: Color = Color::from_u32(0x00c53b53);
+
+    const STATUS_BAR_PROMPT: Color = Color::from_u32(0x0041a6b5);
+
+    const STATUS_BAR_SEARCH: Color = Color::from_u32(0x003d59a1);
+
+    const STATUS_BAR_INFO: Color = Color::from_u32(0x001f2335);
 }
 
 impl Styler for Terminal {

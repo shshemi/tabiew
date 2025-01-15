@@ -124,6 +124,7 @@ pub enum AppTheme {
     Argonaut,
     Nord,
     Catppuccin,
+    TokioNight,
     Terminal,
 }
 

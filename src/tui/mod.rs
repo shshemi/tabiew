@@ -14,5 +14,5 @@ pub use terminal::Terminal;
 pub use theme::Styler;
 
 pub mod themes {
-    pub use super::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal};
+    pub use super::theme::{Argonaut, Catppuccin, Monokai, Nord, TokioNight, Terminal};
 }
