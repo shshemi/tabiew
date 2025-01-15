@@ -130,6 +130,10 @@ impl TabularState {
         self.table_state.data_frame()
     }
 
+    pub fn original_data_frame(&self) -> &DataFrame {
+        self.table_state.original_data_frame()
+    }
+
     pub fn data_frame_mut(&mut self) -> &mut DataFrame {
         self.table_state.data_frame_mut()
     }

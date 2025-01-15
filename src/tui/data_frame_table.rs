@@ -23,6 +23,7 @@ pub struct DataFrameTableState {
     widths: Vec<usize>,
     headers: Vec<String>,
     data_frame: DataFrame,
+    original_frame: DataFrame,
 }
 
 impl DataFrameTableState {
@@ -37,12 +38,17 @@ impl DataFrameTableState {
                 .into_iter()
                 .map(PlSmallStr::to_string)
                 .collect(),
-            data_frame,
+            data_frame: data_frame.clone(),
+            original_frame: data_frame,
         }
     }
 
     pub fn data_frame(&self) -> &DataFrame {
         &self.data_frame
+    }
+
+    pub fn original_data_frame(&self) -> &DataFrame {
+        &self.original_frame
     }
 
     pub fn data_frame_mut(&mut self) -> &mut DataFrame {

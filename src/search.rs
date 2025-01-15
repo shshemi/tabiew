@@ -1,17 +1,114 @@
 use std::{
+    collections::HashMap,
     sync::{
-        mpsc::{channel, Receiver, Sender, TryRecvError},
+        atomic::{AtomicBool, Ordering},
+        mpsc::{channel, Receiver, TryRecvError},
         Arc, Mutex,
     },
-    thread::JoinHandle,
+    time::{Duration, Instant},
 };
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use polars::{frame::DataFrame, prelude::BooleanChunked};
+use itertools::Itertools;
+use polars::{frame::DataFrame, prelude::IdxCa};
 
 use rayon::prelude::*;
 
 use crate::utils::polars_ext::IntoString;
+
+#[derive(Debug)]
+pub struct Search {
+    pat: String,
+    df: SyncDataFrame,
+    _alive: SetFalseOnDrop,
+}
+
+impl Search {
+    pub fn new(df: DataFrame, pat: String) -> Self {
+        let sync_df = SyncDataFrame::new();
+        let alive = Arc::new(AtomicBool::new(true));
+        if pat.is_empty() {
+            // avoid search
+            sync_df.insert(df);
+            Self {
+                df: sync_df,
+                _alive: SetFalseOnDrop(alive),
+                pat,
+            }
+        } else {
+            // search
+            // communication between search and collector threads
+            let (tx, rx) = channel();
+
+            // search thread
+            std::thread::spawn({
+                let matcher = SkimMatcherV2::default();
+                let alive = alive.clone();
+                let df = df.clone();
+                let pat = pat.clone();
+                move || {
+                    //
+                    let _ = df
+                        .iter()
+                        .flat_map(|series| series.iter().enumerate())
+                        .par_bridge()
+                        .take_any_while(|_| alive.load(Ordering::Relaxed))
+                        .filter_map(|(idx, value)| {
+                            matcher
+                                .fuzzy_match(&value.into_string(), &pat)
+                                .map(|score| (idx, score))
+                        })
+                        .try_for_each(|(idx, score)| tx.send((idx as u32, score)));
+                }
+            });
+
+            // collector thread
+            std::thread::spawn({
+                let sync_df = sync_df.clone();
+                move || {
+                    let mut interval = Interval::new(Duration::from_millis(100));
+                    let mut idx_score = HashMap::new();
+                    let mut recv = ConnectionAware::new(rx);
+                    while recv.connected() {
+                        //do operations
+                        while let Some((idx, new_score)) = recv.next() {
+                            idx_score
+                                .entry(idx)
+                                .and_modify(|score| *score = new_score.max(*score))
+                                .or_insert(new_score);
+                        }
+
+                        sync_df.insert(
+                            df.take(&IdxCa::new_vec(
+                                "name".into(),
+                                idx_score
+                                    .iter()
+                                    .sorted_by_key(|(_, score)| -*score)
+                                    .map(|(idx, _)| *idx)
+                                    .collect(),
+                            ))
+                            .unwrap(),
+                        );
+                        interval.sleep();
+                    }
+                }
+            });
+            Self {
+                df: sync_df,
+                _alive: SetFalseOnDrop(alive),
+                pat,
+            }
+        }
+    }
+
+    pub fn latest(&self) -> Option<DataFrame> {
+        self.df.take()
+    }
+
+    pub fn pattern(&self) -> &str {
+        &self.pat
+    }
+}
 
 #[derive(Debug, Clone)]
 struct SyncDataFrame(Arc<Mutex<Option<DataFrame>>>);
@@ -32,115 +129,65 @@ impl SyncDataFrame {
     }
 }
 
+#[derive(Debug, Clone)]
+struct SetFalseOnDrop(Arc<AtomicBool>);
+
+impl Drop for SetFalseOnDrop {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Relaxed);
+    }
+}
+
 #[derive(Debug)]
-pub struct Search {
-    latest: SyncDataFrame,
-    send: Sender<String>,
-    hndl: JoinHandle<DataFrame>,
-}
-
-impl Search {
-    pub fn new(df: DataFrame) -> Self {
-        let latest = SyncDataFrame::new();
-        let (send, recv) = channel();
-        let hndl = std::thread::spawn({
-            let latest = latest.clone();
-            move || {
-                let mut recv: ConnectionAwareReceiver<String> = ConnectionAwareReceiver::new(recv);
-                while let Ok(pat) = recv.recv() {
-                    let mut mask = vec![false; df.height()];
-
-                    for idx in IndexSearch::new(df.clone(), pat).iter() {
-                        mask[idx] = true;
-
-                        latest.insert(
-                            df.filter(&BooleanChunked::from_iter(mask.iter().copied()))
-                                .unwrap(),
-                        );
-
-                        if recv.disconnected() {
-                            break;
-                        }
-                    }
-                    latest.insert(
-                        df.filter(&BooleanChunked::from_iter(mask.iter().copied()))
-                            .unwrap(),
-                    );
-                }
-                df
-            }
-        });
-        Self { latest, send, hndl }
-    }
-
-    pub fn search(&self, pat: String) {
-        let _ = self.send.send(pat);
-    }
-
-    pub fn into_original_data_frame(self) -> DataFrame {
-        drop(self.send);
-        self.hndl.join().unwrap()
-    }
-
-    pub fn latest(&self) -> Option<DataFrame> {
-        self.latest.take()
-    }
-}
-
-struct ConnectionAwareReceiver<T> {
-    latest: Option<T>,
+struct ConnectionAware<T> {
+    connected: bool,
     recv: Receiver<T>,
 }
 
-impl<T> ConnectionAwareReceiver<T> {
+impl<T> ConnectionAware<T> {
     fn new(recv: Receiver<T>) -> Self {
-        Self { latest: None, recv }
-    }
-
-    fn disconnected(&mut self) -> bool {
-        match self.recv.try_recv() {
-            Ok(val) => {
-                self.latest = val.into();
-                true
-            }
-            Err(TryRecvError::Disconnected) => true,
-            Err(TryRecvError::Empty) => false,
+        ConnectionAware {
+            connected: true,
+            recv: recv,
         }
     }
 
-    fn recv(&mut self) -> Result<T, std::sync::mpsc::RecvError> {
-        self.latest
-            .take()
-            .map(|val| Ok(val))
-            .unwrap_or(self.recv.recv())
+    fn connected(&self) -> bool {
+        self.connected
+    }
+}
+
+impl<T> Iterator for ConnectionAware<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.recv.try_recv() {
+            Ok(v) => Some(v),
+            Err(TryRecvError::Empty) => None,
+            Err(TryRecvError::Disconnected) => {
+                self.connected = false;
+                None
+            }
+        }
     }
 }
 
 #[derive(Debug)]
-struct IndexSearch {
-    recv: Receiver<usize>,
-    _hndl: JoinHandle<DataFrame>,
+pub struct Interval {
+    tick_rate: Duration,
+    last_tick: Instant,
 }
 
-impl IndexSearch {
-    fn new(df: DataFrame, pat: String) -> Self {
-        let matcher = SkimMatcherV2::default();
-        let (send, recv) = channel::<usize>();
-        let hndl = std::thread::spawn(move || {
-            let _ = df
-                .iter()
-                .flat_map(|series| series.iter().enumerate())
-                .par_bridge()
-                .filter_map(|(idx, value)| {
-                    matcher.fuzzy_match(&value.into_string(), &pat).map(|_| idx)
-                })
-                .try_for_each(|idx| send.send(idx));
-            df
-        });
-        Self { recv, _hndl: hndl }
+impl Interval {
+    pub fn new(tick_rate: Duration) -> Self {
+        Self {
+            tick_rate,
+            last_tick: Instant::now(),
+        }
     }
 
-    fn iter(&self) -> std::sync::mpsc::Iter<usize> {
-        self.recv.iter()
+    pub fn sleep(&mut self) {
+        std::thread::sleep(self.tick_rate.saturating_sub(self.last_tick.elapsed()));
+        self.last_tick = Instant::now();
     }
 }
