@@ -532,21 +532,22 @@ impl App {
                 }
                 if let Some(tab) = self.tabs.selected_mut() {
                     if let Some(search) = &self.search {
-                        search.search(pattern);
+                        if search.pattern() != pattern {
+                            self.search =
+                                Search::new(tab.original_data_frame().clone(), pattern).into();
+                        }
                     } else {
-                        let search = Search::new(tab.data_frame().clone());
-                        search.search(pattern);
-                        self.search = search.into();
+                        self.search =
+                            Search::new(tab.original_data_frame().clone(), pattern).into();
                     }
                 }
                 Ok(())
             }
 
             AppAction::SearchRollback => {
-                if let Some(df) = self.search.take().map(|ser| ser.into_original_data_frame()) {
-                    if let Some(tab) = self.tabs.selected_mut() {
-                        let _ = tab.set_data_frame(df);
-                    }
+                self.search.take();
+                if let Some(tab) = self.tabs.selected_mut() {
+                    let _ = tab.set_data_frame(tab.original_data_frame().clone());
                 }
                 self.status_bar.switch_info()
             }
