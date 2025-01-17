@@ -1,9 +1,6 @@
 use std::marker::PhantomData;
 
-use anyhow::anyhow;
 use ratatui::widgets::StatefulWidget;
-
-use crate::AppResult;
 
 use super::{
     tabular::{Tabular, TabularState},
@@ -17,9 +14,8 @@ pub struct TabsState {
 }
 
 impl TabsState {
-    pub fn add(&mut self, tabular: TabularState) -> AppResult<()> {
+    pub fn add(&mut self, tabular: TabularState) {
         self.tabulars.push(tabular);
-        Ok(())
     }
 
     pub fn len(&self) -> usize {
@@ -42,58 +38,38 @@ impl TabsState {
         self.tabulars.get_mut(self.idx)
     }
 
-    pub fn remove(&mut self, idx: usize) -> AppResult<()> {
-        self.validate_index(idx)?;
-        self.tabulars.remove(idx);
-        self.saturating_select(self.idx.saturating_sub(1))
-    }
-
-    pub fn remove_selected(&mut self) -> AppResult<()> {
-        self.remove(self.idx)
-    }
-
-    pub fn saturating_select(&mut self, idx: usize) -> AppResult<()> {
-        self.idx = idx.min(self.tabulars.len().saturating_sub(1));
-        Ok(())
-    }
-
-    pub fn select(&mut self, idx: usize) -> AppResult<()> {
-        self.validate_index(idx)?;
-        self.idx = idx;
-        Ok(())
-    }
-
-    pub fn select_next(&mut self) -> AppResult<()> {
-        self.saturating_select(self.idx.saturating_add(1))
-    }
-
-    pub fn select_prev(&mut self) -> AppResult<()> {
-        self.saturating_select(self.idx.saturating_sub(1))
-    }
-
-    pub fn select_first(&mut self) -> AppResult<()> {
-        self.saturating_select(0)
-    }
-
-    pub fn select_last(&mut self) -> AppResult<()> {
-        self.saturating_select(usize::MAX)
-    }
-
-    fn validate_index(&self, idx: usize) -> AppResult<()> {
-        if self.tabulars.is_empty() {
-            Err(anyhow!("no tab is currently available"))
-        } else if idx < self.tabulars.len() {
-            Ok(())
-        } else {
-            Err(anyhow!(
-                "invalid tab index, valid index range is between 0 and {}",
-                self.tabulars.len()
-            ))
+    pub fn remove(&mut self, idx: usize) {
+        if idx < self.tabulars.len() {
+            self.tabulars.remove(idx);
         }
+    }
+
+    pub fn select(&mut self, idx: usize) {
+        self.idx = idx;
+    }
+
+    pub fn select_next(&mut self) {
+        self.select(self.idx.saturating_add(1))
+    }
+
+    pub fn select_prev(&mut self) {
+        self.select(self.idx.saturating_sub(1))
+    }
+
+    pub fn select_first(&mut self) {
+        self.select(0)
+    }
+
+    pub fn select_last(&mut self) {
+        self.select(usize::MAX)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &TabularState> {
         self.tabulars.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabularState> {
+        self.tabulars.iter_mut()
     }
 }
 
@@ -140,6 +116,7 @@ impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
+        state.idx = state.idx().min(state.len() - 1);
         if let Some(tabular) = state.selected_mut() {
             StatefulWidget::render(
                 Tabular::<Theme>::new().with_selection(self.selection),

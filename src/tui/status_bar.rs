@@ -44,26 +44,22 @@ impl StatusBarState {
         &mut self.view
     }
 
-    pub fn switch_info(&mut self) -> AppResult<()> {
+    pub fn switch_info(&mut self) {
         self.view = StatusBarView::Info;
-        Ok(())
     }
 
-    pub fn switch_error(&mut self, msg: impl ToString) -> AppResult<()> {
+    pub fn switch_error(&mut self, msg: impl ToString) {
         self.view = StatusBarView::Error(msg.to_string());
-        Ok(())
     }
 
-    pub fn switch_prompt(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
+    pub fn switch_prompt(&mut self, prefix: impl AsRef<str>) {
         let mut history = self.prompt_history.clone();
         history.push(format!(":{}", prefix.as_ref()));
         self.view = StatusBarView::Prompt(history.into());
-        Ok(())
     }
 
-    pub fn switch_search(&mut self, prefix: impl AsRef<str>) -> AppResult<()> {
+    pub fn switch_search(&mut self, prefix: impl AsRef<str>) {
         self.view = StatusBarView::Search(vec![format!("/{}", prefix.as_ref())].into());
-        Ok(())
     }
 
     pub fn commit_prompt(&mut self) -> Option<String> {

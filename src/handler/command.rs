@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::{app::AppAction, AppResult};
+use crate::{handler::action::AppAction, AppResult};
 
 pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
     let (s1, s2) = cmd.as_ref().split_once(' ').unwrap_or((cmd.as_ref(), ""));
@@ -241,7 +241,7 @@ static ENTRIES: [Entry; 18] =  [
 mod export {
     use anyhow::anyhow;
 
-    use crate::{app::AppAction, writer::JsonFormat};
+    use crate::{handler::action::AppAction, writer::JsonFormat};
 
     use super::{Entry, Prefix};
 
@@ -306,7 +306,7 @@ mod import {
     use anyhow::anyhow;
     use regex::{Captures, Regex};
 
-    use crate::{app::AppAction, writer::JsonFormat, AppResult};
+    use crate::{handler::action::AppAction, writer::JsonFormat, AppResult};
 
     use super::{Entry, Prefix};
 

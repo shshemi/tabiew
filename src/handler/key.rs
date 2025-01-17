@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::{app::AppAction, app::AppContext};
+use crate::{app::AppContext, handler::action::AppAction};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Keybind {
@@ -54,7 +54,7 @@ pub fn default_keymap() -> KeyMap {
     // Switch tab/sheet/enter
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Enter, KeyModifiers::empty()),
-        AppAction::TabularEnterPress,
+        AppAction::TabularSheetView,
     );
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('v'), KeyModifiers::empty()),
@@ -352,7 +352,7 @@ impl KeyMap {
     fn add(&mut self, keybind: Keybind, action: impl Into<Action>) {
         self.map.insert(keybind, action.into());
     }
-    pub fn get(&self, state: AppContext, key_event: KeyEvent) -> Option<AppAction> {
+    fn get(&self, state: AppContext, key_event: KeyEvent) -> Option<AppAction> {
         self.map
             .get(&Keybind::Exact(state, key_event.code, key_event.modifiers))
             .or(self
@@ -363,5 +363,9 @@ impl KeyMap {
                 Action::Direct(action) => action.to_owned(),
                 Action::Closure(closure) => closure(state, key_event),
             })
+    }
+
+    pub fn get_action(&self, state: AppContext, key_event: KeyEvent) -> AppAction {
+        self.get(state, key_event).unwrap_or(AppAction::NoAction)
     }
 }
