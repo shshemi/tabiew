@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use anyhow::anyhow;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
@@ -10,9 +9,7 @@ use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
     sheet::{Sheet, SheetBlock, SheetState},
 };
-use crate::{tui::theme::Styler, utils::polars_ext::IntoString};
-
-use crate::AppResult;
+use crate::{search::Search, tui::theme::Styler, utils::polars_ext::IntoString};
 
 #[derive(Debug)]
 pub enum TabularView {
@@ -33,70 +30,64 @@ pub struct TabularState {
     table_state: DataFrameTableState,
     view: TabularView,
     tabular_type: TabularType,
+    search: Option<Search>,
+    original_frame: DataFrame,
 }
 
 impl TabularState {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, tabular_type: TabularType) -> Self {
         Self {
-            table_state: DataFrameTableState::new(data_frame),
+            table_state: DataFrameTableState::new(data_frame.clone()),
             view: TabularView::Table,
             tabular_type,
+            search: None,
+            original_frame: data_frame,
         }
     }
 
     /// Handles the tick event of the terminal.
-    pub fn tick(&mut self) -> AppResult<()> {
-        Ok(())
-    }
-
-    pub fn select_up(&mut self, len: usize) -> AppResult<()> {
-        self.table_state.select_up(len);
-        Ok(())
-    }
-
-    pub fn select_down(&mut self, len: usize) -> AppResult<()> {
-        self.table_state.select_down(len);
-        Ok(())
-    }
-
-    pub fn select_first(&mut self) -> AppResult<()> {
-        self.table_state.select_first();
-        Ok(())
-    }
-
-    pub fn select_last(&mut self) -> AppResult<()> {
-        self.table_state.select_last();
-        Ok(())
-    }
-
-    pub fn select_random(&mut self) -> AppResult<()> {
-        let mut rng = rand::thread_rng();
-        self.table_state
-            .select(rng.gen_range(0..self.table_state.height()));
-        Ok(())
-    }
-
-    pub fn select(&mut self, select: usize) -> AppResult<()> {
-        self.table_state.select(select);
-        Ok(())
-    }
-
-    pub fn scroll_up(&mut self) -> AppResult<()> {
-        if let TabularView::Sheet(scroll) = &mut self.view {
-            scroll.scroll_up();
-            Ok(())
-        } else {
-            Err(anyhow!("Not in table view"))
+    pub fn tick(&mut self) {
+        if let Some(df) = self.search.as_ref().and_then(Search::latest) {
+            self.table_state.set_data_frame(df);
         }
     }
 
-    pub fn scroll_down(&mut self) -> AppResult<()> {
+    pub fn select_up(&mut self, len: usize) {
+        self.table_state.select_up(len);
+    }
+
+    pub fn select_down(&mut self, len: usize) {
+        self.table_state.select_down(len);
+    }
+
+    pub fn select_first(&mut self) {
+        self.table_state.select_first();
+    }
+
+    pub fn select_last(&mut self) {
+        self.table_state.select_last();
+    }
+
+    pub fn select_random(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.table_state
+            .select(rng.gen_range(0..self.table_state.height()));
+    }
+
+    pub fn select(&mut self, select: usize) {
+        self.table_state.select(select);
+    }
+
+    pub fn scroll_up(&mut self) {
+        if let TabularView::Sheet(scroll) = &mut self.view {
+            scroll.scroll_up();
+        }
+    }
+
+    pub fn scroll_down(&mut self) {
         if let TabularView::Sheet(scroll) = &mut self.view {
             scroll.scroll_down();
-            Ok(())
-        } else {
-            Err(anyhow!("Not in table view"))
         }
     }
 
@@ -104,34 +95,27 @@ impl TabularState {
         self.table_state.rendered_rows().into()
     }
 
-    pub fn switch_view(&mut self) -> AppResult<()> {
+    pub fn switch_view(&mut self) {
         match self.view {
             TabularView::Table => self.show_sheet(),
             TabularView::Sheet(_) => self.show_table(),
         }
     }
 
-    pub fn show_sheet(&mut self) -> AppResult<()> {
+    pub fn show_sheet(&mut self) {
         self.view = TabularView::Sheet(Default::default());
-        Ok(())
     }
 
-    pub fn show_table(&mut self) -> AppResult<()> {
+    pub fn show_table(&mut self) {
         self.view = TabularView::Table;
-        Ok(())
     }
 
-    pub fn set_data_frame(&mut self, data_frame: DataFrame) -> AppResult<()> {
+    pub fn set_data_frame(&mut self, data_frame: DataFrame) {
         self.table_state.set_data_frame(data_frame);
-        Ok(())
     }
 
     pub fn data_frame(&self) -> &DataFrame {
         self.table_state.data_frame()
-    }
-
-    pub fn original_data_frame(&self) -> &DataFrame {
-        self.table_state.original_data_frame()
     }
 
     pub fn data_frame_mut(&mut self) -> &mut DataFrame {
@@ -148,6 +132,31 @@ impl TabularState {
 
     pub fn tabular_type(&self) -> &TabularType {
         &self.tabular_type
+    }
+
+    pub fn search_pattern(&mut self, pattern: String) {
+        if self
+            .search
+            .as_ref()
+            .map(|search| search.pattern() != &pattern)
+            .unwrap_or(true)
+        {
+            self.search = Some(Search::new(self.original_frame.clone(), pattern))
+        }
+    }
+
+    pub fn commit_search(&mut self) {
+        if let Some(df) = self.search.take().and_then(|ser| ser.latest()) {
+            self.set_data_frame(df);
+        }
+    }
+
+    pub fn cancel_search(&mut self) {
+        self.search = None;
+    }
+
+    pub fn rollback(&mut self) {
+        self.table_state.set_data_frame(self.original_frame.clone());
     }
 }
 

@@ -6,9 +6,10 @@ use std::fs::{self};
 use std::io::{self};
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
+use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
-use tabiew::handler::keybind::default_keymap;
+use tabiew::handler::key::default_keymap;
 use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
@@ -73,7 +74,7 @@ fn main() -> AppResult<()> {
 
 fn start_tui<Theme: Styler>(
     tabs: Vec<(DataFrame, String)>,
-    sql_backend: SqlBackend,
+    mut sql_backend: SqlBackend,
     script: String,
 ) -> AppResult<()> {
     let tabs = tabs
@@ -81,7 +82,7 @@ fn start_tui<Theme: Styler>(
         .map(|(df, name)| TabularState::new(df, TabularType::Name(name)))
         .collect();
     let keybind = default_keymap();
-    let mut app = App::new(tabs, sql_backend, keybind);
+    let mut app = App::new(tabs);
 
     // Initialize the terminal user interface.
     let mut tui = Terminal::new(
@@ -97,7 +98,7 @@ fn start_tui<Theme: Styler>(
     for line in script.lines().filter(|line| !line.is_empty()) {
         let action = parse_into_action(line)
             .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
-        app.invoke(action)
+        execute(action, &mut app, &mut sql_backend)
             .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
     }
 
@@ -112,12 +113,32 @@ fn start_tui<Theme: Styler>(
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        app.handle_key_event(key_event)?
+                        let mut action = keybind.handle_key_event(app.context(), key_event);
+                        loop {
+                            match execute(action, &mut app, &mut sql_backend) {
+                                Ok(Some(next_action)) => action = next_action,
+                                Ok(None) => break,
+                                Err(err) => {
+                                    app.error(err);
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    app.handle_key_event(key_event)?
+                    let mut action = keybind.get_action(app.context(), key_event);
+                    loop {
+                        match execute(action, &mut app, &mut sql_backend) {
+                            Ok(Some(next_action)) => action = next_action,
+                            Ok(None) => break,
+                            Err(err) => {
+                                app.error(err);
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             Event::Mouse(_) => {}
