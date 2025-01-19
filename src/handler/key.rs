@@ -45,7 +45,7 @@ pub fn default_keymap() -> KeyMap {
     );
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Char('q'), KeyModifiers::empty()),
-        AppAction::TabularTableView,
+        AppAction::TabularTableMode,
     );
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('q'), KeyModifiers::empty()),
@@ -54,15 +54,15 @@ pub fn default_keymap() -> KeyMap {
     // Switch tab/sheet/enter
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Enter, KeyModifiers::empty()),
-        AppAction::TabularSheetView,
+        AppAction::TabularSheetMode,
     );
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('v'), KeyModifiers::empty()),
-        AppAction::TabularSheetView,
+        AppAction::TabularSheetMode,
     );
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Char('v'), KeyModifiers::empty()),
-        AppAction::TabularTableView,
+        AppAction::TabularTableMode,
     );
     // Move half page
     key_map.add(
@@ -123,6 +123,25 @@ pub fn default_keymap() -> KeyMap {
         Keybind::Exact(AppContext::Sheet, KeyCode::Char('l'), KeyModifiers::empty()),
         AppAction::TabularGoDown(1),
     );
+
+    // Scroll left / right
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Char('h'), KeyModifiers::empty()),
+        AppAction::TabularScrollLeft,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Char('l'), KeyModifiers::empty()),
+        AppAction::TabularScrollRight,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Left, KeyModifiers::empty()),
+        AppAction::TabularScrollLeft,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Right, KeyModifiers::empty()),
+        AppAction::TabularScrollRight,
+    );
+
     // Move to first/last record
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Home, KeyModifiers::empty()),
@@ -176,35 +195,35 @@ pub fn default_keymap() -> KeyMap {
     // Move prev/next tab
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('H'), KeyModifiers::SHIFT),
-        AppAction::TabSelectedPrev,
+        AppAction::TabPrev,
     );
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('L'), KeyModifiers::SHIFT),
-        AppAction::TabSelectedNext,
+        AppAction::TabNext,
     );
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Char('H'), KeyModifiers::SHIFT),
-        AppAction::TabSelectedPrev,
+        AppAction::TabPrev,
     );
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Char('L'), KeyModifiers::SHIFT),
-        AppAction::TabSelectedNext,
+        AppAction::TabNext,
     );
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Left, KeyModifiers::SHIFT),
-        AppAction::TabSelectedPrev,
+        AppAction::TabPrev,
     );
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Right, KeyModifiers::SHIFT),
-        AppAction::TabSelectedNext,
+        AppAction::TabNext,
     );
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Left, KeyModifiers::SHIFT),
-        AppAction::TabSelectedPrev,
+        AppAction::TabPrev,
     );
     key_map.add(
         Keybind::Exact(AppContext::Sheet, KeyCode::Right, KeyModifiers::SHIFT),
-        AppAction::TabSelectedNext,
+        AppAction::TabNext,
     );
     // Move to line by number
     key_map.add(
@@ -274,10 +293,38 @@ pub fn default_keymap() -> KeyMap {
         Keybind::Exact(AppContext::Command, KeyCode::Enter, KeyModifiers::empty()),
         AppAction::PromptCommit,
     );
+    key_map.add(Keybind::StateOnly(AppContext::Command), |_, key_event| {
+        AppAction::StatusBarHandle(key_event)
+    });
+
     // Search start, stop, and commit
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('/'), KeyModifiers::empty()),
-        AppAction::StatusBarSearch("".to_owned()),
+        AppAction::TabularSearchMode,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Search, KeyCode::Home, KeyModifiers::empty()),
+        AppAction::SearchGotoStart,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Search, KeyCode::End, KeyModifiers::empty()),
+        AppAction::SearchGotoEnd,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Search, KeyCode::Left, KeyModifiers::empty()),
+        AppAction::SearchGotoPrev,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Search, KeyCode::Right, KeyModifiers::empty()),
+        AppAction::SearchGotoNext,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Search, KeyCode::Backspace, KeyModifiers::empty()),
+        AppAction::SearchDeletePrev,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Search, KeyCode::Delete, KeyModifiers::empty()),
+        AppAction::SearchDeleteNext,
     );
     key_map.add(
         Keybind::Exact(AppContext::Search, KeyCode::Esc, KeyModifiers::empty()),
@@ -287,64 +334,69 @@ pub fn default_keymap() -> KeyMap {
         Keybind::Exact(AppContext::Search, KeyCode::Enter, KeyModifiers::empty()),
         AppAction::SearchCommit,
     );
-    // Keyboard input in command and search
-    key_map.add(Keybind::StateOnly(AppContext::Search), |_, key_event| {
-        AppAction::StatusBarHandle(key_event)
-    });
-    key_map.add(Keybind::StateOnly(AppContext::Command), |_, key_event| {
-        AppAction::StatusBarHandle(key_event)
-    });
-    // Pallete
-    // key_map.add(
-    //     Keybind::Exact(AppContext::Table, KeyCode::Char('P'), KeyModifiers::SHIFT),
-    //     AppAction::CommandPalleteShow,
-    // );
     key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Enter, KeyModifiers::NONE),
-        AppAction::CommandPalleteHide,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Right, KeyModifiers::NONE),
-        AppAction::CommandPalleteNext,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Left, KeyModifiers::NONE),
-        AppAction::CommandPalletePrev,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Home, KeyModifiers::NONE),
-        AppAction::CommandPalleteStart,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::End, KeyModifiers::NONE),
-        AppAction::CommandPalleteEnd,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Up, KeyModifiers::NONE),
-        AppAction::CommandPalleteAbove,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Down, KeyModifiers::NONE),
-        AppAction::CommandPalleteBelow,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Backspace, KeyModifiers::NONE),
-        AppAction::CommandPalleteDeletePrev,
-    );
-    key_map.add(
-        Keybind::Exact(AppContext::Pallete, KeyCode::Delete, KeyModifiers::NONE),
-        AppAction::CommandPalleteDeleteNext,
-    );
-    key_map.add(
-        Keybind::StateOnly(AppContext::Pallete),
-        |_, event: KeyEvent| {
-            if let KeyCode::Char(c) = event.code {
-                AppAction::CommandPalleteInsert(c)
+        Keybind::StateOnly(AppContext::Search),
+        |_, key_event: KeyEvent| {
+            if let KeyCode::Char(c) = key_event.code {
+                AppAction::SearchInsert(c)
             } else {
                 AppAction::NoAction
             }
         },
     );
+
+    //
+    // Pallete
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Table, KeyCode::Char('P'), KeyModifiers::SHIFT),
+    //     AppAction::CommandPalleteShow,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Enter, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteHide,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Right, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteNext,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Left, KeyModifiers::NONE),
+    //     AppAction::CommandPalletePrev,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Home, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteStart,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::End, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteEnd,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Up, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteAbove,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Down, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteBelow,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Backspace, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteDeletePrev,
+    // );
+    // key_map.add(
+    //     Keybind::Exact(AppContext::Pallete, KeyCode::Delete, KeyModifiers::NONE),
+    //     AppAction::CommandPalleteDeleteNext,
+    // );
+    // key_map.add(
+    //     Keybind::StateOnly(AppContext::Pallete),
+    //     |_, event: KeyEvent| {
+    //         if let KeyCode::Char(c) = event.code {
+    //             AppAction::CommandPalleteInsert(c)
+    //         } else {
+    //             AppAction::NoAction
+    //         }
+    //     },
+    // );
     key_map
 }
 

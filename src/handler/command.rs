@@ -203,9 +203,9 @@ static ENTRIES: [Entry; 18] =  [
         description: "Switch between table and sheet views",
         parser: |query|{
             Ok(match query {
-                "table" => AppAction::TabularTableView,
-                "sheet" => AppAction::TabularSheetView,
-                "switch" => AppAction::TabularSwitchView,
+                "table" => AppAction::TabularTableMode,
+                "sheet" => AppAction::TabularSheetMode,
+                "switch" => AppAction::TabularToggleSheetMode,
                 _ => Err(anyhow!("Invalid view"))?,
             })
         },
