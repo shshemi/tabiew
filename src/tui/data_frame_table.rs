@@ -142,7 +142,9 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
         state.rendered_rows = area.height.saturating_sub(1);
 
         // 0 <= select < table height
-        state.select = state.select.min(state.data_frame.height());
+        state.select = state
+            .select
+            .min(state.data_frame.height().saturating_sub(1));
 
         // 0 <= offset_y <= select <= offset_y + rendered rows < table height
         state.offset_y = state.offset_y.clamp(
@@ -152,13 +154,18 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
             state.select,
         );
 
-        // total width
-        let total_width = state.widths.iter().sum::<usize>();
+        // 0 <= offset_x < sum(widths) - area.width + (paddings between cols)
+        state.offset_x = state.offset_x.min(
+            state
+                .widths
+                .iter()
+                .sum::<usize>()
+                .saturating_sub(area.width as usize)
+                + (state.widths.len().saturating_sub(1)),
+        );
 
-        // 0 <= offset_x < sum(widths) - area.width
-        state.offset_x = state
-            .offset_x
-            .min(total_width.saturating_sub(area.width as usize) + (state.widths.len() - 1));
+        // draw background
+        buf.set_style(area, Theme::table_header());
 
         // draw header
         buf.set_string(
