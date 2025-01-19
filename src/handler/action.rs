@@ -10,7 +10,7 @@ use crate::{
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
     sql::SqlBackend,
-    tui::{status_bar::StatusBarView, TabularState, TabularType},
+    tui::{status_bar::StatusBarView, TabContentState, TabularSource},
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
     AppResult,
 };
@@ -23,13 +23,13 @@ pub enum AppAction {
     StatusBarInfo,
     StatusBarCommand(String),
     StatausBarError(String),
-    StatusBarSearch(String),
     StatusBarHandle(KeyEvent),
-    TabularTableView,
-    TabularSheetView,
-    TabularSwitchView,
-    SqlQuery(String),
-    SqlSchema,
+    TabularTableMode,
+    TabularSheetMode,
+    TabularSearchMode,
+    TabularToggleSheetMode,
+    TabularScrollRight,
+    TabularScrollLeft,
     TabularGoto(usize),
     TabularGotoFirst,
     TabularGotoLast,
@@ -42,11 +42,19 @@ pub enum AppAction {
     TabularGoDownFullPage,
     SheetScrollUp,
     SheetScrollDown,
-    TabularReset,
     TabularSelect(String),
     TabularOrder(String),
     TabularFilter(String),
-    SearchPattern(String),
+    SqlQuery(String),
+    TabularReset,
+    SqlSchema,
+    SearchGotoNext,
+    SearchGotoPrev,
+    SearchGotoStart,
+    SearchGotoEnd,
+    SearchDeleteNext,
+    SearchDeletePrev,
+    SearchInsert(char),
     SearchRollback,
     SearchCommit,
     PromptCommit,
@@ -54,8 +62,8 @@ pub enum AppAction {
     TabSelect(usize),
     TabRemove(usize),
     TabRemoveSelected,
-    TabSelectedPrev,
-    TabSelectedNext,
+    TabPrev,
+    TabNext,
     TabRemoveOrQuit,
     TabRename(usize, String),
     ExportDsv {
@@ -84,17 +92,6 @@ pub enum AppAction {
         flexible_width: bool,
         has_header: bool,
     },
-    CommandPalleteShow,
-    CommandPalleteHide,
-    CommandPalleteNext,
-    CommandPalletePrev,
-    CommandPalleteStart,
-    CommandPalleteEnd,
-    CommandPalleteAbove,
-    CommandPalleteBelow,
-    CommandPalleteDeleteNext,
-    CommandPalleteDeletePrev,
-    CommandPalleteInsert(char),
     Help,
     Quit,
 }
@@ -121,10 +118,10 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::StatusBarSearch(query) => {
-            app.status_bar().switch_search(query);
-            Ok(None)
-        }
+        // AppAction::StatusBarSearch(query) => {
+        //     app.status_bar().switch_search(query);
+        //     Ok(None)
+        // }
 
         AppAction::StatusBarHandle(event) => match app.status_bar().view_mut() {
             StatusBarView::Prompt(prompt_state) => {
@@ -136,34 +133,41 @@ pub fn execute(
                 }
             }
 
-            StatusBarView::Search(prompt_state) => {
-                prompt_state.handle(event);
+            // StatusBarView::Search(prompt_state) => {
+            //     prompt_state.handle(event);
 
-                if prompt_state.command_len() > 0 {
-                    let pattern = prompt_state.skipped_line(1);
-                    Ok(Some(AppAction::SearchPattern(pattern)))
-                } else {
-                    Ok(Some(AppAction::SearchRollback))
-                }
-            }
+            //     if prompt_state.command_len() > 0 {
+            //         let pattern = prompt_state.skipped_line(1);
+            //         Ok(Some(AppAction::SearchPattern(pattern)))
+            //     } else {
+            //         Ok(Some(AppAction::SearchRollback))
+            //     }
+            // }
             _ => Ok(None),
         },
 
-        AppAction::TabularTableView => {
+        AppAction::TabularTableMode => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.show_table()
+                tab.table_mode()
             }
             Ok(None)
         }
 
-        AppAction::TabularSheetView => {
+        AppAction::TabularSheetMode => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.show_sheet()
+                tab.sheet_mode()
             }
             Ok(None)
         }
 
-        AppAction::TabularSwitchView => {
+        AppAction::TabularSearchMode => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_mode();
+            }
+            Ok(None)
+        }
+
+        AppAction::TabularToggleSheetMode => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.switch_view()
             }
@@ -179,14 +183,14 @@ pub fn execute(
 
         AppAction::SqlSchema => {
             let idx = app.tabs().iter().enumerate().find_map(|(idx, tab)| {
-                matches!(tab.tabular_type(), TabularType::Help).then_some(idx)
+                matches!(tab.tabular_source(), TabularSource::Help).then_some(idx)
             });
             if let Some(idx) = idx {
                 app.tabs().select(idx);
                 Ok(None)
             } else {
                 app.tabs()
-                    .add(TabularState::new(sql.schema(), TabularType::Schema));
+                    .add(TabContentState::new(sql.schema(), TabularSource::Schema));
                 app.tabs().select_last();
                 Ok(None)
             }
@@ -310,31 +314,11 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::SearchPattern(pattern) => {
-            if !matches!(app.status_bar().view(), StatusBarView::Search(_)) {
-                app.status_bar().switch_search(&pattern);
-            }
-            if let Some(tab) = app.tabs().selected_mut() {
-                tab.search_pattern(pattern);
-            }
-
-            Ok(None)
-        }
-
-        AppAction::SearchRollback => {
-            if let Some(tab) = app.tabs().selected_mut() {
-                tab.cancel_search();
-                tab.rollback();
-            }
-            app.status_bar().switch_info();
-            Ok(None)
-        }
-
         AppAction::SearchCommit => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.commit_search();
+                tab.search_commit();
+                tab.table_mode();
             }
-            app.status_bar().switch_info();
             Ok(None)
         }
 
@@ -351,11 +335,11 @@ pub fn execute(
             if sql.contains_dataframe(&query) {
                 let df = sql.execute(&format!("SELECT * FROM '{}'", query))?;
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(query)));
+                    .add(TabContentState::new(df, TabularSource::Name(query)));
             } else {
                 let df = sql.execute(&query)?;
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Query(query)));
+                    .add(TabContentState::new(df, TabularSource::Query(query)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -389,12 +373,12 @@ pub fn execute(
             todo!()
         }
 
-        AppAction::TabSelectedPrev => {
+        AppAction::TabPrev => {
             app.tabs().select_prev();
             Ok(None)
         }
 
-        AppAction::TabSelectedNext => {
+        AppAction::TabNext => {
             app.tabs().select_next();
             Ok(None)
         }
@@ -435,6 +419,7 @@ pub fn execute(
                 Err(anyhow!("Unable to export the data frame"))
             }
         }
+
         AppAction::ExportJson(path, fmt) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 WriteToJson::default()
@@ -445,6 +430,7 @@ pub fn execute(
                 Err(anyhow!("Unable to export the data frame"))
             }
         }
+
         AppAction::ExportArrow(path) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 WriteToArrow.write_to_file(path, tab.data_frame_mut())?;
@@ -475,7 +461,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(name)));
+                    .add(TabContentState::new(df, TabularSource::Name(name)));
             }
             Ok(None)
         }
@@ -492,7 +478,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(name)));
+                    .add(TabContentState::new(df, TabularSource::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -517,7 +503,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(name)));
+                    .add(TabContentState::new(df, TabularSource::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -535,7 +521,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(name)));
+                    .add(TabContentState::new(df, TabularSource::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -553,7 +539,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(name)));
+                    .add(TabContentState::new(df, TabularSource::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -582,87 +568,80 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabularState::new(df, TabularType::Name(name)));
+                    .add(TabContentState::new(df, TabularSource::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
         }
 
-        AppAction::CommandPalleteShow => {
-            *app.pallete() = Some(Default::default());
+        AppAction::SearchGotoNext => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_goto_next();
+            }
             Ok(None)
-        }
+        },
 
-        AppAction::CommandPalleteHide => {
-            *app.pallete() = None;
+        AppAction::SearchGotoPrev => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_goto_prev();
+            }
             Ok(None)
-        }
+        },
 
-        AppAction::CommandPalleteNext => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.goto_next();
+        AppAction::SearchGotoStart => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_goto_start();
             }
             Ok(None)
-        }
-        AppAction::CommandPalletePrev => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.goto_prev();
+        },
+
+        AppAction::SearchGotoEnd => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_goto_end();
             }
             Ok(None)
-        }
-        AppAction::CommandPalleteStart => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.goto_start();
+        },
+
+        AppAction::SearchDeleteNext => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_delete_next();
             }
             Ok(None)
-        }
-        AppAction::CommandPalleteEnd => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.goto_end();
+        },
+        
+        AppAction::SearchDeletePrev => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_delete_prev();
             }
             Ok(None)
-        }
-        AppAction::CommandPalleteAbove => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.goto_above();
+        },
+
+        AppAction::SearchInsert(c) => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.search_insert(c);
             }
             Ok(None)
-        }
-        AppAction::CommandPalleteBelow => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.goto_below();
+        },
+
+        AppAction::SearchRollback => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.table_mode();
+                tab.rollback();
             }
-            Ok(None)
-        }
-        AppAction::CommandPalleteDeleteNext => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.delete_next();
-            }
-            Ok(None)
-        }
-        AppAction::CommandPalleteDeletePrev => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.delete_prev();
-            }
-            Ok(None)
-        }
-        AppAction::CommandPalleteInsert(c) => {
-            if let Some(pallete) = app.pallete().as_mut() {
-                pallete.insert(c);
-            }
+            app.status_bar().switch_info();
             Ok(None)
         }
 
         AppAction::Help => {
             let idx = app.tabs().iter().enumerate().find_map(|(idx, tab)| {
-                matches!(tab.tabular_type(), TabularType::Help).then_some(idx)
+                matches!(tab.tabular_source(), TabularSource::Help).then_some(idx)
             });
             if let Some(idx) = idx {
                 app.tabs().select(idx)
             } else {
-                app.tabs().add(TabularState::new(
+                app.tabs().add(TabContentState::new(
                     commands_help_data_frame(),
-                    TabularType::Help,
+                    TabularSource::Help,
                 ));
                 app.tabs().select_last();
             }
@@ -673,5 +652,19 @@ pub fn execute(
             app.quit();
             Ok(None)
         }
+
+        AppAction::TabularScrollRight => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.scroll_right();
+            }
+            Ok(None)
+        },
+
+        AppAction::TabularScrollLeft => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.scroll_left();
+            }
+            Ok(None)
+        },
     }
 }

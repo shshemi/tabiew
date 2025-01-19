@@ -1,11 +1,8 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Add, os::macos::raw::stat, usize};
 
-use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
-use ratatui::{
-    layout::Constraint,
-    widgets::{Cell, Row, StatefulWidget, Table, TableState, Widget},
-};
+use itertools::{enumerate, Itertools};
+use polars::{frame::DataFrame, prelude::PlSmallStr};
+use ratatui::{layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     tui::Styler,
@@ -17,7 +14,8 @@ use crate::{
 
 #[derive(Debug, Default)]
 pub struct DataFrameTableState {
-    offset: usize,
+    offset_y: usize,
+    offset_x: usize,
     select: usize,
     rendered_rows: u16,
     widths: Vec<usize>,
@@ -28,7 +26,8 @@ pub struct DataFrameTableState {
 impl DataFrameTableState {
     pub fn new(data_frame: DataFrame) -> Self {
         Self {
-            offset: 0,
+            offset_y: 0,
+            offset_x: 0,
             select: 0,
             rendered_rows: 0,
             widths: data_frame.tui_widths(),
@@ -50,7 +49,7 @@ impl DataFrameTableState {
     }
 
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
-        self.offset = 0;
+        self.offset_y = 0;
         self.select = 0;
         self.widths = data_frame.tui_widths();
         self.headers = data_frame
@@ -70,7 +69,7 @@ impl DataFrameTableState {
     }
 
     pub fn select(&mut self, select: usize) {
-        self.select = select.min(self.data_frame.height().saturating_sub(1));
+        self.select = select;
     }
 
     pub fn select_up(&mut self, len: usize) {
@@ -86,7 +85,15 @@ impl DataFrameTableState {
     }
 
     pub fn select_last(&mut self) {
-        self.select(self.height());
+        self.select(usize::MAX);
+    }
+
+    pub fn scroll_left(&mut self) {
+        self.offset_x = self.offset_x.saturating_sub(1);
+    }
+
+    pub fn scroll_right(&mut self) {
+        self.offset_x = self.offset_x.saturating_add(1);
     }
 
     pub fn height(&self) -> usize {
@@ -95,20 +102,10 @@ impl DataFrameTableState {
     pub fn rendered_rows(&self) -> u16 {
         self.rendered_rows
     }
-
-    fn adjust(&mut self, rendered_rows: u16) {
-        self.rendered_rows = rendered_rows;
-        self.offset = self.offset.clamp(
-            self.select
-                .saturating_sub(rendered_rows.saturating_sub(1).into()),
-            self.select,
-        );
-    }
 }
 
 pub struct DataFrameTable<Theme> {
     selection: bool,
-    column_space: u16,
     _theme: PhantomData<Theme>,
 }
 
@@ -116,18 +113,12 @@ impl<Theme> DataFrameTable<Theme> {
     pub fn new() -> Self {
         Self {
             selection: false,
-            column_space: 1,
             _theme: Default::default(),
         }
     }
 
     pub fn with_selection(mut self, selection: bool) -> Self {
         self.selection = selection;
-        self
-    }
-
-    pub fn with_column_space(mut self, space: u16) -> Self {
-        self.column_space = space;
         self
     }
 }
@@ -147,56 +138,162 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        state.adjust(area.height.saturating_sub(1));
-        let df = state
-            .data_frame
-            .slice(state.offset as i64, state.rendered_rows as usize);
+        // rendered rows = table height - header height
+        state.rendered_rows = area.height.saturating_sub(1);
 
-        let header = Row::new(
+        // 0 <= select < table height
+        state.select = state.select.min(state.data_frame.height());
+
+        // 0 <= offset_y <= select <= offset_y + rendered rows < table height
+        state.offset_y = state.offset_y.clamp(
             state
-                .headers
-                .iter()
-                .enumerate()
-                .map(|(col_idx, name)| {
-                    Cell::new(name.as_str()).style(Theme::table_header_cell(col_idx))
-                })
-                .collect::<Vec<_>>(),
-        )
-        .style(Theme::table_header());
+                .select
+                .saturating_sub(state.rendered_rows.saturating_sub(1).into()),
+            state.select,
+        );
 
-        let table = Table::new(
-            df.iter()
-                .map(Series::iter)
-                .zip_iters()
-                .enumerate()
-                .map(|(ridx, vals)| {
-                    Row::new(vals.into_iter().map(IntoString::into_string).map(Cell::new))
-                        .style(Theme::table_row(ridx + state.offset))
-                })
-                .collect_vec(),
-            state
-                .widths
-                .iter()
-                .copied()
-                .map(|w| Constraint::Length(w as u16))
-                .collect::<Vec<_>>(),
-        )
-        .header(header)
-        .row_highlight_style(Theme::table_highlight())
-        .style(Theme::table_header())
-        .column_spacing(2);
+        // total width
+        let total_width = state.widths.iter().sum::<usize>();
 
-        if self.selection {
-            StatefulWidget::render(
-                table,
-                area,
-                buf,
-                &mut TableState::new()
-                    .with_offset(0)
-                    .with_selected(state.select.saturating_sub(state.offset)),
+        // 0 <= offset_x < sum(widths) - area.width
+        state.offset_x = state
+            .offset_x
+            .min(total_width.saturating_sub(area.width as usize) + (state.widths.len() - 1));
+
+        // draw header
+        buf.set_line(
+            area.x,
+            area.y,
+            &Line::styled(
+                state
+                    .headers
+                    .iter()
+                    .zip(state.widths.iter())
+                    .map(|(val, wid)| format!("{:<width$}", val, width = wid))
+                    .join(" ")
+                    .chars()
+                    .skip(state.offset_x)
+                    .take(area.width.into())
+                    .collect::<String>(),
+                Theme::table_header(),
+            ),
+            area.width,
+        );
+
+        // style header
+        let v = state
+            .widths
+            .iter()
+            .copied()
+            .scan(0, |s, w| {
+                let ret = (*s, *s + w);
+                *s = ret.1 + 1;
+                Some(ret)
+            })
+            .enumerate()
+            .map(|(idx, (i, j))| (Theme::table_header_cell(idx), i, j))
+            .filter(|(_, i, j)| {
+                let min = state.offset_x as usize;
+                let max = min + area.width as usize;
+                i.clamp(&min, &max) < j.clamp(&min, &max)
+            })
+            .collect_vec();
+
+        v.into_iter().for_each(|(s, i, j)| {
+            buf.set_style(
+                Rect {
+                    x: (area.x + i as u16).saturating_sub(state.offset_x as u16),
+                    y: area.y,
+                    width: (j - i) as u16,
+                    height: 1,
+                },
+                s,
             );
-        } else {
-            Widget::render(table, area, buf);
-        }
+        });
+
+        // draw rows
+        state
+            .data_frame
+            .slice(state.offset_y as i64, state.rendered_rows as usize)
+            .iter()
+            .map(|series| series.iter())
+            .zip_iters()
+            .enumerate()
+            .map(|(idx, vec)| {
+                (
+                    idx as u16,
+                    Line::styled(
+                        vec.into_iter()
+                            .zip(state.widths.iter())
+                            .map(|(val, wid)| {
+                                format!(
+                                    "{:<width$}",
+                                    val.into_string().lines().next().unwrap_or_default(),
+                                    width = wid
+                                )
+                            })
+                            .join(" ")
+                            .chars()
+                            .skip(state.offset_x)
+                            .take(area.width.into())
+                            .collect::<String>(),
+                        if state.offset_y + idx == state.select {
+                            Theme::table_highlight()
+                        } else {
+                            Theme::table_row(state.offset_y + idx)
+                        },
+                    ),
+                )
+            })
+            .for_each(|(idx, line)| {
+                buf.set_line(area.x, area.y + 1 + idx, &line, area.width);
+            });
+
+        // let header = Row::new(
+        //     state
+        //         .headers
+        //         .iter()
+        //         .zip(state.widths.iter())
+        //         .enumerate()
+        //         .map(|(col_idx, (name, cons))| {
+        //             Cell::new(format!("{} ({:?})",name.as_str(), cons)).style(Theme::table_header_cell(col_idx))
+        //         })
+        //         .collect::<Vec<_>>(),
+        // )
+        // .style(Theme::table_header());
+
+        // let rows = df
+        //     .iter()
+        //     .map(Series::iter)
+        //     .zip_iters()
+        //     .enumerate()
+        //     .map(|(ridx, vals)| {
+        //         Row::new(vals.into_iter().map(IntoString::into_string).map(Cell::new))
+        //             .style(Theme::table_row(ridx + state.offset))
+        //     })
+        //     .collect_vec();
+
+        // let table = Table::default()
+        //     .rows(rows)
+        //     .widths(&state.widths)
+        //     .header(header)
+        //     .flex(Flex::Start)
+        //     .row_highlight_style(Theme::table_highlight())
+        //     .style(Theme::table_header())
+        //     .column_spacing(1);
+
+        // if self.selection {
+        //     let mut ts = TableState::new()
+        //             .with_offset(0)
+        //             .with_selected(state.select.saturating_sub(state.offset));
+        //     StatefulWidget::render(
+        //         table,
+        //         area,
+        //         buf,
+        //         &mut ts,
+        //     );
+        // } else {
+        //     Widget::render(table, area, buf);
+        // }
     }
 }

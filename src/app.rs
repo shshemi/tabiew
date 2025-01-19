@@ -5,11 +5,7 @@ use ratatui::{
 
 use crate::{
     tui::{
-        pallete::{Pallete, PalleteState},
-        status_bar::{StatusBar, StatusBarState, StatusBarTag, StatusBarView},
-        tabs::{Tabs, TabsState},
-        tabular::TabularView,
-        Styler, TabularState, TabularType,
+        status_bar::{StatusBar, StatusBarState, StatusBarTag, StatusBarView}, tabs::{Tabs, TabsState}, tab_content::TabularMode, Styler, TabularSource, TabContentState
     },
     AppResult,
 };
@@ -29,7 +25,6 @@ pub struct App {
     tabs: TabsState,
     status_bar: StatusBarState,
     running: bool,
-    pallete: Option<PalleteState>,
 }
 
 impl App {
@@ -38,7 +33,6 @@ impl App {
             tabs,
             status_bar: StatusBarState::new(),
             running: true,
-            pallete: Default::default(),
         }
     }
 
@@ -52,10 +46,6 @@ impl App {
 
     pub fn status_bar(&mut self) -> &mut StatusBarState {
         &mut self.status_bar
-    }
-
-    pub fn pallete(&mut self) -> &mut Option<PalleteState> {
-        &mut self.pallete
     }
 
     pub fn error(&mut self, error: impl ToString) {
@@ -75,17 +65,16 @@ impl App {
 
     pub fn context(&self) -> AppContext {
         match (
-            self.pallete.as_ref(),
             self.status_bar.view(),
-            self.tabs.selected().map(TabularState::view),
+            self.tabs.selected().map(TabContentState::mode),
         ) {
-            (Some(_), _, _) => AppContext::Pallete,
-            (_, StatusBarView::Error(_), _) => AppContext::Error,
-            (_, StatusBarView::Prompt(_), _) => AppContext::Command,
-            (_, StatusBarView::Search(_), _) => AppContext::Search,
-            (_, _, Some(TabularView::Sheet(_))) => AppContext::Sheet,
-            (_, _, Some(TabularView::Table)) => AppContext::Table,
-            (_, _, None) => AppContext::Empty,
+            (StatusBarView::Info, None) => AppContext::Empty,
+            (StatusBarView::Info, Some(TabularMode::Table)) => AppContext::Table,
+            (StatusBarView::Info, Some(TabularMode::Sheet(_))) => AppContext::Sheet,
+            (StatusBarView::Info, Some(TabularMode::Search(_, _))) => AppContext::Search,
+            (StatusBarView::Error(_), _) => AppContext::Error,
+            (StatusBarView::Prompt(_), _) => AppContext::Command,
+            (StatusBarView::Search(_), _) => AppContext::Search,
         }
     }
 
@@ -105,17 +94,17 @@ impl App {
             frame.render_stateful_widget(
                 StatusBar::<Theme>::new(&[
                     StatusBarTag::new(
-                        match tab.tabular_type() {
-                            TabularType::Help | TabularType::Schema | TabularType::Name(_) => {
+                        match tab.tabular_source() {
+                            TabularSource::Help | TabularSource::Schema | TabularSource::Name(_) => {
                                 "Table"
                             }
-                            TabularType::Query(_) => "SQL",
+                            TabularSource::Query(_) => "SQL",
                         },
-                        match tab.tabular_type() {
-                            TabularType::Help => "Help",
-                            TabularType::Schema => "Schema",
-                            TabularType::Name(name) => name.as_str(),
-                            TabularType::Query(query) => query.as_str(),
+                        match tab.tabular_source() {
+                            TabularSource::Help => "Help",
+                            TabularSource::Schema => "Schema",
+                            TabularSource::Name(name) => name.as_str(),
+                            TabularSource::Query(query) => query.as_str(),
                         },
                     ),
                     StatusBarTag::new(
@@ -154,17 +143,6 @@ impl App {
                 &mut self.status_bar,
             );
         }
-
-        if let Some(state) = &mut self.pallete {
-            frame.render_stateful_widget(
-                Pallete::<Theme>::new()
-                    .with_horizontal_pad(5)
-                    .with_items((0..10).map(|idx| format!("Item {}", idx))),
-                frame.area(),
-                state,
-            );
-        }
-
         Ok(())
     }
 }
