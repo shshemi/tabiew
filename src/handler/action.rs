@@ -30,6 +30,9 @@ pub enum AppAction {
     TabularToggleSheetMode,
     TabularScrollRight,
     TabularScrollLeft,
+    TabularScrollStart,
+    TabularScrollEnd,
+    TabularToggleExpansion,
     TabularGoto(usize),
     TabularGotoFirst,
     TabularGotoLast,
@@ -122,7 +125,6 @@ pub fn execute(
         //     app.status_bar().switch_search(query);
         //     Ok(None)
         // }
-
         AppAction::StatusBarHandle(event) => match app.status_bar().view_mut() {
             StatusBarView::Prompt(prompt_state) => {
                 prompt_state.handle(event);
@@ -579,49 +581,49 @@ pub fn execute(
                 tab.search_goto_next();
             }
             Ok(None)
-        },
+        }
 
         AppAction::SearchGotoPrev => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_goto_prev();
             }
             Ok(None)
-        },
+        }
 
         AppAction::SearchGotoStart => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_goto_start();
             }
             Ok(None)
-        },
+        }
 
         AppAction::SearchGotoEnd => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_goto_end();
             }
             Ok(None)
-        },
+        }
 
         AppAction::SearchDeleteNext => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_delete_next();
             }
             Ok(None)
-        },
-        
+        }
+
         AppAction::SearchDeletePrev => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_delete_prev();
             }
             Ok(None)
-        },
+        }
 
         AppAction::SearchInsert(c) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_insert(c);
             }
             Ok(None)
-        },
+        }
 
         AppAction::SearchRollback => {
             if let Some(tab) = app.tabs().selected_mut() {
@@ -658,13 +660,34 @@ pub fn execute(
                 tab.scroll_right();
             }
             Ok(None)
-        },
+        }
 
         AppAction::TabularScrollLeft => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.scroll_left();
             }
             Ok(None)
-        },
+        }
+
+        AppAction::TabularScrollStart => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.scroll_start();
+            }
+            Ok(None)
+        }
+
+        AppAction::TabularScrollEnd => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.scroll_end();
+            }
+            Ok(None)
+        }
+
+        AppAction::TabularToggleExpansion => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.toggle_expansion();
+            }
+            Ok(None)
+        }
     }
 }
