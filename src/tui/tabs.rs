@@ -3,18 +3,18 @@ use std::marker::PhantomData;
 use ratatui::widgets::StatefulWidget;
 
 use super::{
-    tabular::{Tabular, TabularState},
+    tab_content::{TabContent, TabContentState},
     Styler,
 };
 
 #[derive(Debug)]
 pub struct TabsState {
-    tabulars: Vec<TabularState>,
+    tabulars: Vec<TabContentState>,
     idx: usize,
 }
 
 impl TabsState {
-    pub fn add(&mut self, tabular: TabularState) {
+    pub fn add(&mut self, tabular: TabContentState) {
         self.tabulars.push(tabular);
     }
 
@@ -30,11 +30,11 @@ impl TabsState {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&TabularState> {
+    pub fn selected(&self) -> Option<&TabContentState> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut TabularState> {
+    pub fn selected_mut(&mut self) -> Option<&mut TabContentState> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -64,17 +64,17 @@ impl TabsState {
         self.select(usize::MAX)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &TabularState> {
+    pub fn iter(&self) -> impl Iterator<Item = &TabContentState> {
         self.tabulars.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabularState> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabContentState> {
         self.tabulars.iter_mut()
     }
 }
 
-impl FromIterator<TabularState> for TabsState {
-    fn from_iter<T: IntoIterator<Item = TabularState>>(iter: T) -> Self {
+impl FromIterator<TabContentState> for TabsState {
+    fn from_iter<T: IntoIterator<Item = TabContentState>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
@@ -118,12 +118,9 @@ impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
     ) {
         state.idx = state.idx().min(state.len() - 1);
         if let Some(tabular) = state.selected_mut() {
-            StatefulWidget::render(
-                Tabular::<Theme>::new().with_selection(self.selection),
-                area,
-                buf,
-                tabular,
-            );
+            TabContent::<Theme>::new()
+                .with_selection(self.selection)
+                .render(area, buf, tabular);
         }
     }
 }

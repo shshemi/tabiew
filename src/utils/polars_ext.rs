@@ -4,6 +4,8 @@ use polars::{
     prelude::{AnyValue, DataType},
     series::{ChunkCompareEq, Series},
 };
+use ratatui::layout::Constraint;
+use rayon::prelude::*;
 
 use super::type_ext::HasSubsequence;
 
@@ -64,7 +66,9 @@ impl IntoString for AnyValue<'_> {
 
 impl TuiWidths for DataFrame {
     fn tui_widths(&self) -> Vec<usize> {
-        self.iter().map(series_width).collect()
+        self.iter()
+            .map(series_width)
+            .collect()
     }
 }
 
