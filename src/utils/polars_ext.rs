@@ -4,8 +4,6 @@ use polars::{
     prelude::{AnyValue, DataType},
     series::{ChunkCompareEq, Series},
 };
-use ratatui::layout::Constraint;
-use rayon::prelude::*;
 
 use super::type_ext::HasSubsequence;
 

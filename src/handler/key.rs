@@ -124,7 +124,14 @@ pub fn default_keymap() -> KeyMap {
         AppAction::TabularGoDown(1),
     );
 
-    // Scroll left / right
+
+    // Table view toggle expansion
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Char('e'), KeyModifiers::empty()),
+        AppAction::TabularToggleExpansion,
+    );
+
+    // Scroll table left / right and start / end
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Char('h'), KeyModifiers::empty()),
         AppAction::TabularScrollLeft,
@@ -140,6 +147,14 @@ pub fn default_keymap() -> KeyMap {
     key_map.add(
         Keybind::Exact(AppContext::Table, KeyCode::Right, KeyModifiers::empty()),
         AppAction::TabularScrollRight,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Char('$'), KeyModifiers::empty()),
+        AppAction::TabularScrollEnd,
+    );
+    key_map.add(
+        Keybind::Exact(AppContext::Table, KeyCode::Char('_'), KeyModifiers::empty()),
+        AppAction::TabularScrollStart,
     );
 
     // Move to first/last record

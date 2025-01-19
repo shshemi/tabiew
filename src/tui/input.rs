@@ -1,7 +1,7 @@
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
-    widgets::{Block, ListState, Paragraph, StatefulWidget, Widget},
+    widgets::{Block, Paragraph, StatefulWidget, Widget},
 };
 use std::marker::PhantomData;
 

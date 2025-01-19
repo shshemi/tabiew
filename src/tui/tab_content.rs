@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, os::macos::raw::stat};
+use std::marker::PhantomData;
 
 use itertools::Itertools;
 use polars::frame::DataFrame;
@@ -10,7 +10,7 @@ use ratatui::{
 
 use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
-    search_bar::{self, SearchBar, SearchBarState},
+    search_bar::{SearchBar, SearchBarState},
     sheet::{Sheet, SheetBlock, SheetState},
 };
 use crate::{search::Search, tui::theme::Styler, utils::polars_ext::IntoString};
@@ -109,6 +109,24 @@ impl TabContentState {
     pub fn scroll_right(&mut self) {
         if matches!(self.mode, TabularMode::Table) {
             self.table_state.scroll_right();
+        }
+    }
+
+    pub fn scroll_start(&mut self) {
+        if matches!(self.mode, TabularMode::Table) {
+            self.table_state.scroll_start();
+        }
+    }
+
+    pub fn scroll_end(&mut self) {
+        if matches!(self.mode, TabularMode::Table) {
+            self.table_state.scroll_end();
+        }
+    }
+
+    pub fn toggle_expansion(&mut self) {
+        if matches!(self.mode, TabularMode::Table) {
+            self.table_state.toggle_expansion();
         }
     }
 
