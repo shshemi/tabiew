@@ -161,27 +161,33 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
             .min(total_width.saturating_sub(area.width as usize) + (state.widths.len() - 1));
 
         // draw header
-        buf.set_line(
+        buf.set_string(
             area.x,
             area.y,
-            &Line::styled(
-                state
-                    .headers
-                    .iter()
-                    .zip(state.widths.iter())
-                    .map(|(val, wid)| format!("{:<width$}", val, width = wid))
-                    .join(" ")
-                    .chars()
-                    .skip(state.offset_x)
-                    .take(area.width.into())
-                    .collect::<String>(),
-                Theme::table_header(),
-            ),
-            area.width,
+            state
+                .headers
+                .iter()
+                .zip(state.widths.iter())
+                .map(|(val, wid)| format!("{:<width$}", val, width = wid))
+                .join(" ")
+                .chars()
+                .skip(state.offset_x)
+                .take(area.width.into())
+                .collect::<String>(),
+            Theme::table_header(),
+        );
+        buf.set_style(
+            Rect {
+                x: area.x,
+                y: area.y,
+                width: area.width,
+                height: 1,
+            },
+            Theme::table_header(),
         );
 
         // style header
-        let v = state
+        state
             .widths
             .iter()
             .copied()
@@ -197,19 +203,17 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                 let max = min + area.width as usize;
                 i.clamp(&min, &max) < j.clamp(&min, &max)
             })
-            .collect_vec();
-
-        v.into_iter().for_each(|(s, i, j)| {
-            buf.set_style(
-                Rect {
-                    x: (area.x + i as u16).saturating_sub(state.offset_x as u16),
-                    y: area.y,
-                    width: (j - i) as u16,
-                    height: 1,
-                },
-                s,
-            );
-        });
+            .for_each(|(s, i, j)| {
+                buf.set_style(
+                    Rect {
+                        x: (area.x + i as u16).saturating_sub(state.offset_x as u16),
+                        y: area.y,
+                        width: (j - i) as u16,
+                        height: 1,
+                    },
+                    s,
+                );
+            });
 
         // draw rows
         state
@@ -222,31 +226,38 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
             .map(|(idx, vec)| {
                 (
                     idx as u16,
-                    Line::styled(
-                        vec.into_iter()
-                            .zip(state.widths.iter())
-                            .map(|(val, width)| {
-                                format!(
-                                    "{:<width$}",
-                                    val.into_string().lines().next().unwrap_or_default(),
-                                    width = width
-                                )
-                            })
-                            .join(" ")
-                            .chars()
-                            .skip(state.offset_x)
-                            .take(area.width.into())
-                            .collect::<String>(),
-                        if state.offset_y + idx == state.select && self.selection {
-                            Theme::table_highlight()
-                        } else {
-                            Theme::table_row(state.offset_y + idx)
-                        },
-                    ),
+                    vec.into_iter()
+                        .zip(state.widths.iter())
+                        .map(|(val, width)| {
+                            format!(
+                                "{:<width$}",
+                                val.into_string().lines().next().unwrap_or_default(),
+                                width = width
+                            )
+                        })
+                        .join(" ")
+                        .chars()
+                        .skip(state.offset_x)
+                        .take(area.width.into())
+                        .collect::<String>(),
+                    if state.offset_y + idx == state.select && self.selection {
+                        Theme::table_highlight()
+                    } else {
+                        Theme::table_row(state.offset_y + idx)
+                    },
                 )
             })
-            .for_each(|(idx, line)| {
-                buf.set_line(area.x, area.y + 1 + idx, &line, area.width);
+            .for_each(|(idx, line, style)| {
+                buf.set_string(area.x, area.y + 1 + idx, line, style);
+                buf.set_style(
+                    Rect {
+                        x: area.x,
+                        y: area.y + 1 + idx,
+                        width: area.width,
+                        height: 1,
+                    },
+                    style,
+                );
             });
 
         // let header = Row::new(
