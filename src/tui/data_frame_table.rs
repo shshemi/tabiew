@@ -225,11 +225,11 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                     Line::styled(
                         vec.into_iter()
                             .zip(state.widths.iter())
-                            .map(|(val, wid)| {
+                            .map(|(val, width)| {
                                 format!(
                                     "{:<width$}",
                                     val.into_string().lines().next().unwrap_or_default(),
-                                    width = wid
+                                    width = width
                                 )
                             })
                             .join(" ")
@@ -237,7 +237,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                             .skip(state.offset_x)
                             .take(area.width.into())
                             .collect::<String>(),
-                        if state.offset_y + idx == state.select {
+                        if state.offset_y + idx == state.select && self.selection {
                             Theme::table_highlight()
                         } else {
                             Theme::table_row(state.offset_y + idx)
