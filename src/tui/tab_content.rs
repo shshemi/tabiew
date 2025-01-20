@@ -124,6 +124,14 @@ impl TabContentState {
         }
     }
 
+    pub fn expanded(&self) -> bool {
+        if matches!(self.mode, TabularMode::Table) {
+            self.table_state.expanded()
+        } else {
+            false
+        }
+    }
+
     pub fn toggle_expansion(&mut self) {
         if matches!(self.mode, TabularMode::Table) {
             self.table_state.toggle_expansion();
