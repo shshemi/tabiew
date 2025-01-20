@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Add};
 
 use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
@@ -117,6 +117,9 @@ impl DataFrameTableState {
         }
     }
 
+    pub fn expanded(&self) -> bool {
+        self.expanded
+    }
     pub fn toggle_expansion(&mut self) {
         self.expanded = !self.expanded;
     }
@@ -186,7 +189,8 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                 .iter()
                 .sum::<usize>()
                 .saturating_sub(area.width as usize)
-                + (state.widths.len().saturating_sub(1)),
+                .add(state.widths.len().saturating_sub(1))
+                .saturating_sub(1),
         );
 
         if state.expanded {

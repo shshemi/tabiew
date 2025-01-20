@@ -5,7 +5,10 @@ use ratatui::{
 
 use crate::{
     tui::{
-        status_bar::{StatusBar, StatusBarState, StatusBarTag, StatusBarView}, tabs::{Tabs, TabsState}, tab_content::TabularMode, Styler, TabularSource, TabContentState
+        status_bar::{StatusBar, StatusBarState, StatusBarTag, StatusBarView},
+        tab_content::TabularMode,
+        tabs::{Tabs, TabsState},
+        Styler, TabContentState, TabularSource,
     },
     AppResult,
 };
@@ -95,9 +98,9 @@ impl App {
                 StatusBar::<Theme>::new(&[
                     StatusBarTag::new(
                         match tab.tabular_source() {
-                            TabularSource::Help | TabularSource::Schema | TabularSource::Name(_) => {
-                                "Table"
-                            }
+                            TabularSource::Help
+                            | TabularSource::Schema
+                            | TabularSource::Name(_) => "Table",
                             TabularSource::Query(_) => "SQL",
                         },
                         match tab.tabular_source() {
@@ -107,6 +110,7 @@ impl App {
                             TabularSource::Query(query) => query.as_str(),
                         },
                     ),
+                    StatusBarTag::new("Expanded", if tab.expanded() { "Yes" } else { "No" }),
                     StatusBarTag::new(
                         "Tab",
                         &format!(
