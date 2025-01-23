@@ -13,7 +13,7 @@ use tabiew::handler::key::default_keymap;
 use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
-use tabiew::tui::{TabContentState, TabularSource, Terminal};
+use tabiew::tui::{TabContentState, Source, Terminal};
 use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
@@ -79,7 +79,7 @@ fn start_tui<Theme: Styler>(
 ) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(df, name)| TabContentState::new(df, TabularSource::Name(name)))
+        .map(|(df, name)| TabContentState::new(df, Source::Name(name)))
         .collect();
     let keybind = default_keymap();
     let mut app = App::new(tabs);

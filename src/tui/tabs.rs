@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use ratatui::widgets::StatefulWidget;
 
 use super::{
-    tab_content::{TabContent, TabContentState},
-    Styler,
+    status_bar::NewStatusBarTag, tab_content::{TabContent, TabContentState}, Styler
 };
 
 #[derive(Debug)]
@@ -116,10 +115,11 @@ impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        state.idx = state.idx().min(state.len() - 1);
+        state.idx = state.idx().min(state.len().saturating_sub(1));
+        let tag_value = format!("{} / {}", state.idx + 1, state.len());
         if let Some(tabular) = state.selected_mut() {
             TabContent::<Theme>::new()
-                .with_selection(self.selection)
+                .with_tag(NewStatusBarTag::new("Tab", tag_value))
                 .render(area, buf, tabular);
         }
     }

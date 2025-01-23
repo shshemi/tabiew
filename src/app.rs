@@ -5,10 +5,10 @@ use ratatui::{
 
 use crate::{
     tui::{
-        status_bar::{StatusBar, StatusBarState, StatusBarTag, StatusBarView},
-        tab_content::TabularMode,
+        status_bar::{StatusBar, StatusBarState, StatusBarView},
+        tab_content::Modal,
         tabs::{Tabs, TabsState},
-        Styler, TabContentState, TabularSource,
+        Styler, TabContentState,
     },
     AppResult,
 };
@@ -69,12 +69,12 @@ impl App {
     pub fn context(&self) -> AppContext {
         match (
             self.status_bar.view(),
-            self.tabs.selected().map(TabContentState::mode),
+            self.tabs.selected().map(TabContentState::modal),
         ) {
             (StatusBarView::Info, None) => AppContext::Empty,
-            (StatusBarView::Info, Some(TabularMode::Table)) => AppContext::Table,
-            (StatusBarView::Info, Some(TabularMode::Sheet(_))) => AppContext::Sheet,
-            (StatusBarView::Info, Some(TabularMode::Search(_, _))) => AppContext::Search,
+            (StatusBarView::Info, Some(None)) => AppContext::Table,
+            (StatusBarView::Info, Some(Some(Modal::Sheet(_)))) => AppContext::Sheet,
+            (StatusBarView::Info, Some(Some(Modal::Search(_, _)))) => AppContext::Search,
             (StatusBarView::Error(_), _) => AppContext::Error,
             (StatusBarView::Prompt(_), _) => AppContext::Command,
             (StatusBarView::Search(_), _) => AppContext::Search,
@@ -93,53 +93,53 @@ impl App {
             &mut self.tabs,
         );
 
-        if let Some(tab) = self.tabs.selected() {
-            frame.render_stateful_widget(
-                StatusBar::<Theme>::new(&[
-                    StatusBarTag::new(
-                        match tab.tabular_source() {
-                            TabularSource::Help
-                            | TabularSource::Schema
-                            | TabularSource::Name(_) => "Table",
-                            TabularSource::Query(_) => "SQL",
-                        },
-                        match tab.tabular_source() {
-                            TabularSource::Help => "Help",
-                            TabularSource::Schema => "Schema",
-                            TabularSource::Name(name) => name.as_str(),
-                            TabularSource::Query(query) => query.as_str(),
-                        },
-                    ),
-                    StatusBarTag::new("Expanded", if tab.expanded() { "Yes" } else { "No" }),
-                    StatusBarTag::new(
-                        "Tab",
-                        &format!(
-                            "{:>width$} / {}",
-                            self.tabs.idx() + 1,
-                            self.tabs.len(),
-                            width = self.tabs.len().to_string().len()
-                        ),
-                    ),
-                    StatusBarTag::new(
-                        "Row",
-                        &format!(
-                            "{:>width$}",
-                            tab.selected() + 1,
-                            width = tab.data_frame().height().to_string().len()
-                        ),
-                    ),
-                    StatusBarTag::new(
-                        "Shape",
-                        &format!(
-                            "{} x {}",
-                            tab.data_frame().height(),
-                            tab.data_frame().width()
-                        ),
-                    ),
-                ]),
-                status_bar_area,
-                &mut self.status_bar,
-            );
+        if let Some(_tab) = self.tabs.selected() {
+            // frame.render_stateful_widget(
+            //     StatusBar::<Theme>::new(&[
+            //         StatusBarTag::new(
+            //             match tab.tabular_source() {
+            //                 TabularSource::Help
+            //                 | TabularSource::Schema
+            //                 | TabularSource::Name(_) => "Table",
+            //                 TabularSource::Query(_) => "SQL",
+            //             },
+            //             match tab.tabular_source() {
+            //                 TabularSource::Help => "Help",
+            //                 TabularSource::Schema => "Schema",
+            //                 TabularSource::Name(name) => name.as_str(),
+            //                 TabularSource::Query(query) => query.as_str(),
+            //             },
+            //         ),
+            //         StatusBarTag::new("Expanded", if tab.expanded() { "Yes" } else { "No" }),
+            //         StatusBarTag::new(
+            //             "Tab",
+            //             &format!(
+            //                 "{:>width$} / {}",
+            //                 self.tabs.idx() + 1,
+            //                 self.tabs.len(),
+            //                 width = self.tabs.len().to_string().len()
+            //             ),
+            //         ),
+            //         StatusBarTag::new(
+            //             "Row",
+            //             &format!(
+            //                 "{:>width$}",
+            //                 tab.selected() + 1,
+            //                 width = tab.data_frame().height().to_string().len()
+            //             ),
+            //         ),
+            //         StatusBarTag::new(
+            //             "Shape",
+            //             &format!(
+            //                 "{} x {}",
+            //                 tab.data_frame().height(),
+            //                 tab.data_frame().width()
+            //             ),
+            //         ),
+            //     ]),
+            //     status_bar_area,
+            //     &mut self.status_bar,
+            // );
         } else {
             frame.render_stateful_widget(
                 StatusBar::<Theme>::new(&[]),

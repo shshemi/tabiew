@@ -5,6 +5,8 @@ use polars::{
     series::{ChunkCompareEq, Series},
 };
 
+use crate::tui::sheet::SheetSection;
+
 use super::type_ext::HasSubsequence;
 
 pub trait SafeInferSchema {
@@ -21,6 +23,10 @@ pub trait TuiWidths {
 
 pub trait FuzzyCmp {
     fn fuzzy_cmp(self, other: &str) -> bool;
+}
+
+pub trait GetSheetSections {
+    fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
 }
 
 impl SafeInferSchema for DataFrame {
@@ -64,9 +70,7 @@ impl IntoString for AnyValue<'_> {
 
 impl TuiWidths for DataFrame {
     fn tui_widths(&self) -> Vec<usize> {
-        self.iter()
-            .map(series_width)
-            .collect()
+        self.iter().map(series_width).collect()
     }
 }
 
@@ -94,6 +98,23 @@ impl FuzzyCmp for AnyValue<'_> {
             AnyValue::String(val) => val.has_subsequence(other, other.len()),
             _ => self.into_string().has_subsequence(other, other.len()),
         }
+    }
+}
+
+impl GetSheetSections for DataFrame {
+    fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection> {
+        self.get_column_names()
+            .into_iter()
+            .map(|pl_str| pl_str.to_string().to_owned())
+            .zip(
+                self.get(pos)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(IntoString::into_string)
+                    .collect_vec(),
+            )
+            .map(|(header, content)| SheetSection::new(header, content))
+            .collect_vec()
     }
 }
 
