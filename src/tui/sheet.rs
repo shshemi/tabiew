@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
 
 use ratatui::{
-    layout::Alignment,
-    text::{Line, Span},
-    widgets::{Borders, Paragraph, StatefulWidget, Widget, Wrap},
+    layout::Alignment, style::Stylize, text::{Line, Span}, widgets::{Block, BorderType, Borders, Clear, Paragraph, StatefulWidget, Widget, Wrap}
 };
 
 use crate::tui::{
@@ -13,28 +11,38 @@ use crate::tui::{
 
 #[derive(Debug)]
 pub struct Sheet<Theme> {
-    title: String,
-    blocks: Vec<SheetBlock>,
+    sections: Vec<SheetSection>,
+    block: Option<Block<'static>>,
     _theme: PhantomData<Theme>,
 }
 
 impl<Theme> Sheet<Theme> {
-    pub fn new(title: String, blocks: Vec<SheetBlock>) -> Self {
+    pub fn new() -> Self {
         Self {
-            title,
-            blocks,
+            sections: Default::default(),
+            block: None,
             _theme: Default::default(),
         }
+    }
+
+    pub fn with_sections(mut self, sections: Vec<SheetSection>) -> Self {
+        self.sections = sections;
+        self
+    }
+
+    pub fn with_block(mut self, block: Block<'static>) -> Self {
+        self.block = Some(block);
+        self
     }
 }
 
 #[derive(Debug)]
-pub struct SheetBlock {
+pub struct SheetSection {
     header: String,
     content: String,
 }
 
-impl SheetBlock {
+impl SheetSection {
     pub fn new(header: String, content: String) -> Self {
         Self { header, content }
     }
@@ -68,7 +76,7 @@ where
         state: &mut Self::State,
     ) {
         let mut lines = Vec::new();
-        for (idx, SheetBlock { header, content }) in self.blocks.iter().enumerate() {
+        for (idx, SheetSection { header, content }) in self.sections.iter().enumerate() {
             lines.push(Line::from(Span::styled(
                 header.clone(),
                 Theme::table_header_cell(idx),
@@ -87,15 +95,20 @@ where
             area.height.saturating_sub(2),
         );
 
-        let parag = Paragraph::new(lines)
-            .block(
-                ratatui::widgets::Block::new()
-                    .title(self.title)
-                    .borders(Borders::ALL),
-            )
+        Clear.render(area, buf);
+
+        Paragraph::new(lines)
             .style(Theme::sheet_block())
             .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true });
-        parag.scroll((state.scroll.val_u16(), 0)).render(area, buf);
+            .wrap(Wrap { trim: true })
+            .block(
+                Block::new()
+                    .style(Theme::sheet_block())
+                    .border_style(Theme::sheet_block())
+                    .border_type(BorderType::Rounded)
+                    .borders(Borders::ALL)
+            )
+            .scroll((state.scroll.val_u16(), 0))
+            .render(area, buf);
     }
 }

@@ -10,7 +10,7 @@ use crate::{
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
     sql::SqlBackend,
-    tui::{status_bar::StatusBarView, TabContentState, TabularSource},
+    tui::{status_bar::StatusBarView, TabContentState, Source},
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
     AppResult,
 };
@@ -185,14 +185,14 @@ pub fn execute(
 
         AppAction::SqlSchema => {
             let idx = app.tabs().iter().enumerate().find_map(|(idx, tab)| {
-                matches!(tab.tabular_source(), TabularSource::Help).then_some(idx)
+                matches!(tab.tabular_source(), Source::Help).then_some(idx)
             });
             if let Some(idx) = idx {
                 app.tabs().select(idx);
                 Ok(None)
             } else {
                 app.tabs()
-                    .add(TabContentState::new(sql.schema(), TabularSource::Schema));
+                    .add(TabContentState::new(sql.schema(), Source::Schema));
                 app.tabs().select_last();
                 Ok(None)
             }
@@ -337,11 +337,11 @@ pub fn execute(
             if sql.contains_dataframe(&query) {
                 let df = sql.execute(&format!("SELECT * FROM '{}'", query))?;
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(query)));
+                    .add(TabContentState::new(df, Source::Name(query)));
             } else {
                 let df = sql.execute(&query)?;
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Query(query)));
+                    .add(TabContentState::new(df, Source::Query(query)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -463,7 +463,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(name)));
+                    .add(TabContentState::new(df, Source::Name(name)));
             }
             Ok(None)
         }
@@ -480,7 +480,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(name)));
+                    .add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -505,7 +505,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(name)));
+                    .add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -523,7 +523,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(name)));
+                    .add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -541,7 +541,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(name)));
+                    .add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -570,7 +570,7 @@ pub fn execute(
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs()
-                    .add(TabContentState::new(df, TabularSource::Name(name)));
+                    .add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -636,14 +636,14 @@ pub fn execute(
 
         AppAction::Help => {
             let idx = app.tabs().iter().enumerate().find_map(|(idx, tab)| {
-                matches!(tab.tabular_source(), TabularSource::Help).then_some(idx)
+                matches!(tab.tabular_source(), Source::Help).then_some(idx)
             });
             if let Some(idx) = idx {
                 app.tabs().select(idx)
             } else {
                 app.tabs().add(TabContentState::new(
                     commands_help_data_frame(),
-                    TabularSource::Help,
+                    Source::Help,
                 ));
                 app.tabs().select_last();
             }

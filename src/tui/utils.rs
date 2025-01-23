@@ -26,21 +26,28 @@ impl Scroll {
 }
 
 pub fn line_count(text: &str, width: usize) -> usize {
-    let mut line_count = 1;
-    let mut used_space = 0;
-    for word_len in text.split(' ').map(str::len) {
-        if word_len <= width {
-            if used_space + word_len <= width {
-                used_space += word_len + 1;
+    if width != 0 {
+        let mut line_count = 1;
+        let mut used_space = 0;
+        for word_len in text.split(' ').map(str::len) {
+            if word_len <= width {
+                if used_space + word_len <= width {
+                    used_space += word_len + 1;
+                } else {
+                    used_space = word_len + 1;
+                    line_count += 1;
+                }
             } else {
-                used_space = word_len + 1;
-                line_count += 1;
+                line_count += word_len
+                    .saturating_add(used_space)
+                    .saturating_sub(used_space)
+                    .div_ceil(width)
             }
-        } else {
-            line_count += (word_len - width + used_space).div_ceil(width)
         }
+        line_count
+    } else {
+        0
     }
-    line_count
 }
 
 pub fn invert_style(mut style: Style) -> Style {

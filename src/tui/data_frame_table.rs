@@ -4,7 +4,7 @@ use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
 use ratatui::{
     layout::{Constraint, Rect},
-    widgets::{Cell, Row, StatefulWidget, Table, TableState, Widget},
+    widgets::{Block, Cell, Row, StatefulWidget, Table, TableState, Widget},
 };
 
 use crate::{
@@ -74,7 +74,7 @@ impl DataFrameTableState {
     }
 
     pub fn select(&mut self, select: usize) {
-        self.select = select;
+        self.select = select.min(self.data_frame.height().saturating_sub(1));
     }
 
     pub fn select_up(&mut self, len: usize) {
@@ -132,32 +132,26 @@ impl DataFrameTableState {
     }
 }
 
-pub struct DataFrameTable<Theme> {
-    selection: bool,
+pub struct DataFrameTable<'a, Theme> {
+    block: Option<Block<'a>>,
     _theme: PhantomData<Theme>,
 }
 
-impl<Theme> DataFrameTable<Theme> {
+impl<'a, Theme> DataFrameTable<'a, Theme> {
     pub fn new() -> Self {
         Self {
-            selection: false,
+            block: None,
             _theme: Default::default(),
         }
     }
 
-    pub fn with_selection(mut self, selection: bool) -> Self {
-        self.selection = selection;
+    pub fn with_block(mut self, block: Block<'a>) -> Self {
+        self.block = Some(block);
         self
     }
 }
 
-impl<Theme> Default for DataFrameTable<Theme> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
+impl<'a, Theme: Styler> StatefulWidget for DataFrameTable<'a, Theme> {
     type State = DataFrameTableState;
 
     fn render(
@@ -166,6 +160,21 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
+        let area = if let Some(block) = self.block {
+            let new_area = block.inner(area);
+            block.render(area, buf);
+            new_area
+        } else {
+            area
+        };
+        // let block = Block::bordered()
+        //     .title_bottom(self.status_bar)
+        //     .border_type(ratatui::widgets::BorderType::Rounded)
+        //     .border_style(Theme::pallete());
+        // let new_area = block.inner(area);
+        // block.render(area, buf);
+        // let area = new_area;
+
         // rendered rows = table height - header height
         state.rendered_rows = area.height.saturating_sub(1);
 
@@ -226,30 +235,30 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
 
             // style header
             state
-                .widths
+                .headers()
                 .iter()
-                .copied()
-                .scan(0, |s, w| {
-                    let ret = (*s, *s + w);
-                    *s = ret.1 + 1;
-                    Some(ret)
+                .zip(state.widths.iter())
+                .scan(0_usize, |before, (header, width)| {
+                    let start = *before;
+                    let end = start + header.len();
+                    *before = start + width + 1; // the width +1 for the columns padding
+                    Some((start, end))
                 })
                 .enumerate()
-                .map(|(idx, (i, j))| (Theme::table_header_cell(idx), i, j))
-                .filter(|(_, i, j)| {
-                    let min = state.offset_x as usize;
-                    let max = min + area.width as usize;
-                    i.clamp(&min, &max) < j.clamp(&min, &max)
+                .filter_map(|(idx, (i, j))| {
+                    let min = i.saturating_sub(state.offset_x);
+                    let max = j.saturating_sub(state.offset_x);
+                    (min < max && min < area.width as usize).then_some((idx, min, max))
                 })
-                .for_each(|(s, i, j)| {
+                .for_each(|(col, i, j)| {
                     buf.set_style(
                         Rect {
-                            x: (area.x + i as u16).saturating_sub(state.offset_x as u16),
+                            x: area.x + i as u16,
                             y: area.y,
-                            width: (j - i) as u16,
+                            width: (j - i).min(area.width as usize - i) as u16,
                             height: 1,
                         },
-                        s,
+                        Theme::table_header_cell(col),
                     );
                 });
 
@@ -278,7 +287,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                             .skip(state.offset_x)
                             .take(area.width.into())
                             .collect::<String>(),
-                        if state.offset_y + idx == state.select && self.selection {
+                        if state.offset_y + idx == state.select {
                             Theme::table_highlight()
                         } else {
                             Theme::table_row(state.offset_y + idx)
@@ -339,14 +348,10 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<Theme> {
                 .style(Theme::table_header())
                 .column_spacing(1);
 
-            if self.selection {
-                let mut ts = TableState::new()
-                    .with_offset(0)
-                    .with_selected(state.select.saturating_sub(state.offset_y));
-                StatefulWidget::render(table, area, buf, &mut ts);
-            } else {
-                Widget::render(table, area, buf);
-            }
+            let mut ts = TableState::new()
+                .with_offset(0)
+                .with_selected(state.select.saturating_sub(state.offset_y));
+            StatefulWidget::render(table, area, buf, &mut ts);
         }
     }
 }
