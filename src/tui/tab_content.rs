@@ -1,49 +1,60 @@
 use std::marker::PhantomData;
 
-use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
-    widgets::StatefulWidget,
+    layout::{Constraint, Layout, Margin, Rect},
+    text::Line,
+    widgets::{Block, BorderType, StatefulWidget},
 };
 
 use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
     search_bar::{SearchBar, SearchBarState},
-    sheet::{Sheet, SheetBlock, SheetState},
+    sheet::{Sheet, SheetState},
+    status_bar::{NewStatusBar, NewStatusBarTag},
 };
-use crate::{search::Search, tui::theme::Styler, utils::polars_ext::IntoString};
+use crate::{search::Search, tui::theme::Styler, utils::polars_ext::GetSheetSections};
 
 #[derive(Debug)]
-pub enum TabularMode {
-    Table,
+pub enum Modal {
     Sheet(SheetState),
     Search(Search, SearchBarState),
 }
 
 #[derive(Debug)]
-pub enum TabularSource {
+pub enum Source {
     Help,
     Schema,
     Name(String),
     Query(String),
 }
 
+impl AsRef<str> for Source {
+    fn as_ref(&self) -> &str {
+        match self {
+            Source::Help => "Help",
+            Source::Schema => "Schema",
+            Source::Name(name) => name.as_str(),
+            Source::Query(query) => query.as_str(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct TabContentState {
     table_state: DataFrameTableState,
-    mode: TabularMode,
-    tabular_source: TabularSource,
+    modal: Option<Modal>,
+    tabular_source: Source,
     original_frame: DataFrame,
 }
 
 impl TabContentState {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame, tabular_source: TabularSource) -> Self {
+    pub fn new(data_frame: DataFrame, tabular_source: Source) -> Self {
         Self {
             table_state: DataFrameTableState::new(data_frame.clone()),
-            mode: TabularMode::Table,
+            modal: None,
             tabular_source,
             original_frame: data_frame,
         }
@@ -51,7 +62,7 @@ impl TabContentState {
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) {
-        if let TabularMode::Search(search, _) = &mut self.mode {
+        if let Some(Modal::Search(search, _)) = &mut self.modal {
             if let Some(df) = search.latest() {
                 self.table_state.set_data_frame(df);
             }
@@ -89,43 +100,43 @@ impl TabContentState {
     }
 
     pub fn scroll_up(&mut self) {
-        if let TabularMode::Sheet(scroll) = &mut self.mode {
+        if let Some(Modal::Sheet(scroll)) = &mut self.modal {
             scroll.scroll_up();
         }
     }
 
     pub fn scroll_down(&mut self) {
-        if let TabularMode::Sheet(scroll) = &mut self.mode {
+        if let Some(Modal::Sheet(scroll)) = &mut self.modal {
             scroll.scroll_down();
         }
     }
 
     pub fn scroll_left(&mut self) {
-        if matches!(self.mode, TabularMode::Table) {
+        if self.modal.is_none() {
             self.table_state.scroll_left();
         }
     }
 
     pub fn scroll_right(&mut self) {
-        if matches!(self.mode, TabularMode::Table) {
+        if self.modal.is_none() {
             self.table_state.scroll_right();
         }
     }
 
     pub fn scroll_start(&mut self) {
-        if matches!(self.mode, TabularMode::Table) {
+        if self.modal.is_none() {
             self.table_state.scroll_start();
         }
     }
 
     pub fn scroll_end(&mut self) {
-        if matches!(self.mode, TabularMode::Table) {
+        if self.modal.is_none() {
             self.table_state.scroll_end();
         }
     }
 
     pub fn expanded(&self) -> bool {
-        if matches!(self.mode, TabularMode::Table) {
+        if self.modal.is_none() {
             self.table_state.expanded()
         } else {
             false
@@ -133,7 +144,7 @@ impl TabContentState {
     }
 
     pub fn toggle_expansion(&mut self) {
-        if matches!(self.mode, TabularMode::Table) {
+        if self.modal.is_none() {
             self.table_state.toggle_expansion();
         }
     }
@@ -143,36 +154,36 @@ impl TabContentState {
     }
 
     pub fn switch_view(&mut self) {
-        match self.mode {
-            TabularMode::Table => self.sheet_mode(),
-            TabularMode::Sheet(_) => self.table_mode(),
-            TabularMode::Search(_, _) => (),
+        match self.modal {
+            None => self.sheet_mode(),
+            Some(Modal::Sheet(_)) => self.table_mode(),
+            _ => (),
         }
     }
 
     pub fn table_mode(&mut self) {
-        self.mode = TabularMode::Table;
+        self.modal = None;
     }
 
     pub fn sheet_mode(&mut self) {
-        self.mode = TabularMode::Sheet(Default::default());
+        self.modal = Some(Modal::Sheet(Default::default()));
     }
 
     pub fn search_mode(&mut self) {
-        match &self.mode {
-            TabularMode::Table => {
-                self.mode = TabularMode::Search(
+        match &self.modal {
+            None => {
+                self.modal = Some(Modal::Search(
                     Search::new(self.original_frame.clone(), Default::default()),
                     SearchBarState::default(),
-                );
+                ));
             }
             _ => (),
         }
     }
 
     pub fn search_commit(&mut self) {
-        match &self.mode {
-            TabularMode::Search(search, _) => {
+        match &self.modal {
+            Some(Modal::Search(search, _)) => {
                 if let Some(df) = search.latest() {
                     self.set_data_frame(df);
                 }
@@ -182,7 +193,7 @@ impl TabContentState {
     }
 
     pub fn search_delete_prev(&mut self) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().delete_prev();
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -194,7 +205,7 @@ impl TabContentState {
     }
 
     pub fn search_delete_next(&mut self) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().delete_next();
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -206,7 +217,7 @@ impl TabContentState {
     }
 
     pub fn search_goto_prev(&mut self) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().goto_prev();
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -218,7 +229,7 @@ impl TabContentState {
     }
 
     pub fn search_goto_next(&mut self) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().goto_next();
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -230,7 +241,7 @@ impl TabContentState {
     }
 
     pub fn search_goto_start(&mut self) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().goto_start();
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -242,7 +253,7 @@ impl TabContentState {
     }
 
     pub fn search_goto_end(&mut self) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().goto_end();
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -254,7 +265,7 @@ impl TabContentState {
     }
 
     pub fn search_insert(&mut self, c: char) {
-        if let TabularMode::Search(search, search_bar_state) = &mut self.mode {
+        if let Some(Modal::Search(search, search_bar_state)) = &mut self.modal {
             search_bar_state.input().insert(c);
             if search_bar_state.input().value() != search.pattern() {
                 *search = Search::new(
@@ -281,30 +292,31 @@ impl TabContentState {
         self.table_state.set_data_frame(self.original_frame.clone());
     }
 
-    pub fn mode(&self) -> &TabularMode {
-        &self.mode
+    pub fn modal(&self) -> Option<&Modal> {
+        self.modal.as_ref()
     }
 
-    pub fn tabular_source(&self) -> &TabularSource {
+    pub fn tabular_source(&self) -> &Source {
         &self.tabular_source
     }
 }
 
 pub struct TabContent<Theme> {
-    selection: bool,
+    status_bar: NewStatusBar<Theme>,
     _theme: PhantomData<Theme>,
 }
 
 impl<Theme: Styler> TabContent<Theme> {
     pub fn new() -> Self {
         Self {
-            selection: false,
+            status_bar: NewStatusBar::<Theme>::new(),
             _theme: Default::default(),
         }
     }
 
-    pub fn with_selection(mut self, selection: bool) -> Self {
-        self.selection = selection;
+
+    pub fn with_tag(mut self, tag: NewStatusBarTag<Theme>) -> Self {
+        self.status_bar = self.status_bar.with_tag(tag);
         self
     }
 }
@@ -319,50 +331,70 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
     type State = TabContentState;
 
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
-        match &mut state.mode {
-            TabularMode::Table => {
-                DataFrameTable::<Theme>::new()
-                    .with_selection(self.selection)
-                    .render(area, buf, &mut state.table_state);
-            }
 
-            TabularMode::Sheet(sheet_state) => {
-                let title = format!(" {} ", state.table_state.selected() + 1);
-                let sheet = Sheet::<Theme>::new(
-                    title,
-                    state
-                        .table_state
-                        .headers()
-                        .iter()
-                        .cloned()
-                        .zip(
-                            state
-                                .table_state
-                                .data_frame()
-                                .get(state.table_state.selected())
-                                .map(|row| {
-                                    row.into_iter().map(IntoString::into_string).collect_vec()
-                                })
-                                .unwrap_or_default(),
-                        )
-                        .map(|(header, content)| SheetBlock::new(header, content))
-                        .collect_vec(),
-                );
-                sheet.render(area, buf, sheet_state);
-            }
-
-            TabularMode::Search(_, search_bar_state) => {
-                let [search_bar_area, table_area] =
+        let (search_bar_area, table_area) = match state.modal {
+            Some(Modal::Search(_,_ )) => {
+                let [a0, a1] =
                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-                SearchBar::<Theme>::new()
-                    .with_selection(self.selection)
-                    .render(search_bar_area, buf, search_bar_state);
-                DataFrameTable::<Theme>::new().with_selection(false).render(
-                    table_area,
-                    buf,
-                    &mut state.table_state,
-                );
+                    (a0, a1)
+            },
+            _ => {
+                (Rect::default(), area)
+            },
+        };
+        DataFrameTable::<Theme>::new()
+            .with_block(
+                Block::bordered()
+                    .border_style(Theme::sheet_block())
+                    .border_type(BorderType::Rounded)
+                    .title_top(Line::from(format!(" {} ", state.tabular_source.as_ref())))
+                    .title_bottom(self.status_bar.with_tags([
+                        NewStatusBarTag::new(
+                            "Expended",
+                            if state.table_state.expanded() {
+                                "Yes"
+                            } else {
+                                " No"
+                            },
+                        ),
+                        NewStatusBarTag::new(
+                            "Row",
+                            format!(
+                                "{:>width$}",
+                                state.table_state.selected(),
+                                width = state.table_state.height().to_string().len()
+                            ),
+                        ),
+                        NewStatusBarTag::new(
+                            "Shape",
+                            format!(
+                                "{} x {}",
+                                state.table_state.height(),
+                                state.table_state.data_frame().width()
+                            ),
+                        ),
+                    ])),
+            )
+            .render(table_area, buf, &mut state.table_state);
+
+        match &mut state.modal {
+            Some(Modal::Sheet(sheet_state)) => {
+                let area = area.inner(Margin::new(13, 3));
+                let sections = state
+                    .table_state
+                    .data_frame()
+                    .get_sheet_sections(state.table_state.selected());
+                Sheet::<Theme>::new()
+                    .with_sections(sections)
+                    .render(area, buf, sheet_state);
             }
+
+            Some(Modal::Search(_, search_bar_state)) => {
+                SearchBar::<Theme>::new()
+                    .render(search_bar_area, buf, search_bar_state);
+            }
+
+            _ => (),
         }
     }
 }

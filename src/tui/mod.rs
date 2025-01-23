@@ -10,7 +10,7 @@ pub mod terminal;
 pub mod theme;
 mod utils;
 
-pub use tab_content::{TabContentState, TabularSource};
+pub use tab_content::{TabContentState, Source};
 pub use terminal::Terminal;
 pub use theme::Styler;
 
