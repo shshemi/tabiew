@@ -355,7 +355,7 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::PalleteRollback),
+                    .action(AppAction::PalleteHide),
             )
             // insert characters
             .fallback(|event| {

@@ -109,20 +109,6 @@ impl App {
                 None => AppContext::Empty,
             }
         }
-        // match (
-        //     self.error.as_ref(),
-        //     self.status_bar.view(),
-        //     self.tabs.selected().map(TabContentState::modal),
-        // ) {
-        //     (Some(_), _, _) => AppContext::Error,
-        //     (None, StatusBarView::Info, None) => AppContext::Empty,
-        //     (None, StatusBarView::Info, Some(None)) => AppContext::Table,
-        //     (None, StatusBarView::Info, Some(Some(Modal::Sheet(_)))) => AppContext::Sheet,
-        //     (None, StatusBarView::Info, Some(Some(Modal::Search(_, _)))) => AppContext::Search,
-        //     (None, StatusBarView::Error(_), _) => AppContext::Error,
-        //     (None, StatusBarView::Prompt(_), _) => AppContext::Command,
-        //     (None, StatusBarView::Search(_), _) => AppContext::Search,
-        // }
     }
 
     pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
