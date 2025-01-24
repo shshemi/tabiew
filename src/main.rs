@@ -9,7 +9,7 @@ use tabiew::args::{AppTheme, Args};
 use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
-use tabiew::handler::key::default_keymap;
+use tabiew::handler::key::KeyHandler;
 use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
@@ -81,7 +81,7 @@ fn start_tui<Theme: Styler>(
         .into_iter()
         .map(|(df, name)| TabContentState::new(df, Source::Name(name)))
         .collect();
-    let keybind = default_keymap();
+    let keybind = KeyHandler::default();
     let mut app = App::new(tabs);
 
     // Initialize the terminal user interface.
@@ -128,7 +128,7 @@ fn start_tui<Theme: Styler>(
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    let mut action = keybind.get_action(app.context(), key_event);
+                    let mut action = keybind.action(app.context(), key_event);
                     loop {
                         match execute(action, &mut app, &mut sql_backend) {
                             Ok(Some(next_action)) => action = next_action,

@@ -6,7 +6,7 @@ use ratatui::{
 use crate::{
     tui::{
         error_popup::ErrorPopup,
-        status_bar::{StatusBar, StatusBarState, StatusBarView},
+        status_bar::{StatusBar, StatusBarState, StatusBarTag, StatusBarView},
         tab_content::Modal,
         tabs::{Tabs, TabsState},
         Styler, TabContentState,
@@ -23,6 +23,20 @@ pub enum AppContext {
     Error,
     Search,
     Pallete,
+}
+
+impl AppContext {
+    pub fn parent(&self) -> Option<AppContext> {
+        match self {
+            AppContext::Empty => None,
+            AppContext::Table => AppContext::Empty.into(),
+            AppContext::Sheet => AppContext::Table.into(),
+            AppContext::Command => AppContext::Command.into(),
+            AppContext::Error => AppContext::Empty.into(),
+            AppContext::Search => AppContext::Table.into(),
+            AppContext::Pallete => AppContext::Empty.into(),
+        }
+    }
 }
 
 pub struct App {
@@ -115,14 +129,11 @@ impl App {
             };
             frame.render_widget(error, mid);
         }
-        if let Some(_tab) = self.tabs.selected() {
-        } else {
-            frame.render_stateful_widget(
-                StatusBar::<Theme>::new(&[]),
-                status_bar_area,
-                &mut self.status_bar,
-            );
-        }
+        frame.render_stateful_widget(
+            StatusBar::<Theme>::new(&[StatusBarTag::new("Key", "Value")]),
+            status_bar_area,
+            &mut self.status_bar,
+        );
         Ok(())
     }
 }
