@@ -8,6 +8,7 @@ pub mod tabs;
 pub mod tab_content;
 pub mod terminal;
 pub mod theme;
+pub mod error_popup;
 mod utils;
 
 pub use tab_content::{TabContentState, Source};
