@@ -99,40 +99,32 @@ impl TabContentState {
         self.table_state.selected()
     }
 
-    pub fn scroll_up(&mut self) {
+    pub fn sheet_scroll_up(&mut self) {
         if let Some(Modal::Sheet(scroll)) = &mut self.modal {
             scroll.scroll_up();
         }
     }
 
-    pub fn scroll_down(&mut self) {
+    pub fn sheet_scroll_down(&mut self) {
         if let Some(Modal::Sheet(scroll)) = &mut self.modal {
             scroll.scroll_down();
         }
     }
 
-    pub fn scroll_left(&mut self) {
-        if self.modal.is_none() {
-            self.table_state.scroll_left();
-        }
+    pub fn table_scroll_left(&mut self) {
+        self.table_state.scroll_left();
     }
 
-    pub fn scroll_right(&mut self) {
-        if self.modal.is_none() {
-            self.table_state.scroll_right();
-        }
+    pub fn table_scroll_right(&mut self) {
+        self.table_state.scroll_right();
     }
 
-    pub fn scroll_start(&mut self) {
-        if self.modal.is_none() {
-            self.table_state.scroll_start();
-        }
+    pub fn table_goto_start(&mut self) {
+        self.table_state.scroll_start();
     }
 
-    pub fn scroll_end(&mut self) {
-        if self.modal.is_none() {
-            self.table_state.scroll_end();
-        }
+    pub fn table_goto_end(&mut self) {
+        self.table_state.scroll_end();
     }
 
     pub fn expanded(&self) -> bool {
@@ -144,9 +136,7 @@ impl TabContentState {
     }
 
     pub fn toggle_expansion(&mut self) {
-        if self.modal.is_none() {
-            self.table_state.toggle_expansion();
-        }
+        self.table_state.toggle_expansion();
     }
 
     pub fn page_len(&self) -> usize {
@@ -314,7 +304,6 @@ impl<Theme: Styler> TabContent<Theme> {
         }
     }
 
-
     pub fn with_tag(mut self, tag: NewStatusBarTag<Theme>) -> Self {
         self.status_bar = self.status_bar.with_tag(tag);
         self
@@ -331,16 +320,13 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
     type State = TabContentState;
 
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
-
         let (search_bar_area, table_area) = match state.modal {
-            Some(Modal::Search(_,_ )) => {
+            Some(Modal::Search(_, _)) => {
                 let [a0, a1] =
                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-                    (a0, a1)
-            },
-            _ => {
-                (Rect::default(), area)
-            },
+                (a0, a1)
+            }
+            _ => (Rect::default(), area),
         };
         DataFrameTable::<Theme>::new()
             .with_block(
@@ -390,8 +376,7 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
             }
 
             Some(Modal::Search(_, search_bar_state)) => {
-                SearchBar::<Theme>::new()
-                    .render(search_bar_area, buf, search_bar_state);
+                SearchBar::<Theme>::new().render(search_bar_area, buf, search_bar_state);
             }
 
             _ => (),

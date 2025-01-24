@@ -249,14 +249,14 @@ pub fn execute(
 
         AppAction::SheetScrollUp => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.scroll_up()
+                tab.sheet_scroll_up()
             }
             Ok(None)
         }
 
         AppAction::SheetScrollDown => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.scroll_down()
+                tab.sheet_scroll_down()
             }
             Ok(None)
         }
@@ -636,28 +636,28 @@ pub fn execute(
 
         AppAction::TabularScrollRight => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.scroll_right();
+                tab.table_scroll_right();
             }
             Ok(None)
         }
 
         AppAction::TabularScrollLeft => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.scroll_left();
+                tab.table_scroll_left();
             }
             Ok(None)
         }
 
         AppAction::TabularScrollStart => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.scroll_start();
+                tab.table_goto_start();
             }
             Ok(None)
         }
 
         AppAction::TabularScrollEnd => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.scroll_end();
+                tab.table_goto_end();
             }
             Ok(None)
         }
