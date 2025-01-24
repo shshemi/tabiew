@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
 
 use ratatui::{
-    layout::Alignment, style::Stylize, text::{Line, Span}, widgets::{Block, BorderType, Borders, Clear, Paragraph, StatefulWidget, Widget, Wrap}
+    layout::Alignment,
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, StatefulWidget, Widget, Wrap},
 };
 
 use crate::tui::{
@@ -106,7 +108,7 @@ where
                     .style(Theme::sheet_block())
                     .border_style(Theme::sheet_block())
                     .border_type(BorderType::Rounded)
-                    .borders(Borders::ALL)
+                    .borders(Borders::ALL),
             )
             .scroll((state.scroll.val_u16(), 0))
             .render(area, buf);
