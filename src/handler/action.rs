@@ -20,9 +20,8 @@ use super::command::{commands_help_data_frame, parse_into_action};
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum AppAction {
     NoAction,
-    StatusBarInfo,
+    DismissError,
     StatusBarCommand(String),
-    StatausBarError(String),
     StatusBarHandle(KeyEvent),
     TabularTableMode,
     TabularSheetMode,
@@ -106,8 +105,8 @@ pub fn execute(
 ) -> AppResult<Option<AppAction>> {
     match action {
         AppAction::NoAction => Ok(None),
-        AppAction::StatusBarInfo => {
-            app.status_bar().switch_info();
+        AppAction::DismissError => {
+            app.dismiss_error();
             Ok(None)
         }
 
@@ -116,35 +115,15 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::StatausBarError(msg) => {
-            app.status_bar().switch_error(msg);
-            Ok(None)
-        }
-
-        // AppAction::StatusBarSearch(query) => {
-        //     app.status_bar().switch_search(query);
-        //     Ok(None)
-        // }
         AppAction::StatusBarHandle(event) => match app.status_bar().view_mut() {
             StatusBarView::Prompt(prompt_state) => {
                 prompt_state.handle(event);
                 if prompt_state.command_len() == 0 {
-                    Ok(Some(AppAction::StatusBarInfo))
+                    Ok(Some(AppAction::DismissError))
                 } else {
                     Ok(None)
                 }
             }
-
-            // StatusBarView::Search(prompt_state) => {
-            //     prompt_state.handle(event);
-
-            //     if prompt_state.command_len() > 0 {
-            //         let pattern = prompt_state.skipped_line(1);
-            //         Ok(Some(AppAction::SearchPattern(pattern)))
-            //     } else {
-            //         Ok(Some(AppAction::SearchRollback))
-            //     }
-            // }
             _ => Ok(None),
         },
 
