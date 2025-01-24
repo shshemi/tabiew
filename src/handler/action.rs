@@ -55,7 +55,6 @@ pub enum AppAction {
     PalleteDeleteNext,
     PalleteDeletePrev,
     PalleteInsert(char),
-    PalleteRollback,
     PalleteCommit,
     PalleteShow,
     PalleteHide,
@@ -119,23 +118,6 @@ pub fn execute(
             app.dismiss_error();
             Ok(None)
         }
-
-        // AppAction::StatusBarCommand(prefix) => {
-        //     app.status_bar().switch_prompt(prefix);
-        //     Ok(None)
-        // }
-
-        // AppAction::StatusBarHandle(event) => match app.status_bar().view_mut() {
-        //     StatusBarView::Prompt(prompt_state) => {
-        //         prompt_state.handle(event);
-        //         if prompt_state.command_len() == 0 {
-        //             Ok(Some(AppAction::DismissError))
-        //         } else {
-        //             Ok(None)
-        //         }
-        //     }
-        //     _ => Ok(None),
-        // },
         AppAction::TabularTableMode => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_mode()
@@ -313,14 +295,6 @@ pub fn execute(
             Ok(None)
         }
 
-        // AppAction::PromptCommit => {
-        //     if let Some(cmd) = app.status_bar().commit_prompt() {
-        //         app.status_bar().switch_info();
-        //         parse_into_action(cmd).map(Some)
-        //     } else {
-        //         Ok(None)
-        //     }
-        // }
         AppAction::TabNew(query) => {
             if sql.contains_dataframe(&query) {
                 let df = sql.execute(&format!("SELECT * FROM '{}'", query))?;
@@ -711,10 +685,6 @@ pub fn execute(
             if let Some(pallete) = app.pallete() {
                 pallete.input().insert(c);
             }
-            Ok(None)
-        }
-        AppAction::PalleteRollback => {
-            app.hide_pallete();
             Ok(None)
         }
         AppAction::PalleteCommit => {
