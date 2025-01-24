@@ -91,8 +91,8 @@ struct Entry {
 
 static ENTRIES: [Entry; 18] =  [
     Entry {
-        prefix: Prefix::ShortAndLong(":Q", ":query"),
-        usage: ":Q <query>",
+        prefix: Prefix::ShortAndLong("Q", "query"),
+        usage: "Q <query>",
         description:
             "Query the data in Structured Query Language(SQL).",
         parser: |query|{
@@ -100,16 +100,16 @@ static ENTRIES: [Entry; 18] =  [
         },
     },
     Entry {
-        prefix: Prefix::ShortAndLong(":q", ":quit"),
-        usage: ":q",
+        prefix: Prefix::ShortAndLong("q", "quit"),
+        usage: "q",
         description: "Close all tabls and quit Tabiew",
         parser: |_|{
             Ok(AppAction::Quit)
         },
     },
     Entry {
-        prefix: Prefix::Long(":goto"),
-        usage: ":goto <line_index>",
+        prefix: Prefix::Long("goto"),
+        usage: "goto <line_index>",
         description: "Jumps to the specified line",
         parser: |line|{
             Ok(AppAction::TabularGoto(
@@ -118,8 +118,8 @@ static ENTRIES: [Entry; 18] =  [
         },
     },
     Entry {
-        prefix: Prefix::Long(":goup"),
-        usage: ":goup <lines>",
+        prefix: Prefix::Long("goup"),
+        usage: "goup <lines>",
         description: "Jump specified number of line(s) up",
         parser: |lines|{
             Ok(match lines {
@@ -130,8 +130,8 @@ static ENTRIES: [Entry; 18] =  [
         },
     },
     Entry {
-        prefix: Prefix::Long(":godown"),
-        usage: ":godown <lines>",
+        prefix: Prefix::Long("godown"),
+        usage: "godown <lines>",
         description: "Jump specified number of line(s) down",
         parser: |lines|{
             Ok(match lines {
@@ -142,64 +142,64 @@ static ENTRIES: [Entry; 18] =  [
         },
     },
     Entry {
-        prefix: Prefix::Long(":reset"),
-        usage: ":reset",
+        prefix: Prefix::Long("reset"),
+        usage: "reset",
         description: "Reset the data frame to its original state, removing all filters, orders, searches, selects, and aggregations effects.",
         parser: |_|{
             Ok(AppAction::TabularReset)
         },
     },
     Entry {
-        prefix: Prefix::Long(":help"),
-        usage: ":help",
+        prefix: Prefix::Long("help"),
+        usage: "help",
         description: "Show help",
         parser: |_|{
             Ok(AppAction::Help)
         },
     },
     Entry {
-        prefix: Prefix::ShortAndLong(":S", ":select"),
-        usage: ":select <column_name(s)>",
+        prefix: Prefix::ShortAndLong("S", "select"),
+        usage: "select <column_name(s)>",
         description: "Query the data frame for columns / functions",
         parser: |query|{
             Ok(AppAction::TabularSelect(query.to_owned()))
         },
     },
     Entry {
-        prefix: Prefix::ShortAndLong(":F", ":filter"),
-        usage: ":filter <condition(s)>",
+        prefix: Prefix::ShortAndLong("F", "filter"),
+        usage: "filter <condition(s)>",
         description: "Filter the data frame, keeping rows were the condition(s) match",
         parser: |query|{
             Ok(AppAction::TabularFilter(query.to_owned()))
         },
     },
     Entry {
-        prefix: Prefix::ShortAndLong(":O", ":order"),
-        usage: ":order <column(s)_and_order(s)>",
+        prefix: Prefix::ShortAndLong("O", "order"),
+        usage: "order <column(s)_and_order(s)>",
         description: "Sort the data frame by column(s)",
         parser: |query|{
             Ok(AppAction::TabularOrder(query.to_owned()))
         },
     },
     Entry {
-        prefix: Prefix::Long(":schema"),
-        usage: ":schema",
+        prefix: Prefix::Long("schema"),
+        usage: "schema",
         description: "Show loaded data frame(s) and their schmea(s)",
         parser: |_|{
             Ok(AppAction::SqlSchema)
         },
     },
     Entry {
-        prefix: Prefix::Long(":rand"),
-        usage: ":rand",
+        prefix: Prefix::Long("rand"),
+        usage: "rand",
         description: "Select a random row from current data frame",
         parser: |_|{
             Ok(AppAction::TabularGotoRandom)
         },
     },
     Entry {
-        prefix: Prefix::Long(":view"),
-        usage: ":view (table | sheet | switch)",
+        prefix: Prefix::Long("view"),
+        usage: "view (table | sheet | switch)",
         description: "Switch between table and sheet views",
         parser: |query|{
             Ok(match query {
@@ -211,24 +211,24 @@ static ENTRIES: [Entry; 18] =  [
         },
     },
     Entry {
-        prefix: Prefix::Long(":tabn"),
-        usage: ":tabn <query>",
+        prefix: Prefix::Long("tabn"),
+        usage: "tabn <query>",
         description: "Create a new tab using the query",
         parser: |query|{
             Ok(AppAction::TabNew(query.to_owned()))
         },
     },
     Entry {
-        prefix: Prefix::Long(":tabr"),
-        usage: ":tabr <tab_index>",
+        prefix: Prefix::Long("tabr"),
+        usage: "tabr <tab_index>",
         description: "Remove the tab at the index",
         parser: |query|{
             Ok(AppAction::TabRemove(query.parse()?))
         },
     },
     Entry {
-        prefix: Prefix::Long(":tab"),
-        usage: ":tab <tab_index>",
+        prefix: Prefix::Long("tab"),
+        usage: "tab <tab_index>",
         description: "Select the tab at the index",
         parser: |query|{
             Ok(AppAction::TabSelect(query.parse()?))
@@ -247,8 +247,8 @@ mod export {
 
     pub const fn entry() -> Entry {
         Entry {
-            prefix: Prefix::Long(":export"),
-            usage: ":export <format> <path>",
+            prefix: Prefix::Long("export"),
+            usage: "export <format> <path>",
             description: "Export the data frame to a format specified file",
             parser: |query| {
                 let (fmt, path_str) = query
@@ -314,8 +314,8 @@ mod import {
 
     pub const fn entry() -> Entry {
         Entry {
-            prefix: Prefix::Long(":import"),
-            usage: ":import <format> <path>",
+            prefix: Prefix::Long("import"),
+            usage: "import <format> <path>",
             description: "Import data frame from a file into the sql engine",
             parser: |query| {
                 let lock: OnceLock<[(Regex, ParseFn); 9]> = OnceLock::new();

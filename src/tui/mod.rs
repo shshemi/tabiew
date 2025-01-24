@@ -9,6 +9,7 @@ pub mod tab_content;
 pub mod terminal;
 pub mod theme;
 pub mod error_popup;
+pub mod command_pallete;
 mod utils;
 
 pub use tab_content::{TabContentState, Source};

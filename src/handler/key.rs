@@ -66,16 +66,18 @@ impl Keybind {
         self
     }
 
-    fn alt(mut self) -> Self {
-        self.modifiers |= KeyModifiers::ALT;
-        self
-    }
-
     fn ctrl(mut self) -> Self {
         self.modifiers |= KeyModifiers::CONTROL;
         self
     }
 
+    #[allow(dead_code)]
+    fn alt(mut self) -> Self {
+        self.modifiers |= KeyModifiers::ALT;
+        self
+    }
+
+    #[allow(dead_code)]
     fn meta(mut self) -> Self {
         self.modifiers |= KeyModifiers::META;
         self
@@ -170,11 +172,7 @@ impl Default for KeyHandler {
                     .action(AppAction::TabNext),
             )
             // :
-            .add(
-                Keybind::default()
-                    .char(':')
-                    .action(AppAction::StatusBarCommand(Default::default())),
-            );
+            .add(Keybind::default().char(':').action(AppAction::PalleteShow));
 
         // ----- error keybindings
         hndl.keybinds(AppContext::Empty)
@@ -320,10 +318,53 @@ impl Default for KeyHandler {
         hndl.keybinds(AppContext::Command)
             .add(
                 Keybind::default()
-                    .code(KeyCode::Enter)
-                    .action(AppAction::PromptCommit),
+                    .code(KeyCode::Left)
+                    .action(AppAction::PalleteGotoPrev),
             )
-            .fallback(|event| Some(AppAction::StatusBarHandle(event)));
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Right)
+                    .action(AppAction::PalleteGotoNext),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Home)
+                    .action(AppAction::PalleteGotoStart),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::End)
+                    .action(AppAction::PalleteGotoEnd),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Backspace)
+                    .action(AppAction::PalleteDeletePrev),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Delete)
+                    .action(AppAction::PalleteDeleteNext),
+            )
+            // enter esc
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::PalleteCommit),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::PalleteRollback),
+            )
+            // insert characters
+            .fallback(|event| {
+                if let KeyCode::Char(c) = event.code {
+                    Some(AppAction::PalleteInsert(c))
+                } else {
+                    None
+                }
+            });
 
         // ---- sheet keybindings
         hndl.keybinds(AppContext::Sheet)

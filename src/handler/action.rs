@@ -1,7 +1,6 @@
 use std::{ops::Div, path::PathBuf};
 
 use anyhow::{anyhow, Ok};
-use crossterm::event::KeyEvent;
 
 use crate::{
     app::App,
@@ -10,7 +9,7 @@ use crate::{
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
     sql::SqlBackend,
-    tui::{status_bar::StatusBarView, TabContentState, Source},
+    tui::{Source, TabContentState},
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
     AppResult,
 };
@@ -21,8 +20,6 @@ use super::command::{commands_help_data_frame, parse_into_action};
 pub enum AppAction {
     NoAction,
     DismissError,
-    StatusBarCommand(String),
-    StatusBarHandle(KeyEvent),
     TabularTableMode,
     TabularSheetMode,
     TabularSearchMode,
@@ -50,6 +47,19 @@ pub enum AppAction {
     SqlQuery(String),
     TabularReset,
     SqlSchema,
+
+    PalleteGotoNext,
+    PalleteGotoPrev,
+    PalleteGotoStart,
+    PalleteGotoEnd,
+    PalleteDeleteNext,
+    PalleteDeletePrev,
+    PalleteInsert(char),
+    PalleteRollback,
+    PalleteCommit,
+    PalleteShow,
+    PalleteHide,
+
     SearchGotoNext,
     SearchGotoPrev,
     SearchGotoStart,
@@ -59,7 +69,7 @@ pub enum AppAction {
     SearchInsert(char),
     SearchRollback,
     SearchCommit,
-    PromptCommit,
+
     TabNew(String),
     TabSelect(usize),
     TabRemove(usize),
@@ -110,23 +120,22 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::StatusBarCommand(prefix) => {
-            app.status_bar().switch_prompt(prefix);
-            Ok(None)
-        }
+        // AppAction::StatusBarCommand(prefix) => {
+        //     app.status_bar().switch_prompt(prefix);
+        //     Ok(None)
+        // }
 
-        AppAction::StatusBarHandle(event) => match app.status_bar().view_mut() {
-            StatusBarView::Prompt(prompt_state) => {
-                prompt_state.handle(event);
-                if prompt_state.command_len() == 0 {
-                    Ok(Some(AppAction::DismissError))
-                } else {
-                    Ok(None)
-                }
-            }
-            _ => Ok(None),
-        },
-
+        // AppAction::StatusBarHandle(event) => match app.status_bar().view_mut() {
+        //     StatusBarView::Prompt(prompt_state) => {
+        //         prompt_state.handle(event);
+        //         if prompt_state.command_len() == 0 {
+        //             Ok(Some(AppAction::DismissError))
+        //         } else {
+        //             Ok(None)
+        //         }
+        //     }
+        //     _ => Ok(None),
+        // },
         AppAction::TabularTableMode => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_mode()
@@ -163,9 +172,10 @@ pub fn execute(
         }
 
         AppAction::SqlSchema => {
-            let idx = app.tabs().iter().enumerate().find_map(|(idx, tab)| {
-                matches!(tab.tabular_source(), Source::Help).then_some(idx)
-            });
+            let idx =
+                app.tabs().iter().enumerate().find_map(|(idx, tab)| {
+                    matches!(tab.tabular_source(), Source::Help).then_some(idx)
+                });
             if let Some(idx) = idx {
                 app.tabs().select(idx);
                 Ok(None)
@@ -303,15 +313,14 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::PromptCommit => {
-            if let Some(cmd) = app.status_bar().commit_prompt() {
-                app.status_bar().switch_info();
-                parse_into_action(cmd).map(Some)
-            } else {
-                Ok(None)
-            }
-        }
-
+        // AppAction::PromptCommit => {
+        //     if let Some(cmd) = app.status_bar().commit_prompt() {
+        //         app.status_bar().switch_info();
+        //         parse_into_action(cmd).map(Some)
+        //     } else {
+        //         Ok(None)
+        //     }
+        // }
         AppAction::TabNew(query) => {
             if sql.contains_dataframe(&query) {
                 let df = sql.execute(&format!("SELECT * FROM '{}'", query))?;
@@ -441,8 +450,7 @@ pub fn execute(
                         .into_owned(),
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
-                app.tabs()
-                    .add(TabContentState::new(df, Source::Name(name)));
+                app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
             Ok(None)
         }
@@ -458,8 +466,7 @@ pub fn execute(
                         .into_owned(),
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
-                app.tabs()
-                    .add(TabContentState::new(df, Source::Name(name)));
+                app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -483,8 +490,7 @@ pub fn execute(
                         .into_owned(),
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
-                app.tabs()
-                    .add(TabContentState::new(df, Source::Name(name)));
+                app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -501,8 +507,7 @@ pub fn execute(
                         .into_owned(),
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
-                app.tabs()
-                    .add(TabContentState::new(df, Source::Name(name)));
+                app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -519,8 +524,7 @@ pub fn execute(
                         .into_owned(),
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
-                app.tabs()
-                    .add(TabContentState::new(df, Source::Name(name)));
+                app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -548,8 +552,7 @@ pub fn execute(
                         .into_owned(),
                 );
                 let name = sql.register(&name, df.clone(), path.clone());
-                app.tabs()
-                    .add(TabContentState::new(df, Source::Name(name)));
+                app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
             app.tabs().select_last();
             Ok(None)
@@ -609,14 +612,14 @@ pub fn execute(
                 tab.table_mode();
                 tab.rollback();
             }
-            app.status_bar().switch_info();
             Ok(None)
         }
 
         AppAction::Help => {
-            let idx = app.tabs().iter().enumerate().find_map(|(idx, tab)| {
-                matches!(tab.tabular_source(), Source::Help).then_some(idx)
-            });
+            let idx =
+                app.tabs().iter().enumerate().find_map(|(idx, tab)| {
+                    matches!(tab.tabular_source(), Source::Help).then_some(idx)
+                });
             if let Some(idx) = idx {
                 app.tabs().select(idx)
             } else {
@@ -666,6 +669,67 @@ pub fn execute(
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.toggle_expansion();
             }
+            Ok(None)
+        }
+        AppAction::PalleteGotoNext => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().goto_next();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteGotoPrev => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().goto_prev();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteGotoStart => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().goto_start();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteGotoEnd => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().goto_end();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteDeleteNext => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().delete_next();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteDeletePrev => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().delete_prev();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteInsert(c) => {
+            if let Some(pallete) = app.pallete() {
+                pallete.input().insert(c);
+            }
+            Ok(None)
+        }
+        AppAction::PalleteRollback => {
+            app.hide_pallete();
+            Ok(None)
+        }
+        AppAction::PalleteCommit => {
+            if let Some(cmd) = app.hide_pallete() {
+                parse_into_action(cmd).map(Some)
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::PalleteShow => {
+            app.show_pallete("");
+            Ok(None)
+        }
+        AppAction::PalleteHide => {
+            app.hide_pallete();
             Ok(None)
         }
     }
