@@ -1,4 +1,3 @@
-use ratatui::style::Style;
 
 #[derive(Debug, Default, Clone)]
 pub struct Scroll {
@@ -48,11 +47,6 @@ pub fn line_count(text: &str, width: usize) -> usize {
     } else {
         0
     }
-}
-
-pub fn invert_style(mut style: Style) -> Style {
-    std::mem::swap(&mut style.bg, &mut style.fg);
-    style
 }
 
 #[cfg(test)]
