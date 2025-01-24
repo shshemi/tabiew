@@ -117,7 +117,7 @@ fn start_tui<Theme: Styler>(
                         loop {
                             match execute(action, &mut app, &mut sql_backend) {
                                 Ok(Some(next_action)) => action = next_action,
-                                Ok(None) => break,
+                                Ok(_) => break,
                                 Err(err) => {
                                     app.error(err);
                                     break;
@@ -132,7 +132,7 @@ fn start_tui<Theme: Styler>(
                     loop {
                         match execute(action, &mut app, &mut sql_backend) {
                             Ok(Some(next_action)) => action = next_action,
-                            Ok(None) => break,
+                            Ok(_) => break,
                             Err(err) => {
                                 app.error(err);
                                 break;
