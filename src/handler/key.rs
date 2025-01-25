@@ -192,11 +192,7 @@ impl Default for KeyHandler {
                     .action(AppAction::SheetShow),
             )
             //  /
-            .add(
-                Keybind::default()
-                    .char('/')
-                    .action(AppAction::SearchShow),
-            )
+            .add(Keybind::default().char('/').action(AppAction::SearchShow))
             //  e
             .add(
                 Keybind::default()
@@ -225,11 +221,7 @@ impl Default for KeyHandler {
                     .action(AppAction::TableScrollRight),
             )
             // hjkl keys
-            .add(
-                Keybind::default()
-                    .char('k')
-                    .action(AppAction::TableGoUp(1)),
-            )
+            .add(Keybind::default().char('k').action(AppAction::TableGoUp(1)))
             .add(
                 Keybind::default()
                     .char('j')
@@ -312,6 +304,12 @@ impl Default for KeyHandler {
                 Keybind::default()
                     .code(KeyCode::End)
                     .action(AppAction::TableGotoLast),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Char('r'))
+                    .ctrl()
+                    .action(AppAction::TableReset),
             );
 
         // ---- command keybindings
