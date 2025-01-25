@@ -155,7 +155,11 @@ impl Default for KeyHandler {
         // ----- empty keybindings
         hndl.keybinds(AppContext::Empty)
             // q
-            .add(Keybind::default().char('q').action(AppAction::Quit))
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::TabRemoveOrQuit),
+            )
             // shift-h shift-l shift-left shift-right
             .add(Keybind::default().char('H').action(AppAction::TabPrev))
             .add(Keybind::default().char('L').action(AppAction::TabNext))
@@ -175,17 +179,12 @@ impl Default for KeyHandler {
             .add(Keybind::default().char(':').action(AppAction::PalleteShow));
 
         // ----- error keybindings
-        hndl.keybinds(AppContext::Empty)
+        hndl.keybinds(AppContext::Error)
             .fallback(|_| Some(AppAction::DismissError));
 
         // ----- table keybindings
         hndl.keybinds(AppContext::Table)
-            // q enter
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TabRemoveOrQuit),
-            )
+            // enter
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
@@ -381,11 +380,13 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Up)
+                    .shift()
                     .action(AppAction::SheetScrollUp),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Down)
+                    .shift()
                     .action(AppAction::SheetScrollDown),
             )
             .add(
