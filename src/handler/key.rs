@@ -180,6 +180,11 @@ impl Default for KeyHandler {
 
         // ----- error keybindings
         hndl.keybinds(AppContext::Error)
+            .add(
+                Keybind::default()
+                    .char(':')
+                    .action(AppAction::DismissErrorAndShowPallete),
+            )
             .fallback(|_| Some(AppAction::DismissError));
 
         // ----- table keybindings
@@ -343,16 +348,39 @@ impl Default for KeyHandler {
                     .code(KeyCode::Delete)
                     .action(AppAction::PalleteDeleteNext),
             )
+            // change selection
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::PalleteSelectPrevious),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::PalleteSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Char('p'))
+                    .ctrl()
+                    .action(AppAction::PalleteSelectPrevious),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Char('n'))
+                    .ctrl()
+                    .action(AppAction::PalleteSelectNext),
+            )
             // enter esc
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
-                    .action(AppAction::PalleteCommit),
+                    .action(AppAction::PalleteInsertSelectedOrCommit),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::PalleteHide),
+                    .action(AppAction::PalleteDeselectOrDismiss),
             )
             // insert characters
             .fallback(|event| {
@@ -369,12 +397,12 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char('q')
-                    .action(AppAction::TableHideModal),
+                    .action(AppAction::TableDismissModal),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TableHideModal),
+                    .action(AppAction::TableDismissModal),
             )
             // shift up down j k
             .add(

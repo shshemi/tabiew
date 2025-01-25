@@ -31,7 +31,7 @@ impl AppContext {
             AppContext::Empty => None,
             AppContext::Table => AppContext::Empty.into(),
             AppContext::Sheet => AppContext::Table.into(),
-            AppContext::Command => AppContext::Command.into(),
+            AppContext::Command => AppContext::Empty.into(),
             AppContext::Error => AppContext::Empty.into(),
             AppContext::Search => AppContext::Table.into(),
         }
@@ -42,15 +42,17 @@ pub struct App {
     tabs: TabsState,
     error: Option<String>,
     pallete: Option<CommandPalleteState>,
+    history: Vec<String>,
     running: bool,
 }
 
 impl App {
-    pub fn new(tabs: TabsState) -> Self {
+    pub fn new(tabs: TabsState, history: Vec<String>) -> Self {
         Self {
             tabs,
             error: None,
             pallete: None,
+            history,
             running: true,
         }
     }
@@ -65,6 +67,10 @@ impl App {
 
     pub fn pallete(&mut self) -> Option<&mut CommandPalleteState> {
         self.pallete.as_mut()
+    }
+
+    pub fn history(&mut self) -> &mut Vec<String> {
+        &mut self.history
     }
 
     pub fn show_pallete(&mut self, cmd: impl ToString) {
@@ -140,10 +146,15 @@ impl App {
                     .flex(Flex::Center)
                     .areas(frame.area());
                 let [_, mid_hor] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Length(3)]).areas(mid_ver);
+                    Layout::vertical([Constraint::Length(3), Constraint::Length(15)])
+                        .areas(mid_ver);
                 mid_hor
             };
-            frame.render_stateful_widget(CommandPallete::<Theme>::new(), upmid, cmd);
+            frame.render_stateful_widget(
+                CommandPallete::<Theme, _>::new(self.history.iter().rev()),
+                upmid,
+                cmd,
+            );
         }
 
         Ok(())

@@ -13,7 +13,7 @@ use tabiew::handler::key::KeyHandler;
 use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
-use tabiew::tui::{TabContentState, Source, Terminal};
+use tabiew::tui::{Source, TabContentState, Terminal};
 use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
@@ -63,12 +63,22 @@ fn main() -> AppResult<()> {
         .unwrap_or_default();
 
     match args.theme {
-        AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend, script),
-        AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend, script),
-        AppTheme::Nord => start_tui::<themes::Nord>(tabs, sql_backend, script),
-        AppTheme::Catppuccin => start_tui::<themes::Catppuccin>(tabs, sql_backend, script),
-        AppTheme::TokioNight => start_tui::<themes::TokioNight>(tabs, sql_backend, script),
-        AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script),
+        AppTheme::Monokai => {
+            start_tui::<themes::Monokai>(tabs, sql_backend, script, Default::default())
+        }
+        AppTheme::Argonaut => {
+            start_tui::<themes::Argonaut>(tabs, sql_backend, script, Default::default())
+        }
+        AppTheme::Nord => start_tui::<themes::Nord>(tabs, sql_backend, script, Default::default()),
+        AppTheme::Catppuccin => {
+            start_tui::<themes::Catppuccin>(tabs, sql_backend, script, Default::default())
+        }
+        AppTheme::TokioNight => {
+            start_tui::<themes::TokioNight>(tabs, sql_backend, script, Default::default())
+        }
+        AppTheme::Terminal => {
+            start_tui::<themes::Terminal>(tabs, sql_backend, script, Default::default())
+        }
     }
 }
 
@@ -76,13 +86,14 @@ fn start_tui<Theme: Styler>(
     tabs: Vec<(DataFrame, String)>,
     mut sql_backend: SqlBackend,
     script: String,
+    history: Vec<String>,
 ) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(df, name)| TabContentState::new(df, Source::Name(name)))
         .collect();
     let keybind = KeyHandler::default();
-    let mut app = App::new(tabs);
+    let mut app = App::new(tabs, history);
 
     // Initialize the terminal user interface.
     let mut tui = Terminal::new(

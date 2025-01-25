@@ -20,8 +20,9 @@ use super::command::{commands_help_data_frame, parse_into_action};
 pub enum AppAction {
     NoAction,
     DismissError,
+    DismissErrorAndShowPallete,
 
-    TableHideModal,
+    TableDismissModal,
     TableScrollRight,
     TableScrollLeft,
     TableScrollStart,
@@ -56,9 +57,11 @@ pub enum AppAction {
     PalleteDeleteNext,
     PalleteDeletePrev,
     PalleteInsert(char),
-    PalleteCommit,
+    PalleteInsertSelectedOrCommit,
     PalleteShow,
-    PalleteHide,
+    PalleteDeselectOrDismiss,
+    PalleteSelectPrevious,
+    PalleteSelectNext,
 
     SearchShow,
     SearchGotoNext,
@@ -122,7 +125,12 @@ pub fn execute(
             app.dismiss_error();
             Ok(None)
         }
-        AppAction::TableHideModal => {
+        AppAction::DismissErrorAndShowPallete => {
+            app.dismiss_error();
+            app.show_pallete("");
+            Ok(None)
+        }
+        AppAction::TableDismissModal => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_mode()
             }
@@ -691,19 +699,55 @@ pub fn execute(
             }
             Ok(None)
         }
-        AppAction::PalleteCommit => {
-            if let Some(cmd) = app.hide_pallete() {
-                parse_into_action(cmd).map(Some)
-            } else {
+        AppAction::PalleteInsertSelectedOrCommit => {
+            if let Some(selected) = app.pallete().and_then(|pallete| pallete.list().selected()) {
+                let idx = app
+                    .history()
+                    .len()
+                    .saturating_sub(selected)
+                    .saturating_sub(1);
+                if let Some(cmd) = app.history().get(idx).map(String::to_owned) {
+                    if let Some(pallete) = app.pallete() {
+                        pallete.set_input(cmd);
+                        pallete.list().select(None);
+                    }
+                }
                 Ok(None)
+            } else {
+                if let Some(cmd) = app.hide_pallete() {
+                    if app.history().last().map_or(true, |last| last != &cmd) {
+                        app.history().push(cmd.clone());
+                    }
+                    parse_into_action(cmd).map(Some)
+                } else {
+                    Ok(None)
+                }
             }
         }
         AppAction::PalleteShow => {
             app.show_pallete("");
             Ok(None)
         }
-        AppAction::PalleteHide => {
-            app.hide_pallete();
+        AppAction::PalleteDeselectOrDismiss => {
+            if let Some(pallete) = app.pallete() {
+                if pallete.list().selected().is_some() {
+                    pallete.list().select(None);
+                } else {
+                    app.hide_pallete();
+                }
+            }
+            Ok(None)
+        }
+        AppAction::PalleteSelectPrevious => {
+            if let Some(pallete) = app.pallete() {
+                pallete.list().select_previous();
+            }
+            Ok(None)
+        }
+        AppAction::PalleteSelectNext => {
+            if let Some(pallete) = app.pallete() {
+                pallete.list().select_next();
+            }
             Ok(None)
         }
     }
