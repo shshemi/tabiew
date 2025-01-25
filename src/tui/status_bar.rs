@@ -7,30 +7,30 @@ use ratatui::{
 
 use crate::tui::theme::Styler;
 
-pub struct NewStatusBar<Theme> {
-    tags: Vec<NewStatusBarTag<Theme>>,
+pub struct StatusBar<Theme> {
+    tags: Vec<StatusBarTag<Theme>>,
 }
 
-impl<Theme> NewStatusBar<Theme> {
+impl<Theme> StatusBar<Theme> {
     pub fn new() -> Self {
         Self {
             tags: Default::default(),
         }
     }
 
-    pub fn with_tag(mut self, tag: NewStatusBarTag<Theme>) -> Self {
+    pub fn with_tag(mut self, tag: StatusBarTag<Theme>) -> Self {
         self.tags.push(tag);
         self
     }
 
-    pub fn with_tags<I: IntoIterator<Item = NewStatusBarTag<Theme>>>(mut self, ext: I) -> Self {
+    pub fn with_tags<I: IntoIterator<Item = StatusBarTag<Theme>>>(mut self, ext: I) -> Self {
         self.tags.extend(ext);
         self
     }
 }
 
-impl<'a, Theme: Styler> From<NewStatusBar<Theme>> for Line<'a> {
-    fn from(value: NewStatusBar<Theme>) -> Self {
+impl<'a, Theme: Styler> From<StatusBar<Theme>> for Line<'a> {
+    fn from(value: StatusBar<Theme>) -> Self {
         Line::from_iter(
             itertools::intersperse(
                 value
@@ -46,13 +46,13 @@ impl<'a, Theme: Styler> From<NewStatusBar<Theme>> for Line<'a> {
     }
 }
 
-pub struct NewStatusBarTag<Theme> {
+pub struct StatusBarTag<Theme> {
     key: Cow<'static, str>,
     value: Cow<'static, str>,
     _theme: PhantomData<Theme>,
 }
 
-impl<Theme: Styler> NewStatusBarTag<Theme> {
+impl<Theme: Styler> StatusBarTag<Theme> {
     pub fn new(key: impl Into<Cow<'static, str>>, value: impl Into<Cow<'static, str>>) -> Self {
         Self {
             key: key.into(),

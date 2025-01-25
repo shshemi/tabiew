@@ -12,7 +12,7 @@ use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
     search_bar::{SearchBar, SearchBarState},
     sheet::{Sheet, SheetState},
-    status_bar::{NewStatusBar, NewStatusBarTag},
+    status_bar::{StatusBar, StatusBarTag},
 };
 use crate::{search::Search, tui::theme::Styler, utils::polars_ext::GetSheetSections};
 
@@ -292,19 +292,19 @@ impl TabContentState {
 }
 
 pub struct TabContent<Theme> {
-    status_bar: NewStatusBar<Theme>,
+    status_bar: StatusBar<Theme>,
     _theme: PhantomData<Theme>,
 }
 
 impl<Theme: Styler> TabContent<Theme> {
     pub fn new() -> Self {
         Self {
-            status_bar: NewStatusBar::<Theme>::new(),
+            status_bar: StatusBar::<Theme>::new(),
             _theme: Default::default(),
         }
     }
 
-    pub fn with_tag(mut self, tag: NewStatusBarTag<Theme>) -> Self {
+    pub fn with_tag(mut self, tag: StatusBarTag<Theme>) -> Self {
         self.status_bar = self.status_bar.with_tag(tag);
         self
     }
@@ -335,11 +335,11 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                     .border_type(BorderType::Rounded)
                     .title_top(Line::from(format!(" {} ", state.source.as_ref())))
                     .title_bottom(self.status_bar.with_tags([
-                        NewStatusBarTag::new(
+                        StatusBarTag::new(
                             "Expended",
                             if state.table.expanded() { "Yes" } else { " No" },
                         ),
-                        NewStatusBarTag::new(
+                        StatusBarTag::new(
                             "Row",
                             format!(
                                 "{:>width$}",
@@ -347,7 +347,7 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                                 width = state.table.height().to_string().len()
                             ),
                         ),
-                        NewStatusBarTag::new(
+                        StatusBarTag::new(
                             "Shape",
                             format!(
                                 "{} x {}",
