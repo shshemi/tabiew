@@ -372,7 +372,11 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
             }
 
             Some(Modal::Search(_, search_bar_state, _)) => {
-                SearchBar::<Theme>::new().render(search_bar_area, buf, search_bar_state);
+                SearchBar::<Theme>::new().with_selection(true).render(
+                    search_bar_area,
+                    buf,
+                    search_bar_state,
+                );
             }
 
             _ => (),
