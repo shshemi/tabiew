@@ -189,129 +189,129 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
-                    .action(AppAction::TabularSheetMode),
+                    .action(AppAction::SheetShow),
             )
             //  /
             .add(
                 Keybind::default()
                     .char('/')
-                    .action(AppAction::TabularSearchMode),
+                    .action(AppAction::SearchShow),
             )
             //  e
             .add(
                 Keybind::default()
                     .char('e')
-                    .action(AppAction::TabularToggleExpansion),
+                    .action(AppAction::TableToggleExpansion),
             )
             //  arrow keys
             .add(
                 Keybind::default()
                     .code(KeyCode::Up)
-                    .action(AppAction::TabularGoUp(1)),
+                    .action(AppAction::TableGoUp(1)),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Down)
-                    .action(AppAction::TabularGoDown(1)),
+                    .action(AppAction::TableGoDown(1)),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Left)
-                    .action(AppAction::TabularScrollLeft),
+                    .action(AppAction::TableScrollLeft),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Right)
-                    .action(AppAction::TabularScrollRight),
+                    .action(AppAction::TableScrollRight),
             )
             // hjkl keys
             .add(
                 Keybind::default()
                     .char('k')
-                    .action(AppAction::TabularGoUp(1)),
+                    .action(AppAction::TableGoUp(1)),
             )
             .add(
                 Keybind::default()
                     .char('j')
-                    .action(AppAction::TabularGoDown(1)),
+                    .action(AppAction::TableGoDown(1)),
             )
             .add(
                 Keybind::default()
                     .char('h')
-                    .action(AppAction::TabularScrollLeft),
+                    .action(AppAction::TableScrollLeft),
             )
             .add(
                 Keybind::default()
                     .char('l')
-                    .action(AppAction::TabularScrollRight),
+                    .action(AppAction::TableScrollRight),
             )
             // ctrl-u ctrl-d
             .add(
                 Keybind::default()
                     .char('u')
                     .ctrl()
-                    .action(AppAction::TabularGoUpHalfPage),
+                    .action(AppAction::TableGoUpHalfPage),
             )
             .add(
                 Keybind::default()
                     .char('d')
                     .ctrl()
-                    .action(AppAction::TabularGoDownHalfPage),
+                    .action(AppAction::TableGoDownHalfPage),
             )
             // ctrl-b ctrl-f pageup pagedown
             .add(
                 Keybind::default()
                     .char('b')
                     .ctrl()
-                    .action(AppAction::TabularGoUpFullPage),
+                    .action(AppAction::TableGoUpFullPage),
             )
             .add(
                 Keybind::default()
                     .char('d')
                     .ctrl()
-                    .action(AppAction::TabularGoDownFullPage),
+                    .action(AppAction::TableGoDownFullPage),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::PageUp)
-                    .action(AppAction::TabularGoUpFullPage),
+                    .action(AppAction::TableGoUpFullPage),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::PageDown)
-                    .action(AppAction::TabularGoDownFullPage),
+                    .action(AppAction::TableGoDownFullPage),
             )
             // _ $
             .add(
                 Keybind::default()
                     .char('_')
-                    .action(AppAction::TabularScrollStart),
+                    .action(AppAction::TableScrollStart),
             )
             .add(
                 Keybind::default()
                     .char('$')
-                    .action(AppAction::TabularScrollEnd),
+                    .action(AppAction::TableScrollEnd),
             )
             // g G home end
             .add(
                 Keybind::default()
                     .char('g')
-                    .action(AppAction::TabularGotoFirst),
+                    .action(AppAction::TableGotoFirst),
             )
             .add(
                 Keybind::default()
                     .char('G')
-                    .action(AppAction::TabularGotoLast),
+                    .action(AppAction::TableGotoLast),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Home)
-                    .action(AppAction::TabularGotoFirst),
+                    .action(AppAction::TableGotoFirst),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::End)
-                    .action(AppAction::TabularGotoLast),
+                    .action(AppAction::TableGotoLast),
             );
 
         // ---- command keybindings
@@ -372,12 +372,12 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char('q')
-                    .action(AppAction::TabularTableMode),
+                    .action(AppAction::TableHideModal),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TabularTableMode),
+                    .action(AppAction::TableHideModal),
             )
             // shift up down j k
             .add(
