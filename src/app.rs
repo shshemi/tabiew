@@ -103,7 +103,7 @@ impl App {
             AppContext::Command
         } else {
             match self.tabs.selected().map(TabContentState::modal) {
-                Some(Some(Modal::Search(_, _))) => AppContext::Search,
+                Some(Some(Modal::Search(_, _, _))) => AppContext::Search,
                 Some(Some(Modal::Sheet(_))) => AppContext::Sheet,
                 Some(None) => AppContext::Table,
                 None => AppContext::Empty,
@@ -140,8 +140,7 @@ impl App {
                     .flex(Flex::Center)
                     .areas(frame.area());
                 let [_, mid_hor] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Length(3)])
-                        .areas(mid_ver);
+                    Layout::vertical([Constraint::Length(3), Constraint::Length(3)]).areas(mid_ver);
                 mid_hor
             };
             frame.render_stateful_widget(CommandPallete::<Theme>::new(), upmid, cmd);

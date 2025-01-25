@@ -252,7 +252,15 @@ pub fn execute(
 
         AppAction::TableReset => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.rollback();
+                match tab.tabular_source() {
+                    Source::Name(name) => {
+                        tab.set_data_frame(sql.execute(&format!("SELECT * FROM '{}'", name))?);
+                    }
+                    Source::Query(query) => {
+                        tab.set_data_frame(sql.execute(&query)?);
+                    }
+                    _ => (),
+                }
             }
             Ok(None)
         }
@@ -580,8 +588,7 @@ pub fn execute(
 
         AppAction::SearchRollback => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.table_mode();
-                tab.rollback();
+                tab.search_rollback();
             }
             Ok(None)
         }
