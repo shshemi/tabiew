@@ -27,13 +27,16 @@ pub struct SearchBar<Theme> {
 impl<Theme> SearchBar<Theme> {
     pub fn new() -> Self {
         Self {
-            selection:false,
+            selection: false,
             _theme: Default::default(),
         }
     }
 
     pub fn with_selection(self, selection: bool) -> Self {
-        Self { selection, _theme: PhantomData }
+        Self {
+            selection,
+            _theme: PhantomData,
+        }
     }
 }
 
@@ -47,13 +50,13 @@ impl<Theme: Styler> StatefulWidget for SearchBar<Theme> {
         state: &mut Self::State,
     ) {
         Input::<Theme>::new()
-            .style(Theme::status_bar_search())
+            .style(Theme::pallete_text())
             .selection(self.selection)
             .block(
                 Block::bordered()
-                .title_top("Fuzzy Search")
+                    .title_top("Fuzzy Search")
                     .border_type(ratatui::widgets::BorderType::Rounded)
-                    .border_style(Theme::pallete()),
+                    .style(Theme::pallete()),
             )
             .render(area, buf, &mut state.input);
     }

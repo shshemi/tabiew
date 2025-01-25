@@ -114,12 +114,19 @@ impl<'a, Theme: Styler> StatefulWidget for Input<'a, Theme> {
             state.scroll.clamp(min_scroll, max_scroll)
         };
 
-        // draw text input and cursor
+        // calculate text space
         let text_area = self
             .block
             .as_ref()
             .map(|block| block.inner(area))
             .unwrap_or(area);
+
+        // draw block
+        if let Some(block) = self.block {
+            block.render(area, buf);
+        }
+
+        // draw text
         Paragraph::new(
             state
                 .input
@@ -128,13 +135,10 @@ impl<'a, Theme: Styler> StatefulWidget for Input<'a, Theme> {
                 .skip(state.scroll)
                 .collect::<String>(),
         )
-        .style(if self.selection {
-            Theme::pallete_text()
-        } else {
-            Theme::pallete_text()
-        })
+        .style(self.style)
         .render(text_area, buf);
 
+        // draw cursor
         if self.selection {
             buf.set_style(
                 Rect {
@@ -143,13 +147,8 @@ impl<'a, Theme: Styler> StatefulWidget for Input<'a, Theme> {
                     width: 1,
                     height: 1,
                 },
-                Theme::pallete_text().add_modifier(Modifier::REVERSED),
+                self.style.add_modifier(Modifier::REVERSED),
             );
-        }
-
-        // draw block if exists
-        if let Some(block) = self.block {
-            block.render(area, buf);
         }
     }
 }
