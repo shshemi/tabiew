@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use ratatui::widgets::{Block, Clear, StatefulWidget, Widget};
+use ratatui::{layout::Alignment, widgets::{Block, Clear, StatefulWidget, Widget}};
 
 use super::{
     input::{Input, InputState},
@@ -53,7 +53,8 @@ impl<Theme: Styler> StatefulWidget for CommandPallete<Theme> {
             .selection(self.selection)
             .block(
                 Block::bordered()
-                    .title_top(" Command ")
+                    .title(" Command ")
+                    .title_alignment(Alignment::Center)
                     .border_type(ratatui::widgets::BorderType::Rounded)
                     .border_style(Theme::pallete()),
             )
