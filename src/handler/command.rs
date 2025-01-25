@@ -89,7 +89,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 18] =  [
+static ENTRIES: [Entry; 17] =  [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
@@ -112,7 +112,7 @@ static ENTRIES: [Entry; 18] =  [
         usage: "goto <line_index>",
         description: "Jumps to the specified line",
         parser: |line|{
-            Ok(AppAction::TabularGoto(
+            Ok(AppAction::TableGoto(
                 line.parse::<usize>()?.saturating_sub(1),
             ))
         },
@@ -123,9 +123,9 @@ static ENTRIES: [Entry; 18] =  [
         description: "Jump specified number of line(s) up",
         parser: |lines|{
             Ok(match lines {
-                "page" => AppAction::TabularGoUpFullPage,
-                "half" => AppAction::TabularGoUpHalfPage,
-                _ => AppAction::TabularGoUp(lines.parse()?),
+                "page" => AppAction::TableGoUpFullPage,
+                "half" => AppAction::TableGoUpHalfPage,
+                _ => AppAction::TableGoUp(lines.parse()?),
             })
         },
     },
@@ -135,9 +135,9 @@ static ENTRIES: [Entry; 18] =  [
         description: "Jump specified number of line(s) down",
         parser: |lines|{
             Ok(match lines {
-                "page" => AppAction::TabularGoDownFullPage,
-                "half" => AppAction::TabularGoDownHalfPage,
-                _ => AppAction::TabularGoDown(lines.parse()?),
+                "page" => AppAction::TableGoDownFullPage,
+                "half" => AppAction::TableGoDownHalfPage,
+                _ => AppAction::TableGoDown(lines.parse()?),
             })
         },
     },
@@ -146,7 +146,7 @@ static ENTRIES: [Entry; 18] =  [
         usage: "reset",
         description: "Reset the data frame to its original state, removing all filters, orders, searches, selects, and aggregations effects.",
         parser: |_|{
-            Ok(AppAction::TabularReset)
+            Ok(AppAction::TableReset)
         },
     },
     Entry {
@@ -162,7 +162,7 @@ static ENTRIES: [Entry; 18] =  [
         usage: "select <column_name(s)>",
         description: "Query the data frame for columns / functions",
         parser: |query|{
-            Ok(AppAction::TabularSelect(query.to_owned()))
+            Ok(AppAction::TableSelect(query.to_owned()))
         },
     },
     Entry {
@@ -170,7 +170,7 @@ static ENTRIES: [Entry; 18] =  [
         usage: "filter <condition(s)>",
         description: "Filter the data frame, keeping rows were the condition(s) match",
         parser: |query|{
-            Ok(AppAction::TabularFilter(query.to_owned()))
+            Ok(AppAction::TableFilter(query.to_owned()))
         },
     },
     Entry {
@@ -178,7 +178,7 @@ static ENTRIES: [Entry; 18] =  [
         usage: "order <column(s)_and_order(s)>",
         description: "Sort the data frame by column(s)",
         parser: |query|{
-            Ok(AppAction::TabularOrder(query.to_owned()))
+            Ok(AppAction::TableOrder(query.to_owned()))
         },
     },
     Entry {
@@ -194,20 +194,7 @@ static ENTRIES: [Entry; 18] =  [
         usage: "rand",
         description: "Select a random row from current data frame",
         parser: |_|{
-            Ok(AppAction::TabularGotoRandom)
-        },
-    },
-    Entry {
-        prefix: Prefix::Long("view"),
-        usage: "view (table | sheet | switch)",
-        description: "Switch between table and sheet views",
-        parser: |query|{
-            Ok(match query {
-                "table" => AppAction::TabularTableMode,
-                "sheet" => AppAction::TabularSheetMode,
-                "switch" => AppAction::TabularToggleSheetMode,
-                _ => Err(anyhow!("Invalid view"))?,
-            })
+            Ok(AppAction::TableGotoRandom)
         },
     },
     Entry {

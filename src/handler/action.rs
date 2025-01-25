@@ -20,32 +20,33 @@ use super::command::{commands_help_data_frame, parse_into_action};
 pub enum AppAction {
     NoAction,
     DismissError,
-    TabularTableMode,
-    TabularSheetMode,
-    TabularSearchMode,
-    TabularToggleSheetMode,
-    TabularScrollRight,
-    TabularScrollLeft,
-    TabularScrollStart,
-    TabularScrollEnd,
-    TabularToggleExpansion,
-    TabularGoto(usize),
-    TabularGotoFirst,
-    TabularGotoLast,
-    TabularGotoRandom,
-    TabularGoUp(usize),
-    TabularGoUpHalfPage,
-    TabularGoUpFullPage,
-    TabularGoDown(usize),
-    TabularGoDownHalfPage,
-    TabularGoDownFullPage,
+
+    TableHideModal,
+    TableScrollRight,
+    TableScrollLeft,
+    TableScrollStart,
+    TableScrollEnd,
+    TableToggleExpansion,
+    TableGoto(usize),
+    TableGotoFirst,
+    TableGotoLast,
+    TableGotoRandom,
+    TableGoUp(usize),
+    TableGoUpHalfPage,
+    TableGoUpFullPage,
+    TableGoDown(usize),
+    TableGoDownHalfPage,
+    TableGoDownFullPage,
+
+    SheetShow,
     SheetScrollUp,
     SheetScrollDown,
-    TabularSelect(String),
-    TabularOrder(String),
-    TabularFilter(String),
+
+    TableSelect(String),
+    TableOrder(String),
+    TableFilter(String),
     SqlQuery(String),
-    TabularReset,
+    TableReset,
     SqlSchema,
 
     PalleteGotoNext,
@@ -59,6 +60,7 @@ pub enum AppAction {
     PalleteShow,
     PalleteHide,
 
+    SearchShow,
     SearchGotoNext,
     SearchGotoPrev,
     SearchGotoStart,
@@ -77,6 +79,7 @@ pub enum AppAction {
     TabNext,
     TabRemoveOrQuit,
     TabRename(usize, String),
+
     ExportDsv {
         path: PathBuf,
         separator: char,
@@ -92,6 +95,7 @@ pub enum AppAction {
         has_header: bool,
         quote: char,
     },
+
     ImportParquet(PathBuf),
     ImportJson(PathBuf, JsonFormat),
     ImportArrow(PathBuf),
@@ -118,30 +122,23 @@ pub fn execute(
             app.dismiss_error();
             Ok(None)
         }
-        AppAction::TabularTableMode => {
+        AppAction::TableHideModal => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_mode()
             }
             Ok(None)
         }
 
-        AppAction::TabularSheetMode => {
+        AppAction::SheetShow => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.sheet_mode()
             }
             Ok(None)
         }
 
-        AppAction::TabularSearchMode => {
+        AppAction::SearchShow => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.search_mode();
-            }
-            Ok(None)
-        }
-
-        AppAction::TabularToggleSheetMode => {
-            if let Some(tab) = app.tabs().selected_mut() {
-                tab.switch_view()
             }
             Ok(None)
         }
@@ -169,70 +166,70 @@ pub fn execute(
             }
         }
 
-        AppAction::TabularGoto(line) => {
+        AppAction::TableGoto(line) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select(line)
             }
             Ok(None)
         }
 
-        AppAction::TabularGotoFirst => {
+        AppAction::TableGotoFirst => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_first()
             }
             Ok(None)
         }
 
-        AppAction::TabularGotoLast => {
+        AppAction::TableGotoLast => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_last()
             }
             Ok(None)
         }
 
-        AppAction::TabularGotoRandom => {
+        AppAction::TableGotoRandom => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_random()
             }
             Ok(None)
         }
 
-        AppAction::TabularGoUp(lines) => {
+        AppAction::TableGoUp(lines) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_up(lines)
             }
             Ok(None)
         }
 
-        AppAction::TabularGoUpHalfPage => {
+        AppAction::TableGoUpHalfPage => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_up(tab.page_len().div(2))
             }
             Ok(None)
         }
 
-        AppAction::TabularGoUpFullPage => {
+        AppAction::TableGoUpFullPage => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_up(tab.page_len())
             }
             Ok(None)
         }
 
-        AppAction::TabularGoDown(lines) => {
+        AppAction::TableGoDown(lines) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_down(lines)
             }
             Ok(None)
         }
 
-        AppAction::TabularGoDownHalfPage => {
+        AppAction::TableGoDownHalfPage => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_down(tab.page_len().div(2))
             }
             Ok(None)
         }
 
-        AppAction::TabularGoDownFullPage => {
+        AppAction::TableGoDownFullPage => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.select_down(tab.page_len())
             }
@@ -253,14 +250,14 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::TabularReset => {
+        AppAction::TableReset => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.rollback();
             }
             Ok(None)
         }
 
-        AppAction::TabularSelect(select) => {
+        AppAction::TableSelect(select) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 let mut sql = SqlBackend::new();
                 sql.register("df", tab.data_frame().clone(), "".into());
@@ -269,7 +266,7 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::TabularOrder(order) => {
+        AppAction::TableOrder(order) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 let mut sql = SqlBackend::new();
                 sql.register("df", tab.data_frame().clone(), "".into());
@@ -278,7 +275,7 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::TabularFilter(filter) => {
+        AppAction::TableFilter(filter) => {
             if let Some(tab) = app.tabs().selected_mut() {
                 let mut sql = SqlBackend::new();
                 sql.register("df", tab.data_frame().clone(), "".into());
@@ -611,35 +608,35 @@ pub fn execute(
             Ok(None)
         }
 
-        AppAction::TabularScrollRight => {
+        AppAction::TableScrollRight => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_scroll_right();
             }
             Ok(None)
         }
 
-        AppAction::TabularScrollLeft => {
+        AppAction::TableScrollLeft => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_scroll_left();
             }
             Ok(None)
         }
 
-        AppAction::TabularScrollStart => {
+        AppAction::TableScrollStart => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_goto_start();
             }
             Ok(None)
         }
 
-        AppAction::TabularScrollEnd => {
+        AppAction::TableScrollEnd => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_goto_end();
             }
             Ok(None)
         }
 
-        AppAction::TabularToggleExpansion => {
+        AppAction::TableToggleExpansion => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.toggle_expansion();
             }
