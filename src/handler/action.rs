@@ -58,7 +58,7 @@ pub enum AppAction {
     PalleteDeletePrev,
     PalleteInsert(char),
     PalleteInsertSelectedOrCommit,
-    PalleteShow,
+    PalleteShow(String),
     PalleteDeselectOrDismiss,
     PalleteSelectPrevious,
     PalleteSelectNext,
@@ -724,8 +724,8 @@ pub fn execute(
                 }
             }
         }
-        AppAction::PalleteShow => {
-            app.show_pallete("");
+        AppAction::PalleteShow(text) => {
+            app.show_pallete(text);
             Ok(None)
         }
         AppAction::PalleteDeselectOrDismiss => {
