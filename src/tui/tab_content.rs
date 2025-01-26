@@ -343,7 +343,7 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                             "Row",
                             format!(
                                 "{:>width$}",
-                                state.table.selected(),
+                                state.table.selected() + 1,
                                 width = state.table.height().to_string().len()
                             ),
                         ),
