@@ -12,6 +12,7 @@ use crate::{
         tabs::{Tabs, TabsState},
         Styler, TabContentState,
     },
+    utils::history::History,
     AppResult,
 };
 
@@ -42,12 +43,12 @@ pub struct App {
     tabs: TabsState,
     error: Option<String>,
     pallete: Option<CommandPalleteState>,
-    history: Vec<String>,
+    history: History,
     running: bool,
 }
 
 impl App {
-    pub fn new(tabs: TabsState, history: Vec<String>) -> Self {
+    pub fn new(tabs: TabsState, history: History) -> Self {
         Self {
             tabs,
             error: None,
@@ -69,7 +70,7 @@ impl App {
         self.pallete.as_mut()
     }
 
-    pub fn history(&mut self) -> &mut Vec<String> {
+    pub fn history(&mut self) -> &mut History {
         &mut self.history
     }
 
@@ -151,7 +152,7 @@ impl App {
                 mid_hor
             };
             frame.render_stateful_widget(
-                CommandPallete::<Theme, _>::new(self.history.iter().rev()),
+                CommandPallete::<Theme, _>::new(self.history.iter()),
                 upmid,
                 cmd,
             );

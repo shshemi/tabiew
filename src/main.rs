@@ -14,6 +14,7 @@ use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
 use tabiew::tui::{Source, TabContentState, Terminal};
+use tabiew::utils::history::History;
 use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
@@ -62,23 +63,18 @@ fn main() -> AppResult<()> {
         .transpose()?
         .unwrap_or_default();
 
+    let history = home::home_dir()
+        .map(|path| path.join(".tabiew_history"))
+        .map(|path| History::from_file(path))
+        .unwrap_or(History::in_memory());
+
     match args.theme {
-        AppTheme::Monokai => {
-            start_tui::<themes::Monokai>(tabs, sql_backend, script, Default::default())
-        }
-        AppTheme::Argonaut => {
-            start_tui::<themes::Argonaut>(tabs, sql_backend, script, Default::default())
-        }
-        AppTheme::Nord => start_tui::<themes::Nord>(tabs, sql_backend, script, Default::default()),
-        AppTheme::Catppuccin => {
-            start_tui::<themes::Catppuccin>(tabs, sql_backend, script, Default::default())
-        }
-        AppTheme::TokioNight => {
-            start_tui::<themes::TokioNight>(tabs, sql_backend, script, Default::default())
-        }
-        AppTheme::Terminal => {
-            start_tui::<themes::Terminal>(tabs, sql_backend, script, Default::default())
-        }
+        AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend, script, history),
+        AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend, script, history),
+        AppTheme::Nord => start_tui::<themes::Nord>(tabs, sql_backend, script, history),
+        AppTheme::Catppuccin => start_tui::<themes::Catppuccin>(tabs, sql_backend, script, history),
+        AppTheme::TokioNight => start_tui::<themes::TokioNight>(tabs, sql_backend, script, history),
+        AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script, history),
     }
 }
 
@@ -86,7 +82,7 @@ fn start_tui<Theme: Styler>(
     tabs: Vec<(DataFrame, String)>,
     mut sql_backend: SqlBackend,
     script: String,
-    history: Vec<String>,
+    history: History,
 ) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
