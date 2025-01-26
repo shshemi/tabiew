@@ -21,13 +21,13 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 
 |Key Combination|Functionality|
 |-|-|
-| `v`| Switch view|
-| `Enter`| Show row in sheet view|
-| `k` or `Arrow Up`| Move up in the table or scroll up in sheet view|
-| `j` or `Arrow Down`| Move down in the table or scroll down in sheet view|
-| `h` or `Arrow Left`| Move to the previous item in sheet view|
-| `l` or `Arrow Right`| Move to the next item in sheet view|
-| `Page Up` or  `Ctrl+b`| Move one page up|
+| `Enter`| Open record sheet|
+| `k` or `Arrow Up`| Move up|
+| `j` or `Arrow Down`| Move down|
+| `h` or `Arrow Left`| Scroll left|
+| `l` or `Arrow Right`| Scroll right|
+| `e` | Toggle column expansion|
+| `Page Up` or `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
 | `H` or `Shift+Arrow Left`| Select previous tab|
 | `L` or `Shift+Arrow Right`| Select next tab|
@@ -35,11 +35,10 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 | `Ctrl+d`| Move down half a page|
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
-| `R`| Select a random row|
 | `Ctrl+r`| Reset the data frame|
-| `q`| Close current tab|
-| `:`| Command mode|
-| `/`| Search mode|
+| `q`| Close tab / sheet|
+| `:`| Command Pallete|
+| `/`| Fuzzy Search|
 
 ## Commands
 |Command|Example|Description|
