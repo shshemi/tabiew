@@ -7,9 +7,7 @@ use ratatui::{
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Line,
-    widgets::{
-        Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget,
-    },
+    widgets::{Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget},
 };
 
 use super::{
@@ -41,24 +39,6 @@ impl CommandPalleteState {
     pub fn list(&mut self) -> &mut ListState {
         &mut self.list
     }
-
-    // pub fn selected(&self) -> Option<usize> {
-    //     self.list.selected()
-    // }
-
-    // pub fn select_up(&mut self) {
-    //     self.list.select_previous();
-    // }
-
-    // pub fn select_down(&mut self) {
-    //     self.list.select_next();
-    // }
-
-    // pub fn deselect(&mut self) -> Option<usize> {
-    //     let selected = self.list.selected();
-    //     self.list.select(None);
-    //     selected
-    // }
 
     pub fn set_input(&mut self, text: String) {
         let mut input = InputState::default();
@@ -128,7 +108,11 @@ where
                     .border_type(BorderType::Rounded)
                     .style(Theme::pallete())
                     .title_alignment(Alignment::Center)
-                    .title_bottom(if state.list.selected().is_some() {" Replace with enter, cancel with esc "} else {" Select with up & down or ctrl+p & ctrl+n "}),
+                    .title_bottom(if state.list.selected().is_some() {
+                        " Replace with enter, cancel with esc "
+                    } else {
+                        " Select with up & down or ctrl+p & ctrl+n "
+                    }),
             ),
             list_area,
             buf,

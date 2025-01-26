@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use ratatui::widgets::StatefulWidget;
 
 use super::{
-    status_bar::StatusBarTag, tab_content::{TabContent, TabContentState}, Styler
+    status_bar::StatusBarTag,
+    tab_content::{TabContent, TabContentState},
+    Styler,
 };
 
 #[derive(Debug)]
