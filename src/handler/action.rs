@@ -696,6 +696,7 @@ pub fn execute(
         AppAction::PalleteInsert(c) => {
             if let Some(pallete) = app.pallete() {
                 pallete.input().insert(c);
+                pallete.list().select(None);
             }
             Ok(None)
         }
