@@ -176,7 +176,11 @@ impl Default for KeyHandler {
                     .action(AppAction::TabNext),
             )
             // :
-            .add(Keybind::default().char(':').action(AppAction::PalleteShow));
+            .add(
+                Keybind::default()
+                    .char(':')
+                    .action(AppAction::PalleteShow(String::default())),
+            );
 
         // ----- error keybindings
         hndl.keybinds(AppContext::Error)
@@ -314,7 +318,19 @@ impl Default for KeyHandler {
                     .code(KeyCode::Char('r'))
                     .ctrl()
                     .action(AppAction::TableReset),
-            );
+            )
+            .fallback(|event| match event.code {
+                KeyCode::Char('1') => Some(AppAction::PalleteShow("goto 1".to_owned())),
+                KeyCode::Char('2') => Some(AppAction::PalleteShow("goto 2".to_owned())),
+                KeyCode::Char('3') => Some(AppAction::PalleteShow("goto 3".to_owned())),
+                KeyCode::Char('4') => Some(AppAction::PalleteShow("goto 4".to_owned())),
+                KeyCode::Char('5') => Some(AppAction::PalleteShow("goto 5".to_owned())),
+                KeyCode::Char('6') => Some(AppAction::PalleteShow("goto 6".to_owned())),
+                KeyCode::Char('7') => Some(AppAction::PalleteShow("goto 7".to_owned())),
+                KeyCode::Char('8') => Some(AppAction::PalleteShow("goto 8".to_owned())),
+                KeyCode::Char('9') => Some(AppAction::PalleteShow("goto 9".to_owned())),
+                _ => None,
+            });
 
         // ---- command keybindings
         hndl.keybinds(AppContext::Command)
