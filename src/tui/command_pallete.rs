@@ -126,7 +126,9 @@ where
                 Block::new()
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
                     .border_type(BorderType::Rounded)
-                    .style(Theme::pallete()),
+                    .style(Theme::pallete())
+                    .title_alignment(Alignment::Center)
+                    .title_bottom(if state.list.selected().is_some() {" Replace with enter, cancel with esc "} else {" Select with up & down or ctrl+p & ctrl+n "}),
             ),
             list_area,
             buf,

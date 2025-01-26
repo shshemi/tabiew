@@ -108,6 +108,8 @@ where
                     .style(Theme::sheet_block())
                     .border_style(Theme::sheet_block())
                     .border_type(BorderType::Rounded)
+                    .title_bottom(" Scroll with shift + [up & down or k & j] ")
+                    .title_alignment(Alignment::Center)
                     .borders(Borders::ALL),
             )
             .scroll((state.scroll.val_u16(), 0))
