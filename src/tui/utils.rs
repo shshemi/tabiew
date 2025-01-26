@@ -1,4 +1,3 @@
-
 #[derive(Debug, Default, Clone)]
 pub struct Scroll {
     val: usize,
