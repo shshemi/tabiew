@@ -702,12 +702,7 @@ pub fn execute(
         }
         AppAction::PalleteInsertSelectedOrCommit => {
             if let Some(selected) = app.pallete().and_then(|pallete| pallete.list().selected()) {
-                let idx = app
-                    .history()
-                    .len()
-                    .saturating_sub(selected)
-                    .saturating_sub(1);
-                if let Some(cmd) = app.history().get(idx).map(String::to_owned) {
+                if let Some(cmd) = app.history().get(selected).map(String::to_owned) {
                     if let Some(pallete) = app.pallete() {
                         pallete.set_input(cmd);
                         pallete.list().select(None);
@@ -716,9 +711,7 @@ pub fn execute(
                 Ok(None)
             } else {
                 if let Some(cmd) = app.hide_pallete() {
-                    if app.history().last().map_or(true, |last| last != &cmd) {
-                        app.history().push(cmd.clone());
-                    }
+                    app.history().push(cmd.clone());
                     parse_into_action(cmd).map(Some)
                 } else {
                     Ok(None)

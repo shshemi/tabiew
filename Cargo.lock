@@ -3177,6 +3177,7 @@ dependencies = [
  "crossterm",
  "fuzzy-matcher",
  "fwf-rs",
+ "home",
  "itertools 0.14.0",
  "polars",
  "polars-lazy",
