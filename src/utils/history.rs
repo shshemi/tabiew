@@ -18,6 +18,7 @@ impl History {
             string
                 .lines()
                 .map(str::trim)
+                .filter(|line| !line.is_empty())
                 .map(str::to_owned)
                 .collect_vec()
         });
