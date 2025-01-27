@@ -152,7 +152,7 @@ impl App {
                 mid_hor
             };
             frame.render_stateful_widget(
-                CommandPallete::<Theme, _>::new(self.history.iter()),
+                CommandPallete::<Theme, _>::new(self.history.iter().take(100)),
                 upmid,
                 cmd,
             );
