@@ -1,7 +1,7 @@
 use std::{
-    fs::{self, OpenOptions},
+    fs::{self, File, OpenOptions},
     io::Write,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use itertools::Itertools;
@@ -66,6 +66,21 @@ impl Drop for History {
                 for line in self.history.drain(..).skip(self.start_len) {
                     let _ = write!(file, "{}\n", line);
                 }
+            }
+        }
+    }
+}
+
+pub fn enforce_line_limit(path: impl AsRef<Path>, limit: usize) {
+    if let Ok(content) = fs::read_to_string(&path) {
+        let lines = content.lines().count();
+        if lines > limit {
+            let skips = lines - limit;
+
+            if let Ok(mut file) = File::create(path) {
+                content.lines().skip(skips).for_each(|line| {
+                    let _ = write!(file, "{}\n", line);
+                })
             }
         }
     }

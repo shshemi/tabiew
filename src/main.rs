@@ -14,7 +14,7 @@ use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
 use tabiew::tui::{themes, Styler};
 use tabiew::tui::{Source, TabContentState, Terminal};
-use tabiew::utils::history::History;
+use tabiew::utils::history::{enforce_line_limit, History};
 use tabiew::AppResult;
 
 fn main() -> AppResult<()> {
@@ -63,9 +63,10 @@ fn main() -> AppResult<()> {
         .transpose()?
         .unwrap_or_default();
 
-    let history = home::home_dir()
-        .map(|path| path.join(".tabiew_history"))
-        .map(|path| History::from_file(path))
+        let history_path = home::home_dir()
+        .map(|path| path.join(".tabiew_history"));
+    let history = history_path.as_ref()
+        .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
 
     match args.theme {
@@ -75,7 +76,11 @@ fn main() -> AppResult<()> {
         AppTheme::Catppuccin => start_tui::<themes::Catppuccin>(tabs, sql_backend, script, history),
         AppTheme::TokioNight => start_tui::<themes::TokioNight>(tabs, sql_backend, script, history),
         AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script, history),
+    }?;
+    if let Some(history_path) = history_path{
+        enforce_line_limit(history_path, 999);
     }
+    Ok(())
 }
 
 fn start_tui<Theme: Styler>(
