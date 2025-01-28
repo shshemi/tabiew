@@ -265,7 +265,7 @@ pub fn execute(
                         tab.set_data_frame(sql.execute(&format!("SELECT * FROM '{}'", name))?);
                     }
                     Source::Query(query) => {
-                        tab.set_data_frame(sql.execute(&query)?);
+                        tab.set_data_frame(sql.execute(query)?);
                     }
                     _ => (),
                 }
@@ -709,13 +709,11 @@ pub fn execute(
                     }
                 }
                 Ok(None)
+            } else if let Some(cmd) = app.hide_pallete() {
+                app.history().push(cmd.clone());
+                parse_into_action(cmd).map(Some)
             } else {
-                if let Some(cmd) = app.hide_pallete() {
-                    app.history().push(cmd.clone());
-                    parse_into_action(cmd).map(Some)
-                } else {
-                    Ok(None)
-                }
+                Ok(None)
             }
         }
         AppAction::PalleteShow(text) => {

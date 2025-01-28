@@ -38,6 +38,12 @@ impl<Theme> Sheet<Theme> {
     }
 }
 
+impl<Theme> Default for Sheet<Theme> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub struct SheetSection {
     header: String,

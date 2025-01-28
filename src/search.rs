@@ -71,7 +71,7 @@ impl Search {
                     let mut recv = ConnectionAware::new(rx);
                     while recv.connected() {
                         //do operations
-                        while let Some((idx, new_score)) = recv.next() {
+                        for (idx, new_score) in recv.by_ref() {
                             idx_score
                                 .entry(idx)
                                 .and_modify(|score| *score = new_score.max(*score))
@@ -148,7 +148,7 @@ impl<T> ConnectionAware<T> {
     fn new(recv: Receiver<T>) -> Self {
         ConnectionAware {
             connected: true,
-            recv: recv,
+            recv,
         }
     }
 

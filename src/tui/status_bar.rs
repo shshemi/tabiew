@@ -29,7 +29,13 @@ impl<Theme> StatusBar<Theme> {
     }
 }
 
-impl<'a, Theme: Styler> From<StatusBar<Theme>> for Line<'a> {
+impl<Theme> Default for StatusBar<Theme> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Theme: Styler> From<StatusBar<Theme>> for Line<'_> {
     fn from(value: StatusBar<Theme>) -> Self {
         Line::from_iter(
             itertools::intersperse(
