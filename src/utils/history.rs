@@ -58,13 +58,12 @@ impl Drop for History {
         if let Some(path) = self.path.take() {
             if let Ok(mut file) = OpenOptions::new()
                 .read(false)
-                .write(true)
                 .append(true)
                 .create(true)
                 .open(path)
             {
                 for line in self.history.drain(..).skip(self.start_len) {
-                    let _ = write!(file, "{}\n", line);
+                    let _ = writeln!(file, "{}", line);
                 }
             }
         }
@@ -79,7 +78,7 @@ pub fn enforce_line_limit(path: impl AsRef<Path>, limit: usize) {
 
             if let Ok(mut file) = File::create(path) {
                 content.lines().skip(skips).for_each(|line| {
-                    let _ = write!(file, "{}\n", line);
+                    let _ = writeln!(file, "{}", line);
                 })
             }
         }

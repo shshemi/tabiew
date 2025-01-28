@@ -68,6 +68,12 @@ impl<T> Input<'_, T> {
     }
 }
 
+impl<T> Default for Input<'_, T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a, T> Input<'a, T> {
     pub fn scroll_pad(mut self, pad: u16) -> Self {
         self.scroll_pad = pad;
@@ -90,7 +96,7 @@ impl<'a, T> Input<'a, T> {
     }
 }
 
-impl<'a, Theme: Styler> StatefulWidget for Input<'a, Theme> {
+impl<Theme: Styler> StatefulWidget for Input<'_, Theme> {
     type State = InputState;
 
     fn render(

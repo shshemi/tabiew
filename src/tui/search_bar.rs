@@ -40,6 +40,12 @@ impl<Theme> SearchBar<Theme> {
     }
 }
 
+impl<Theme> Default for SearchBar<Theme> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Theme: Styler> StatefulWidget for SearchBar<Theme> {
     type State = SearchBarState;
 
