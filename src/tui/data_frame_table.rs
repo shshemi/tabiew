@@ -151,7 +151,13 @@ impl<'a, Theme> DataFrameTable<'a, Theme> {
     }
 }
 
-impl<'a, Theme: Styler> StatefulWidget for DataFrameTable<'a, Theme> {
+impl<Theme> Default for DataFrameTable<'_, Theme> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
     type State = DataFrameTableState;
 
     fn render(

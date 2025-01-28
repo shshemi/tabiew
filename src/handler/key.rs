@@ -131,18 +131,16 @@ impl KeyHandler {
         loop {
             if let Some(act) = self.map.get(&context).and_then(|kbl| kbl.find(event)) {
                 return act;
+            } else if let Some(parent) = context.parent() {
+                context = parent;
             } else {
-                if let Some(parent) = context.parent() {
-                    context = parent;
-                } else {
-                    return AppAction::NoAction;
-                }
+                return AppAction::NoAction;
             }
         }
     }
 
     fn keybinds(&mut self, context: AppContext) -> &mut Keybinds {
-        self.map.entry(context).or_insert(Default::default())
+        self.map.entry(context).or_default()
     }
 }
 

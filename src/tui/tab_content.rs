@@ -157,26 +157,20 @@ impl TabContentState {
     }
 
     pub fn search_mode(&mut self) {
-        match &self.modal {
-            None => {
-                self.modal = Some(Modal::Search(
-                    Search::new(self.table.data_frame().clone(), Default::default()),
-                    SearchBarState::default(),
-                    self.table.data_frame().clone(),
-                ));
-            }
-            _ => (),
+        if self.modal.is_none() {
+            self.modal = Some(Modal::Search(
+                Search::new(self.table.data_frame().clone(), Default::default()),
+                SearchBarState::default(),
+                self.table.data_frame().clone(),
+            ));
         }
     }
 
     pub fn search_commit(&mut self) {
-        match &self.modal {
-            Some(Modal::Search(search, _, _)) => {
-                if let Some(df) = search.latest() {
-                    self.set_data_frame(df);
-                }
+        if let Some(Modal::Search(search, _, _)) = &self.modal {
+            if let Some(df) = search.latest() {
+                self.set_data_frame(df);
             }
-            _ => (),
         }
     }
 
