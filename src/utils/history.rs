@@ -38,7 +38,7 @@ impl History {
     }
 
     pub fn push(&mut self, cmd: String) {
-        if self.history.last().map_or(true, |last| last != &cmd) {
+        if self.history.last() != Some(&cmd) {
             self.history.push(cmd);
         }
     }
