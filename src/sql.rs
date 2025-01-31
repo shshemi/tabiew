@@ -18,14 +18,16 @@ pub struct SqlBackend {
 
 impl SqlBackend {
     pub fn new() -> Self {
-        Self {
+        let mut back = Self {
             sql: SQLContext::new(),
             tables: Default::default(),
-        }
+        };
+        back.register("_", Default::default(), "".into());
+        back
     }
 
     pub fn schema(&self) -> DataFrame {
-        let (tables, structures, paths) = self.tables.iter().fold(
+        let (tables, structures, paths) = self.tables.iter().filter(|i| i.0 != "_").fold(
             (Vec::new(), Vec::new(), Vec::new()),
             |(mut vt, mut vs, mut vp), (t, (s, p))| {
                 vt.push(t.to_owned());
@@ -59,6 +61,12 @@ impl SqlBackend {
         } else {
             panic!("Not implemented")
         }
+    }
+
+    pub fn set_default(&mut self, data_frame: DataFrame) {
+        self.tables.remove("_");
+        self.sql.unregister("_");
+        self.register("_", data_frame, "".into());
     }
 
     pub fn execute(&mut self, query: &str) -> PolarsResult<DataFrame> {

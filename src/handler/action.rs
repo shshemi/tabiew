@@ -77,7 +77,6 @@ pub enum AppAction {
     TabNew(String),
     TabSelect(usize),
     TabRemove(usize),
-    TabRemoveSelected,
     TabPrev,
     TabNext,
     TabRemoveOrQuit,
@@ -164,13 +163,13 @@ pub fn execute(
                     matches!(tab.tabular_source(), Source::Help).then_some(idx)
                 });
             if let Some(idx) = idx {
-                app.tabs().select(idx);
-                Ok(None)
+                Ok(Some(AppAction::TabSelect(idx)))
             } else {
                 app.tabs()
                     .add(TabContentState::new(sql.schema(), Source::Schema));
-                app.tabs().select_last();
-                Ok(None)
+                Ok(Some(AppAction::TabSelect(
+                    app.tabs().len().saturating_sub(1),
+                )))
             }
         }
 
@@ -275,27 +274,21 @@ pub fn execute(
 
         AppAction::TableSelect(select) => {
             if let Some(tab) = app.tabs().selected_mut() {
-                let mut sql = SqlBackend::new();
-                sql.register("df", tab.data_frame().clone(), "".into());
-                tab.set_data_frame(sql.execute(&format!("SELECT {} FROM df", select))?)
+                tab.set_data_frame(sql.execute(&format!("SELECT {} FROM _", select))?)
             }
             Ok(None)
         }
 
         AppAction::TableOrder(order) => {
             if let Some(tab) = app.tabs().selected_mut() {
-                let mut sql = SqlBackend::new();
-                sql.register("df", tab.data_frame().clone(), "".into());
-                tab.set_data_frame(sql.execute(&format!("SELECT * FROM df ORDER BY {}", order))?)
+                tab.set_data_frame(sql.execute(&format!("SELECT * FROM _ ORDER BY {}", order))?)
             }
             Ok(None)
         }
 
         AppAction::TableFilter(filter) => {
             if let Some(tab) = app.tabs().selected_mut() {
-                let mut sql = SqlBackend::new();
-                sql.register("df", tab.data_frame().clone(), "".into());
-                tab.set_data_frame(sql.execute(&format!("SELECT * FROM df where {}", filter))?)
+                tab.set_data_frame(sql.execute(&format!("SELECT * FROM _ where {}", filter))?)
             }
             Ok(None)
         }
@@ -318,56 +311,45 @@ pub fn execute(
                 app.tabs()
                     .add(TabContentState::new(df, Source::Query(query)));
             }
-            app.tabs().select_last();
-            Ok(None)
+
+            Ok(Some(AppAction::TabSelect(
+                app.tabs().len().saturating_sub(1),
+            )))
         }
 
         AppAction::TabSelect(idx) => {
-            if idx < app.tabs().len() {
-                app.tabs().select(idx);
-                Ok(None)
-            } else {
-                Err(anyhow!(
-                    "index {} is out of bound, maximum is {}",
-                    idx,
-                    app.tabs().len()
-                ))
-            }
+            let idx = idx.min(app.tabs().len().saturating_sub(1));
+            app.tabs().select(idx);
+            sql.set_default(app.tabs().selected_data_frame().unwrap_or_default());
+            Ok(None)
         }
 
         AppAction::TabRemove(idx) => {
             app.tabs().remove(idx);
-            Ok(None)
-        }
-
-        AppAction::TabRemoveSelected => {
-            let idx = app.tabs().idx();
-            app.tabs().remove(idx);
-            Ok(None)
+            Ok(Some(AppAction::TabSelect(idx)))
         }
 
         AppAction::TabRename(_idx, _new_name) => {
             todo!()
         }
 
-        AppAction::TabPrev => {
-            app.tabs().select_prev();
-            Ok(None)
-        }
+        AppAction::TabPrev => Ok(Some(AppAction::TabSelect(
+            app.tabs().idx().saturating_sub(1),
+        ))),
 
-        AppAction::TabNext => {
-            app.tabs().select_next();
-            Ok(None)
-        }
+        AppAction::TabNext => Ok(Some(AppAction::TabSelect(
+            app.tabs().idx().saturating_add(1),
+        ))),
 
         AppAction::TabRemoveOrQuit => {
             if app.tabs().len() == 1 {
                 app.quit();
+                Ok(None)
             } else {
                 let idx = app.tabs().idx();
                 app.tabs().remove(idx);
+                Ok(Some(AppAction::TabSelect(idx)))
             }
-            Ok(None)
         }
 
         AppAction::ExportDsv {
@@ -455,8 +437,9 @@ pub fn execute(
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
-            app.tabs().select_last();
-            Ok(None)
+            Ok(Some(AppAction::TabSelect(
+                app.tabs().len().saturating_sub(1),
+            )))
         }
 
         AppAction::ImportJson(path, json_format) => {
@@ -479,8 +462,9 @@ pub fn execute(
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
-            app.tabs().select_last();
-            Ok(None)
+            Ok(Some(AppAction::TabSelect(
+                app.tabs().len().saturating_sub(1),
+            )))
         }
 
         AppAction::ImportArrow(path) => {
@@ -496,8 +480,9 @@ pub fn execute(
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
-            app.tabs().select_last();
-            Ok(None)
+            Ok(Some(AppAction::TabSelect(
+                app.tabs().len().saturating_sub(1),
+            )))
         }
 
         AppAction::ImportSqlite(path) => {
@@ -513,8 +498,9 @@ pub fn execute(
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
-            app.tabs().select_last();
-            Ok(None)
+            Ok(Some(AppAction::TabSelect(
+                app.tabs().len().saturating_sub(1),
+            )))
         }
 
         AppAction::ImportFwf {
@@ -541,8 +527,9 @@ pub fn execute(
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
-            app.tabs().select_last();
-            Ok(None)
+            Ok(Some(AppAction::TabSelect(
+                app.tabs().len().saturating_sub(1),
+            )))
         }
 
         AppAction::SearchGotoNext => {
@@ -607,15 +594,16 @@ pub fn execute(
                     matches!(tab.tabular_source(), Source::Help).then_some(idx)
                 });
             if let Some(idx) = idx {
-                app.tabs().select(idx)
+                Ok(Some(AppAction::TabSelect(idx)))
             } else {
                 app.tabs().add(TabContentState::new(
                     commands_help_data_frame(),
                     Source::Help,
                 ));
-                app.tabs().select_last();
+                Ok(Some(AppAction::TabSelect(
+                    app.tabs().len().saturating_sub(1),
+                )))
             }
-            Ok(None)
         }
 
         AppAction::Quit => {

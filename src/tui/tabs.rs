@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use polars::frame::DataFrame;
 use ratatui::widgets::StatefulWidget;
 
 use super::{
@@ -39,6 +40,10 @@ impl TabsState {
         self.tabulars.get_mut(self.idx)
     }
 
+    pub fn selected_data_frame(&self) -> Option<DataFrame> {
+        self.selected().map(|tab| tab.data_frame().clone())
+    }
+
     pub fn remove(&mut self, idx: usize) {
         if idx < self.tabulars.len() {
             self.tabulars.remove(idx);
@@ -47,22 +52,6 @@ impl TabsState {
 
     pub fn select(&mut self, idx: usize) {
         self.idx = idx;
-    }
-
-    pub fn select_next(&mut self) {
-        self.select(self.idx.saturating_add(1))
-    }
-
-    pub fn select_prev(&mut self) {
-        self.select(self.idx.saturating_sub(1))
-    }
-
-    pub fn select_first(&mut self) {
-        self.select(0)
-    }
-
-    pub fn select_last(&mut self) {
-        self.select(usize::MAX)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &TabContentState> {

@@ -63,9 +63,9 @@ fn main() -> AppResult<()> {
         .transpose()?
         .unwrap_or_default();
 
-        let history_path = home::home_dir()
-        .map(|path| path.join(".tabiew_history"));
-    let history = history_path.as_ref()
+    let history_path = home::home_dir().map(|path| path.join(".tabiew_history"));
+    let history = history_path
+        .as_ref()
         .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
 
@@ -77,7 +77,7 @@ fn main() -> AppResult<()> {
         AppTheme::TokioNight => start_tui::<themes::TokioNight>(tabs, sql_backend, script, history),
         AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script, history),
     }?;
-    if let Some(history_path) = history_path{
+    if let Some(history_path) = history_path {
         enforce_line_limit(history_path, 999);
     }
     Ok(())
@@ -95,6 +95,14 @@ fn start_tui<Theme: Styler>(
         .collect();
     let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
+
+    // Set default data frame to the first tab
+    sql_backend.set_default(
+        app.tabs()
+            .selected()
+            .map(|tab| tab.data_frame().clone())
+            .unwrap(),
+    );
 
     // Initialize the terminal user interface.
     let mut tui = Terminal::new(
