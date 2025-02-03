@@ -2,11 +2,12 @@ use std::{borrow::Cow, marker::PhantomData};
 
 use ratatui::{
     layout::{Alignment, Constraint, Layout},
+    style::{Modifier, Stylize},
     symbols::{
         border::{Set, ROUNDED},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget},
 };
 
@@ -107,12 +108,33 @@ where
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
                     .border_type(BorderType::Rounded)
                     .style(Theme::pallete())
-                    .title_alignment(Alignment::Center)
-                    .title_bottom(if state.list.selected().is_some() {
-                        " Replace with enter, cancel with esc "
-                    } else {
-                        " Select with up & down or ctrl+p & ctrl+n "
-                    }),
+                    // .title_alignment(Alignment::Center)
+                    .title_bottom(
+                        if state.list.selected().is_some() {
+                            Line::from_iter([
+                                Span::raw(" "),
+                                Span::raw("Insert using "),
+                                Span::raw(" Enter ").add_modifier(Modifier::REVERSED),
+                                Span::raw(", cancel using "),
+                                Span::raw(" Esc ").add_modifier(Modifier::REVERSED),
+                                Span::raw(" "),
+                            ])
+                        } else {
+                            Line::from_iter([
+                                Span::raw(" "),
+                                Span::raw("Select up with "),
+                                Span::raw(" \u{2191} ").add_modifier(Modifier::REVERSED),
+                                Span::raw(" or "),
+                                Span::raw(" Ctrl+J ").add_modifier(Modifier::REVERSED),
+                                Span::raw(", select down with "),
+                                Span::raw(" \u{2193} ").add_modifier(Modifier::REVERSED),
+                                Span::raw(" or "),
+                                Span::raw(" Ctrl+N ").add_modifier(Modifier::REVERSED),
+                                Span::raw(" "),
+                            ])
+                        }
+                        .alignment(Alignment::Center),
+                    ),
             ),
             list_area,
             buf,

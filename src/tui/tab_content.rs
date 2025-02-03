@@ -4,7 +4,7 @@ use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::{
     layout::{Constraint, Layout, Margin, Rect},
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, BorderType, StatefulWidget},
 };
 
@@ -327,11 +327,30 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                 Block::bordered()
                     .border_style(Theme::sheet_block())
                     .border_type(BorderType::Rounded)
-                    .title_top(Line::from(format!(" {} ", state.source.as_ref())))
+                    .title_top(match &state.source {
+                        Source::Help => {
+                            Line::from_iter([Span::styled(" Help ", Theme::highlight_info_key())])
+                        }
+                        Source::Schema => {
+                            Line::from_iter([Span::styled(" Schema ", Theme::highlight_info_key())])
+                        }
+                        Source::Name(name) => Line::from_iter([
+                            Span::styled(" Table ", Theme::highlight_info_key()),
+                            Span::styled(format!(" {} ", name), Theme::highlight_info_val()),
+                        ]),
+                        Source::Query(query) => Line::from_iter([
+                            Span::styled(" Query ", Theme::highlight_info_key()),
+                            Span::styled(format!(" {} ", query), Theme::highlight_info_val()),
+                        ]),
+                    })
                     .title_bottom(self.status_bar.with_tags([
                         StatusBarTag::new(
-                            "Expended",
-                            if state.table.expanded() { "Yes" } else { " No" },
+                            "Auto-Fit",
+                            if !state.table.expanded() {
+                                "Yes"
+                            } else {
+                                " No"
+                            },
                         ),
                         StatusBarTag::new(
                             "Row",
