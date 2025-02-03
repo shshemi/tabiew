@@ -26,7 +26,7 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 | `j` or `Arrow Down`| Move down|
 | `h` or `Arrow Left`| Scroll left|
 | `l` or `Arrow Right`| Scroll right|
-| `e` | Toggle column expansion|
+| `e` | Toggle Auto-Fit|
 | `Page Up` or `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
 | `H` or `Shift+Arrow Left`| Select previous tab|

@@ -13,6 +13,8 @@ pub trait Styler {
     fn sheet_block() -> Style;
     fn status_bar_info_key(idx: usize) -> Style;
     fn status_bar_info_val(idx: usize) -> Style;
+    fn highlight_info_key() -> Style;
+    fn highlight_info_val() -> Style;
     fn pallete_text() -> Style;
     fn pallete_hightlight() -> Style;
     fn pallete() -> Style;
@@ -122,6 +124,18 @@ where
             .bg(Self::STATUS_BAR_INFO)
             .fg(Self::HIGHTLIGHT_BACKGROUND)
     }
+
+    fn highlight_info_key() -> Style {
+        Style::default()
+            .bg(Self::HIGHTLIGHT_BACKGROUND)
+            .fg(Self::HIGHTLIGHT_FOREGROUND)
+    }
+
+    fn highlight_info_val() -> Style {
+        Style::default()
+            .bg(Self::ROW_BACKGROUNDS[0])
+            .fg(Self::HIGHTLIGHT_BACKGROUND)
+    }
 }
 
 pub struct Monokai;
@@ -155,7 +169,7 @@ impl SixColorsTwoRowsStyler for Monokai {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00232024), Self::BACKGROUND];
     const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00c89f2d);
-    const HIGHTLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHTLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d02d00);
     const STATUS_BAR_PROMPT: Color = Color::from_u32(0x00109f2f);
@@ -186,7 +200,7 @@ impl SixColorsTwoRowsStyler for Argonaut {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0011131b), Color::from_u32(0x0001030b)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00002a3b);
+    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00204a5b);
     const HIGHTLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00dd0000);
@@ -373,6 +387,14 @@ impl Styler for Terminal {
     }
 
     fn pallete() -> Style {
+        Style::default()
+    }
+
+    fn highlight_info_key() -> Style {
+        Style::default()
+    }
+
+    fn highlight_info_val() -> Style {
         Style::default()
     }
 }
