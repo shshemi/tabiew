@@ -199,6 +199,12 @@ impl Default for KeyHandler {
             )
             //  /
             .add(Keybind::default().char('/').action(AppAction::SearchShow))
+            // f
+            .add(
+                Keybind::default()
+                    .char('f')
+                    .action(AppAction::ToggleBorders),
+            )
             //  e
             .add(
                 Keybind::default()

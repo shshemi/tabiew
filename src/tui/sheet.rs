@@ -116,7 +116,7 @@ where
                     .border_style(Theme::sheet_block())
                     .border_type(BorderType::Rounded)
                     .title_bottom(Line::from_iter([
-                        Span::raw(" Scroll up with "),
+                        Span::raw("Scroll up with "),
                         Span::raw(" Shift+K ").add_modifier(Modifier::REVERSED),
                         Span::raw(" or "),
                         Span::raw(" Shift+\u{2191} ").add_modifier(Modifier::REVERSED),
