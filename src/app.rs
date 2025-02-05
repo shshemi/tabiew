@@ -44,6 +44,7 @@ pub struct App {
     error: Option<String>,
     pallete: Option<CommandPalleteState>,
     history: History,
+    borders: bool,
     running: bool,
 }
 
@@ -54,6 +55,7 @@ impl App {
             error: None,
             pallete: None,
             history,
+            borders: true,
             running: true,
         }
     }
@@ -92,6 +94,10 @@ impl App {
         self.error = None;
     }
 
+    pub fn toggle_borders(&mut self) {
+        self.borders = !self.borders;
+    }
+
     pub fn tick(&mut self) -> AppResult<()> {
         for tab in self.tabs.iter_mut() {
             tab.tick();
@@ -122,7 +128,9 @@ impl App {
         // Draw table / item
         let state = self.context();
         frame.render_stateful_widget(
-            Tabs::<Theme>::new().selection(matches!(state, AppContext::Table)),
+            Tabs::<Theme>::new()
+                .with_borders(self.borders)
+                .selection(matches!(state, AppContext::Table)),
             frame.area(),
             &mut self.tabs,
         );

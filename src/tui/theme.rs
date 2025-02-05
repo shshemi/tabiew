@@ -146,7 +146,7 @@ pub struct Catppuccin;
 pub struct TokioNight;
 
 impl SixColorsTwoRowsStyler for Monokai {
-    const BACKGROUND: Color = Color::from_u32(0x001c191d);
+    const BACKGROUND: Color = Color::from_u32(0x00141115);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003e3b3f);
     const FOREGROUND: Color = Color::from_u32(0x00fffaf4);
 
@@ -167,7 +167,7 @@ impl SixColorsTwoRowsStyler for Monokai {
         Color::from_u32(0x00897bd0),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00232024), Self::BACKGROUND];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00232024), Color::from_u32(0x001c191d)];
     const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00c89f2d);
     const HIGHTLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 

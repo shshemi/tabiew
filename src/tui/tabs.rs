@@ -74,6 +74,7 @@ impl FromIterator<TabContentState> for TabsState {
 
 pub struct Tabs<Theme> {
     selection: bool,
+    borders: bool,
     _theme: PhantomData<Theme>,
 }
 
@@ -81,12 +82,18 @@ impl<Theme> Tabs<Theme> {
     pub fn new() -> Self {
         Self {
             selection: false,
+            borders: true,
             _theme: Default::default(),
         }
     }
 
     pub fn selection(mut self, selection: bool) -> Self {
         self.selection = selection;
+        self
+    }
+
+    pub fn with_borders(mut self, borders: bool) -> Self {
+        self.borders = borders;
         self
     }
 }
@@ -111,6 +118,7 @@ impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
         if let Some(tabular) = state.selected_mut() {
             TabContent::<Theme>::new()
                 .with_tag(StatusBarTag::new("Tab", tag_value))
+                .with_borders(self.borders)
                 .render(area, buf, tabular);
         }
     }

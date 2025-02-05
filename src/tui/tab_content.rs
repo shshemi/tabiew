@@ -4,8 +4,7 @@ use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::{
     layout::{Constraint, Layout, Margin, Rect},
-    text::{Line, Span},
-    widgets::{Block, BorderType, StatefulWidget},
+    widgets::{Block, BorderType, Borders, StatefulWidget},
 };
 
 use super::{
@@ -287,6 +286,7 @@ impl TabContentState {
 
 pub struct TabContent<Theme> {
     status_bar: StatusBar<Theme>,
+    borders: bool,
     _theme: PhantomData<Theme>,
 }
 
@@ -294,12 +294,18 @@ impl<Theme: Styler> TabContent<Theme> {
     pub fn new() -> Self {
         Self {
             status_bar: StatusBar::<Theme>::new(),
+            borders: true,
             _theme: Default::default(),
         }
     }
 
     pub fn with_tag(mut self, tag: StatusBarTag<Theme>) -> Self {
         self.status_bar = self.status_bar.with_tag(tag);
+        self
+    }
+
+    pub fn with_borders(mut self, border: bool) -> Self {
+        self.borders = border;
         self
     }
 }
@@ -324,26 +330,21 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
         };
         DataFrameTable::<Theme>::new()
             .with_block(
-                Block::bordered()
+                Block::new()
+                    .borders(if self.borders {
+                        Borders::all()
+                    } else {
+                        Borders::empty()
+                    })
                     .border_style(Theme::sheet_block())
                     .border_type(BorderType::Rounded)
-                    .title_top(match &state.source {
-                        Source::Help => {
-                            Line::from_iter([Span::styled(" Help ", Theme::highlight_info_key())])
-                        }
-                        Source::Schema => {
-                            Line::from_iter([Span::styled(" Schema ", Theme::highlight_info_key())])
-                        }
-                        Source::Name(name) => Line::from_iter([
-                            Span::styled(" Table ", Theme::highlight_info_key()),
-                            Span::styled(format!(" {} ", name), Theme::highlight_info_val()),
-                        ]),
-                        Source::Query(query) => Line::from_iter([
-                            Span::styled(" Query ", Theme::highlight_info_key()),
-                            Span::styled(format!(" {} ", query), Theme::highlight_info_val()),
-                        ]),
-                    })
                     .title_bottom(self.status_bar.with_tags([
+                        match &state.source {
+                            Source::Help => StatusBarTag::new(" App ", " Help "),
+                            Source::Schema => StatusBarTag::new(" App ", " Schema "),
+                            Source::Name(name) => StatusBarTag::new("Table", name.to_owned()),
+                            Source::Query(query) => StatusBarTag::new("Query", query.to_owned()),
+                        },
                         StatusBarTag::new(
                             "Auto-Fit",
                             if !state.table.expanded() {

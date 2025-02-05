@@ -19,6 +19,7 @@ use super::command::{commands_help_data_frame, parse_into_action};
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum AppAction {
     NoAction,
+    ToggleBorders,
     DismissError,
     DismissErrorAndShowPallete,
 
@@ -122,6 +123,10 @@ pub fn execute(
         AppAction::NoAction => Ok(None),
         AppAction::DismissError => {
             app.dismiss_error();
+            Ok(None)
+        }
+        AppAction::ToggleBorders => {
+            app.toggle_borders();
             Ok(None)
         }
         AppAction::DismissErrorAndShowPallete => {
