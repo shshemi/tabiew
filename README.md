@@ -66,24 +66,24 @@ pacman -S tabiew
 ### Debian-based
 Download the `.deb` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and run:
  ```bash
- sudo dpkg -i <path_to_package.deb>
+sudo dpkg -i <path_to_package.deb>
  ```
 
 ### RPM-based
 Download the `.rpm` package from the [GitHub releases page](https://github.com/shshemi/tabiew/releases) and run:
  ```bash
- sudo rpm -i <path_to_package.rpm>
+sudo rpm -i <path_to_package.rpm>
  ```
 
 ### MacOS
 Installing Tabiew using [Homebrew](https://brew.sh/) from Homebrew core:
 ```bash
- brew update
- brew install tabiew
+brew update
+brew install tabiew
 ```
 or tap:
  ```bash
- brew install shshemi/tabiew/tabiew
+brew install shshemi/tabiew/tabiew
  ```
 
 Note: Please be aware that installing Tabiew from the tap involves compiling it from the source, which may take some time to complete.
@@ -92,7 +92,7 @@ Note: Please be aware that installing Tabiew from the tap involves compiling it 
 ### Cargo
 Installing Tabiew from *Crates.io*:
  ```bash
- cargo install tabiew
+cargo install tabiew
  ```
 
 ### Build from Source
@@ -107,19 +107,10 @@ Start Tabiew with `tw`
 ```bash
 tw <path_to_csv(s)>
 ```
-Options:
-- `--no-header`: Use this option if the CSV file does not contain a header row.
-- `--ignore-errors`: Ignore parsing errors while loading the CSV file.
-- `--infer-schema`: Set the schema inference method. Options are no, fast, full, and safe.
-- `--quote-char`: Set the quote character.
-- `--separator`: Set the separator character.
-- `--theme`: Set the theme.
-
 To open TSV file(s), use:
 ```bash
 tw <path_to_tsv(s)> --separator $'\t' --no-header
 ```
-
 To open parquet file(s), use:
 ```bash
 tw <path_to_parquet(s)> -f parquet
@@ -134,6 +125,12 @@ tw <path_to_parquet(s)> -f parquet
 
 ### Nord:
 ![Image Alt text](/images/theme-nord.png "Nord")
+
+### Catppuccin:
+![Image Alt text](/images/theme-catppuccin.png "Catppuccin")
+
+### Tokio Night:
+![Image Alt text](/images/theme-tokio-night.png "Tokio Night")
 
 ### Terminal:
 ![Image Alt text](/images/theme-terminal.png "Terminal")
