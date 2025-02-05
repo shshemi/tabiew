@@ -86,7 +86,7 @@ where
             .selection(state.list.selected().is_none())
             .block(
                 Block::bordered()
-                    .title(" Command ")
+                    .title_top(Line::raw("Command Palelte"))
                     .title_alignment(Alignment::Center)
                     .border_set(Set {
                         bottom_left: VERTICAL_RIGHT,
@@ -112,16 +112,13 @@ where
                     .title_bottom(
                         if state.list.selected().is_some() {
                             Line::from_iter([
-                                Span::raw(" "),
                                 Span::raw("Insert using "),
                                 Span::raw(" Enter ").add_modifier(Modifier::REVERSED),
                                 Span::raw(", cancel using "),
                                 Span::raw(" Esc ").add_modifier(Modifier::REVERSED),
-                                Span::raw(" "),
                             ])
                         } else {
                             Line::from_iter([
-                                Span::raw(" "),
                                 Span::raw("Select up with "),
                                 Span::raw(" \u{2191} ").add_modifier(Modifier::REVERSED),
                                 Span::raw(" or "),
@@ -130,7 +127,6 @@ where
                                 Span::raw(" \u{2193} ").add_modifier(Modifier::REVERSED),
                                 Span::raw(" or "),
                                 Span::raw(" Ctrl+N ").add_modifier(Modifier::REVERSED),
-                                Span::raw(" "),
                             ])
                         }
                         .alignment(Alignment::Center),
