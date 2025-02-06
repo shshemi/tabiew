@@ -340,8 +340,8 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                     .border_type(BorderType::Rounded)
                     .title_bottom(self.status_bar.with_tags([
                         match &state.source {
-                            Source::Help => StatusBarTag::new(" App ", " Help "),
-                            Source::Schema => StatusBarTag::new(" App ", " Schema "),
+                            Source::Help => StatusBarTag::new("App", "Help"),
+                            Source::Schema => StatusBarTag::new("App", "Schema"),
                             Source::Name(name) => StatusBarTag::new("Table", name.to_owned()),
                             Source::Query(query) => StatusBarTag::new("Query", query.to_owned()),
                         },
