@@ -11,7 +11,7 @@ In this tutorial, the following CSV files are used as examples, which can be fou
 
 It is recommended that you take the time to look at each CSV file to grasp its structure and content.
 
-## Opening file(s) 
+## Opening file(s)
 
 To open a single file in Tabiew, simply use the following command:
 
@@ -46,44 +46,39 @@ If no specific format is provided in the argument, Tabiew attempts to infer it b
 Command mode is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
 
 
-## Table Navigation
+## Table Navigation & Visualization
 
-Use these key mappings to navigate through your data:
+Use these key mappings to navigate through and better visualize your data:
 
 |Key Combination|Action|
 |-|-|
 | `k` or `Arrow Up`| Move up one row in the table|
 | `j` or `Arrow Down`| Move down one row in the table|
+| `h` or `Arrow Left`| Scroll table left|
+| `l` or `Arrow Right`| Scroll table right|
 | `Page Up` or `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
 | `Ctrl+u`| Move up half a page|
 | `Ctrl+d`| Move down half a page|
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
+| `e`| Toggle table auto-fit|
+| `f`| Toggle table border|
 
 
-Alternatively, you can use the `:goto` command to jump to a specific row, or just start entering the row number, and the app will automatically enter the command for you.
+Alternatively, you can use the `goto` command to jump to a specific row, or just start entering the row number, and the app will automatically enter the command for you.
 
 ## Sheet View
 
-By default, all rows are visualized in a single line in the table view. Furthermore, the columns are squeezed to fix the screen if the required table width is larger than the screen. Therefore, to enhance readability, you can switch to the **sheet view** by pressing the `v` or `enter` key. The sheet view allows you to visit each row individually and scroll if it doesn't fit into a page.
+By default, all rows are visualized in a single line in the table view. Furthermore, the columns are squeezed to fix the screen if the required table width is larger than the screen. Therefore, to enhance readability, you can open the **sheet view** by pressing the `enter` key. The sheet view allows you to visit each row individually and scroll if it doesn't fit into a page.
 
 ![image not found](images/sheet_view.png)
 
 ## Sheet View Navigation
 
-When in sheet view, the following key binding is used to navigate through the data:
+When in sheet view, all table view navigation keys work and update the selected item in the sheet. Furthermore, you can scroll up and down in the sheet using `Shift+k` or `Shift+Arrow Up` and  `Shift+j` or `Shift+Arrow Down`.
 
-| Key Combination         | Action                                 |
-|-------------------------|----------------------------------------|
-| `k` or `Arrow Up` | Scroll up in sheet view|
-| `j` or `Arrow Down` | Scroll down in sheet view|
-| `h` or `Arrow Left` | Move to the previous item|
-| `l` or `Arrow Right` | Move to the next item|
-| `g` or `Home` | Move to the first item|
-| `G` or `End` | Move to the last item|
-
-To go back from the sheet view to the table view, press `q` or `v.`
+Press `q` to close the sheet view.
 
 ## Opening Multiple Files
 
@@ -101,26 +96,26 @@ Alternatively, you can use a wildcard to open all CSV files in the directory:
 tw *.csv
 ```
 
-You can use `H` (`shift+h`) to move to the previous tab and `L` (`shift+l`) to move to the next tab.
+You can use `H` (`Shift+h`) to move to the previous tab and `L` (`Shift+l`) to move to the next tab.
 
 ## Query
 
 Tabiew allows you to query your data using SQL for powerful data manipulation and analysis. To perform a query, use the `:Q` or `:query` command followed by your SQL statement. For example, to query the `housing.csv` for houses priced above $500,000, located near the main road, and with at least 4 bedrooms, use the following command:
 
 ```sql
-:Q SELECT * FROM housing WHERE price > 500000 AND mainroad = 'yes' AND bedrooms >= 4
+Q SELECT * FROM housing WHERE price > 500000 AND mainroad = 'yes' AND bedrooms >= 4
 ```
 
 Or to query `housing.csv` for the average area of houses grouped by the number of bedrooms and bathrooms, use the following command:
 
 ```sql
-:query SELECT bedrooms, bathrooms, AVG(area) as avg_area FROM housing GROUP BY bedrooms, bathrooms
+query SELECT bedrooms, bathrooms, AVG(area) as avg_area FROM housing GROUP BY bedrooms, bathrooms
 ```
 
-If it is prefered to open the results in a new tab, use the `:tabn` command followed by your SQL statement. For example:
+If it is prefered to open the results in a new tab, use the `tabn` command followed by your SQL statement. For example:
 
 ```sql
-:tabn SELECT * FROM user WHERE marriage='Married' AND balance < 10000
+tabn SELECT * FROM user WHERE marriage='Married' AND balance < 10000
 ```
 
 ![image not found](images/new_tab.png)
@@ -134,7 +129,7 @@ The table names are their file names without the extension. For instance, the ta
 Inline queries provide a convenient way to manipulate the current table. These queries are shorter versions of standard SQL executed on the data displayed in the table rather than the entire dataset. Here are the commands to perform inline queries:
 
 | Command| Example| Description|
-|--------|--------|------------|
+|-|-|-|
 | `:S` or `:select`| `:S price, area, bedrooms, parking` | Select specific columns or functions from the current data frame. |
 | `:F` or `:filter`| `:F price < 20000 AND bedrooms > 4` | Filter the current data frame, keeping rows that match the specified conditions.|
 | `:O` or `:order` | `:O area` | Sort the current data frame by the specified column(s).|
@@ -142,10 +137,10 @@ Inline queries provide a convenient way to manipulate the current table. These q
 For instance, the chain of
 
 ```sql
-:S price, area, bedrooms, parking
-:F price > 20000 
-:F bedrooms > 4
-:O area
+S price, area, bedrooms, parking
+F price > 20000
+F bedrooms > 4
+O area
 ```
 
 on the complete housing table is equivalent to:
@@ -157,26 +152,34 @@ WHERE price > 20000 AND bedrooms > 4
 ORDER BY area;
 ```
 
-If you need to return the table to its original state, you can use the `:reset` command.
+Additionally, in the event of the necessity for more complex queries, the selected data frame can be accessed with the name `_` in SQL queries.
+```sql
+SELECT price, area, bedrooms, parking
+FROM _
+WHERE price > 20000 AND bedrooms > 4
+ORDER BY area;
+```
+
+If you need to return the table to its original state, you can use the `reset` command.
 
 ## Importing
 
-After opening Tabiew, you can use the `:import` command to import new data frames. The general syntax of the command is as follows:
+After opening Tabiew, you can use the `import` command to import new data frames. The general syntax of the command is as follows:
 
-```sql
-:import <format> <path>
+```sh
+import <format> <path>
 ```
 
 For example, to import a `parquet` file, you would use the following command:
 
-```sql
-:import parquet sample.parquet
+```sh
+import parquet sample.parquet
 ```
 
 Some formats, like `csv` and `fwf`, require additional arguments for proper reading. These arguments can be specified within square brackets `[]` immediately after the format. For example, to import a TSV file, you can use the following command:
 
 ```sh
-:import csv[\t no-header] sample.tsv
+import csv[\t no-header] sample.tsv
 ```
 
 It goes without saying that, Not providing arguments for `csv` or `fwf` results in using defaults instead.
@@ -210,7 +213,7 @@ At any time during explorations, you can export the current data frame to `csv`,
 
 ## Fuzzy Search
 
-You can perform fast fuzzy searches across all columns while in table view by pressing `/` to enter the fuzzy search mode. Typing while in search mode filters the data frame according to the entered term. Press `enter` to apply the filter to the data frame. Otherwise, rollback by pressing `esc` or deleting the entire search term, including `/`.
+You can perform fast fuzzy searches across all columns while in table view by pressing `/` to enter the fuzzy search mode. Typing while in search mode filters the data frame according to the entered term. Press `enter` to apply the filter to the data frame. Otherwise, rollback by pressing `esc`.
 
 ![image not found](images/search.png)
 
@@ -228,6 +231,6 @@ Tabiew supports basic scripting functionality. The script is executed at startup
 
 ## Help Command
 
-To view all available commands and their descriptions, use the `:help` command. This command displays a list of all commands, along with their usage and examples.
+To view all available commands and their descriptions, use the `help` command. This command displays a list of all commands, along with their usage and examples.
 
 ![image not found](images/help.png)
