@@ -41,10 +41,11 @@ tw sample.parquet -f parquet
 
 If no specific format is provided in the argument, Tabiew attempts to infer it based on the file extension.
 
-## Command Mode
+## Command Pallete
 
-Command mode is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
+Command pallete is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
 
+![image not found](images/command_mode.png)
 
 ## Table Navigation & Visualization
 
