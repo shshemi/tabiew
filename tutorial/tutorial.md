@@ -29,7 +29,7 @@ This command will load the `housing.csv` file and display the following page:
 
 ![image not found](images/main_page.png)
 
-As shown in the image, the tabular data is displayed the main table, while the status bar at the bottom of the page provides table properties such as name and shape. Furthermore, the status bar also discloses the current tab's information.
+As shown in the image, the tabular data is displayed the main table, while the status bar at the bottom provides table properties such as name and shape.
 
 ### Supported formats
 
@@ -43,7 +43,7 @@ If no specific format is provided in the argument, Tabiew attempts to infer it b
 
 ## Command Pallete
 
-Command pallete is activated by pressing `:`. While in command mode, press `enter` to execute or `esc` to cancel the command. The command is shown as you type in at the bottom of the screen in place of the status bar.
+Command pallete is activated by pressing `:`. While in the command pallete, press `enter` to execute the entered command or `esc` to return to the table.
 
 ![image not found](images/command_mode.png)
 
@@ -77,7 +77,7 @@ By default, all rows are visualized in a single line in the table view. Furtherm
 
 ## Sheet View Navigation
 
-When in sheet view, all table view navigation keys work and update the selected item in the sheet. Furthermore, you can scroll up and down in the sheet using `Shift+k` or `Shift+Arrow Up` and  `Shift+j` or `Shift+Arrow Down`.
+When in sheet view, you can scroll up and down in the sheet using `Shift+k` or `Shift+Arrow Up` and  `Shift+j` or `Shift+Arrow Down`.
 
 Press `q` to close the sheet view.
 
@@ -101,7 +101,7 @@ You can use `H` (`Shift+h`) to move to the previous tab and `L` (`Shift+l`) to m
 
 ## Query
 
-Tabiew allows you to query your data using SQL for powerful data manipulation and analysis. To perform a query, use the `:Q` or `:query` command followed by your SQL statement. For example, to query the `housing.csv` for houses priced above $500,000, located near the main road, and with at least 4 bedrooms, use the following command:
+Tabiew allows you to query your data using SQL for powerful data manipulation and analysis. To perform a query, use the `Q` or `query` command followed by your SQL statement. For example, to query the `housing.csv` for houses priced above $500,000, located near the main road, and with at least 4 bedrooms, use the following command:
 
 ```sql
 Q SELECT * FROM housing WHERE price > 500000 AND mainroad = 'yes' AND bedrooms >= 4
@@ -131,9 +131,9 @@ Inline queries provide a convenient way to manipulate the current table. These q
 
 | Command| Example| Description|
 |-|-|-|
-| `:S` or `:select`| `:S price, area, bedrooms, parking` | Select specific columns or functions from the current data frame. |
-| `:F` or `:filter`| `:F price < 20000 AND bedrooms > 4` | Filter the current data frame, keeping rows that match the specified conditions.|
-| `:O` or `:order` | `:O area` | Sort the current data frame by the specified column(s).|
+| `S` or `select`| `S price, area, bedrooms, parking` | Select specific columns or functions from the current data frame. |
+| `F` or `filter`| `F price < 20000 AND bedrooms > 4` | Filter the current data frame, keeping rows that match the specified conditions.|
+| `O` or `order` | `O area` | Sort the current data frame by the specified column(s).|
 
 For instance, the chain of
 
@@ -153,7 +153,7 @@ WHERE price > 20000 AND bedrooms > 4
 ORDER BY area;
 ```
 
-Additionally, in the event of the necessity for more complex queries, the selected data frame can be accessed with the name `_` in SQL queries.
+Additionally, for more complex queries, the selected data frame can be accessed with the name `_` in SQL queries.
 ```sql
 SELECT price, area, bedrooms, parking
 FROM _
@@ -161,7 +161,7 @@ WHERE price > 20000 AND bedrooms > 4
 ORDER BY area;
 ```
 
-If you need to return the table to its original state, you can use the `reset` command.
+If you need to return the table to its original state, you can use the the `Ctrl+r` key combinatio or `reset` command.
 
 ## Importing
 
@@ -177,13 +177,13 @@ For example, to import a `parquet` file, you would use the following command:
 import parquet sample.parquet
 ```
 
-Some formats, like `csv` and `fwf`, require additional arguments for proper reading. These arguments can be specified within square brackets `[]` immediately after the format. For example, to import a TSV file, you can use the following command:
+Some formats, like `csv` and `fwf`, accept additional arguments. These arguments can be specified within square brackets `[]` immediately after the format. For example, a TSV file could be imported using the following command:
 
 ```sh
 import csv[\t no-header] sample.tsv
 ```
 
-It goes without saying that, Not providing arguments for `csv` or `fwf` results in using defaults instead.
+It goes without saying that, Not providing arguments for `csv` or `fwf` results in using default arguments instead.
 
 ### Arguments for `csv` Format
 
@@ -220,13 +220,13 @@ You can perform fast fuzzy searches across all columns while in table view by pr
 
 ## Scripting
 
-Tabiew supports basic scripting functionality. The script is executed at startup by adding `--script <script_file>` to the command-line arguments. The script must consist of commands only, each beginning with a colon. For example, the following script filters houses with an area between 7500 and 10000, exports the results to `results.csv`, and then exits the application:
+Tabiew supports basic scripting functionality. The script is executed at startup by adding `--script <script_file>` to the command-line arguments. The script must consist of commands only. For example, the following script filters houses with an area between 7500 and 10000, exports the results to `results.csv`, and then exits the application:
 
 ```plaintext
-:F area > 7500
-:F area < 10000
-:export csv results.csv
-:q
+F area > 7500
+F area < 10000
+export csv results.csv
+q
 ```
 
 
