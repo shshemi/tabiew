@@ -646,7 +646,7 @@ pub fn execute(
 
         AppAction::TableToggleExpansion => {
             if let Some(tab) = app.tabs().selected_mut() {
-                tab.toggle_expansion();
+                tab.toggle_expansion()?;
             }
             Ok(None)
         }
