@@ -13,7 +13,7 @@ use super::{
     sheet::{Sheet, SheetState},
     status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{search::Search, tui::theme::Styler, utils::polars_ext::GetSheetSections};
+use crate::{search::Search, tui::theme::Styler, utils::polars_ext::GetSheetSections, AppResult};
 
 #[derive(Debug)]
 pub enum Modal {
@@ -131,8 +131,8 @@ impl TabContentState {
         }
     }
 
-    pub fn toggle_expansion(&mut self) {
-        self.table.toggle_expansion();
+    pub fn toggle_expansion(&mut self) -> AppResult<()> {
+        self.table.toggle_expansion()
     }
 
     pub fn page_len(&self) -> usize {
