@@ -1,10 +1,15 @@
-use std::{marker::PhantomData, ops::Add};
+use std::{
+    borrow::Cow,
+    marker::PhantomData,
+    ops::{Add, Div, Sub},
+};
 
+use anyhow::anyhow;
 use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::PlSmallStr, series::Series};
+use polars::{frame::DataFrame, prelude::PlSmallStr};
 use ratatui::{
-    layout::{Constraint, Rect},
-    widgets::{Block, Cell, Row, StatefulWidget, Table, TableState, Widget},
+    layout::Rect,
+    widgets::{Block, StatefulWidget, Widget},
 };
 
 use crate::{
@@ -13,6 +18,7 @@ use crate::{
         iter_ext::ZipItersExt,
         polars_ext::{IntoString, TuiWidths},
     },
+    AppResult,
 };
 
 #[derive(Debug, Default)]
@@ -21,6 +27,7 @@ pub struct DataFrameTableState {
     offset_x: usize,
     select: usize,
     rendered_rows: u16,
+    rendered_width: u16,
     expanded: bool,
     widths: Vec<usize>,
     headers: Vec<String>,
@@ -34,6 +41,7 @@ impl DataFrameTableState {
             offset_x: 0,
             select: 0,
             rendered_rows: 0,
+            rendered_width: 0,
             expanded: true,
             widths: data_frame.tui_widths(),
             headers: data_frame
@@ -120,8 +128,24 @@ impl DataFrameTableState {
     pub fn expanded(&self) -> bool {
         self.expanded
     }
-    pub fn toggle_expansion(&mut self) {
-        self.expanded = !self.expanded;
+    pub fn toggle_expansion(&mut self) -> AppResult<()> {
+        match TableFitState::with(self.rendered_width.into(), &self.widths) {
+            TableFitState::Fitable => {
+                self.expanded = !self.expanded;
+                if !self.expanded {
+                    self.offset_x = 0;
+                }
+                Ok(())
+            }
+            TableFitState::LargerThanColumns => {
+                self.expanded = !self.expanded;
+                if !self.expanded {
+                    self.offset_x = 0;
+                }
+                Ok(())
+            }
+            TableFitState::TooSmallToFit => Err(anyhow!("Table is too large to fit")),
+        }
     }
 
     pub fn height(&self) -> usize {
@@ -173,16 +197,12 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
         } else {
             area
         };
-        // let block = Block::bordered()
-        //     .title_bottom(self.status_bar)
-        //     .border_type(ratatui::widgets::BorderType::Rounded)
-        //     .border_style(Theme::pallete());
-        // let new_area = block.inner(area);
-        // block.render(area, buf);
-        // let area = new_area;
 
         // rendered rows = table height - header height
         state.rendered_rows = area.height.saturating_sub(1);
+
+        // rendered rows = table height - header height
+        state.rendered_width = area.width;
 
         // 0 <= select < table height
         state.select = state
@@ -208,156 +228,175 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                 .saturating_sub(1),
         );
 
-        if state.expanded {
-            // expanded table uses a custom widget table
-            // draw background
-            buf.set_style(area, Theme::table_header());
+        // set widths according to expanded (not auto-fit)
+        if TableFitState::with(area.width.into(), &state.widths).force_expand() {
+            state.expanded = true;
+        };
+        let widths = if state.expanded {
+            Cow::Borrowed(&state.widths)
+        } else {
+            Cow::Owned(shrink_columns(area.width.into(), &state.widths))
+        };
 
-            // draw header
-            buf.set_string(
-                area.x,
-                area.y,
-                state
-                    .headers
-                    .iter()
-                    .zip(state.widths.iter())
-                    .map(|(val, wid)| format!("{:<width$}", val, width = wid))
-                    .join(" ")
-                    .chars()
-                    .skip(state.offset_x)
-                    .take(area.width.into())
-                    .collect::<String>(),
-                Theme::table_header(),
-            );
-            buf.set_style(
-                Rect {
-                    x: area.x,
-                    y: area.y,
-                    width: area.width,
-                    height: 1,
-                },
-                Theme::table_header(),
-            );
+        // draw background
+        buf.set_style(area, Theme::table_header());
 
-            // style header
+        // draw header
+        buf.set_string(
+            area.x,
+            area.y,
             state
-                .headers()
+                .headers
                 .iter()
-                .zip(state.widths.iter())
-                .scan(0_usize, |before, (header, width)| {
-                    let start = *before;
-                    let end = start + header.len();
-                    *before = start + width + 1; // the width +1 for the columns padding
-                    Some((start, end))
-                })
-                .enumerate()
-                .filter_map(|(idx, (i, j))| {
-                    let min = i.saturating_sub(state.offset_x);
-                    let max = j.saturating_sub(state.offset_x);
-                    (min < max && min < area.width as usize).then_some((idx, min, max))
-                })
-                .for_each(|(col, i, j)| {
-                    buf.set_style(
-                        Rect {
-                            x: area.x + i as u16,
-                            y: area.y,
-                            width: (j - i).min(area.width as usize - i) as u16,
-                            height: 1,
-                        },
-                        Theme::table_header_cell(col),
-                    );
-                });
-
-            // draw rows
-            state
-                .data_frame
-                .slice(state.offset_y as i64, state.rendered_rows as usize)
-                .iter()
-                .map(|series| series.iter())
-                .zip_iters()
-                .enumerate()
-                .map(|(idx, vec)| {
-                    (
-                        idx as u16,
-                        vec.into_iter()
-                            .zip(state.widths.iter())
-                            .map(|(val, width)| {
-                                format!(
-                                    "{:<width$}",
-                                    val.into_string().lines().next().unwrap_or_default(),
-                                    width = width
-                                )
-                            })
-                            .join(" ")
-                            .chars()
-                            .skip(state.offset_x)
-                            .take(area.width.into())
-                            .collect::<String>(),
-                        if state.offset_y + idx == state.select {
-                            Theme::table_highlight()
-                        } else {
-                            Theme::table_row(state.offset_y + idx)
-                        },
+                .zip(widths.iter())
+                .map(|(val, wid)| {
+                    format!(
+                        "{:<width$}",
+                        val.chars().take(*wid).collect::<String>(),
+                        width = wid
                     )
                 })
-                .for_each(|(idx, line, style)| {
-                    buf.set_string(area.x, area.y + 1 + idx, line, style);
-                    buf.set_style(
-                        Rect {
-                            x: area.x,
-                            y: area.y + 1 + idx,
-                            width: area.width,
-                            height: 1,
-                        },
-                        style,
-                    );
-                });
+                .join(" ")
+                .chars()
+                .skip(state.offset_x)
+                .take(area.width.into())
+                .collect::<String>(),
+            Theme::table_header(),
+        );
+        buf.set_style(
+            Rect {
+                x: area.x,
+                y: area.y,
+                width: area.width,
+                height: 1,
+            },
+            Theme::table_header(),
+        );
+
+        // style header
+        state
+            .headers()
+            .iter()
+            .zip(widths.iter())
+            .scan(0_usize, |before, (header, width)| {
+                let start = *before;
+                let end = start + header.len();
+                *before = start + width + 1; // the width +1 for the columns padding
+                Some((start, end))
+            })
+            .enumerate()
+            .filter_map(|(idx, (i, j))| {
+                let min = i.saturating_sub(state.offset_x);
+                let max = j.saturating_sub(state.offset_x);
+                (min < max && min < area.width as usize).then_some((idx, min, max))
+            })
+            .for_each(|(col, i, j)| {
+                buf.set_style(
+                    Rect {
+                        x: area.x + i as u16,
+                        y: area.y,
+                        width: (j - i).min(area.width as usize - i) as u16,
+                        height: 1,
+                    },
+                    Theme::table_header_cell(col),
+                );
+            });
+
+        // draw rows
+        state
+            .data_frame
+            .slice(state.offset_y as i64, state.rendered_rows as usize)
+            .iter()
+            .map(|series| series.iter())
+            .zip_iters()
+            .enumerate()
+            .map(|(idx, vec)| {
+                (
+                    idx as u16,
+                    vec.into_iter()
+                        .zip(widths.iter())
+                        .map(|(val, width)| {
+                            format!(
+                                "{:<width$}",
+                                val.into_string()
+                                    .lines()
+                                    .next()
+                                    .unwrap_or_default()
+                                    .chars()
+                                    .take(*width)
+                                    .collect::<String>(),
+                                width = width
+                            )
+                        })
+                        .join(" ")
+                        .chars()
+                        .skip(state.offset_x)
+                        .take(area.width.into())
+                        .collect::<String>(),
+                    if state.offset_y + idx == state.select {
+                        Theme::table_highlight()
+                    } else {
+                        Theme::table_row(state.offset_y + idx)
+                    },
+                )
+            })
+            .for_each(|(idx, line, style)| {
+                buf.set_string(area.x, area.y + 1 + idx, line, style);
+                buf.set_style(
+                    Rect {
+                        x: area.x,
+                        y: area.y + 1 + idx,
+                        width: area.width,
+                        height: 1,
+                    },
+                    style,
+                );
+            });
+    }
+}
+
+pub enum TableFitState {
+    Fitable,
+    LargerThanColumns,
+    TooSmallToFit,
+}
+impl TableFitState {
+    pub fn with(table_width: usize, col_widths: &[usize]) -> TableFitState {
+        if col_widths.len() * 2 > table_width {
+            TableFitState::TooSmallToFit
+        } else if col_widths.iter().sum::<usize>() + col_widths.len() - 1 <= table_width {
+            TableFitState::LargerThanColumns
         } else {
-            // Non expanded uses defautl ratatui table
-            let header = Row::new(
-                state
-                    .headers
-                    .iter()
-                    .enumerate()
-                    .map(|(col_idx, name)| {
-                        Cell::new(name.as_str()).style(Theme::table_header_cell(col_idx))
-                    })
-                    .collect_vec(),
-            )
-            .style(Theme::table_header());
-
-            let rows = state
-                .data_frame
-                .slice(state.offset_y as i64, state.rendered_rows as usize)
-                .iter()
-                .map(Series::iter)
-                .zip_iters()
-                .enumerate()
-                .map(|(ridx, vals)| {
-                    Row::new(vals.into_iter().map(IntoString::into_string).map(Cell::new))
-                        .style(Theme::table_row(ridx + state.offset_y))
-                })
-                .collect_vec();
-
-            let widths = &state
-                .widths
-                .iter()
-                .copied()
-                .map(|w| Constraint::Length(w as u16))
-                .collect_vec();
-
-            let table = Table::default()
-                .rows(rows)
-                .widths(widths)
-                .header(header)
-                .row_highlight_style(Theme::table_highlight())
-                .style(Theme::table_header())
-                .column_spacing(1);
-
-            let mut ts = TableState::new()
-                .with_offset(0)
-                .with_selected(state.select.saturating_sub(state.offset_y));
-            StatefulWidget::render(table, area, buf, &mut ts);
+            TableFitState::Fitable
         }
     }
+
+    fn force_expand(self) -> bool {
+        match self {
+            TableFitState::Fitable => false,
+            TableFitState::LargerThanColumns => false,
+            TableFitState::TooSmallToFit => true,
+        }
+    }
+}
+fn shrink_columns(table_width: usize, column_widths: &[usize]) -> Vec<usize> {
+    let total_width = column_widths.iter().sum::<usize>();
+    let available_width = table_width.saturating_sub(column_widths.len().saturating_sub(1));
+    let mut new_widths = column_widths
+        .iter()
+        .map(|w| available_width.div(column_widths.len()).min(*w))
+        .collect_vec();
+    let mut remainder = total_width
+        .min(available_width)
+        .sub(new_widths.iter().sum::<usize>());
+    for idx in (0..new_widths.len()).cycle() {
+        if remainder == 0 {
+            break;
+        }
+        if new_widths[idx] < column_widths[idx] {
+            remainder -= 1;
+            new_widths[idx] += 1;
+        }
+    }
+    new_widths
 }
