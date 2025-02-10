@@ -38,7 +38,7 @@ pub fn line_count(text: &str, width: usize) -> usize {
             } else {
                 line_count += word_len
                     .saturating_add(used_space)
-                    .saturating_sub(used_space)
+                    .saturating_sub(width)
                     .div_ceil(width)
             }
         }
