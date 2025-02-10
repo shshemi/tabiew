@@ -86,7 +86,6 @@ where
             .selection(state.list.selected().is_none())
             .block(
                 Block::bordered()
-                    .title_top(Line::raw("Command Palelte"))
                     .title_alignment(Alignment::Center)
                     .border_set(Set {
                         bottom_left: VERTICAL_RIGHT,
