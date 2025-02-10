@@ -143,7 +143,7 @@ pub struct Argonaut;
 pub struct Terminal;
 pub struct Nord;
 pub struct Catppuccin;
-pub struct TokioNight;
+pub struct TokyoNight;
 
 impl SixColorsTwoRowsStyler for Monokai {
     const BACKGROUND: Color = Color::from_u32(0x00141115);
@@ -289,7 +289,7 @@ impl SixColorsTwoRowsStyler for Catppuccin {
     const STATUS_BAR_INFO: Color = Color::from_u32(0x0011111b);
 }
 
-impl SixColorsTwoRowsStyler for TokioNight {
+impl SixColorsTwoRowsStyler for TokyoNight {
     const BACKGROUND: Color = Color::from_u32(0x001f2335);
 
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00292e42);
