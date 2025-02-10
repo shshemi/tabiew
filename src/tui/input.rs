@@ -3,7 +3,7 @@ use ratatui::{
     style::{Modifier, Style},
     widgets::{Block, Paragraph, StatefulWidget, Widget},
 };
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Add};
 
 use super::Styler;
 
@@ -105,32 +105,28 @@ impl<Theme: Styler> StatefulWidget for Input<'_, Theme> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
+        // draw block and update area
+        let area = if let Some(block) = self.block {
+            (&block).render(area, buf);
+            block.inner(area)
+        } else {
+            area
+        };
+
         // calculate scroll to stay between locks
         state.scroll = {
             let input_len = state.input.value().chars().count();
             let cursor = state.input.visual_cursor();
-            let min_scroll = if input_len - cursor < self.scroll_pad as usize {
-                cursor.saturating_sub(area.width as usize)
+            let pad = self.scroll_pad as usize;
+            let width = area.width as usize;
+            let min_scroll = if input_len - cursor < pad {
+                cursor.add(1).saturating_sub(width)
             } else {
-                cursor
-                    .saturating_add(self.scroll_pad as usize)
-                    .saturating_sub(area.width as usize)
+                cursor.add(1).add(pad).saturating_sub(width)
             };
-            let max_scroll = cursor.saturating_sub(self.scroll_pad as usize);
+            let max_scroll = cursor.saturating_sub(pad);
             state.scroll.clamp(min_scroll, max_scroll)
         };
-
-        // calculate text space
-        let text_area = self
-            .block
-            .as_ref()
-            .map(|block| block.inner(area))
-            .unwrap_or(area);
-
-        // draw block
-        if let Some(block) = self.block {
-            block.render(area, buf);
-        }
 
         // draw text
         Paragraph::new(
@@ -142,14 +138,14 @@ impl<Theme: Styler> StatefulWidget for Input<'_, Theme> {
                 .collect::<String>(),
         )
         .style(self.style)
-        .render(text_area, buf);
+        .render(area, buf);
 
         // draw cursor
         if self.selection {
             buf.set_style(
                 Rect {
-                    x: text_area.x + (state.input.visual_cursor() - state.scroll) as u16,
-                    y: text_area.y,
+                    x: area.x + (state.input.visual_cursor() - state.scroll) as u16,
+                    y: area.y,
                     width: 1,
                     height: 1,
                 },
