@@ -74,7 +74,7 @@ fn main() -> AppResult<()> {
         AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend, script, history),
         AppTheme::Nord => start_tui::<themes::Nord>(tabs, sql_backend, script, history),
         AppTheme::Catppuccin => start_tui::<themes::Catppuccin>(tabs, sql_backend, script, history),
-        AppTheme::TokioNight => start_tui::<themes::TokioNight>(tabs, sql_backend, script, history),
+        AppTheme::TokyoNight => start_tui::<themes::TokyoNight>(tabs, sql_backend, script, history),
         AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script, history),
     }?;
     if let Some(history_path) = history_path {
