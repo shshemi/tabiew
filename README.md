@@ -129,8 +129,8 @@ tw <path_to_parquet(s)> -f parquet
 ### Catppuccin:
 ![Image Alt text](/images/theme-catppuccin.png "Catppuccin")
 
-### Tokio Night:
-![Image Alt text](/images/theme-tokio-night.png "Tokio Night")
+### Tokyo Night:
+![Image Alt text](/images/theme-tokyo-night.png "Tokyo Night")
 
 ### Terminal:
 ![Image Alt text](/images/theme-terminal.png "Terminal")
