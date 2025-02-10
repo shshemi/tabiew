@@ -249,13 +249,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                 .headers
                 .iter()
                 .zip(widths.iter())
-                .map(|(val, wid)| {
-                    format!(
-                        "{:<width$}",
-                        val.chars().take(*wid).collect::<String>(),
-                        width = wid
-                    )
-                })
+                .map(|(val, wid)| format!("{:<width$.width$}", val, width = wid))
                 .join(" ")
                 .chars()
                 .skip(state.offset_x)
@@ -317,14 +311,8 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                         .zip(widths.iter())
                         .map(|(val, width)| {
                             format!(
-                                "{:<width$}",
-                                val.into_string()
-                                    .lines()
-                                    .next()
-                                    .unwrap_or_default()
-                                    .chars()
-                                    .take(*width)
-                                    .collect::<String>(),
+                                "{:<width$.width$}",
+                                val.into_string().lines().next().unwrap_or_default(),
                                 width = width
                             )
                         })
