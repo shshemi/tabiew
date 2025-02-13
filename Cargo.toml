@@ -1,6 +1,6 @@
 [package]
 name = "tabiew"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["Shayan Hashemi <shshemi@gmail.com>"]
 license = "MIT"
 edition = "2021"
