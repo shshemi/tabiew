@@ -133,7 +133,7 @@ fn start_tui<Theme: Styler>(
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        let mut action = keybind.handle_key_event(app.context(), key_event);
+                        let mut action = keybind.action(app.context(), key_event);
                         loop {
                             match execute(action, &mut app, &mut sql_backend) {
                                 Ok(Some(next_action)) => action = next_action,
