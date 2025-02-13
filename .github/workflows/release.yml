@@ -76,17 +76,13 @@ jobs:
     - name: Make upload directory
       run: mkdir upload
 
-    - name: Build
+    - name: Build binary, deb, and rpm
       run: |
         export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
         cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
         cp target/armv7-unknown-linux-gnueabihf/release/tw tw-armv7-linux-gnueabihf
-
-    - name: Build .deb package
-      run: cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target armv7-unknown-linux-gnueabihf
-
-    - name: Build .rpm package
-      run: cargo generate-rpm --output upload/tabiew-armv7-linux-gnueabihf.rpm --target armv7-unknown-linux-gnueabihf
+        cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target armv7-unknown-linux-gnueabihf
+        cargo generate-rpm --output upload/tabiew-armv7-linux-gnueabihf.rpm --target armv7-unknown-linux-gnueabihf
 
     - name: Upload artifacts to release
       uses: AButler/upload-release-assets@v3.0
@@ -121,17 +117,13 @@ jobs:
     - name: Make upload directory
       run: mkdir upload
 
-    - name: Build
+    - name: Build binary, deb, and rpm
       run: |
         export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
         cargo build --release --verbose --target aarch64-unknown-linux-gnu
         cp target/aarch64-unknown-linux-gnu/release/tw tw-aarch64-unknown-linux-gnu
-
-    - name: Build .deb package
-      run: cargo deb --output upload/tabiew-aarch64-linux-gnu.deb --target aarch64-unknown-linux-gnu
-
-    - name: Build .rpm package
-      run: cargo generate-rpm --output upload/tabiew-aarch64-linux-gnu.rpm --target aarch64-unknown-linux-gnu
+        cargo deb --output upload/tabiew-aarch64-linux-gnu.deb --target aarch64-unknown-linux-gnu
+        cargo generate-rpm --output upload/tabiew-aarch64-linux-gnu.rpm --target aarch64-unknown-linux-gnu
 
     - name: Upload artifacts to release
       uses: AButler/upload-release-assets@v3.0
