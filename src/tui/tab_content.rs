@@ -83,8 +83,8 @@ impl TabContentState {
     }
 
     pub fn select_random(&mut self) {
-        let mut rng = rand::thread_rng();
-        self.table.select(rng.gen_range(0..self.table.height()));
+        let mut rng = rand::rng();
+        self.table.select(rng.random_range(0..self.table.height()));
     }
 
     pub fn select(&mut self, select: usize) {
