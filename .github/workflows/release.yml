@@ -81,7 +81,7 @@ jobs:
         export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
         cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
         cp target/armv7-unknown-linux-gnueabihf/release/tw tw-armv7-linux-gnueabihf
-        cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target armv7-unknown-linux-gnueabihf
+        cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target upload/armv7-unknown-linux-gnueabihf
         cargo generate-rpm --output upload/tabiew-armv7-linux-gnueabihf.rpm --target armv7-unknown-linux-gnueabihf
 
     - name: Upload artifacts to release
@@ -121,7 +121,7 @@ jobs:
       run: |
         export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
         cargo build --release --verbose --target aarch64-unknown-linux-gnu
-        cp target/aarch64-unknown-linux-gnu/release/tw tw-aarch64-unknown-linux-gnu
+        cp target/aarch64-unknown-linux-gnu/release/tw upload/tw-aarch64-unknown-linux-gnu
         cargo deb --output upload/tabiew-aarch64-linux-gnu.deb --target aarch64-unknown-linux-gnu
         cargo generate-rpm --output upload/tabiew-aarch64-linux-gnu.rpm --target aarch64-unknown-linux-gnu
 
@@ -168,6 +168,11 @@ jobs:
 
     - name: Checkout to the latest version 
       uses: actions/checkout@v4
+    
+    - name: Remove things to reduce size
+      uses: |
+        rm -rf tutorial
+        rm -rf .git
 
     - name: Local install
       run: cargo install --path .
