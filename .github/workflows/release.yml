@@ -80,7 +80,7 @@ jobs:
       run: |
         export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
         cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
-        cp target/armv7-unknown-linux-gnueabihf/release/tw tw-armv7-linux-gnueabihf
+        cp target/armv7-unknown-linux-gnueabihf/release/tw upload/tw-armv7-linux-gnueabihf
         cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target armv7-unknown-linux-gnueabihf
         cargo generate-rpm --output upload/tabiew-armv7-linux-gnueabihf.rpm --target armv7-unknown-linux-gnueabihf
 
