@@ -22,20 +22,20 @@ For a guide on using Tabiew, including instructions on opening files, navigating
 |Key Combination|Functionality|
 |-|-|
 | `Enter`| Open record sheet|
-| `k` or `Arrow Up`| Move up|
-| `j` or `Arrow Down`| Move down|
-| `h` or `Arrow Left`| Scroll left|
-| `l` or `Arrow Right`| Scroll right|
+| `k` or `↑`| Move up|
+| `j` or `↓`| Move down|
+| `h` or `←`| Scroll left|
+| `l` or `→`| Scroll right|
 | `e` | Toggle Auto-Fit|
-| `Page Up` or `Ctrl+b`| Move one page up|
-| `Page Down` or `Ctrl+f`| Move one page down|
-| `H` or `Shift+Arrow Left`| Select previous tab|
-| `L` or `Shift+Arrow Right`| Select next tab|
-| `Ctrl+u`| Move up half a page|
-| `Ctrl+d`| Move down half a page|
+| `Page Up` or `Ctrl + b`| Move one page up|
+| `Page Down` or `Ctrl + f`| Move one page down|
+| `H` or `Shift + ←`| Select previous tab|
+| `L` or `Shift + →`| Select next tab|
+| `Ctrl + u`| Move up half a page|
+| `Ctrl + d`| Move down half a page|
 | `Home` or `g`| Move to the first row|
 | `End` or `G`| Move to the last row|
-| `Ctrl+r`| Reset the data frame|
+| `Ctrl + r`| Reset the data frame|
 | `q`| Close tab / sheet|
 | `:`| Command Pallete|
 | `/`| Fuzzy Search|
