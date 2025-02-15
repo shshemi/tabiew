@@ -11,6 +11,7 @@ use ratatui::{
     layout::Rect,
     widgets::{Block, StatefulWidget, Widget},
 };
+use unicode_width::UnicodeWidthChar;
 
 use crate::{
     tui::Styler,
@@ -224,8 +225,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                 .iter()
                 .sum::<usize>()
                 .saturating_sub(area.width as usize)
-                .add(state.widths.len().saturating_sub(1))
-                .saturating_sub(1),
+                .add(state.widths.len().saturating_sub(1)),
         );
 
         // set widths according to expanded (not auto-fit)
@@ -245,16 +245,16 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
         buf.set_string(
             area.x,
             area.y,
-            state
-                .headers
-                .iter()
-                .zip(widths.iter())
-                .map(|(val, wid)| format!("{:<width$.width$}", val, width = wid))
-                .join(" ")
-                .chars()
-                .skip(state.offset_x)
-                .take(area.width.into())
-                .collect::<String>(),
+            {
+                let full_line = state
+                    .headers
+                    .iter()
+                    .zip(widths.iter())
+                    .map(|(val, width)| viewport(val, 0, *width))
+                    .join(" ");
+
+                viewport(&full_line, state.offset_x, area.width.into())
+            },
             Theme::table_header(),
         );
         buf.set_style(
@@ -307,20 +307,21 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
             .map(|(idx, vec)| {
                 (
                     idx as u16,
-                    vec.into_iter()
-                        .zip(widths.iter())
-                        .map(|(val, width)| {
-                            format!(
-                                "{:<width$.width$}",
-                                val.into_string().lines().next().unwrap_or_default(),
-                                width = width
-                            )
-                        })
-                        .join(" ")
-                        .chars()
-                        .skip(state.offset_x)
-                        .take(area.width.into())
-                        .collect::<String>(),
+                    {
+                        let full_line = vec
+                            .into_iter()
+                            .zip(widths.iter())
+                            .map(|(val, width)| {
+                                viewport(
+                                    val.into_string().lines().next().unwrap_or_default(),
+                                    0,
+                                    *width,
+                                )
+                            })
+                            .join(" ");
+
+                        viewport(&full_line, state.offset_x, area.width.into())
+                    },
                     if state.offset_y + idx == state.select {
                         Theme::table_highlight()
                     } else {
@@ -387,4 +388,62 @@ fn shrink_columns(table_width: usize, column_widths: &[usize]) -> Vec<usize> {
         }
     }
     new_widths
+}
+
+/// Take a viewport of single line.
+///
+/// Both `start_column` and `available_width` are base on displaying grid,
+/// not index nor Unicode scalar.
+fn viewport(line: &str, start_column: usize, available_width: usize) -> String {
+    let end_column = start_column + available_width;
+
+    let mut current_column = 0;
+
+    let mut output = String::new();
+
+    for c in line.chars() {
+        // We don't care any characters after end_column.
+        if current_column >= end_column {
+            break;
+        }
+
+        let char_width = c.width().unwrap_or_default();
+
+        match char_width {
+            // control character.
+            0 => (),
+
+            // half-width character.
+            1 => {
+                if current_column >= start_column && current_column < end_column {
+                    output.push(c)
+                }
+            }
+
+            // full-width character.
+            2 => {
+                // this full-width character only have half space (1 column) can use.
+                if current_column + 1 == start_column || current_column + 1 == end_column {
+                    const HALF_PLACEHOLDER: char = ' ';
+
+                    output.push(HALF_PLACEHOLDER)
+                }
+                // have full space can use.
+                else if current_column >= start_column && current_column + 1 < end_column {
+                    output.push(c)
+                }
+            }
+
+            _ => unreachable!(),
+        }
+
+        current_column += char_width;
+    }
+
+    // if not run out all available_width (chars not enouch), pad it.
+    for _ in current_column..end_column {
+        output.push(' ');
+    }
+
+    output
 }
