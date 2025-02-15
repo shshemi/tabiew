@@ -4,6 +4,7 @@ use polars::{
     prelude::{AnyValue, DataType},
     series::{ChunkCompareEq, Series},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::tui::sheet::SheetSection;
 
@@ -82,12 +83,12 @@ fn series_width(series: &Series) -> usize {
                 .into_string()
                 .lines()
                 .next()
-                .map(str::len)
+                .map(|s| s.width())
                 .unwrap_or(0)
         })
         .max()
         .unwrap_or_default()
-        .max(series.name().len())
+        .max(series.name().as_str().width())
 }
 
 impl FuzzyCmp for AnyValue<'_> {
