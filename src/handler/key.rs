@@ -249,6 +249,17 @@ impl Default for KeyHandler {
                     .char('l')
                     .action(AppAction::TableScrollRight),
             )
+            // b w
+            .add(
+                Keybind::default()
+                    .char('b')
+                    .action(AppAction::TableScrollLeftColumn),
+            )
+            .add(
+                Keybind::default()
+                    .char('w')
+                    .action(AppAction::TableScrollRightColumn),
+            )
             // ctrl-u ctrl-d
             .add(
                 Keybind::default()
