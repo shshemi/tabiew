@@ -3167,6 +3167,7 @@ dependencies = [
  "rusqlite",
  "tempfile",
  "tui-input",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]
