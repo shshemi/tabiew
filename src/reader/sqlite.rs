@@ -47,9 +47,9 @@ fn get_data_frame(conn: &Connection, table_name: &str) -> AppResult<DataFrame> {
             .query_map([], |row| {
                 let name = PlSmallStr::from_string(row.get(1)?);
                 let dtype = match row.get::<_, String>(2)?.as_str() {
-                    "integer" => DataType::Int64,
-                    "real" => DataType::Float64,
-                    "blob" => DataType::Binary,
+                    "INTEGER" => DataType::Int64,
+                    "REAL" => DataType::Float64,
+                    "BLOB" => DataType::Binary,
                     _ => DataType::String,
                 };
                 Ok((name, dtype))
