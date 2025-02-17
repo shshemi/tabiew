@@ -57,6 +57,8 @@ Use these key mappings to navigate through and better visualize your data:
 | `j` or `Arrow Down`| Move down one row in the table|
 | `h` or `Arrow Left`| Scroll table left|
 | `l` or `Arrow Right`| Scroll table right|
+| `b` | Scroll to the previous column|
+| `w` | Scroll to the next column|
 | `Page Up` or `Ctrl+b`| Move one page up|
 | `Page Down` or `Ctrl+f`| Move one page down|
 | `Ctrl+u`| Move up half a page|
