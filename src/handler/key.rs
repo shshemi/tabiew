@@ -296,7 +296,12 @@ impl Default for KeyHandler {
                     .code(KeyCode::PageDown)
                     .action(AppAction::TableGoDownFullPage),
             )
-            // _ $
+            // ^_ $ line beginning end
+            .add(
+                Keybind::default()
+                    .char('^')
+                    .action(AppAction::TableScrollStart),
+            )
             .add(
                 Keybind::default()
                     .char('_')

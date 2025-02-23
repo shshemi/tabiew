@@ -121,7 +121,7 @@ where
                                 Span::raw("Select up with "),
                                 Span::raw(" \u{2191} ").add_modifier(Modifier::REVERSED),
                                 Span::raw(" or "),
-                                Span::raw(" Ctrl+J ").add_modifier(Modifier::REVERSED),
+                                Span::raw(" Ctrl+P ").add_modifier(Modifier::REVERSED),
                                 Span::raw(", select down with "),
                                 Span::raw(" \u{2193} ").add_modifier(Modifier::REVERSED),
                                 Span::raw(" or "),

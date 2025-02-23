@@ -1,9 +1,12 @@
+use std::ops::Div;
+
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
     prelude::{AnyValue, DataType},
     series::{ChunkCompareEq, Series},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::tui::sheet::SheetSection;
 
@@ -63,9 +66,35 @@ impl IntoString for AnyValue<'_> {
             AnyValue::String(v) => v.to_string(),
             AnyValue::Categorical(idx, rev_map, _) => rev_map.get(idx).to_owned(),
             AnyValue::CategoricalOwned(idx, rev_map, _) => rev_map.get(idx).to_owned(),
+            AnyValue::Binary(buf) => bytes_to_string(buf),
+            AnyValue::BinaryOwned(buf) => bytes_to_string(buf),
             _ => self.to_string(),
         }
     }
+}
+
+fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
+    let buf = buf.as_ref();
+    let index_width = buf.len().div(16).to_string().len();
+    let index_width = if index_width % 2 == 0 {
+        index_width
+    } else {
+        index_width + 1
+    };
+    format!(
+        "Blob (Length: {})\n{}",
+        buf.len(),
+        buf.iter()
+            .map(|b| format!("{:02X}", b))
+            .chunks(8)
+            .into_iter()
+            .map(|mut chunk| chunk.join(" "))
+            .chunks(2)
+            .into_iter()
+            .enumerate()
+            .map(|(idx, mut chunk)| format!("{:0index_width$}:  {}", idx, chunk.join("   ")))
+            .join("\n")
+    )
 }
 
 impl TuiWidths for DataFrame {
@@ -82,12 +111,12 @@ fn series_width(series: &Series) -> usize {
                 .into_string()
                 .lines()
                 .next()
-                .map(str::len)
+                .map(|s| s.width())
                 .unwrap_or(0)
         })
         .max()
         .unwrap_or_default()
-        .max(series.name().len())
+        .max(series.name().as_str().width())
 }
 
 impl FuzzyCmp for AnyValue<'_> {
