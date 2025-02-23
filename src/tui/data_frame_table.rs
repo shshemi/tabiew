@@ -126,6 +126,33 @@ impl DataFrameTableState {
         }
     }
 
+    pub fn scroll_right_column(&mut self) {
+        self.offset_x = self
+            .widths
+            .iter()
+            .copied()
+            .scan(0, |a, b| {
+                *a += b + 1;
+                Some(*a)
+            })
+            .find(|&s| s > self.offset_x)
+            .unwrap_or(self.widths.len());
+    }
+
+    pub fn scroll_left_column(&mut self) {
+        self.offset_x = self
+            .widths
+            .iter()
+            .copied()
+            .scan(0, |a, b| {
+                *a += b + 1;
+                Some(*a)
+            })
+            .take_while(|&s| s < self.offset_x)
+            .last()
+            .unwrap_or(0)
+    }
+
     pub fn expanded(&self) -> bool {
         self.expanded
     }

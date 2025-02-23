@@ -115,6 +115,14 @@ impl TabContentState {
         self.table.scroll_right();
     }
 
+    pub fn table_scroll_left_column(&mut self) {
+        self.table.scroll_left_column();
+    }
+
+    pub fn table_scroll_right_column(&mut self) {
+        self.table.scroll_right_column();
+    }
+
     pub fn table_goto_start(&mut self) {
         self.table.scroll_start();
     }
