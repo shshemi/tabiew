@@ -26,6 +26,8 @@ pub enum AppAction {
     TableDismissModal,
     TableScrollRight,
     TableScrollLeft,
+    TableScrollRightColumn,
+    TableScrollLeftColumn,
     TableScrollStart,
     TableScrollEnd,
     TableToggleExpansion,
@@ -576,6 +578,18 @@ pub fn execute(
         AppAction::TableScrollLeft => {
             if let Some(tab) = app.tabs().selected_mut() {
                 tab.table_scroll_left();
+            }
+            Ok(None)
+        }
+        AppAction::TableScrollRightColumn => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.table_scroll_right_column();
+            }
+            Ok(None)
+        }
+        AppAction::TableScrollLeftColumn => {
+            if let Some(tab) = app.tabs().selected_mut() {
+                tab.table_scroll_left_column();
             }
             Ok(None)
         }
