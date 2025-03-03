@@ -1,11 +1,8 @@
-use std::marker::PhantomData;
-
 use ratatui::widgets::{Block, StatefulWidget};
 
-use super::{
-    input::{Input, InputState},
-    Styler,
-};
+use crate::config::theme;
+
+use super::input::{Input, InputState};
 
 #[derive(Debug, Default)]
 pub struct SearchBarState {
@@ -19,34 +16,27 @@ impl SearchBarState {
 }
 
 #[derive(Debug)]
-pub struct SearchBar<Theme> {
+pub struct SearchBar {
     selection: bool,
-    _theme: PhantomData<Theme>,
 }
 
-impl<Theme> SearchBar<Theme> {
+impl SearchBar {
     pub fn new() -> Self {
-        Self {
-            selection: false,
-            _theme: Default::default(),
-        }
+        Self { selection: false }
     }
 
     pub fn with_selection(self, selection: bool) -> Self {
-        Self {
-            selection,
-            _theme: PhantomData,
-        }
+        Self { selection }
     }
 }
 
-impl<Theme> Default for SearchBar<Theme> {
+impl Default for SearchBar {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Theme: Styler> StatefulWidget for SearchBar<Theme> {
+impl StatefulWidget for SearchBar {
     type State = SearchBarState;
 
     fn render(
@@ -55,14 +45,14 @@ impl<Theme: Styler> StatefulWidget for SearchBar<Theme> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        Input::<Theme>::new()
-            .style(Theme::pallete_text())
+        Input::new()
+            .style(theme().text())
             .selection(self.selection)
             .block(
                 Block::bordered()
                     .title_top("Fuzzy Search")
                     .border_type(ratatui::widgets::BorderType::Rounded)
-                    .style(Theme::pallete()),
+                    .style(theme().block()),
             )
             .render(area, buf, &mut state.input);
     }

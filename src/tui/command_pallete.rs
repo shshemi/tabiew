@@ -1,20 +1,19 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::borrow::Cow;
 
 use ratatui::{
     layout::{Alignment, Constraint, Layout},
     style::{Modifier, Stylize},
     symbols::{
-        border::{Set, ROUNDED},
+        border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget},
 };
 
-use super::{
-    input::{Input, InputState},
-    Styler,
-};
+use crate::config::theme;
+
+use super::input::{Input, InputState};
 
 pub struct CommandPalleteState {
     input: InputState,
@@ -50,23 +49,18 @@ impl CommandPalleteState {
     }
 }
 
-pub struct CommandPallete<Theme, Iter> {
+pub struct CommandPallete<Iter> {
     items: Iter,
-    _theme: PhantomData<Theme>,
 }
 
-impl<Theme, Iter> CommandPallete<Theme, Iter> {
+impl<Iter> CommandPallete<Iter> {
     pub fn new(items: Iter) -> Self {
-        Self {
-            items,
-            _theme: Default::default(),
-        }
+        Self { items }
     }
 }
 
-impl<'a, Theme, Iter> StatefulWidget for CommandPallete<Theme, Iter>
+impl<'a, Iter> StatefulWidget for CommandPallete<Iter>
 where
-    Theme: Styler,
     Iter: IntoIterator,
     Iter::Item: Into<Cow<'a, str>>,
 {
@@ -81,8 +75,8 @@ where
         Clear.render(area, buf);
         let [input_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-        Input::<Theme>::new()
-            .style(Theme::pallete_text())
+        Input::new()
+            .style(theme().text())
             .selection(state.list.selected().is_none())
             .block(
                 Block::bordered()
@@ -92,21 +86,21 @@ where
                         bottom_right: VERTICAL_LEFT,
                         ..ROUNDED
                     })
-                    .style(Theme::pallete()),
+                    .style(theme().block()),
             )
             .render(input_area, buf, &mut state.input);
         StatefulWidget::render(
             List::new(
                 self.items
                     .into_iter()
-                    .map(|item| Line::styled(item.into(), Theme::pallete_text())),
+                    .map(|item| Line::styled(item.into(), theme().text())),
             )
-            .highlight_style(Theme::table_highlight())
+            .highlight_style(theme().highlight())
             .block(
                 Block::new()
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
                     .border_type(BorderType::Rounded)
-                    .style(Theme::pallete())
+                    .style(theme().block())
                     // .title_alignment(Alignment::Center)
                     .title_bottom(
                         if state.list.selected().is_some() {

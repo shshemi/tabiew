@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use ratatui::{
     layout::Alignment,
     style::{Modifier, Stylize},
@@ -7,24 +5,22 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, StatefulWidget, Widget, Wrap},
 };
 
-use crate::tui::{
-    utils::{line_count, Scroll},
-    Styler,
+use crate::{
+    config::theme,
+    tui::utils::{Scroll, line_count},
 };
 
 #[derive(Debug)]
-pub struct Sheet<Theme> {
+pub struct Sheet {
     sections: Vec<SheetSection>,
     block: Option<Block<'static>>,
-    _theme: PhantomData<Theme>,
 }
 
-impl<Theme> Sheet<Theme> {
+impl Sheet {
     pub fn new() -> Self {
         Self {
             sections: Default::default(),
             block: None,
-            _theme: Default::default(),
         }
     }
 
@@ -39,7 +35,7 @@ impl<Theme> Sheet<Theme> {
     }
 }
 
-impl<Theme> Default for Sheet<Theme> {
+impl Default for Sheet {
     fn default() -> Self {
         Self::new()
     }
@@ -72,10 +68,7 @@ impl SheetState {
     }
 }
 
-impl<Theme> StatefulWidget for Sheet<Theme>
-where
-    Theme: Styler,
-{
+impl StatefulWidget for Sheet {
     type State = SheetState;
 
     fn render(
@@ -88,10 +81,10 @@ where
         for (idx, SheetSection { header, content }) in self.sections.iter().enumerate() {
             lines.push(Line::from(Span::styled(
                 header.clone(),
-                Theme::table_header_cell(idx),
+                theme().header(idx),
             )));
             for line in content.lines() {
-                lines.push(Line::from(Span::styled(line, Theme::sheet_value())));
+                lines.push(Line::from(Span::styled(line, theme().text())));
             }
             lines.push(Line::raw("\n"));
         }
@@ -107,13 +100,13 @@ where
         Clear.render(area, buf);
 
         Paragraph::new(lines)
-            .style(Theme::sheet_block())
+            .style(theme().text())
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true })
             .block(
                 Block::new()
-                    .style(Theme::sheet_block())
-                    .border_style(Theme::sheet_block())
+                    .style(theme().text())
+                    .border_style(theme().block())
                     .border_type(BorderType::Rounded)
                     .title_bottom(Line::from_iter([
                         Span::raw("Scroll up with "),

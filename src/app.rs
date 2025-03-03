@@ -1,19 +1,19 @@
 use anyhow::Ok;
 use ratatui::{
-    layout::{Constraint, Flex, Layout},
     Frame,
+    layout::{Constraint, Flex, Layout},
 };
 
 use crate::{
+    AppResult,
     tui::{
+        TabContentState,
         command_pallete::{CommandPallete, CommandPalleteState},
         error_popup::ErrorPopup,
         tab_content::Modal,
         tabs::{Tabs, TabsState},
-        Styler, TabContentState,
     },
     utils::history::History,
-    AppResult,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -124,11 +124,11 @@ impl App {
         }
     }
 
-    pub fn draw<Theme: Styler>(&mut self, frame: &mut Frame) -> AppResult<()> {
+    pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
         // Draw table / item
         let state = self.context();
         frame.render_stateful_widget(
-            Tabs::<Theme>::new()
+            Tabs::new()
                 .with_borders(self.borders)
                 .selection(matches!(state, AppContext::Table)),
             frame.area(),
@@ -136,7 +136,7 @@ impl App {
         );
 
         if let Some(msg) = self.error.as_ref() {
-            let error = ErrorPopup::<Theme>::new().with_message(msg);
+            let error = ErrorPopup::new().with_message(msg);
             let mid = {
                 let [mid_ver] = Layout::vertical([Constraint::Length(error.line_count(50))])
                     .flex(Flex::Center)
@@ -160,7 +160,7 @@ impl App {
                 mid_hor
             };
             frame.render_stateful_widget(
-                CommandPallete::<Theme, _>::new(self.history.iter().take(100)),
+                CommandPallete::new(self.history.iter().take(100)),
                 upmid,
                 cmd,
             );

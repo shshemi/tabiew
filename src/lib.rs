@@ -25,4 +25,7 @@ pub mod writer;
 /// Search
 pub mod search;
 
+/// Config
+pub mod config;
+
 pub type AppResult<T> = anyhow::Result<T>;
