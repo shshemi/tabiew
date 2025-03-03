@@ -3,9 +3,7 @@ use ratatui::{
     style::{Modifier, Style},
     widgets::{Block, Paragraph, StatefulWidget, Widget},
 };
-use std::{marker::PhantomData, ops::Add};
-
-use super::Styler;
+use std::ops::Add;
 
 #[derive(Debug, Default)]
 pub struct InputState {
@@ -48,33 +46,31 @@ impl InputState {
 }
 
 #[derive(Debug)]
-pub struct Input<'a, Theme> {
+pub struct Input<'a> {
     scroll_pad: u16,
     block: Option<Block<'a>>,
     style: Style,
     selection: bool,
-    _theme: PhantomData<Theme>,
 }
 
-impl<T> Input<'_, T> {
+impl Input<'_> {
     pub fn new() -> Self {
-        Input::<T> {
+        Input {
             scroll_pad: 4,
             block: Default::default(),
             style: Default::default(),
             selection: false,
-            _theme: Default::default(),
         }
     }
 }
 
-impl<T> Default for Input<'_, T> {
+impl Default for Input<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a, T> Input<'a, T> {
+impl<'a> Input<'a> {
     pub fn scroll_pad(mut self, pad: u16) -> Self {
         self.scroll_pad = pad;
         self
@@ -96,7 +92,7 @@ impl<'a, T> Input<'a, T> {
     }
 }
 
-impl<Theme: Styler> StatefulWidget for Input<'_, Theme> {
+impl StatefulWidget for Input<'_> {
     type State = InputState;
 
     fn render(

@@ -1,6 +1,5 @@
 use std::{
     borrow::Cow,
-    marker::PhantomData,
     ops::{Add, Div, Sub},
 };
 
@@ -14,12 +13,12 @@ use ratatui::{
 use unicode_width::UnicodeWidthChar;
 
 use crate::{
-    tui::Styler,
+    AppResult,
+    config::theme,
     utils::{
         iter_ext::ZipItersExt,
         polars_ext::{IntoString, TuiWidths},
     },
-    AppResult,
 };
 
 #[derive(Debug, Default)]
@@ -184,17 +183,13 @@ impl DataFrameTableState {
     }
 }
 
-pub struct DataFrameTable<'a, Theme> {
+pub struct DataFrameTable<'a> {
     block: Option<Block<'a>>,
-    _theme: PhantomData<Theme>,
 }
 
-impl<'a, Theme> DataFrameTable<'a, Theme> {
+impl<'a> DataFrameTable<'a> {
     pub fn new() -> Self {
-        Self {
-            block: None,
-            _theme: Default::default(),
-        }
+        Self { block: None }
     }
 
     pub fn with_block(mut self, block: Block<'a>) -> Self {
@@ -203,13 +198,13 @@ impl<'a, Theme> DataFrameTable<'a, Theme> {
     }
 }
 
-impl<Theme> Default for DataFrameTable<'_, Theme> {
+impl Default for DataFrameTable<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
+impl StatefulWidget for DataFrameTable<'_> {
     type State = DataFrameTableState;
 
     fn render(
@@ -266,7 +261,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
         };
 
         // draw background
-        buf.set_style(area, Theme::table_header());
+        buf.set_style(area, theme().table_header());
 
         // draw header
         buf.set_string(
@@ -282,7 +277,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
 
                 viewport(&full_line, state.offset_x, area.width.into())
             },
-            Theme::table_header(),
+            theme().table_header(),
         );
         buf.set_style(
             Rect {
@@ -291,7 +286,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                 width: area.width,
                 height: 1,
             },
-            Theme::table_header(),
+            theme().table_header(),
         );
 
         // style header
@@ -319,7 +314,7 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                         width: (j - i).min(area.width as usize - i) as u16,
                         height: 1,
                     },
-                    Theme::table_header_cell(col),
+                    theme().header(col),
                 );
             });
 
@@ -350,9 +345,9 @@ impl<Theme: Styler> StatefulWidget for DataFrameTable<'_, Theme> {
                         viewport(&full_line, state.offset_x, area.width.into())
                     },
                     if state.offset_y + idx == state.select {
-                        Theme::table_highlight()
+                        theme().highlight()
                     } else {
-                        Theme::table_row(state.offset_y + idx)
+                        theme().row(state.offset_y + idx)
                     },
                 )
             })

@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use polars::frame::DataFrame;
 use rand::Rng;
 use ratatui::{
@@ -13,7 +11,7 @@ use super::{
     sheet::{Sheet, SheetState},
     status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{search::Search, tui::theme::Styler, utils::polars_ext::GetSheetSections, AppResult};
+use crate::{AppResult, config::theme, search::Search, utils::polars_ext::GetSheetSections};
 
 #[derive(Debug)]
 pub enum Modal {
@@ -292,22 +290,20 @@ impl TabContentState {
     }
 }
 
-pub struct TabContent<Theme> {
-    status_bar: StatusBar<Theme>,
+pub struct TabContent {
+    status_bar: StatusBar,
     borders: bool,
-    _theme: PhantomData<Theme>,
 }
 
-impl<Theme: Styler> TabContent<Theme> {
+impl TabContent {
     pub fn new() -> Self {
         Self {
-            status_bar: StatusBar::<Theme>::new(),
+            status_bar: StatusBar::new(),
             borders: true,
-            _theme: Default::default(),
         }
     }
 
-    pub fn with_tag(mut self, tag: StatusBarTag<Theme>) -> Self {
+    pub fn with_tag(mut self, tag: StatusBarTag) -> Self {
         self.status_bar = self.status_bar.with_tag(tag);
         self
     }
@@ -318,13 +314,13 @@ impl<Theme: Styler> TabContent<Theme> {
     }
 }
 
-impl<Theme: Styler> Default for TabContent<Theme> {
+impl Default for TabContent {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
+impl StatefulWidget for TabContent {
     type State = TabContentState;
 
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
@@ -336,7 +332,7 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
             }
             _ => (Rect::default(), area),
         };
-        DataFrameTable::<Theme>::new()
+        DataFrameTable::new()
             .with_block(
                 Block::new()
                     .borders(if self.borders {
@@ -344,7 +340,7 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                     } else {
                         Borders::empty()
                     })
-                    .border_style(Theme::sheet_block())
+                    .border_style(theme().block())
                     .border_type(BorderType::Rounded)
                     .title_bottom(self.status_bar.with_tags([
                         match &state.source {
@@ -388,13 +384,13 @@ impl<Theme: Styler> StatefulWidget for TabContent<Theme> {
                     .table
                     .data_frame()
                     .get_sheet_sections(state.table.selected());
-                Sheet::<Theme>::new()
+                Sheet::new()
                     .with_sections(sections)
                     .render(area, buf, sheet_state);
             }
 
             Some(Modal::Search(_, search_bar_state, _)) => {
-                SearchBar::<Theme>::new().with_selection(true).render(
+                SearchBar::new().with_selection(true).render(
                     search_bar_area,
                     buf,
                     search_bar_state,

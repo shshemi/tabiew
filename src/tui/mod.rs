@@ -2,7 +2,6 @@ pub mod command_pallete;
 pub mod data_frame_table;
 pub mod error_popup;
 pub mod input;
-pub mod prompt;
 pub mod search_bar;
 pub mod sheet;
 pub mod status_bar;

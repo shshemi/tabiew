@@ -1,12 +1,9 @@
-use std::marker::PhantomData;
-
 use polars::frame::DataFrame;
 use ratatui::widgets::StatefulWidget;
 
 use super::{
     status_bar::StatusBarTag,
     tab_content::{TabContent, TabContentState},
-    Styler,
 };
 
 #[derive(Debug)]
@@ -72,18 +69,16 @@ impl FromIterator<TabContentState> for TabsState {
     }
 }
 
-pub struct Tabs<Theme> {
+pub struct Tabs {
     selection: bool,
     borders: bool,
-    _theme: PhantomData<Theme>,
 }
 
-impl<Theme> Tabs<Theme> {
+impl Tabs {
     pub fn new() -> Self {
         Self {
             selection: false,
             borders: true,
-            _theme: Default::default(),
         }
     }
 
@@ -98,13 +93,13 @@ impl<Theme> Tabs<Theme> {
     }
 }
 
-impl<Theme> Default for Tabs<Theme> {
+impl Default for Tabs {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
+impl StatefulWidget for Tabs {
     type State = TabsState;
 
     fn render(
@@ -116,7 +111,7 @@ impl<Theme: Styler> StatefulWidget for Tabs<Theme> {
         state.idx = state.idx().min(state.len().saturating_sub(1));
         let tag_value = format!("{} / {}", state.idx + 1, state.len());
         if let Some(tabular) = state.selected_mut() {
-            TabContent::<Theme>::new()
+            TabContent::new()
                 .with_tag(StatusBarTag::new("Tab", tag_value))
                 .with_borders(self.borders)
                 .render(area, buf, tabular);

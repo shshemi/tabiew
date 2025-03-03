@@ -1,7 +1,6 @@
+use crate::AppResult;
 use crate::app::App;
 use crate::handler::event::EventHandler;
-use crate::tui::Styler;
-use crate::AppResult;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
 use std::io;
@@ -49,9 +48,9 @@ impl<B: Backend> Terminal<B> {
     ///
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
-    pub fn draw<Theme: Styler>(&mut self, app: &mut App) -> AppResult<()> {
+    pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
         self.terminal.draw(|frame| {
-            let _ = app.draw::<Theme>(frame);
+            let _ = app.draw(frame);
         })?;
         Ok(())
     }

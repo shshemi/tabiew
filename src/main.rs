@@ -6,16 +6,18 @@ use std::fs::{self};
 use std::io::{self};
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
+use tabiew::config::set_theme;
 use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::reader::{BuildReader, Input};
 use tabiew::sql::SqlBackend;
-use tabiew::tui::{themes, Styler};
-use tabiew::tui::{Source, TabContentState, Terminal};
-use tabiew::utils::history::{enforce_line_limit, History};
-use tabiew::AppResult;
+use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
+use tabiew::tui::{Source, TabContentState};
+use tabiew::{AppResult, tui};
+
+use tabiew::utils::history::{History, enforce_line_limit};
 
 fn main() -> AppResult<()> {
     // Parse CLI
@@ -69,21 +71,23 @@ fn main() -> AppResult<()> {
         .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
 
-    match args.theme {
-        AppTheme::Monokai => start_tui::<themes::Monokai>(tabs, sql_backend, script, history),
-        AppTheme::Argonaut => start_tui::<themes::Argonaut>(tabs, sql_backend, script, history),
-        AppTheme::Nord => start_tui::<themes::Nord>(tabs, sql_backend, script, history),
-        AppTheme::Catppuccin => start_tui::<themes::Catppuccin>(tabs, sql_backend, script, history),
-        AppTheme::TokyoNight => start_tui::<themes::TokyoNight>(tabs, sql_backend, script, history),
-        AppTheme::Terminal => start_tui::<themes::Terminal>(tabs, sql_backend, script, history),
-    }?;
+    set_theme(match args.theme {
+        AppTheme::Monokai => Box::new(Monokai),
+        AppTheme::Argonaut => Box::new(Argonaut),
+        AppTheme::Nord => Box::new(Nord),
+        AppTheme::Catppuccin => Box::new(Catppuccin),
+        AppTheme::TokyoNight => Box::new(TokyoNight),
+        AppTheme::Terminal => Box::new(Terminal),
+    });
+
+    let _ = start_tui(tabs, sql_backend, script, history);
     if let Some(history_path) = history_path {
         enforce_line_limit(history_path, 999);
     }
     Ok(())
 }
 
-fn start_tui<Theme: Styler>(
+fn start_tui(
     tabs: Vec<(DataFrame, String)>,
     mut sql_backend: SqlBackend,
     script: String,
@@ -105,14 +109,14 @@ fn start_tui<Theme: Styler>(
     );
 
     // Initialize the terminal user interface.
-    let mut tui = Terminal::new(
+    let mut tui = tui::Terminal::new(
         ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
         EventHandler::new(100),
     );
     tui.init()?;
 
     // Draw once before startup script
-    tui.draw::<Theme>(&mut app)?;
+    tui.draw(&mut app)?;
 
     // Run startup script
     for line in script.lines().filter(|line| !line.is_empty()) {
@@ -124,7 +128,7 @@ fn start_tui<Theme: Styler>(
 
     // Main loop
     while app.running() {
-        tui.draw::<Theme>(&mut app)?;
+        tui.draw(&mut app)?;
 
         match tui.events.next()? {
             Event::Tick => app.tick()?,
