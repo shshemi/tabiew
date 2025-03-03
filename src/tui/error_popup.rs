@@ -1,23 +1,23 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::borrow::Cow;
 
 use ratatui::{
     layout::Alignment,
     widgets::{Block, Clear, Paragraph, Widget, Wrap},
 };
 
-use super::{utils::line_count, Styler};
+use crate::config::theme;
+
+use super::utils::line_count;
 
 #[derive(Debug, Default)]
-pub struct ErrorPopup<'a, Theme> {
+pub struct ErrorPopup<'a> {
     message: Cow<'a, str>,
-    _theme: PhantomData<Theme>,
 }
 
-impl<'a, Theme> ErrorPopup<'a, Theme> {
+impl<'a> ErrorPopup<'a> {
     pub fn new() -> Self {
         Self {
             message: Default::default(),
-            _theme: Default::default(),
         }
     }
     pub fn with_message(mut self, message: impl Into<Cow<'a, str>>) -> Self {
@@ -30,7 +30,7 @@ impl<'a, Theme> ErrorPopup<'a, Theme> {
     }
 }
 
-impl<Theme: Styler> Widget for ErrorPopup<'_, Theme> {
+impl Widget for ErrorPopup<'_> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
@@ -42,9 +42,9 @@ impl<Theme: Styler> Widget for ErrorPopup<'_, Theme> {
                 Block::bordered()
                     .title(" Error ")
                     .title_alignment(Alignment::Center)
-                    .border_style(Theme::status_bar_error()),
+                    .border_style(theme().error()),
             )
-            .style(Theme::status_bar_error())
+            .style(theme().error())
             .wrap(Wrap { trim: true })
             .render(area, buf);
     }
