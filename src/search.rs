@@ -1,14 +1,14 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc::{channel, Receiver, TryRecvError},
         Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{Receiver, TryRecvError, channel},
     },
     time::{Duration, Instant},
 };
 
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::IdxCa};
 
@@ -54,9 +54,12 @@ impl Search {
                         .par_bridge()
                         .take_any_while(|_| alive.load(Ordering::Relaxed))
                         .filter_map(|(idx, value)| {
-                            matcher
-                                .fuzzy_match(&value.into_string(), &pat)
-                                .map(|score| (idx, score))
+                            let value = value.into_string();
+                            if value == pat {
+                                Some((idx, i64::MAX))
+                            } else {
+                                matcher.fuzzy_match(&value, &pat).map(|score| (idx, score))
+                            }
                         })
                         .try_for_each(|(idx, score)| tx.send((idx as u32, score)));
                 }
