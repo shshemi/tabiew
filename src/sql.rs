@@ -70,7 +70,9 @@ impl SqlBackend {
     }
 
     pub fn execute(&mut self, query: &str) -> PolarsResult<DataFrame> {
-        self.sql.execute(query).and_then(LazyFrame::collect)
+        let mut df = self.sql.execute(query).and_then(LazyFrame::collect)?;
+        df.as_single_chunk_par();
+        Ok(df)
     }
 }
 
