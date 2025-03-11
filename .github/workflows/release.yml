@@ -35,7 +35,7 @@ jobs:
         cargo build --release --verbose
         cp target/release/tw upload/tw-x86-linux-gnu
         zip -r upload/manual.zip target/manual
-        zip -r upload/complition.zip target/completion
+        zip -r upload/completion.zip target/completion
     
     - name: Build .deb package
       run: cargo deb --output upload/tabiew-x86_64-linux-gnu.deb
