@@ -71,7 +71,7 @@ jobs:
       run: cargo install cargo-deb --version 2.11.1 --force
 
     - name: Install cargo generate rpm
-      run: cargo install cargo-generate-rpm --version 0.15.2 --force
+      run: cargo install cargo-generate-rpm --version 0.16.0 --force
 
     - name: Make upload directory
       run: mkdir upload
