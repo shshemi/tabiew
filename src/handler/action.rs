@@ -1,8 +1,9 @@
 use std::{ops::Div, path::PathBuf};
 
-use anyhow::{anyhow, Ok};
+use anyhow::{Ok, anyhow};
 
 use crate::{
+    AppResult,
     app::App,
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame,
@@ -11,7 +12,6 @@ use crate::{
     sql::SqlBackend,
     tui::{Source, TabContentState},
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
-    AppResult,
 };
 
 use super::command::{commands_help_data_frame, parse_into_action};
@@ -385,13 +385,6 @@ pub fn execute(
                 .with_no_header(!has_header)
                 .named_frames(Input::File(path.clone()))?;
             for (name, df) in frames {
-                let name = name.unwrap_or(
-                    path.clone()
-                        .file_stem()
-                        .expect("Invalid file name")
-                        .to_string_lossy()
-                        .into_owned(),
-                );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
@@ -400,13 +393,6 @@ pub fn execute(
         AppAction::ImportParquet(path) => {
             let frames = ParquetToDataFrame.named_frames(Input::File(path.clone()))?;
             for (name, df) in frames {
-                let name = name.unwrap_or(
-                    path.clone()
-                        .file_stem()
-                        .expect("Invalid file name")
-                        .to_string_lossy()
-                        .into_owned(),
-                );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
@@ -424,13 +410,6 @@ pub fn execute(
                 }
             };
             for (name, df) in frames {
-                let name = name.unwrap_or(
-                    path.clone()
-                        .file_stem()
-                        .expect("Invalid file name")
-                        .to_string_lossy()
-                        .into_owned(),
-                );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
@@ -441,13 +420,6 @@ pub fn execute(
         AppAction::ImportArrow(path) => {
             let frames = ArrowIpcToDataFrame.named_frames(Input::File(path.clone()))?;
             for (name, df) in frames {
-                let name = name.unwrap_or(
-                    path.clone()
-                        .file_stem()
-                        .expect("Invalid file name")
-                        .to_string_lossy()
-                        .into_owned(),
-                );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
@@ -458,13 +430,6 @@ pub fn execute(
         AppAction::ImportSqlite(path) => {
             let frames = SqliteToDataFrames.named_frames(Input::File(path.clone()))?;
             for (name, df) in frames {
-                let name = name.unwrap_or(
-                    path.clone()
-                        .file_stem()
-                        .expect("Invalid file name")
-                        .to_string_lossy()
-                        .into_owned(),
-                );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }
@@ -486,13 +451,6 @@ pub fn execute(
                 .with_has_header(has_header)
                 .named_frames(Input::File(path.clone()))?;
             for (name, df) in frames {
-                let name = name.unwrap_or(
-                    path.clone()
-                        .file_stem()
-                        .expect("Invalid file name")
-                        .to_string_lossy()
-                        .into_owned(),
-                );
                 let name = sql.register(&name, df.clone(), path.clone());
                 app.tabs().add(TabContentState::new(df, Source::Name(name)));
             }

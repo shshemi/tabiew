@@ -32,9 +32,9 @@ impl ReadToDataFrames for SqliteToDataFrames {
         // Iterate over tables and transform them into data_frames
         names
             .into_iter()
-            .map(|tbl| {
-                let df = get_data_frame(&conn, &tbl)?;
-                Ok((Some(tbl), df))
+            .map(|name| {
+                let df = get_data_frame(&conn, &name)?;
+                Ok((name, df))
             })
             .collect::<AppResult<Vec<_>>>()
             .map(|vec| vec.into_boxed_slice())
