@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use clap::Parser;
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
