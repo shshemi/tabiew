@@ -10,9 +10,9 @@ use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 
 use crate::{
+    AppResult,
     args::{Args, InferSchema},
     utils::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
-    AppResult,
 };
 
 use super::{Input, NamedFrames, ReadToDataFrames};
@@ -71,7 +71,7 @@ impl Default for FwfToDataFrame {
 
 impl ReadToDataFrames for FwfToDataFrame {
     fn named_frames(&self, input: Input) -> AppResult<NamedFrames> {
-        let file_content = match input {
+        let file_content = match &input {
             Input::File(path) => read_to_string(path)?,
             Input::Stdin => {
                 let mut buf = String::new();
@@ -152,7 +152,7 @@ impl ReadToDataFrames for FwfToDataFrame {
             df.safe_infer_schema();
         }
 
-        Ok([(None, df)].into())
+        Ok([(input.table_name(), df)].into())
     }
 }
 

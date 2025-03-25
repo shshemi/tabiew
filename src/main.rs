@@ -30,10 +30,7 @@ fn main() -> AppResult<()> {
     let tabs = if args.files.is_empty() {
         let mut vec = Vec::new();
         for (name, df) in args.build_reader("")?.named_frames(Input::Stdin)? {
-            vec.push((
-                df.clone(),
-                sql_backend.register(&name.unwrap_or("stdin".to_owned()), df, "stdin".into()),
-            ))
+            vec.push((df.clone(), sql_backend.register(&name, df, "stdin".into())))
         }
         vec
     } else {
@@ -44,16 +41,7 @@ fn main() -> AppResult<()> {
                 .named_frames(Input::File(path.to_path_buf()))
                 .unwrap_or_else(|err| panic!("{}", err));
             for (name, df) in frames {
-                let name = sql_backend.register(
-                    &name.unwrap_or(
-                        path.file_stem()
-                            .ok_or(anyhow!("Invalid file name"))?
-                            .to_string_lossy()
-                            .into_owned(),
-                    ),
-                    df.clone(),
-                    path.clone(),
-                );
+                let name = sql_backend.register(&name, df.clone(), path.clone());
                 vec.push((df, name))
             }
         }
