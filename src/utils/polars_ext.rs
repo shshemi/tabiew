@@ -3,7 +3,7 @@ use std::ops::Div;
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, DataType},
+    prelude::{AnyValue, DataType, TimeUnit},
     series::{ChunkCompareEq, Series},
 };
 use unicode_width::UnicodeWidthStr;
@@ -52,6 +52,7 @@ fn type_infered_series(series: &Series) -> Option<Series> {
         DataType::Boolean,
         DataType::Date,
         DataType::Time,
+        DataType::Datetime(TimeUnit::Milliseconds, None),
     ]
     .iter()
     .filter_map(|dtype| series.cast(dtype).ok())
