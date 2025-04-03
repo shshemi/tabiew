@@ -5,13 +5,13 @@ pub mod input;
 pub mod search_bar;
 pub mod sheet;
 pub mod status_bar;
-pub mod tab_content;
 pub mod tabs;
+pub mod tabular;
 pub mod terminal;
 pub mod theme;
 mod utils;
 
-pub use tab_content::{Source, TabContentState};
+pub use tabular::{Source, TabularState};
 pub use terminal::Terminal;
 pub use theme::Styler;
 
