@@ -8,11 +8,10 @@ use crate::{
     AppResult,
     misc::history::History,
     tui::{
-        TabContentState,
         command_pallete::{CommandPallete, CommandPalleteState},
         error_popup::ErrorPopup,
-        tab_content::Modal,
-        tabs::{Tabs, TabsState},
+        tabs::{Tab, Tabs, TabsState},
+        tabular::Modal,
     },
 };
 
@@ -64,15 +63,15 @@ impl App {
         self.running
     }
 
-    pub fn tabs(&mut self) -> &mut TabsState {
+    pub fn tabs_mut(&mut self) -> &mut TabsState {
         &mut self.tabs
     }
 
-    pub fn pallete(&mut self) -> Option<&mut CommandPalleteState> {
+    pub fn pallete_mut(&mut self) -> Option<&mut CommandPalleteState> {
         self.pallete.as_mut()
     }
 
-    pub fn history(&mut self) -> &mut History {
+    pub fn history_mut(&mut self) -> &mut History {
         &mut self.history
     }
 
@@ -115,10 +114,18 @@ impl App {
         } else if self.pallete.is_some() {
             AppContext::Command
         } else {
-            match self.tabs.selected().map(TabContentState::modal) {
-                Some(Some(Modal::Search(_, _, _))) => AppContext::Search,
-                Some(Some(Modal::Sheet(_))) => AppContext::Sheet,
-                Some(None) => AppContext::Table,
+            // match self.tabs.selected().map(TabContentState::modal) {
+            //     Some(Some(Modal::Search(_, _, _))) => AppContext::Search,
+            //     Some(Some(Modal::Sheet(_))) => AppContext::Sheet,
+            //     Some(None) => AppContext::Table,
+            //     None => AppContext::Empty,
+            // }
+            match self.tabs.selected() {
+                Some(Tab::Tabular(tabular)) => match tabular.modal() {
+                    Some(Modal::Search(_, _, _)) => AppContext::Search,
+                    Some(Modal::Sheet(_)) => AppContext::Sheet,
+                    None => AppContext::Table,
+                },
                 None => AppContext::Empty,
             }
         }

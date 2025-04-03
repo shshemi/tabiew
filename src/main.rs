@@ -12,8 +12,9 @@ use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::set_theme;
 use tabiew::misc::sql::SqlBackend;
 use tabiew::reader::{BuildReader, Input};
+use tabiew::tui::tabs::Tab;
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
-use tabiew::tui::{Source, TabContentState};
+use tabiew::tui::{Source, TabularState};
 use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
@@ -82,15 +83,16 @@ fn start_tui(
 ) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(df, name)| TabContentState::new(df, Source::Name(name)))
+        .map(|(df, name)| TabularState::new(df, Source::Name(name)))
         .collect();
     let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
 
     // Set default data frame to the first tab
     sql_backend.set_default(
-        app.tabs()
+        app.tabs_mut()
             .selected()
+            .and_then(Tab::tabular)
             .map(|tab| tab.data_frame().clone())
             .unwrap(),
     );
