@@ -11,7 +11,9 @@ use super::{
     sheet::{Sheet, SheetState},
     status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{AppResult, config::theme, search::Search, utils::polars_ext::GetSheetSections};
+use crate::{
+    AppResult, misc::config::theme, misc::polars_ext::GetSheetSections, misc::search::Search,
+};
 
 #[derive(Debug)]
 pub enum Modal {

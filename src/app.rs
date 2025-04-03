@@ -6,6 +6,7 @@ use ratatui::{
 
 use crate::{
     AppResult,
+    misc::history::History,
     tui::{
         TabContentState,
         command_pallete::{CommandPallete, CommandPalleteState},
@@ -13,7 +14,6 @@ use crate::{
         tab_content::Modal,
         tabs::{Tabs, TabsState},
     },
-    utils::history::History,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]

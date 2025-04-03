@@ -6,7 +6,7 @@ use ratatui::{
     text::{Line, Span},
 };
 
-use crate::config::theme;
+use crate::misc::config::theme;
 
 pub struct StatusBar {
     tags: Vec<StatusBarTag>,

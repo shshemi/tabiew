@@ -1,6 +1,6 @@
 use ratatui::widgets::{Block, StatefulWidget};
 
-use crate::config::theme;
+use crate::misc::config::theme;
 
 use super::input::{Input, InputState};
 

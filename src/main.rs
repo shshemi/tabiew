@@ -5,18 +5,18 @@ use std::fs::{self};
 use std::io::{self};
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
-use tabiew::config::set_theme;
 use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
+use tabiew::misc::config::set_theme;
+use tabiew::misc::sql::SqlBackend;
 use tabiew::reader::{BuildReader, Input};
-use tabiew::sql::SqlBackend;
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
 use tabiew::tui::{Source, TabContentState};
 use tabiew::{AppResult, tui};
 
-use tabiew::utils::history::{History, enforce_line_limit};
+use tabiew::misc::history::{History, enforce_line_limit};
 
 fn main() -> AppResult<()> {
     // Parse CLI

@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph, Widget, Wrap},
 };
 
-use crate::config::theme;
+use crate::misc::config::theme;
 
 use super::utils::line_count;
 
