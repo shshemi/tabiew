@@ -5,11 +5,11 @@ use anyhow::{Ok, anyhow};
 use crate::{
     AppResult,
     app::App,
+    misc::sql::SqlBackend,
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame,
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
-    sql::SqlBackend,
     tui::{Source, TabContentState},
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
 };

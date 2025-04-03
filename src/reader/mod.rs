@@ -23,7 +23,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Format, InferSchema},
-    utils::{
+    misc::{
         polars_ext::SafeInferSchema,
         type_ext::{ReadToCursor, ToAscii},
     },
