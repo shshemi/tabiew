@@ -1,5 +1,4 @@
 use polars::frame::DataFrame;
-use rand::Rng;
 use ratatui::{
     layout::{Constraint, Layout, Margin, Rect},
     widgets::{Block, BorderType, Borders, StatefulWidget},
@@ -11,9 +10,7 @@ use super::{
     sheet::{Sheet, SheetState},
     status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{
-    AppResult, misc::config::theme, misc::polars_ext::GetSheetSections, misc::search::Search,
-};
+use crate::{misc::config::theme, misc::polars_ext::GetSheetSections, misc::search::Search};
 
 #[derive(Debug)]
 pub enum Modal {
@@ -66,35 +63,6 @@ impl TabularState {
         }
     }
 
-    pub fn select_up(&mut self, len: usize) {
-        self.table.select_up(len);
-    }
-
-    pub fn select_down(&mut self, len: usize) {
-        self.table.select_down(len);
-    }
-
-    pub fn select_first(&mut self) {
-        self.table.select_first();
-    }
-
-    pub fn select_last(&mut self) {
-        self.table.select_last();
-    }
-
-    pub fn select_random(&mut self) {
-        let mut rng = rand::rng();
-        self.table.select(rng.random_range(0..self.table.height()));
-    }
-
-    pub fn select(&mut self, select: usize) {
-        self.table.select(select);
-    }
-
-    pub fn selected(&self) -> usize {
-        self.table.selected()
-    }
-
     pub fn sheet_scroll_up(&mut self) {
         if let Some(Modal::Sheet(scroll)) = &mut self.modal {
             scroll.scroll_up();
@@ -107,63 +75,15 @@ impl TabularState {
         }
     }
 
-    pub fn table_scroll_left(&mut self) {
-        self.table.scroll_left();
-    }
-
-    pub fn table_scroll_right(&mut self) {
-        self.table.scroll_right();
-    }
-
-    pub fn table_scroll_left_column(&mut self) {
-        self.table.scroll_left_column();
-    }
-
-    pub fn table_scroll_right_column(&mut self) {
-        self.table.scroll_right_column();
-    }
-
-    pub fn table_goto_start(&mut self) {
-        self.table.scroll_start();
-    }
-
-    pub fn table_goto_end(&mut self) {
-        self.table.scroll_end();
-    }
-
-    pub fn expanded(&self) -> bool {
-        if self.modal.is_none() {
-            self.table.expanded()
-        } else {
-            false
-        }
-    }
-
-    pub fn toggle_expansion(&mut self) -> AppResult<()> {
-        self.table.toggle_expansion()
-    }
-
-    pub fn page_len(&self) -> usize {
-        self.table.rendered_rows().into()
-    }
-
-    pub fn switch_view(&mut self) {
-        match self.modal {
-            None => self.sheet_mode(),
-            Some(Modal::Sheet(_)) => self.table_mode(),
-            _ => (),
-        }
-    }
-
-    pub fn table_mode(&mut self) {
+    pub fn hide_modal(&mut self) {
         self.modal = None;
     }
 
-    pub fn sheet_mode(&mut self) {
+    pub fn show_sheet(&mut self) {
         self.modal = Some(Modal::Sheet(Default::default()));
     }
 
-    pub fn search_mode(&mut self) {
+    pub fn show_search(&mut self) {
         if self.modal.is_none() {
             self.modal = Some(Modal::Search(
                 Search::new(self.table.data_frame().clone(), Default::default()),
@@ -176,7 +96,7 @@ impl TabularState {
     pub fn search_commit(&mut self) {
         if let Some(Modal::Search(search, _, _)) = &self.modal {
             if let Some(df) = search.latest() {
-                self.set_data_frame(df);
+                self.table.set_data_frame(df);
             }
         }
     }
@@ -271,16 +191,12 @@ impl TabularState {
         }
     }
 
-    pub fn data_frame(&self) -> &DataFrame {
-        self.table.data_frame()
+    pub fn table(&self) -> &DataFrameTableState {
+        &self.table
     }
 
-    pub fn data_frame_mut(&mut self) -> &mut DataFrame {
-        self.table.data_frame_mut()
-    }
-
-    pub fn set_data_frame(&mut self, data_frame: DataFrame) {
-        self.table.set_data_frame(data_frame);
+    pub fn table_mut(&mut self) -> &mut DataFrameTableState {
+        &mut self.table
     }
 
     pub fn modal(&self) -> Option<&Modal> {
