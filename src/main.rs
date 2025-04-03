@@ -93,7 +93,7 @@ fn start_tui(
         app.tabs_mut()
             .selected()
             .and_then(Tab::tabular)
-            .map(|tab| tab.data_frame().clone())
+            .map(|tab| tab.table().data_frame().clone())
             .unwrap(),
     );
 
