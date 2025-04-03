@@ -12,7 +12,7 @@ use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 use crate::{
     AppResult,
     args::{Args, InferSchema},
-    utils::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
+    misc::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
 };
 
 use super::{Input, NamedFrames, ReadToDataFrames};

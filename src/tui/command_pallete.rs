@@ -11,7 +11,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget},
 };
 
-use crate::config::theme;
+use crate::misc::config::theme;
 
 use super::input::{Input, InputState};
 

@@ -9,7 +9,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::utils::type_ext::SnakeCaseNameGenExt;
+use crate::misc::type_ext::SnakeCaseNameGenExt;
 
 pub struct SqlBackend {
     sql: SQLContext,

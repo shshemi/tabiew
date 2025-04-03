@@ -14,8 +14,8 @@ use unicode_width::UnicodeWidthChar;
 
 use crate::{
     AppResult,
-    config::theme,
-    utils::{
+    misc::config::theme,
+    misc::{
         iter_ext::ZipItersExt,
         polars_ext::{IntoString, TuiWidths},
     },
