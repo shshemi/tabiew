@@ -64,9 +64,13 @@ impl SqlBackend {
     }
 
     pub fn set_default(&mut self, data_frame: DataFrame) {
+        self.unset_default();
+        self.register("_", data_frame, "".into());
+    }
+
+    pub fn unset_default(&mut self) {
         self.tables.remove("_");
         self.sql.unregister("_");
-        self.register("_", data_frame, "".into());
     }
 
     pub fn execute(&mut self, query: &str) -> PolarsResult<DataFrame> {
