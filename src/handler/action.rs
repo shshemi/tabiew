@@ -11,7 +11,7 @@ use crate::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame,
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
-    tui::{Source, TabularState, tabs::Tab},
+    tui::{Source, TabularState, search_bar::SearchBarState, tabs::Tab, tabular::Modal},
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
 };
 
@@ -139,7 +139,7 @@ pub fn execute(
         }
         AppAction::TableDismissModal => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.hide_modal()
+                tab.modal_take();
             }
             Ok(None)
         }
@@ -246,14 +246,26 @@ pub fn execute(
             Ok(None)
         }
         AppAction::SheetScrollUp => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.sheet_scroll_up()
+            if let Some(sheet) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::sheet_mut)
+            {
+                sheet.scroll_up();
             }
             Ok(None)
         }
         AppAction::SheetScrollDown => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.sheet_scroll_down()
+            if let Some(sheet) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::sheet_mut)
+            {
+                sheet.scroll_down();
             }
             Ok(None)
         }
@@ -288,13 +300,6 @@ pub fn execute(
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 tab.table_mut()
                     .set_data_frame(sql.execute(&format!("SELECT * FROM _ where {}", filter))?)
-            }
-            Ok(None)
-        }
-        AppAction::SearchCommit => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_commit();
-                tab.hide_modal();
             }
             Ok(None)
         }
@@ -482,50 +487,110 @@ pub fn execute(
             )))
         }
         AppAction::SearchGotoNext => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_goto_next();
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.goto_next();
             }
             Ok(None)
         }
         AppAction::SearchGotoPrev => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_goto_prev();
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.goto_prev();
             }
             Ok(None)
         }
         AppAction::SearchGotoStart => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_goto_start();
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.goto_start();
             }
             Ok(None)
         }
         AppAction::SearchGotoEnd => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_goto_end();
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.goto_end();
             }
             Ok(None)
         }
         AppAction::SearchDeleteNext => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_delete_next();
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.delete_next();
             }
             Ok(None)
         }
         AppAction::SearchDeletePrev => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_delete_prev();
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.delete_prev();
             }
             Ok(None)
         }
         AppAction::SearchInsert(c) => {
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .and_then(Tab::tabular_mut)
+                .and_then(TabularState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.insert(c);
+            }
+            Ok(None)
+        }
+        AppAction::SearchCommit => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_insert(c);
+                if let Some(df) = tab
+                    .modal_take()
+                    .and_then(Modal::into_search_bar)
+                    .and_then(|sb| sb.search().latest())
+                {
+                    tab.table_mut().set_data_frame(df);
+                }
             }
             Ok(None)
         }
         AppAction::SearchRollback => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.search_rollback();
+                if let Some(df) = tab
+                    .modal_take()
+                    .and_then(Modal::into_search_bar)
+                    .map(SearchBarState::into_rollback_df)
+                {
+                    tab.table_mut().set_data_frame(df);
+                }
             }
             Ok(None)
         }
