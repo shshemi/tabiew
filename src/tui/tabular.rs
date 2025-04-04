@@ -10,12 +10,62 @@ use super::{
     sheet::{Sheet, SheetState},
     status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{misc::config::theme, misc::polars_ext::GetSheetSections, misc::search::Search};
+use crate::{misc::config::theme, misc::polars_ext::GetSheetSections};
 
 #[derive(Debug)]
 pub enum Modal {
     Sheet(SheetState),
-    Search(Search, SearchBarState, DataFrame),
+    SearchBar(SearchBarState),
+}
+
+impl Modal {
+    pub fn sheet(&self) -> Option<&SheetState> {
+        if let Modal::Sheet(sheet) = self {
+            Some(sheet)
+        } else {
+            None
+        }
+    }
+
+    pub fn sheet_mut(&mut self) -> Option<&mut SheetState> {
+        if let Modal::Sheet(sheet) = self {
+            Some(sheet)
+        } else {
+            None
+        }
+    }
+
+    pub fn into_sheet(self) -> Option<SheetState> {
+        if let Modal::Sheet(sheet) = self {
+            Some(sheet)
+        } else {
+            None
+        }
+    }
+
+    pub fn search_bar(&self) -> Option<&SearchBarState> {
+        if let Modal::SearchBar(search_bar) = self {
+            Some(search_bar)
+        } else {
+            None
+        }
+    }
+
+    pub fn search_bar_mut(&mut self) -> Option<&mut SearchBarState> {
+        if let Modal::SearchBar(search_bar) = self {
+            Some(search_bar)
+        } else {
+            None
+        }
+    }
+
+    pub fn into_search_bar(self) -> Option<SearchBarState> {
+        if let Modal::SearchBar(search_bar) = self {
+            Some(search_bar)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -56,138 +106,14 @@ impl TabularState {
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) {
-        if let Some(Modal::Search(search, _, _)) = &mut self.modal {
-            if let Some(df) = search.latest() {
-                self.table.set_data_frame(df);
+        match &mut self.modal {
+            Some(Modal::SearchBar(search_bar)) => {
+                if let Some(df) = search_bar.search().latest() {
+                    self.table.set_data_frame(df);
+                }
             }
-        }
-    }
-
-    pub fn sheet_scroll_up(&mut self) {
-        if let Some(Modal::Sheet(scroll)) = &mut self.modal {
-            scroll.scroll_up();
-        }
-    }
-
-    pub fn sheet_scroll_down(&mut self) {
-        if let Some(Modal::Sheet(scroll)) = &mut self.modal {
-            scroll.scroll_down();
-        }
-    }
-
-    pub fn hide_modal(&mut self) {
-        self.modal = None;
-    }
-
-    pub fn show_sheet(&mut self) {
-        self.modal = Some(Modal::Sheet(Default::default()));
-    }
-
-    pub fn show_search(&mut self) {
-        if self.modal.is_none() {
-            self.modal = Some(Modal::Search(
-                Search::new(self.table.data_frame().clone(), Default::default()),
-                SearchBarState::default(),
-                self.table.data_frame().clone(),
-            ));
-        }
-    }
-
-    pub fn search_commit(&mut self) {
-        if let Some(Modal::Search(search, _, _)) = &self.modal {
-            if let Some(df) = search.latest() {
-                self.table.set_data_frame(df);
-            }
-        }
-    }
-
-    pub fn search_delete_prev(&mut self) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().delete_prev();
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_delete_next(&mut self) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().delete_next();
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_goto_prev(&mut self) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().goto_prev();
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_goto_next(&mut self) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().goto_next();
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_goto_start(&mut self) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().goto_start();
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_goto_end(&mut self) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().goto_end();
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_insert(&mut self, c: char) {
-        if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
-            search_bar_state.input().insert(c);
-            if search_bar_state.input().value() != search.pattern() {
-                *search = Search::new(
-                    og_frame.clone(),
-                    search_bar_state.input().value().to_owned(),
-                )
-            }
-        }
-    }
-
-    pub fn search_rollback(&mut self) {
-        if let Some(Modal::Search(_, _, og_frame)) = self.modal.take() {
-            self.table.set_data_frame(og_frame);
+            Some(Modal::Sheet(_)) => (),
+            _ => (),
         }
     }
 
@@ -199,13 +125,143 @@ impl TabularState {
         &mut self.table
     }
 
+    pub fn tabular_source(&self) -> &Source {
+        &self.source
+    }
+
+    // pub fn sheet_scroll_up(&mut self) {
+    //     if let Some(Modal::Sheet(scroll)) = &mut self.modal {
+    //         scroll.scroll_up();
+    //     }
+    // }
+
+    // pub fn sheet_scroll_down(&mut self) {
+    //     if let Some(Modal::Sheet(scroll)) = &mut self.modal {
+    //         scroll.scroll_down();
+    //     }
+    // }
+
+    pub fn show_sheet(&mut self) {
+        self.modal = Some(Modal::Sheet(Default::default()));
+    }
+
+    pub fn show_search(&mut self) {
+        if self.modal.is_none() {
+            self.modal = Some(Modal::SearchBar(SearchBarState::new(
+                self.table.data_frame().clone(),
+            )));
+        }
+    }
+
     pub fn modal(&self) -> Option<&Modal> {
         self.modal.as_ref()
     }
 
-    pub fn tabular_source(&self) -> &Source {
-        &self.source
+    pub fn modal_mut(&mut self) -> Option<&mut Modal> {
+        self.modal.as_mut()
     }
+
+    pub fn modal_take(&mut self) -> Option<Modal> {
+        self.modal.take()
+    }
+
+    // pub fn search_commit(&mut self) {
+    //     if let Some(Modal::Search(search, _, _)) = &self.modal {
+    //         if let Some(df) = search.latest() {
+    //             self.table.set_data_frame(df);
+    //         }
+    //     }
+    // }
+
+    // pub fn search_delete_prev(&mut self) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().delete_prev();
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_delete_next(&mut self) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().delete_next();
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_goto_prev(&mut self) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().goto_prev();
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_goto_next(&mut self) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().goto_next();
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_goto_start(&mut self) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().goto_start();
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_goto_end(&mut self) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().goto_end();
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_insert(&mut self, c: char) {
+    //     if let Some(Modal::Search(search, search_bar_state, og_frame)) = &mut self.modal {
+    //         search_bar_state.input().insert(c);
+    //         if search_bar_state.input().value() != search.pattern() {
+    //             *search = Search::new(
+    //                 og_frame.clone(),
+    //                 search_bar_state.input().value().to_owned(),
+    //             )
+    //         }
+    //     }
+    // }
+
+    // pub fn search_rollback(&mut self) {
+    //     if let Some(Modal::SearchBar(_, _, og_frame)) = self.modal.take() {
+    //         self.table.set_data_frame(og_frame);
+    //     }
+    // }
 }
 
 pub struct Tabular {
@@ -243,7 +299,7 @@ impl StatefulWidget for Tabular {
 
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
         let (search_bar_area, table_area) = match state.modal {
-            Some(Modal::Search(_, _, _)) => {
+            Some(Modal::SearchBar(_)) => {
                 let [a0, a1] =
                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
                 (a0, a1)
@@ -307,7 +363,7 @@ impl StatefulWidget for Tabular {
                     .render(area, buf, sheet_state);
             }
 
-            Some(Modal::Search(_, search_bar_state, _)) => {
+            Some(Modal::SearchBar(search_bar_state)) => {
                 SearchBar::new().with_selection(true).render(
                     search_bar_area,
                     buf,

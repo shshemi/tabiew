@@ -122,7 +122,7 @@ impl App {
             // }
             match self.tabs.selected() {
                 Some(Tab::Tabular(tabular)) => match tabular.modal() {
-                    Some(Modal::Search(_, _, _)) => AppContext::Search,
+                    Some(Modal::SearchBar(_)) => AppContext::Search,
                     Some(Modal::Sheet(_)) => AppContext::Sheet,
                     None => AppContext::Table,
                 },
