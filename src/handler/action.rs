@@ -250,7 +250,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::sheet_mut)
             {
                 sheet.scroll_up();
@@ -262,7 +262,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::sheet_mut)
             {
                 sheet.scroll_down();
@@ -491,7 +491,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.goto_next();
@@ -503,7 +503,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.goto_prev();
@@ -515,7 +515,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.goto_start();
@@ -527,7 +527,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.goto_end();
@@ -539,7 +539,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.delete_next();
@@ -551,7 +551,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.delete_prev();
@@ -563,7 +563,7 @@ pub fn execute(
                 .tabs_mut()
                 .selected_mut()
                 .and_then(Tab::tabular_mut)
-                .and_then(TabularState::modal_mut)
+                .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
                 sb.insert(c);
@@ -574,7 +574,7 @@ pub fn execute(
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 if let Some(df) = tab
                     .modal_take()
-                    .and_then(Modal::into_search_bar)
+                    .into_search_bar()
                     .and_then(|sb| sb.search().latest())
                 {
                     tab.table_mut().set_data_frame(df);
@@ -586,7 +586,7 @@ pub fn execute(
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 if let Some(df) = tab
                     .modal_take()
-                    .and_then(Modal::into_search_bar)
+                    .into_search_bar()
                     .map(SearchBarState::into_rollback_df)
                 {
                     tab.table_mut().set_data_frame(df);
