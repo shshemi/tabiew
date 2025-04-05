@@ -113,21 +113,16 @@ impl App {
             AppContext::Error
         } else if self.pallete.is_some() {
             AppContext::Command
-        } else {
-            // match self.tabs.selected().map(TabContentState::modal) {
-            //     Some(Some(Modal::Search(_, _, _))) => AppContext::Search,
-            //     Some(Some(Modal::Sheet(_))) => AppContext::Sheet,
-            //     Some(None) => AppContext::Table,
-            //     None => AppContext::Empty,
-            // }
-            match self.tabs.selected() {
-                Some(Tab::Tabular(tabular)) => match tabular.modal() {
-                    Some(Modal::SearchBar(_)) => AppContext::Search,
-                    Some(Modal::Sheet(_)) => AppContext::Sheet,
-                    None => AppContext::Table,
+        } else if let Some(tab) = self.tabs.selected() {
+            match tab {
+                Tab::Tabular(tabular) => match tabular.modal() {
+                    Modal::SearchBar(_) => AppContext::Search,
+                    Modal::Sheet(_) => AppContext::Sheet,
+                    Modal::None => AppContext::Table,
                 },
-                None => AppContext::Empty,
             }
+        } else {
+            AppContext::Empty
         }
     }
 
