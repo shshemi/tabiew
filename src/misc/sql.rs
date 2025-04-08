@@ -1,75 +1,47 @@
-use std::{collections::BTreeMap, path::PathBuf};
-
-use itertools::Itertools;
 use polars::{
     error::PolarsResult,
     frame::DataFrame,
-    prelude::{IntoLazy, LazyFrame, NamedFrom},
+    prelude::{DataType, IntoLazy, LazyFrame},
     series::Series,
 };
 use polars_sql::SQLContext;
 
-use crate::misc::type_ext::SnakeCaseNameGenExt;
+use crate::{misc::type_ext::SnakeCaseNameGenExt, reader::InputSource};
+
+use super::vec_map::VecMap;
+
+const DEFAULT_TABLE_NAME: &str = "_";
 
 pub struct SqlBackend {
     sql: SQLContext,
-    tables: BTreeMap<String, (String, PathBuf)>,
+    schema: BackendSchema,
 }
 
 impl SqlBackend {
     pub fn new() -> Self {
-        let mut back = Self {
+        Self {
             sql: SQLContext::new(),
-            tables: Default::default(),
-        };
-        back.register("_", Default::default(), "".into());
-        back
-    }
-
-    pub fn schema(&self) -> DataFrame {
-        let (tables, structures, paths) = self.tables.iter().filter(|i| i.0 != "_").fold(
-            (Vec::new(), Vec::new(), Vec::new()),
-            |(mut vt, mut vs, mut vp), (t, (s, p))| {
-                vt.push(t.to_owned());
-                vs.push(s.to_owned());
-                vp.push(p.to_string_lossy().into_owned());
-                (vt, vs, vp)
-            },
-        );
-        [
-            Series::new("Table".into(), tables),
-            Series::new("Structure".into(), structures),
-            Series::new("Path".into(), paths),
-        ]
-        .into_iter()
-        .collect()
-    }
-
-    pub fn contains_dataframe(&self, name: &str) -> bool {
-        self.tables.contains_key(name)
-    }
-
-    pub fn register(&mut self, name: &str, data_frame: DataFrame, path: PathBuf) -> String {
-        if let Some(name) = name
-            .snake_case_names()
-            .find(|name| !self.tables.contains_key(name))
-        {
-            self.tables
-                .insert(name.clone(), (data_frame_structure(&data_frame), path));
-            self.sql.register(&name, data_frame.lazy());
-            name
-        } else {
-            panic!("Not implemented")
+            schema: Default::default(),
         }
     }
 
+    pub fn schema(&self) -> &BackendSchema {
+        &self.schema
+    }
+
+    pub fn register(&mut self, name: &str, data_frame: DataFrame, input: InputSource) -> String {
+        let name = self.schema.available_name(name);
+        self.schema
+            .insert(name.clone(), TableInfo::new(input, &data_frame));
+        self.sql.register(&name, data_frame.lazy());
+        name
+    }
+
     pub fn set_default(&mut self, data_frame: DataFrame) {
-        self.unset_default();
-        self.register("_", data_frame, "".into());
+        self.sql.register("_", data_frame.lazy());
     }
 
     pub fn unset_default(&mut self) {
-        self.tables.remove("_");
         self.sql.unregister("_");
     }
 
@@ -86,37 +58,132 @@ impl Default for SqlBackend {
     }
 }
 
-fn data_frame_structure(df: &DataFrame) -> String {
-    format!(
-        "({})",
-        df.iter()
-            .map(|series| format!("{} {}", series.name().trim(), series.dtype()))
-            .join(", ")
-    )
+#[derive(Debug, Default)]
+pub struct BackendSchema {
+    schema: VecMap<String, TableInfo>,
 }
 
-#[cfg(test)]
-mod tests {
-    use polars::df;
+impl BackendSchema {
+    pub fn insert(&mut self, name: String, info: TableInfo) {
+        self.schema.insert(name, info);
+    }
 
-    use super::*;
+    pub fn remove(&mut self, name: &str) {
+        self.schema.remove(name);
+    }
 
-    #[test]
-    fn test_data_frame_structure() {
-        // Create a sample DataFrame
-        let df = df![
-            "name" => ["Alice", "Bob", "Charlie"],
-            "age" => [25, 30, 35],
-            " space " => [1, 1, 1],
-            "salary" => [50000.0, 60000.0, 70000.0],
-            "married" => [true, false, false],
-        ]
-        .unwrap();
+    pub fn available_name(&self, preferred: &str) -> String {
+        preferred
+            .snake_case_names()
+            .find(|name| !self.schema.contains(name) && name != DEFAULT_TABLE_NAME)
+            .expect("Unable to find a name")
+    }
 
-        // Expected output
-        assert_eq!(
-            data_frame_structure(&df),
-            "(name str, age i32, space i32, salary f64, married bool)"
-        );
+    pub fn get(&self, name: &str) -> Option<&TableInfo> {
+        self.schema.get(name)
+    }
+
+    pub fn get_by_index(&self, idx: usize) -> Option<(&String, &TableInfo)> {
+        self.schema.get_by_index(idx)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &TableInfo)> {
+        self.schema.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct TableInfo {
+    source: InputSource,
+    height: usize,
+    width: usize,
+    total_null: usize,
+    total_est_size: usize,
+    schema: TableSchema,
+}
+
+impl TableInfo {
+    pub fn new(input: InputSource, df: &DataFrame) -> Self {
+        let schema = TableSchema::new(df);
+        Self {
+            source: input,
+            height: df.height(),
+            width: df.width(),
+            total_null: schema.iter().map(|(_, info)| info.null_count()).sum(),
+            total_est_size: schema.iter().map(|(_, info)| info.estimated_size()).sum(),
+            schema,
+        }
+    }
+
+    pub fn source(&self) -> &InputSource {
+        &self.source
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn total_null(&self) -> usize {
+        self.total_null
+    }
+
+    pub fn total_est_size(&self) -> usize {
+        self.total_est_size
+    }
+
+    pub fn schema(&self) -> &TableSchema {
+        &self.schema
+    }
+}
+
+#[derive(Debug)]
+pub struct TableSchema {
+    schema: VecMap<String, FieldInfo>,
+}
+
+impl TableSchema {
+    pub fn new(df: &DataFrame) -> Self {
+        Self {
+            schema: df
+                .iter()
+                .map(|ser| (ser.name().to_string(), FieldInfo::new(ser)))
+                .collect(),
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &FieldInfo)> {
+        self.schema.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct FieldInfo {
+    dtype: DataType,
+    est_size: usize,
+    null_count: usize,
+}
+
+impl FieldInfo {
+    pub fn new(series: &Series) -> Self {
+        Self {
+            dtype: series.dtype().to_owned(),
+            est_size: series.estimated_size(),
+            null_count: series.null_count(),
+        }
+    }
+    pub fn dtype(&self) -> &DataType {
+        &self.dtype
+    }
+
+    pub fn estimated_size(&self) -> usize {
+        self.est_size
+    }
+
+    pub fn null_count(&self) -> usize {
+        self.null_count
     }
 }

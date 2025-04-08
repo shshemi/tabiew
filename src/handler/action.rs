@@ -6,12 +6,15 @@ use rand::Rng;
 use crate::{
     AppResult,
     app::App,
-    misc::sql::SqlBackend,
+    misc::globals::sql,
     reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, Input, JsonLineToDataFrame,
+        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, InputSource, JsonLineToDataFrame,
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
-    tui::{Source, TabularState, search_bar::SearchBarState, tabs::Tab, tabular::Modal},
+    tui::{
+        Source, TabularState, schema::SchemaState, search_bar::SearchBarState, tabs::Tab,
+        tabular::Modal,
+    },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
 };
 
@@ -117,11 +120,7 @@ pub enum AppAction {
     Quit,
 }
 
-pub fn execute(
-    action: AppAction,
-    app: &mut App,
-    sql: &mut SqlBackend,
-) -> AppResult<Option<AppAction>> {
+pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>> {
     match action {
         AppAction::NoAction => Ok(None),
         AppAction::DismissError => {
@@ -157,7 +156,7 @@ pub fn execute(
         }
         AppAction::SqlQuery(query) => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                tab.table_mut().set_data_frame(sql.execute(&query)?)
+                tab.table_mut().set_data_frame(sql().execute(&query)?)
             }
             Ok(None)
         }
@@ -173,8 +172,7 @@ pub fn execute(
             if let Some(idx) = idx {
                 Ok(Some(AppAction::TabSelect(idx)))
             } else {
-                app.tabs_mut()
-                    .add(TabularState::new(sql.schema(), Source::Schema));
+                app.tabs_mut().add(SchemaState::default());
                 Ok(Some(AppAction::TabSelect(
                     app.tabs_mut().len().saturating_sub(1),
                 )))
@@ -272,8 +270,10 @@ pub fn execute(
         AppAction::TableReset => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 let df = match tab.tabular_source() {
-                    Source::Name(name) => Some(sql.execute(&format!("SELECT * FROM '{}'", name))?),
-                    Source::Query(query) => Some(sql.execute(query)?),
+                    Source::Name(name) => {
+                        Some(sql().execute(&format!("SELECT * FROM '{}'", name))?)
+                    }
+                    Source::Query(query) => Some(sql().execute(query)?),
                     _ => None,
                 };
                 if let Some(df) = df {
@@ -285,31 +285,30 @@ pub fn execute(
         AppAction::TableSelect(select) => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 tab.table_mut()
-                    .set_data_frame(sql.execute(&format!("SELECT {} FROM _", select))?)
+                    .set_data_frame(sql().execute(&format!("SELECT {} FROM _", select))?)
             }
             Ok(None)
         }
         AppAction::TableOrder(order) => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 tab.table_mut()
-                    .set_data_frame(sql.execute(&format!("SELECT * FROM _ ORDER BY {}", order))?)
+                    .set_data_frame(sql().execute(&format!("SELECT * FROM _ ORDER BY {}", order))?)
             }
             Ok(None)
         }
         AppAction::TableFilter(filter) => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
                 tab.table_mut()
-                    .set_data_frame(sql.execute(&format!("SELECT * FROM _ where {}", filter))?)
+                    .set_data_frame(sql().execute(&format!("SELECT * FROM _ where {}", filter))?)
             }
             Ok(None)
         }
         AppAction::TabNew(query) => {
-            if sql.contains_dataframe(&query) {
-                let df = sql.execute(&format!("SELECT * FROM '{}'", query))?;
+            if let Result::Ok(df) = sql().execute(&format!("SELECT * FROM '{}'", query)) {
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(query)));
             } else {
-                let df = sql.execute(&query)?;
+                let df = sql().execute(&query)?;
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Query(query)));
             }
@@ -323,9 +322,9 @@ pub fn execute(
             app.tabs_mut().select(idx);
 
             if let Some(Tab::Tabular(tabular)) = app.tabs_mut().selected_mut() {
-                sql.set_default(tabular.table_mut().data_frame().clone());
+                sql().set_default(tabular.table_mut().data_frame().clone());
             } else {
-                sql.unset_default();
+                sql().unset_default();
             }
             Ok(None)
         }
@@ -401,22 +400,24 @@ pub fn execute(
             has_header,
             quote,
         } => {
+            let source = InputSource::File(path.clone());
             let frames = CsvToDataFrame::default()
                 .with_separator(separator)
                 .with_quote_char(quote)
                 .with_no_header(!has_header)
-                .named_frames(Input::File(path.clone()))?;
+                .named_frames(source.clone())?;
             for (name, df) in frames {
-                let name = sql.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(name)));
             }
             Ok(None)
         }
         AppAction::ImportParquet(path) => {
-            let frames = ParquetToDataFrame.named_frames(Input::File(path.clone()))?;
+            let source = InputSource::File(path);
+            let frames = ParquetToDataFrame.named_frames(source.clone())?;
             for (name, df) in frames {
-                let name = sql.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(name)));
             }
@@ -425,16 +426,15 @@ pub fn execute(
             )))
         }
         AppAction::ImportJson(path, json_format) => {
+            let source = InputSource::File(path);
             let frames = match json_format {
-                JsonFormat::Json => {
-                    JsonToDataFrame::default().named_frames(Input::File(path.clone()))?
-                }
+                JsonFormat::Json => JsonToDataFrame::default().named_frames(source.clone())?,
                 JsonFormat::JsonLine => {
-                    JsonLineToDataFrame::default().named_frames(Input::File(path.clone()))?
+                    JsonLineToDataFrame::default().named_frames(source.clone())?
                 }
             };
             for (name, df) in frames {
-                let name = sql.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(name)));
             }
@@ -443,9 +443,10 @@ pub fn execute(
             )))
         }
         AppAction::ImportArrow(path) => {
-            let frames = ArrowIpcToDataFrame.named_frames(Input::File(path.clone()))?;
+            let source = InputSource::File(path.clone());
+            let frames = ArrowIpcToDataFrame.named_frames(source.clone())?;
             for (name, df) in frames {
-                let name = sql.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(name)));
             }
@@ -454,9 +455,10 @@ pub fn execute(
             )))
         }
         AppAction::ImportSqlite(path) => {
-            let frames = SqliteToDataFrames.named_frames(Input::File(path.clone()))?;
+            let source = InputSource::File(path.clone());
+            let frames = SqliteToDataFrames.named_frames(source.clone())?;
             for (name, df) in frames {
-                let name = sql.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(name)));
             }
@@ -471,14 +473,15 @@ pub fn execute(
             flexible_width,
             has_header,
         } => {
+            let source = InputSource::File(path.clone());
             let frames = FwfToDataFrame::default()
                 .with_widths(widths)
                 .with_separator_length(separator_length)
                 .with_flexible_width(flexible_width)
                 .with_has_header(has_header)
-                .named_frames(Input::File(path.clone()))?;
+                .named_frames(source.clone())?;
             for (name, df) in frames {
-                let name = sql.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
                     .add(TabularState::new(df, Source::Name(name)));
             }

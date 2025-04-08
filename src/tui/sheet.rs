@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::config::theme,
+    misc::globals::theme,
     tui::utils::{Scroll, line_count},
 };
 

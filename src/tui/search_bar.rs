@@ -1,7 +1,7 @@
 use polars::frame::DataFrame;
 use ratatui::widgets::{Block, StatefulWidget};
 
-use crate::misc::{config::theme, search::Search};
+use crate::misc::{globals::theme, search::Search};
 
 use super::input::{Input, InputState};
 
