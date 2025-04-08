@@ -13,10 +13,10 @@ use super::{NamedFrames, ReadToDataFrames};
 pub struct SqliteToDataFrames;
 
 impl ReadToDataFrames for SqliteToDataFrames {
-    fn named_frames(&self, input: super::Input) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: super::InputSource) -> AppResult<NamedFrames> {
         let path = match input {
-            crate::reader::Input::File(path) => path,
-            crate::reader::Input::Stdin => NamedTempFile::new()?.keep()?.1,
+            crate::reader::InputSource::File(path) => path,
+            crate::reader::InputSource::Stdin => NamedTempFile::new()?.keep()?.1,
         };
 
         let conn = Connection::open(path)?;

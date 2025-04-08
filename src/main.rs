@@ -9,9 +9,8 @@ use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
-use tabiew::misc::config::set_theme;
-use tabiew::misc::sql::SqlBackend;
-use tabiew::reader::{BuildReader, Input};
+use tabiew::misc::globals::{set_theme, sql};
+use tabiew::reader::{BuildReader, InputSource};
 use tabiew::tui::tabs::Tab;
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
 use tabiew::tui::{Source, TabularState};
@@ -24,24 +23,25 @@ fn main() -> AppResult<()> {
     let args = Args::parse();
 
     // Create the sql backend.
-    let mut sql_backend = SqlBackend::new();
+    // let mut sql_backend = SqlBackend::new();
 
     // Load files to data frames
     let tabs = if args.files.is_empty() {
         let mut vec = Vec::new();
-        for (name, df) in args.build_reader("")?.named_frames(Input::Stdin)? {
-            vec.push((df.clone(), sql_backend.register(&name, df, "stdin".into())))
+        for (name, df) in args.build_reader("")?.named_frames(InputSource::Stdin)? {
+            vec.push((df.clone(), sql().register(&name, df, InputSource::Stdin)))
         }
         vec
     } else {
         let mut vec = Vec::new();
         for path in args.files.iter() {
+            let source = InputSource::File(path.clone());
             let reader = args.build_reader(path)?;
             let frames = reader
-                .named_frames(Input::File(path.to_path_buf()))
+                .named_frames(source.clone())
                 .unwrap_or_else(|err| panic!("{}", err));
             for (name, df) in frames {
-                let name = sql_backend.register(&name, df.clone(), path.clone());
+                let name = sql().register(&name, df.clone(), source.clone());
                 vec.push((df, name))
             }
         }
@@ -68,19 +68,14 @@ fn main() -> AppResult<()> {
         AppTheme::Terminal => Box::new(Terminal),
     });
 
-    let _ = start_tui(tabs, sql_backend, script, history);
+    let _ = start_tui(tabs, script, history);
     if let Some(history_path) = history_path {
         enforce_line_limit(history_path, 999);
     }
     Ok(())
 }
 
-fn start_tui(
-    tabs: Vec<(DataFrame, String)>,
-    mut sql_backend: SqlBackend,
-    script: String,
-    history: History,
-) -> AppResult<()> {
+fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(df, name)| TabularState::new(df, Source::Name(name)))
@@ -89,7 +84,7 @@ fn start_tui(
     let mut app = App::new(tabs, history);
 
     // Set default data frame to the first tab
-    sql_backend.set_default(
+    sql().set_default(
         app.tabs_mut()
             .selected()
             .and_then(Tab::tabular)
@@ -111,8 +106,7 @@ fn start_tui(
     for line in script.lines().filter(|line| !line.is_empty()) {
         let action = parse_into_action(line)
             .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
-        execute(action, &mut app, &mut sql_backend)
-            .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
+        execute(action, &mut app).unwrap_or_else(|err| panic!("Error in startup script: {}", err));
     }
 
     // Main loop
@@ -143,7 +137,7 @@ fn start_tui(
                 {
                     let mut action = keybind.action(app.context(), key_event);
                     loop {
-                        match execute(action, &mut app, &mut sql_backend) {
+                        match execute(action, &mut app) {
                             Ok(Some(next_action)) => action = next_action,
                             Ok(_) => break,
                             Err(err) => {
