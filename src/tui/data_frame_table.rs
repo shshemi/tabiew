@@ -175,9 +175,6 @@ impl DataFrameTableState {
         }
     }
 
-    pub fn height(&self) -> usize {
-        self.data_frame.height()
-    }
     pub fn rendered_rows(&self) -> u16 {
         self.rendered_rows
     }
