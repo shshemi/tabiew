@@ -75,13 +75,13 @@ impl StatefulWidget for Schema {
         // 2: Table path
         // 3: Table fields
 
-        let blk = Block::bordered()
-            .border_type(BorderType::Rounded)
-            .border_style(theme().block())
-            .title("Schema");
-        let blk_area = blk.inner(area);
-        blk.render(area, buf);
-        let area = blk_area;
+        // let blk = Block::bordered()
+        //     .border_type(BorderType::Rounded)
+        //     .border_style(theme().block())
+        //     .title("Schema");
+        // let blk_area = blk.inner(area);
+        // blk.render(area, buf);
+        // let area = blk_area;
 
         let [area1, area23] =
             Layout::horizontal([Constraint::Length(32), Constraint::Fill(1)]).areas(area);

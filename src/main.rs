@@ -11,9 +11,9 @@ use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::globals::{set_theme, sql};
 use tabiew::reader::{BuildReader, InputSource};
-use tabiew::tui::tabs::Tab;
+use tabiew::tui::tab::Content;
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
-use tabiew::tui::{Source, TabularState};
+use tabiew::tui::{TableType, TabularState};
 use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
@@ -78,7 +78,7 @@ fn main() -> AppResult<()> {
 fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(df, name)| TabularState::new(df, Source::Name(name)))
+        .map(|(df, name)| TabularState::new(df, TableType::Name(name)))
         .collect();
     let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
@@ -87,7 +87,7 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
     sql().set_default(
         app.tabs_mut()
             .selected()
-            .and_then(Tab::tabular)
+            .and_then(Content::tabular)
             .map(|tab| tab.table().data_frame().clone())
             .unwrap(),
     );

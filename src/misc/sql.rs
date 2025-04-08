@@ -90,6 +90,14 @@ impl BackendSchema {
     pub fn iter(&self) -> impl Iterator<Item = (&String, &TableInfo)> {
         self.schema.iter()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.schema.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.schema.len()
+    }
 }
 
 #[derive(Debug)]

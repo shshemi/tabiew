@@ -8,35 +8,30 @@ use ratatui::{
 
 use crate::misc::globals::theme;
 
-pub struct StatusBar {
-    tags: Vec<StatusBarTag>,
+pub struct StatusBar<'a, 'b> {
+    tags: Vec<Tag<'a, 'b>>,
 }
 
-impl StatusBar {
+impl<'a, 'b> StatusBar<'a, 'b> {
     pub fn new() -> Self {
         Self {
             tags: Default::default(),
         }
     }
 
-    pub fn with_tag(mut self, tag: StatusBarTag) -> Self {
+    pub fn tag(mut self, tag: Tag<'a, 'b>) -> Self {
         self.tags.push(tag);
-        self
-    }
-
-    pub fn with_tags<I: IntoIterator<Item = StatusBarTag>>(mut self, ext: I) -> Self {
-        self.tags.extend(ext);
         self
     }
 }
 
-impl Default for StatusBar {
+impl Default for StatusBar<'_, '_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl From<StatusBar> for Line<'_> {
+impl From<StatusBar<'_, '_>> for Line<'_> {
     fn from(value: StatusBar) -> Self {
         Line::from_iter(
             itertools::intersperse(
@@ -53,13 +48,13 @@ impl From<StatusBar> for Line<'_> {
     }
 }
 
-pub struct StatusBarTag {
-    key: Cow<'static, str>,
-    value: Cow<'static, str>,
+pub struct Tag<'a, 'b> {
+    key: Cow<'a, str>,
+    value: Cow<'b, str>,
 }
 
-impl StatusBarTag {
-    pub fn new(key: impl Into<Cow<'static, str>>, value: impl Into<Cow<'static, str>>) -> Self {
+impl<'a, 'b> Tag<'a, 'b> {
+    pub fn new(key: impl Into<Cow<'a, str>>, value: impl Into<Cow<'b, str>>) -> Self {
         Self {
             key: key.into(),
             value: value.into(),

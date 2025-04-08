@@ -7,14 +7,14 @@ pub mod schema;
 pub mod search_bar;
 pub mod sheet;
 pub mod status_bar;
+pub mod tab;
 pub mod table_info;
-pub mod tabs;
 pub mod tabular;
 pub mod terminal;
 pub mod theme;
 mod utils;
 
-pub use tabular::{Source, TabularState};
+pub use tabular::{TableType, TabularState};
 pub use terminal::Terminal;
 pub use theme::Styler;
 

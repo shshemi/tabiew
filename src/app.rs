@@ -10,7 +10,7 @@ use crate::{
     tui::{
         command_pallete::{CommandPallete, CommandPalleteState},
         error_popup::ErrorPopup,
-        tabs::{Tab, Tabs, TabsState},
+        tab::{Content, Tab, TabState},
         tabular::Modal,
     },
 };
@@ -39,7 +39,7 @@ impl AppContext {
 }
 
 pub struct App {
-    tabs: TabsState,
+    tabs: TabState,
     error: Option<String>,
     pallete: Option<CommandPalleteState>,
     history: History,
@@ -48,7 +48,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(tabs: TabsState, history: History) -> Self {
+    pub fn new(tabs: TabState, history: History) -> Self {
         Self {
             tabs,
             error: None,
@@ -63,7 +63,7 @@ impl App {
         self.running
     }
 
-    pub fn tabs_mut(&mut self) -> &mut TabsState {
+    pub fn tabs_mut(&mut self) -> &mut TabState {
         &mut self.tabs
     }
 
@@ -115,12 +115,12 @@ impl App {
             AppContext::Command
         } else if let Some(tab) = self.tabs.selected() {
             match tab {
-                Tab::Tabular(tabular) => match tabular.modal() {
+                Content::Tabular(tabular) => match tabular.modal() {
                     Modal::SearchBar(_) => AppContext::Search,
                     Modal::Sheet(_) => AppContext::Sheet,
                     Modal::None => AppContext::Table,
                 },
-                Tab::Schema(_) => AppContext::Empty,
+                Content::Schema(_) => AppContext::Empty,
             }
         } else {
             AppContext::Empty
@@ -131,7 +131,7 @@ impl App {
         // Draw table / item
         let state = self.context();
         frame.render_stateful_widget(
-            Tabs::new()
+            Tab::new()
                 .with_borders(self.borders)
                 .selection(matches!(state, AppContext::Table)),
             frame.area(),
