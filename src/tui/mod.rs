@@ -1,10 +1,13 @@
 pub mod command_pallete;
 pub mod data_frame_table;
 pub mod error_popup;
+pub mod field_info_table;
 pub mod input;
+pub mod schema;
 pub mod search_bar;
 pub mod sheet;
 pub mod status_bar;
+pub mod table_info;
 pub mod tabs;
 pub mod tabular;
 pub mod terminal;

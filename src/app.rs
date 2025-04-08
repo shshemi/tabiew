@@ -120,6 +120,7 @@ impl App {
                     Modal::Sheet(_) => AppContext::Sheet,
                     Modal::None => AppContext::Table,
                 },
+                Tab::Schema(_) => AppContext::Empty,
             }
         } else {
             AppContext::Empty

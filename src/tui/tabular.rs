@@ -10,7 +10,7 @@ use super::{
     sheet::{Sheet, SheetState},
     status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{misc::config::theme, misc::polars_ext::GetSheetSections};
+use crate::{misc::globals::theme, misc::polars_ext::GetSheetSections};
 
 #[derive(Debug, Default)]
 pub enum Modal {

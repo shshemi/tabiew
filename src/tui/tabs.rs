@@ -1,6 +1,7 @@
 use ratatui::widgets::StatefulWidget;
 
 use super::{
+    schema::{Schema, SchemaState},
     status_bar::StatusBarTag,
     tabular::{Tabular, TabularState},
 };
@@ -8,6 +9,7 @@ use super::{
 #[derive(Debug)]
 pub enum Tab {
     Tabular(TabularState),
+    Schema(SchemaState),
 }
 
 impl Tab {
@@ -27,9 +29,26 @@ impl Tab {
         }
     }
 
+    pub fn schema(&self) -> Option<&SchemaState> {
+        if let Tab::Schema(schema) = self {
+            Some(schema)
+        } else {
+            None
+        }
+    }
+
+    pub fn schema_mut(&mut self) -> Option<&mut SchemaState> {
+        if let Tab::Schema(schema) = self {
+            Some(schema)
+        } else {
+            None
+        }
+    }
+
     pub fn tick(&mut self) {
         match self {
             Tab::Tabular(tab_content_state) => tab_content_state.tick(),
+            Tab::Schema(_schema_state) => (),
         }
     }
 }
@@ -37,6 +56,12 @@ impl Tab {
 impl From<TabularState> for Tab {
     fn from(value: TabularState) -> Self {
         Tab::Tabular(value)
+    }
+}
+
+impl From<SchemaState> for Tab {
+    fn from(value: SchemaState) -> Self {
+        Tab::Schema(value)
     }
 }
 
@@ -142,11 +167,15 @@ impl StatefulWidget for Tabs {
         let tag_value = format!("{} / {}", state.idx + 1, state.len());
         if let Some(tab) = state.selected_mut() {
             match tab {
-                Tab::Tabular(tab_content_state) => {
+                Tab::Tabular(tabular_state) => {
                     Tabular::new()
                         .with_tag(StatusBarTag::new("Tab", tag_value))
                         .with_borders(self.borders)
-                        .render(area, buf, tab_content_state);
+                        .render(area, buf, tabular_state);
+                }
+                Tab::Schema(schema_state) => {
+                    //
+                    Schema::default().render(area, buf, schema_state)
                 }
             }
         }
