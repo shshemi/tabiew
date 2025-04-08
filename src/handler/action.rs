@@ -12,7 +12,7 @@ use crate::{
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
     tui::{
-        Source, TabularState, schema::SchemaState, search_bar::SearchBarState, tabs::Tab,
+        TableType, TabularState, schema::SchemaState, search_bar::SearchBarState, tab::Content,
         tabular::Modal,
     },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
@@ -137,25 +137,25 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableDismissModal => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.modal_take();
             }
             Ok(None)
         }
         AppAction::SheetShow => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.show_sheet()
             }
             Ok(None)
         }
         AppAction::SearchShow => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.show_search();
             }
             Ok(None)
         }
         AppAction::SqlQuery(query) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().set_data_frame(sql().execute(&query)?)
             }
             Ok(None)
@@ -166,7 +166,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 .iter()
                 .enumerate()
                 .find_map(|(idx, tab)| match tab {
-                    Tab::Tabular(tab) if matches!(tab.tabular_source(), Source::Help) => Some(idx),
+                    Content::Tabular(tab) if matches!(tab.table_type(), TableType::Help) => {
+                        Some(idx)
+                    }
                     _ => None,
                 });
             if let Some(idx) = idx {
@@ -179,65 +181,65 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::TableGoto(line) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().select(line)
             }
             Ok(None)
         }
         AppAction::TableGotoFirst => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().select_first()
             }
             Ok(None)
         }
         AppAction::TableGotoLast => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().select_last()
             }
             Ok(None)
         }
         AppAction::TableGotoRandom => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                let random_row = rand::rng().random_range(0..tab.table().height());
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
+                let random_row = rand::rng().random_range(0..tab.table().data_frame().height());
                 tab.table_mut().select(random_row);
             }
             Ok(None)
         }
         AppAction::TableGoUp(lines) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().select_up(lines)
             }
             Ok(None)
         }
         AppAction::TableGoUpHalfPage => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 let len = tab.table().rendered_rows().div(2).into();
                 tab.table_mut().select_up(len)
             }
             Ok(None)
         }
         AppAction::TableGoUpFullPage => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 let len = tab.table().rendered_rows().into();
                 tab.table_mut().select_up(len)
             }
             Ok(None)
         }
         AppAction::TableGoDown(lines) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().select_down(lines)
             }
             Ok(None)
         }
         AppAction::TableGoDownHalfPage => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 let len = tab.table().rendered_rows().div(2).into();
                 tab.table_mut().select_down(len)
             }
             Ok(None)
         }
         AppAction::TableGoDownFullPage => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 let len = tab.table().rendered_rows().into();
                 tab.table_mut().select_down(len)
             }
@@ -247,7 +249,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sheet) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::sheet_mut)
             {
@@ -259,7 +261,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sheet) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::sheet_mut)
             {
@@ -268,12 +270,12 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableReset => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
-                let df = match tab.tabular_source() {
-                    Source::Name(name) => {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
+                let df = match tab.table_type() {
+                    TableType::Name(name) => {
                         Some(sql().execute(&format!("SELECT * FROM '{}'", name))?)
                     }
-                    Source::Query(query) => Some(sql().execute(query)?),
+                    TableType::Query(query) => Some(sql().execute(query)?),
                     _ => None,
                 };
                 if let Some(df) = df {
@@ -283,21 +285,21 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableSelect(select) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut()
                     .set_data_frame(sql().execute(&format!("SELECT {} FROM _", select))?)
             }
             Ok(None)
         }
         AppAction::TableOrder(order) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut()
                     .set_data_frame(sql().execute(&format!("SELECT * FROM _ ORDER BY {}", order))?)
             }
             Ok(None)
         }
         AppAction::TableFilter(filter) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut()
                     .set_data_frame(sql().execute(&format!("SELECT * FROM _ where {}", filter))?)
             }
@@ -306,11 +308,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::TabNew(query) => {
             if let Result::Ok(df) = sql().execute(&format!("SELECT * FROM '{}'", query)) {
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(query)));
+                    .add(TabularState::new(df, TableType::Name(query)));
             } else {
                 let df = sql().execute(&query)?;
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Query(query)));
+                    .add(TabularState::new(df, TableType::Query(query)));
             }
 
             Ok(Some(AppAction::TabSelect(
@@ -321,7 +323,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             let idx = idx.min(app.tabs_mut().len().saturating_sub(1));
             app.tabs_mut().select(idx);
 
-            if let Some(Tab::Tabular(tabular)) = app.tabs_mut().selected_mut() {
+            if let Some(Content::Tabular(tabular)) = app.tabs_mut().selected_mut() {
                 sql().set_default(tabular.table_mut().data_frame().clone());
             } else {
                 sql().unset_default();
@@ -357,7 +359,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             quote,
             header,
         } => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 WriteToCsv::default()
                     .with_separator_char(separator)
                     .with_quote_char(quote)
@@ -369,7 +371,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ExportParquet(path) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 WriteToParquet.write_to_file(path, tab.table_mut().data_frame_mut())?;
                 Ok(None)
             } else {
@@ -377,7 +379,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ExportJson(path, fmt) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 WriteToJson::default()
                     .with_format(fmt)
                     .write_to_file(path, tab.table_mut().data_frame_mut())?;
@@ -387,7 +389,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ExportArrow(path) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 WriteToArrow.write_to_file(path, tab.table_mut().data_frame_mut())?;
                 Ok(None)
             } else {
@@ -409,7 +411,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(name)));
+                    .add(TabularState::new(df, TableType::Name(name)));
             }
             Ok(None)
         }
@@ -419,7 +421,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(name)));
+                    .add(TabularState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(
                 app.tabs_mut().len().saturating_sub(1),
@@ -436,7 +438,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(name)));
+                    .add(TabularState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(
                 app.tabs_mut().len().saturating_sub(1),
@@ -448,7 +450,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(name)));
+                    .add(TabularState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(
                 app.tabs_mut().len().saturating_sub(1),
@@ -460,7 +462,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(name)));
+                    .add(TabularState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(
                 app.tabs_mut().len().saturating_sub(1),
@@ -483,7 +485,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()
-                    .add(TabularState::new(df, Source::Name(name)));
+                    .add(TabularState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(
                 app.tabs_mut().len().saturating_sub(1),
@@ -493,7 +495,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -505,7 +507,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -517,7 +519,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -529,7 +531,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -541,7 +543,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -553,7 +555,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -565,7 +567,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(sb) = app
                 .tabs_mut()
                 .selected_mut()
-                .and_then(Tab::tabular_mut)
+                .and_then(Content::tabular_mut)
                 .map(TabularState::modal_mut)
                 .and_then(Modal::search_bar_mut)
             {
@@ -574,7 +576,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::SearchCommit => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 if let Some(df) = tab
                     .modal_take()
                     .into_search_bar()
@@ -586,7 +588,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::SearchRollback => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 if let Some(df) = tab
                     .modal_take()
                     .into_search_bar()
@@ -603,14 +605,18 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 .iter()
                 .enumerate()
                 .find_map(|(idx, tab)| match tab {
-                    Tab::Tabular(tab) if matches!(tab.tabular_source(), Source::Help) => Some(idx),
+                    Content::Tabular(tab) if matches!(tab.table_type(), TableType::Help) => {
+                        Some(idx)
+                    }
                     _ => None,
                 });
             if let Some(idx) = idx {
                 Ok(Some(AppAction::TabSelect(idx)))
             } else {
-                app.tabs_mut()
-                    .add(TabularState::new(commands_help_data_frame(), Source::Help));
+                app.tabs_mut().add(TabularState::new(
+                    commands_help_data_frame(),
+                    TableType::Help,
+                ));
                 Ok(Some(AppAction::TabSelect(
                     app.tabs_mut().len().saturating_sub(1),
                 )))
@@ -621,43 +627,43 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableScrollRight => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().scroll_right();
             }
             Ok(None)
         }
         AppAction::TableScrollLeft => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().scroll_left();
             }
             Ok(None)
         }
         AppAction::TableScrollRightColumn => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().scroll_right();
             }
             Ok(None)
         }
         AppAction::TableScrollLeftColumn => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().scroll_left();
             }
             Ok(None)
         }
         AppAction::TableScrollStart => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().scroll_start();
             }
             Ok(None)
         }
         AppAction::TableScrollEnd => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().scroll_end();
             }
             Ok(None)
         }
         AppAction::TableToggleExpansion => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Tab::tabular_mut) {
+            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
                 tab.table_mut().toggle_expansion()?;
             }
             Ok(None)

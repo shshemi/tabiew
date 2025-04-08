@@ -1,16 +1,15 @@
 use polars::frame::DataFrame;
 use ratatui::{
     layout::{Constraint, Layout, Margin, Rect},
-    widgets::{Block, BorderType, Borders, StatefulWidget},
+    widgets::StatefulWidget,
 };
 
 use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
     search_bar::{SearchBar, SearchBarState},
     sheet::{Sheet, SheetState},
-    status_bar::{StatusBar, StatusBarTag},
 };
-use crate::{misc::globals::theme, misc::polars_ext::GetSheetSections};
+use crate::misc::polars_ext::GetSheetSections;
 
 #[derive(Debug, Default)]
 pub enum Modal {
@@ -75,20 +74,18 @@ impl Modal {
 }
 
 #[derive(Debug)]
-pub enum Source {
+pub enum TableType {
     Help,
-    Schema,
     Name(String),
     Query(String),
 }
 
-impl AsRef<str> for Source {
+impl AsRef<str> for TableType {
     fn as_ref(&self) -> &str {
         match self {
-            Source::Help => "Help",
-            Source::Schema => "Schema",
-            Source::Name(name) => name.as_str(),
-            Source::Query(query) => query.as_str(),
+            TableType::Help => "Help",
+            TableType::Name(name) => name.as_str(),
+            TableType::Query(query) => query.as_str(),
         }
     }
 }
@@ -97,16 +94,16 @@ impl AsRef<str> for Source {
 pub struct TabularState {
     table: DataFrameTableState,
     modal: Modal,
-    source: Source,
+    table_type: TableType,
 }
 
 impl TabularState {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame, tabular_source: Source) -> Self {
+    pub fn new(data_frame: DataFrame, table_type: TableType) -> Self {
         Self {
             table: DataFrameTableState::new(data_frame.clone()),
             modal: Default::default(),
-            source: tabular_source,
+            table_type,
         }
     }
 
@@ -131,8 +128,8 @@ impl TabularState {
         &mut self.table
     }
 
-    pub fn tabular_source(&self) -> &Source {
-        &self.source
+    pub fn table_type(&self) -> &TableType {
+        &self.table_type
     }
 
     pub fn show_sheet(&mut self) {
@@ -156,35 +153,8 @@ impl TabularState {
     }
 }
 
-pub struct Tabular {
-    status_bar: StatusBar,
-    borders: bool,
-}
-
-impl Tabular {
-    pub fn new() -> Self {
-        Self {
-            status_bar: StatusBar::new(),
-            borders: true,
-        }
-    }
-
-    pub fn with_tag(mut self, tag: StatusBarTag) -> Self {
-        self.status_bar = self.status_bar.with_tag(tag);
-        self
-    }
-
-    pub fn with_borders(mut self, border: bool) -> Self {
-        self.borders = border;
-        self
-    }
-}
-
-impl Default for Tabular {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+#[derive(Debug, Default)]
+pub struct Tabular {}
 
 impl StatefulWidget for Tabular {
     type State = TabularState;
@@ -199,48 +169,48 @@ impl StatefulWidget for Tabular {
             _ => (Rect::default(), area),
         };
         DataFrameTable::new()
-            .with_block(
-                Block::new()
-                    .borders(if self.borders {
-                        Borders::all()
-                    } else {
-                        Borders::empty()
-                    })
-                    .border_style(theme().block())
-                    .border_type(BorderType::Rounded)
-                    .title_bottom(self.status_bar.with_tags([
-                        match &state.source {
-                            Source::Help => StatusBarTag::new("App", "Help"),
-                            Source::Schema => StatusBarTag::new("App", "Schema"),
-                            Source::Name(name) => StatusBarTag::new("Table", name.to_owned()),
-                            Source::Query(query) => StatusBarTag::new("Query", query.to_owned()),
-                        },
-                        StatusBarTag::new(
-                            "Auto-Fit",
-                            if !state.table.expanded() {
-                                "Yes"
-                            } else {
-                                " No"
-                            },
-                        ),
-                        StatusBarTag::new(
-                            "Row",
-                            format!(
-                                "{:>width$}",
-                                state.table.selected() + 1,
-                                width = state.table.height().to_string().len()
-                            ),
-                        ),
-                        StatusBarTag::new(
-                            "Shape",
-                            format!(
-                                "{} x {}",
-                                state.table.height(),
-                                state.table.data_frame().width()
-                            ),
-                        ),
-                    ])),
-            )
+            // .with_block(
+            //     Block::new()
+            //         .borders(if self.borders {
+            //             Borders::all()
+            //         } else {
+            //             Borders::empty()
+            //         })
+            //         .border_style(theme().block())
+            //         .border_type(BorderType::Rounded)
+            //         .title_bottom(self.status_bar.with_tags([
+            //             match &state.source {
+            //                 Source::Help => StatusBarTag::new("App", "Help"),
+            //                 Source::Schema => StatusBarTag::new("App", "Schema"),
+            //                 Source::Name(name) => StatusBarTag::new("Table", name.to_owned()),
+            //                 Source::Query(query) => StatusBarTag::new("Query", query.to_owned()),
+            //             },
+            //             StatusBarTag::new(
+            //                 "Auto-Fit",
+            //                 if !state.table.expanded() {
+            //                     "Yes"
+            //                 } else {
+            //                     " No"
+            //                 },
+            //             ),
+            //             StatusBarTag::new(
+            //                 "Row",
+            //                 format!(
+            //                     "{:>width$}",
+            //                     state.table.selected() + 1,
+            //                     width = state.table.height().to_string().len()
+            //                 ),
+            //             ),
+            //             StatusBarTag::new(
+            //                 "Shape",
+            //                 format!(
+            //                     "{} x {}",
+            //                     state.table.height(),
+            //                     state.table.data_frame().width()
+            //                 ),
+            //             ),
+            //         ])),
+            // )
             .render(table_area, buf, &mut state.table);
 
         match &mut state.modal {
