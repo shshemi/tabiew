@@ -75,14 +75,18 @@ impl<T> Lazy<T> {
     pub fn as_ref(&self) -> &T {
         self.once.call_once(|| {
             let deref = unsafe { &mut *self.val.get() };
-            *deref = Some((self.init)())
+            if deref.is_none() {
+                *deref = Some((self.init)())
+            }
         });
         unsafe { (*self.val.get()).as_ref().unwrap() }
     }
 
     pub fn as_mut(&mut self) -> &mut T {
         self.once.call_once(|| {
-            *self.val.get_mut() = Some((self.init)());
+            if self.val.get_mut().is_none() {
+                *self.val.get_mut() = Some((self.init)());
+            }
         });
         self.val.get_mut().as_mut().unwrap()
     }
@@ -158,6 +162,28 @@ mod tests {
 
         lazy.push(4);
         assert_eq!(*lazy, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_set_before_init() {
+        // Test that set works even if initialize hasn't been called
+        static mut INIT_COUNT: usize = 0;
+
+        let mut lazy = Lazy::new(|| unsafe {
+            INIT_COUNT += 1;
+            42
+        });
+
+        // Set value before any access
+        lazy.set(100);
+
+        // First access should use the set value, not call init
+        assert_eq!(*lazy, 100);
+        assert_eq!(unsafe { INIT_COUNT }, 0);
+
+        // Subsequent accesses should also use the set value
+        assert_eq!(*lazy, 100);
+        assert_eq!(unsafe { INIT_COUNT }, 0);
     }
 
     #[test]
