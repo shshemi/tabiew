@@ -166,6 +166,14 @@ impl TableSchema {
     pub fn iter(&self) -> impl Iterator<Item = (&String, &FieldInfo)> {
         self.schema.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.schema.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.schema.is_empty()
+    }
 }
 
 #[derive(Debug)]

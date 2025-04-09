@@ -23,6 +23,7 @@ pub enum AppContext {
     Command,
     Error,
     Search,
+    Schema,
 }
 
 impl AppContext {
@@ -34,6 +35,7 @@ impl AppContext {
             AppContext::Command => AppContext::Empty.into(),
             AppContext::Error => AppContext::Empty.into(),
             AppContext::Search => AppContext::Table.into(),
+            AppContext::Schema => AppContext::Table.into(),
         }
     }
 }
@@ -120,7 +122,7 @@ impl App {
                     Modal::Sheet(_) => AppContext::Sheet,
                     Modal::None => AppContext::Table,
                 },
-                Content::Schema(_) => AppContext::Empty,
+                Content::Schema(_) => AppContext::Schema,
             }
         } else {
             AppContext::Empty

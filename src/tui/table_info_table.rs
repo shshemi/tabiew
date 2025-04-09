@@ -1,22 +1,26 @@
 use ratatui::{
-    layout::Constraint,
+    layout::{Alignment, Constraint},
+    symbols::{
+        border::{ROUNDED, Set},
+        line::{HORIZONTAL_DOWN, VERTICAL_LEFT, VERTICAL_RIGHT},
+    },
     text::Span,
-    widgets::{Block, BorderType, Row, Table, Widget},
+    widgets::{Block, BorderType, Borders, Row, Table, Widget},
 };
 
 use crate::misc::{globals::theme, sql};
 
-pub struct TableInfo<'a> {
+pub struct TableInfoTable<'a> {
     info: &'a sql::TableInfo,
 }
 
-impl<'a> TableInfo<'a> {
+impl<'a> TableInfoTable<'a> {
     pub fn new(info: &'a sql::TableInfo) -> Self {
         Self { info }
     }
 }
 
-impl Widget for TableInfo<'_> {
+impl Widget for TableInfoTable<'_> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
@@ -39,15 +43,23 @@ impl Widget for TableInfo<'_> {
                     Span::styled(self.info.total_est_size().to_string(), theme().text()),
                 ]),
                 Row::new([
-                    Span::styled("Total Null", theme().header(3)),
+                    Span::styled("Total Null Count", theme().header(3)),
                     Span::styled(self.info.total_null().to_string(), theme().text()),
                 ]),
             ])
             .widths([Constraint::Max(23), Constraint::Fill(1)])
             .block(
-                Block::bordered()
+                Block::new()
+                    .borders(Borders::all())
                     .border_type(BorderType::Rounded)
+                    .border_set(Set {
+                        top_left: HORIZONTAL_DOWN,
+                        bottom_left: VERTICAL_RIGHT,
+                        bottom_right: VERTICAL_LEFT,
+                        ..ROUNDED
+                    })
                     .border_style(theme().block())
+                    .title_alignment(Alignment::Center)
                     .title("Info"),
             )
             .render(area, buf);

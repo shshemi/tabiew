@@ -211,6 +211,7 @@ impl StatefulWidget for Tab {
                     format!("{} / {}", state.idx + 1, state.len()),
                 ))
                 .tag(Tag::new("Tables", sql().schema().len().to_string())),
+
             None => StatusBar::default().tag(Tag::new(
                 "Tab",
                 format!("{} / {}", state.idx + 1, state.len()),
@@ -222,11 +223,7 @@ impl StatefulWidget for Tab {
             let blk = Block::bordered()
                 .border_type(BorderType::Rounded)
                 .border_style(theme().block())
-                .borders(if self.borders {
-                    Borders::all()
-                } else {
-                    Borders::empty()
-                })
+                .borders(Borders::empty())
                 .title_bottom(status_bar);
             let new = blk.inner(area);
             blk.render(area, buf);
