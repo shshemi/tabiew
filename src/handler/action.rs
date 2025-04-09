@@ -640,13 +640,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TableScrollRightColumn => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
-                tab.table_mut().scroll_right();
+                tab.table_mut().scroll_right_column();
             }
             Ok(None)
         }
         AppAction::TableScrollLeftColumn => {
             if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
-                tab.table_mut().scroll_left();
+                tab.table_mut().scroll_left_column();
             }
             Ok(None)
         }
