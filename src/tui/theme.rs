@@ -8,6 +8,7 @@ pub trait Styler {
     fn tag(&self, col: usize) -> Style;
     fn block(&self) -> Style;
     fn text(&self) -> Style;
+    fn subtext(&self) -> Style;
     fn error(&self) -> Style;
 }
 
@@ -15,6 +16,7 @@ pub trait SixColorsTwoRowsStyler {
     const BACKGROUND: Color;
     const LIGHT_BACKGROUND: Color;
     const FOREGROUND: Color;
+    const DARK_FOREGROUND: Color;
 
     const COLORS: [Color; 6];
     const DARK_COLORS: [Color; 6];
@@ -68,6 +70,12 @@ where
         Style::default().bg(Self::BACKGROUND).fg(Self::FOREGROUND)
     }
 
+    fn subtext(&self) -> Style {
+        Style::default()
+            .bg(Self::BACKGROUND)
+            .fg(Self::DARK_FOREGROUND)
+    }
+
     fn error(&self) -> Style {
         Style::default()
             .bg(Self::STATUS_BAR_ERROR)
@@ -97,6 +105,7 @@ impl SixColorsTwoRowsStyler for Monokai {
     const BACKGROUND: Color = Color::from_u32(0x00141115);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003e3b3f);
     const FOREGROUND: Color = Color::from_u32(0x00fffaf4);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005e5b5f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6188),
@@ -126,6 +135,7 @@ impl SixColorsTwoRowsStyler for Argonaut {
     const BACKGROUND: Color = Color::from_u32(0x0001030b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0023252d);
     const FOREGROUND: Color = Color::from_u32(0x00fffaf4);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0043454d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff000f),
@@ -153,10 +163,9 @@ impl SixColorsTwoRowsStyler for Argonaut {
 
 impl SixColorsTwoRowsStyler for Nord {
     const BACKGROUND: Color = Color::from_u32(0x002E3440);
-
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003B4252);
-
     const FOREGROUND: Color = Color::from_u32(0x00ECEFF4);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005B6272);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00BF616A),
@@ -186,6 +195,8 @@ impl SixColorsTwoRowsStyler for Catppuccin {
     const BACKGROUND: Color = Color::from_u32(0x0011111b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x001e1e2e);
     const FOREGROUND: Color = Color::from_u32(0x00cdd6f4);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x003e3e4e);
+
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cba6f7),
         Color::from_u32(0x00f38ba8),
@@ -212,6 +223,8 @@ impl SixColorsTwoRowsStyler for TokyoNight {
     const BACKGROUND: Color = Color::from_u32(0x001f2335);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00292e42);
     const FOREGROUND: Color = Color::from_u32(0x00dfe3f5);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00494e62);
+
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00c53b53),
         Color::from_u32(0x00ff757f),
@@ -269,6 +282,10 @@ impl Styler for Terminal {
 
     fn text(&self) -> Style {
         Style::default().bg(Color::Black).fg(Color::White)
+    }
+
+    fn subtext(&self) -> Style {
+        Style::default().bg(Color::Black).fg(Color::DarkGray)
     }
 
     fn error(&self) -> Style {

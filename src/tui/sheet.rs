@@ -109,13 +109,14 @@ impl StatefulWidget for Sheet {
                     .border_style(theme().block())
                     .border_type(BorderType::Rounded)
                     .title_bottom(Line::from_iter([
-                        Span::raw("Scroll up with "),
+                        Span::raw("Up "),
                         Span::raw(" Shift+K ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" or "),
+                        Span::raw(" "),
                         Span::raw(" Shift+\u{2191} ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" and down with "),
+                        Span::raw(" ─── "),
+                        Span::raw("Down "),
                         Span::raw(" Shift+J ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" or "),
+                        Span::raw(" "),
                         Span::raw(" Shift+\u{2193} ").add_modifier(Modifier::REVERSED),
                     ]))
                     .title_alignment(Alignment::Center)
