@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::{handler::action::AppAction, AppResult};
+use crate::{AppResult, handler::action::AppAction};
 
 pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
     let (s1, s2) = cmd.as_ref().split_once(' ').unwrap_or((cmd.as_ref(), ""));
@@ -89,30 +89,25 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 17] =  [
+static ENTRIES: [Entry; 17] = [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
-        description:
-            "Query the data in Structured Query Language(SQL).",
-        parser: |query|{
-            Ok(AppAction::SqlQuery(query.to_owned()))
-        },
+        description: "Query the data in Structured Query Language(SQL).",
+        parser: |query| Ok(AppAction::SqlQuery(query.to_owned())),
     },
     Entry {
         prefix: Prefix::ShortAndLong("q", "quit"),
         usage: "q",
         description: "Close all tabls and quit Tabiew",
-        parser: |_|{
-            Ok(AppAction::Quit)
-        },
+        parser: |_| Ok(AppAction::Quit),
     },
     Entry {
         prefix: Prefix::Long("goto"),
         usage: "goto <line_index>",
         description: "Jumps to the specified line",
-        parser: |line|{
-            Ok(AppAction::TableGoto(
+        parser: |line| {
+            Ok(AppAction::AppGotoLine(
                 line.parse::<usize>()?.saturating_sub(1),
             ))
         },
@@ -121,7 +116,7 @@ static ENTRIES: [Entry; 17] =  [
         prefix: Prefix::Long("goup"),
         usage: "goup <lines>",
         description: "Jump specified number of line(s) up",
-        parser: |lines|{
+        parser: |lines| {
             Ok(match lines {
                 "page" => AppAction::TableGoUpFullPage,
                 "half" => AppAction::TableGoUpHalfPage,
@@ -133,7 +128,7 @@ static ENTRIES: [Entry; 17] =  [
         prefix: Prefix::Long("godown"),
         usage: "godown <lines>",
         description: "Jump specified number of line(s) down",
-        parser: |lines|{
+        parser: |lines| {
             Ok(match lines {
                 "page" => AppAction::TableGoDownFullPage,
                 "half" => AppAction::TableGoDownHalfPage,
@@ -145,81 +140,61 @@ static ENTRIES: [Entry; 17] =  [
         prefix: Prefix::Long("reset"),
         usage: "reset",
         description: "Reset the data frame to its original state, removing all filters, orders, searches, selects, and aggregations effects.",
-        parser: |_|{
-            Ok(AppAction::TableReset)
-        },
+        parser: |_| Ok(AppAction::TableReset),
     },
     Entry {
         prefix: Prefix::Long("help"),
         usage: "help",
         description: "Show help",
-        parser: |_|{
-            Ok(AppAction::Help)
-        },
+        parser: |_| Ok(AppAction::Help),
     },
     Entry {
         prefix: Prefix::ShortAndLong("S", "select"),
         usage: "select <column_name(s)>",
         description: "Query the data frame for columns / functions",
-        parser: |query|{
-            Ok(AppAction::TableSelect(query.to_owned()))
-        },
+        parser: |query| Ok(AppAction::TableSelect(query.to_owned())),
     },
     Entry {
         prefix: Prefix::ShortAndLong("F", "filter"),
         usage: "filter <condition(s)>",
         description: "Filter the data frame, keeping rows were the condition(s) match",
-        parser: |query|{
-            Ok(AppAction::TableFilter(query.to_owned()))
-        },
+        parser: |query| Ok(AppAction::TableFilter(query.to_owned())),
     },
     Entry {
         prefix: Prefix::ShortAndLong("O", "order"),
         usage: "order <column(s)_and_order(s)>",
         description: "Sort the data frame by column(s)",
-        parser: |query|{
-            Ok(AppAction::TableOrder(query.to_owned()))
-        },
+        parser: |query| Ok(AppAction::TableOrder(query.to_owned())),
     },
     Entry {
         prefix: Prefix::Long("schema"),
         usage: "schema",
         description: "Show loaded data frame(s) and their schmea(s)",
-        parser: |_|{
-            Ok(AppAction::SqlSchema)
-        },
+        parser: |_| Ok(AppAction::SqlSchema),
     },
     Entry {
         prefix: Prefix::Long("rand"),
         usage: "rand",
         description: "Select a random row from current data frame",
-        parser: |_|{
-            Ok(AppAction::TableGotoRandom)
-        },
+        parser: |_| Ok(AppAction::TableGotoRandom),
     },
     Entry {
         prefix: Prefix::Long("tabn"),
         usage: "tabn <query>",
         description: "Create a new tab using the query",
-        parser: |query|{
-            Ok(AppAction::TabNew(query.to_owned()))
-        },
+        parser: |query| Ok(AppAction::TabNew(query.to_owned())),
     },
     Entry {
         prefix: Prefix::Long("tabr"),
         usage: "tabr <tab_index>",
         description: "Remove the tab at the index",
-        parser: |query|{
-            Ok(AppAction::TabRemove(query.parse()?))
-        },
+        parser: |query| Ok(AppAction::TabRemove(query.parse()?)),
     },
     Entry {
         prefix: Prefix::Long("tab"),
         usage: "tab <tab_index>",
         description: "Select the tab at the index",
-        parser: |query|{
-            Ok(AppAction::TabSelect(query.parse()?))
-        },
+        parser: |query| Ok(AppAction::TabSelect(query.parse()?)),
     },
     export::entry(),
     import::entry(),
@@ -242,46 +217,32 @@ mod export {
                     .split_once(' ')
                     .ok_or(anyhow!("Export should provide format and path"))?;
                 match fmt {
-                "csv" => {
-                    Ok(
-                        AppAction::ExportDsv{
-                            path: path_str.into() ,
-                            separator: ',',
-                            quote: '"',
-                            header: true }
-                    )
-                }
+                    "csv" => Ok(AppAction::ExportDsv {
+                        path: path_str.into(),
+                        separator: ',',
+                        quote: '"',
+                        header: true,
+                    }),
 
-                "tsv" => {
-                    Ok(
-                        AppAction::ExportDsv{
-                            path: path_str.into() ,
-                            separator: '\t',
-                            quote: '"',
-                            header: true }
-                    )
-                }
+                    "tsv" => Ok(AppAction::ExportDsv {
+                        path: path_str.into(),
+                        separator: '\t',
+                        quote: '"',
+                        header: true,
+                    }),
 
-                "parquet" => {
-                    Ok(AppAction::ExportParquet(path_str.into()))
-                }
+                    "parquet" => Ok(AppAction::ExportParquet(path_str.into())),
 
-                "json" => {
-                    Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json))
-                }
+                    "json" => Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json)),
 
-                "jsonl" => {
-                    Ok(AppAction::ExportJson(path_str.into(), JsonFormat::JsonLine))
-                }
+                    "jsonl" => Ok(AppAction::ExportJson(path_str.into(), JsonFormat::JsonLine)),
 
-                "arrow" => {
-                    Ok(AppAction::ExportArrow(path_str.into()))
-                }
+                    "arrow" => Ok(AppAction::ExportArrow(path_str.into())),
 
-                _ => {
-                    Err(anyhow!("Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow"))
+                    _ => Err(anyhow!(
+                        "Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow"
+                    )),
                 }
-            }
             },
         }
     }
@@ -293,7 +254,7 @@ mod import {
     use anyhow::anyhow;
     use regex::{Captures, Regex};
 
-    use crate::{handler::action::AppAction, writer::JsonFormat, AppResult};
+    use crate::{AppResult, handler::action::AppAction, writer::JsonFormat};
 
     use super::{Entry, Prefix};
 

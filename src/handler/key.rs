@@ -352,6 +352,66 @@ impl Default for KeyHandler {
                 _ => None,
             });
 
+        // ---- schema keybindings
+        hndl.keybinds(AppContext::Schema)
+            // up & down
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::SchemaTablesGotoPrev),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::SchemaTablesGotoNext),
+            )
+            // KJ
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Char('k'))
+                    .action(AppAction::SchemaTablesGotoPrev),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Char('j'))
+                    .action(AppAction::SchemaTablesGotoNext),
+            )
+            // shift - up & down
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .shift()
+                    .action(AppAction::SchemaFieldsScrollUp),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .shift()
+                    .action(AppAction::SchemaFieldsScrollDown),
+            )
+            // KJ
+            .add(
+                Keybind::default()
+                    .char('K')
+                    .action(AppAction::SchemaFieldsScrollUp),
+            )
+            .add(
+                Keybind::default()
+                    .char('J')
+                    .action(AppAction::SchemaFieldsScrollDown),
+            )
+            // gG
+            .add(
+                Keybind::default()
+                    .char('g')
+                    .action(AppAction::SchemaTablesGotoFirst),
+            )
+            .add(
+                Keybind::default()
+                    .char('G')
+                    .action(AppAction::SchemaTablesGotoLast),
+            );
+
         // ---- command keybindings
         hndl.keybinds(AppContext::Command)
             .add(

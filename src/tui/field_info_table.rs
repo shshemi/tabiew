@@ -1,7 +1,12 @@
 use ratatui::{
-    layout::Constraint,
-    text::Text,
-    widgets::{Block, BorderType, Row, StatefulWidget, Table, TableState},
+    layout::{Alignment, Constraint},
+    style::{Modifier, Stylize},
+    symbols::{
+        border::{ROUNDED, Set},
+        line::HORIZONTAL_UP,
+    },
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Row, StatefulWidget, Table, TableState},
 };
 
 use crate::misc::{globals::theme, sql::TableSchema};
@@ -9,6 +14,16 @@ use crate::misc::{globals::theme, sql::TableSchema};
 #[derive(Debug, Default)]
 pub struct FieldInfoTableState {
     table_state: TableState,
+}
+
+impl FieldInfoTableState {
+    pub fn table_state(&self) -> &TableState {
+        &self.table_state
+    }
+
+    pub fn table_state_mut(&mut self) -> &mut TableState {
+        &mut self.table_state
+    }
 }
 
 pub struct FieldInfoTable<'a> {
@@ -32,6 +47,11 @@ impl StatefulWidget for FieldInfoTable<'_> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
+        *state.table_state.offset_mut() = state.table_state.offset().min(
+            self.table_schema
+                .len()
+                .saturating_sub(area.height.saturating_sub(2).into()),
+        );
         Table::default()
             .header(
                 Row::new(
@@ -63,10 +83,25 @@ impl StatefulWidget for FieldInfoTable<'_> {
                 Constraint::Fill(1),
             ])
             .block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
+                Block::new()
+                    .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
+                    .border_set(Set {
+                        bottom_left: HORIZONTAL_UP,
+                        ..ROUNDED
+                    })
                     .border_style(theme().block())
-                    .title("Fields"),
+                    .title_bottom(Line::from_iter([
+                        Span::raw("Up "),
+                        Span::raw(" Shift+K ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" "),
+                        Span::raw(" Shift+\u{2191} ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" ─── "),
+                        Span::raw("Down "),
+                        Span::raw(" Shift+J ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" "),
+                        Span::raw(" Shift+\u{2193} ").add_modifier(Modifier::REVERSED),
+                    ]))
+                    .title_alignment(Alignment::Center),
             )
             .render(area, buf, &mut state.table_state);
     }

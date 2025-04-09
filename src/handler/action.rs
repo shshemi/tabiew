@@ -26,6 +26,7 @@ pub enum AppAction {
     ToggleBorders,
     DismissError,
     DismissErrorAndShowPallete,
+    AppGotoLine(usize),
 
     TableDismissModal,
     TableScrollRight,
@@ -35,7 +36,6 @@ pub enum AppAction {
     TableScrollStart,
     TableScrollEnd,
     TableToggleExpansion,
-    TableGoto(usize),
     TableGotoFirst,
     TableGotoLast,
     TableGotoRandom,
@@ -116,6 +116,14 @@ pub enum AppAction {
         flexible_width: bool,
         has_header: bool,
     },
+
+    SchemaTablesGotoPrev,
+    SchemaTablesGotoNext,
+    SchemaTablesGotoFirst,
+    SchemaTablesGotoLast,
+    SchemaFieldsScrollUp,
+    SchemaFieldsScrollDown,
+
     Help,
     Quit,
 }
@@ -166,9 +174,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 .iter()
                 .enumerate()
                 .find_map(|(idx, tab)| match tab {
-                    Content::Tabular(tab) if matches!(tab.table_type(), TableType::Help) => {
-                        Some(idx)
-                    }
+                    Content::Schema(_) => Some(idx),
                     _ => None,
                 });
             if let Some(idx) = idx {
@@ -180,10 +186,16 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 )))
             }
         }
-        AppAction::TableGoto(line) => {
-            if let Some(tab) = app.tabs_mut().selected_mut().and_then(Content::tabular_mut) {
-                tab.table_mut().select(line)
-            }
+        AppAction::AppGotoLine(line) => {
+            match app.tabs_mut().selected_mut() {
+                Some(Content::Tabular(tabular)) => {
+                    tabular.table_mut().select(line);
+                }
+                Some(Content::Schema(schema)) => {
+                    schema.names_mut().table_mut().select(line.into());
+                }
+                None => (),
+            };
             Ok(None)
         }
         AppAction::TableGotoFirst => {
@@ -757,6 +769,58 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::PalleteSelectNext => {
             if let Some(pallete) = app.pallete_mut() {
                 pallete.list().select_next();
+            }
+            Ok(None)
+        }
+        AppAction::SchemaTablesGotoPrev => {
+            if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
+                schema.select_table(
+                    schema
+                        .names()
+                        .table()
+                        .selected()
+                        .map(|i| i.saturating_sub(1))
+                        .unwrap_or(0),
+                );
+            }
+            Ok(None)
+        }
+        AppAction::SchemaTablesGotoNext => {
+            if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
+                schema.select_table(
+                    schema
+                        .names()
+                        .table()
+                        .selected()
+                        .map(|i| i.saturating_add(1))
+                        .unwrap_or(0),
+                );
+            }
+            Ok(None)
+        }
+        AppAction::SchemaTablesGotoFirst => {
+            if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
+                schema.select_table(0);
+            }
+            Ok(None)
+        }
+        AppAction::SchemaTablesGotoLast => {
+            if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
+                schema.select_table(usize::MAX);
+            }
+            Ok(None)
+        }
+        AppAction::SchemaFieldsScrollUp => {
+            if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
+                *schema.fields_mut().table_state_mut().offset_mut() =
+                    schema.fields().table_state().offset().saturating_sub(1);
+            }
+            Ok(None)
+        }
+        AppAction::SchemaFieldsScrollDown => {
+            if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
+                *schema.fields_mut().table_state_mut().offset_mut() =
+                    schema.fields().table_state().offset().saturating_add(1);
             }
             Ok(None)
         }
