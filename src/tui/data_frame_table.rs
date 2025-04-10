@@ -330,7 +330,7 @@ impl StatefulWidget for DataFrameTable<'_> {
                             .zip(widths.iter())
                             .map(|(val, width)| {
                                 viewport(
-                                    val.into_string().lines().next().unwrap_or_default(),
+                                    val.into_single_line().lines().next().unwrap_or_default(),
                                     0,
                                     *width,
                                 )
