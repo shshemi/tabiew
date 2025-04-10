@@ -55,7 +55,7 @@ impl StatefulWidget for FieldInfoTable<'_> {
         Table::default()
             .header(
                 Row::new(
-                    ["Name", "Type", "Estimated Size", "Null Count"]
+                    ["Name", "Type", "Estimated Size", "Null Count", "Min", "Max"]
                         .into_iter()
                         .enumerate()
                         .map(|(i, s)| Text::styled(s, theme().header(i))),
@@ -72,11 +72,15 @@ impl StatefulWidget for FieldInfoTable<'_> {
                             format!("{}", info.dtype()),
                             format!("{}", info.estimated_size()),
                             format!("{}", info.null_count()),
+                            info.min().to_string(),
+                            info.max().to_string(),
                         ])
                         .style(theme().row(idx))
                     }),
             )
             .widths([
+                Constraint::Fill(1),
+                Constraint::Fill(1),
                 Constraint::Fill(1),
                 Constraint::Fill(1),
                 Constraint::Fill(1),

@@ -1,14 +1,14 @@
 use polars::{
     error::PolarsResult,
     frame::DataFrame,
-    prelude::{DataType, IntoLazy, LazyFrame},
+    prelude::{AnyValue, DataType, IntoLazy, LazyFrame},
     series::Series,
 };
 use polars_sql::SQLContext;
 
 use crate::{misc::type_ext::SnakeCaseNameGenExt, reader::InputSource};
 
-use super::vec_map::VecMap;
+use super::{polars_ext::IntoString, vec_map::VecMap};
 
 const DEFAULT_TABLE_NAME: &str = "_";
 
@@ -181,14 +181,19 @@ pub struct FieldInfo {
     dtype: DataType,
     est_size: usize,
     null_count: usize,
+    min: String,
+    max: String,
 }
 
 impl FieldInfo {
     pub fn new(series: &Series) -> Self {
+        let (min, max) = min_max(series);
         Self {
             dtype: series.dtype().to_owned(),
             est_size: series.estimated_size(),
             null_count: series.null_count(),
+            min,
+            max,
         }
     }
     pub fn dtype(&self) -> &DataType {
@@ -201,5 +206,38 @@ impl FieldInfo {
 
     pub fn null_count(&self) -> usize {
         self.null_count
+    }
+
+    pub fn min(&self) -> &str {
+        &self.min
+    }
+
+    pub fn max(&self) -> &str {
+        &self.max
+    }
+}
+
+fn min_max(series: &Series) -> (String, String) {
+    let dtype = series.dtype();
+    if dtype.is_primitive_numeric()
+        || matches!(
+            dtype,
+            DataType::Time | DataType::Date | DataType::Datetime(_, _)
+        )
+    {
+        let (a, b) =
+            series
+                .iter()
+                .fold((AnyValue::Null, AnyValue::Null), |(mut min, mut max), a| {
+                    if a < min || matches!(min, AnyValue::Null) {
+                        min = a;
+                    } else if a > max || matches!(max, AnyValue::Null) {
+                        max = a;
+                    }
+                    (min, max)
+                });
+        (a.into_string(), b.into_string())
+    } else {
+        ("-".to_owned(), "-".to_owned())
     }
 }
