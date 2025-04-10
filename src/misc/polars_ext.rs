@@ -17,7 +17,8 @@ pub trait SafeInferSchema {
 }
 
 pub trait IntoString {
-    fn into_string(self) -> String;
+    fn into_single_line(self) -> String;
+    fn into_multi_line(self) -> String;
 }
 
 pub trait TuiWidths {
@@ -60,7 +61,20 @@ fn type_infered_series(series: &Series) -> Option<Series> {
 }
 
 impl IntoString for AnyValue<'_> {
-    fn into_string(self) -> String {
+    fn into_single_line(self) -> String {
+        match self {
+            AnyValue::Null => "".to_owned(),
+            AnyValue::StringOwned(v) => v.to_string(),
+            AnyValue::String(v) => v.to_string(),
+            AnyValue::Categorical(idx, rev_map, _) => rev_map.get(idx).to_owned(),
+            AnyValue::CategoricalOwned(idx, rev_map, _) => rev_map.get(idx).to_owned(),
+            AnyValue::Binary(buf) => format!("Blob (Length: {})", buf.len()),
+            AnyValue::BinaryOwned(buf) => format!("Blob (Length: {})", buf.len()),
+            _ => self.to_string(),
+        }
+    }
+
+    fn into_multi_line(self) -> String {
         match self {
             AnyValue::Null => "".to_owned(),
             AnyValue::StringOwned(v) => v.to_string(),
@@ -109,7 +123,7 @@ fn series_width(series: &Series) -> usize {
         .iter()
         .map(|any_value| {
             any_value
-                .into_string()
+                .into_multi_line()
                 .lines()
                 .next()
                 .map(|s| s.width())
@@ -126,7 +140,7 @@ impl FuzzyCmp for AnyValue<'_> {
             AnyValue::Null => false,
             AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other, other.len()),
             AnyValue::String(val) => val.has_subsequence(other, other.len()),
-            _ => self.into_string().has_subsequence(other, other.len()),
+            _ => self.into_multi_line().has_subsequence(other, other.len()),
         }
     }
 }
@@ -140,7 +154,7 @@ impl GetSheetSections for DataFrame {
                 self.get(pos)
                     .unwrap_or_default()
                     .into_iter()
-                    .map(IntoString::into_string)
+                    .map(IntoString::into_multi_line)
                     .collect_vec(),
             )
             .map(|(header, content)| SheetSection::new(header, content))

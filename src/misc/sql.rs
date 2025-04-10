@@ -236,7 +236,7 @@ fn min_max(series: &Series) -> (String, String) {
                     }
                     (min, max)
                 });
-        (a.into_string(), b.into_string())
+        (a.into_single_line(), b.into_single_line())
     } else {
         ("-".to_owned(), "-".to_owned())
     }
