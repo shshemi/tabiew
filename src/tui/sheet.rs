@@ -11,6 +11,18 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct SheetSection {
+    header: String,
+    content: String,
+}
+
+impl SheetSection {
+    pub fn new(header: String, content: String) -> Self {
+        Self { header, content }
+    }
+}
+
+#[derive(Debug)]
 pub struct Sheet {
     sections: Vec<SheetSection>,
     block: Option<Block<'static>>,
@@ -38,18 +50,6 @@ impl Sheet {
 impl Default for Sheet {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[derive(Debug)]
-pub struct SheetSection {
-    header: String,
-    content: String,
-}
-
-impl SheetSection {
-    pub fn new(header: String, content: String) -> Self {
-        Self { header, content }
     }
 }
 

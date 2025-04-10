@@ -168,50 +168,7 @@ impl StatefulWidget for Tabular {
             }
             _ => (Rect::default(), area),
         };
-        DataFrameTable::new()
-            // .with_block(
-            //     Block::new()
-            //         .borders(if self.borders {
-            //             Borders::all()
-            //         } else {
-            //             Borders::empty()
-            //         })
-            //         .border_style(theme().block())
-            //         .border_type(BorderType::Rounded)
-            //         .title_bottom(self.status_bar.with_tags([
-            //             match &state.source {
-            //                 Source::Help => StatusBarTag::new("App", "Help"),
-            //                 Source::Schema => StatusBarTag::new("App", "Schema"),
-            //                 Source::Name(name) => StatusBarTag::new("Table", name.to_owned()),
-            //                 Source::Query(query) => StatusBarTag::new("Query", query.to_owned()),
-            //             },
-            //             StatusBarTag::new(
-            //                 "Auto-Fit",
-            //                 if !state.table.expanded() {
-            //                     "Yes"
-            //                 } else {
-            //                     " No"
-            //                 },
-            //             ),
-            //             StatusBarTag::new(
-            //                 "Row",
-            //                 format!(
-            //                     "{:>width$}",
-            //                     state.table.selected() + 1,
-            //                     width = state.table.height().to_string().len()
-            //                 ),
-            //             ),
-            //             StatusBarTag::new(
-            //                 "Shape",
-            //                 format!(
-            //                     "{} x {}",
-            //                     state.table.height(),
-            //                     state.table.data_frame().width()
-            //                 ),
-            //             ),
-            //         ])),
-            // )
-            .render(table_area, buf, &mut state.table);
+        DataFrameTable::new().render(table_area, buf, &mut state.table);
 
         match &mut state.modal {
             Modal::Sheet(sheet_state) => {
