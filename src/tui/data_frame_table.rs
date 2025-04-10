@@ -1,7 +1,4 @@
-use std::{
-    borrow::Cow,
-    ops::{Add, Div, Sub},
-};
+use std::{borrow::Cow, ops::Div};
 
 use anyhow::anyhow;
 use itertools::Itertools;
@@ -242,9 +239,10 @@ impl StatefulWidget for DataFrameTable<'_> {
             state
                 .widths
                 .iter()
+                .copied()
                 .sum::<usize>()
-                .saturating_sub(area.width as usize)
-                .add(state.widths.len().saturating_sub(1)),
+                .saturating_add(state.widths.len().saturating_sub(1))
+                .saturating_sub(area.width.into()),
         );
 
         // set widths according to expanded (not auto-fit)
@@ -396,7 +394,7 @@ fn shrink_columns(table_width: usize, column_widths: &[usize]) -> Vec<usize> {
         .collect_vec();
     let mut remainder = total_width
         .min(available_width)
-        .sub(new_widths.iter().sum::<usize>());
+        .saturating_sub(new_widths.iter().sum::<usize>());
     for idx in (0..new_widths.len()).cycle() {
         if remainder == 0 {
             break;
