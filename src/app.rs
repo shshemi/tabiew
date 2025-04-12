@@ -10,7 +10,8 @@ use crate::{
     tui::{
         command_pallete::{CommandPallete, CommandPalleteState},
         error_popup::ErrorPopup,
-        tab::{Content, Tab, TabState},
+        schema::{Schema, SchemaState},
+        tab::{Tab, TabState},
         tabular::Modal,
     },
 };
@@ -35,13 +36,21 @@ impl AppContext {
             AppContext::Command => AppContext::Empty.into(),
             AppContext::Error => AppContext::Empty.into(),
             AppContext::Search => AppContext::Table.into(),
-            AppContext::Schema => AppContext::Table.into(),
+            AppContext::Schema => AppContext::Empty.into(),
         }
     }
 }
 
+#[derive(Debug, Default)]
+pub enum Overlay {
+    Schema(SchemaState),
+    #[default]
+    Empty,
+}
+
 pub struct App {
     tabs: TabState,
+    overlay: Overlay,
     error: Option<String>,
     pallete: Option<CommandPalleteState>,
     history: History,
@@ -53,6 +62,7 @@ impl App {
     pub fn new(tabs: TabState, history: History) -> Self {
         Self {
             tabs,
+            overlay: Default::default(),
             error: None,
             pallete: None,
             history,
@@ -77,6 +87,10 @@ impl App {
         &mut self.history
     }
 
+    pub fn overlay_mut(&mut self) -> &mut Overlay {
+        &mut self.overlay
+    }
+
     pub fn show_pallete(&mut self, cmd: impl ToString) {
         self.pallete = Some(CommandPalleteState::new(cmd.to_string()));
     }
@@ -93,6 +107,14 @@ impl App {
 
     pub fn dismiss_error(&mut self) {
         self.error = None;
+    }
+
+    pub fn show_schema(&mut self) {
+        self.overlay = Overlay::Schema(Default::default());
+    }
+
+    pub fn hide_schema(&mut self) {
+        self.overlay = Overlay::Empty;
     }
 
     pub fn toggle_borders(&mut self) {
@@ -115,14 +137,13 @@ impl App {
             AppContext::Error
         } else if self.pallete.is_some() {
             AppContext::Command
-        } else if let Some(tab) = self.tabs.selected() {
-            match tab {
-                Content::Tabular(tabular) => match tabular.modal() {
-                    Modal::SearchBar(_) => AppContext::Search,
-                    Modal::Sheet(_) => AppContext::Sheet,
-                    Modal::None => AppContext::Table,
-                },
-                Content::Schema(_) => AppContext::Schema,
+        } else if let Overlay::Schema(_) = self.overlay {
+            AppContext::Schema
+        } else if let Some(tabular) = self.tabs.selected() {
+            match tabular.modal() {
+                Modal::SearchBar(_) => AppContext::Search,
+                Modal::Sheet(_) => AppContext::Sheet,
+                Modal::None => AppContext::Table,
             }
         } else {
             AppContext::Empty
@@ -132,13 +153,20 @@ impl App {
     pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
         // Draw table / item
         let state = self.context();
-        frame.render_stateful_widget(
-            Tab::new()
-                .with_borders(self.borders)
-                .selection(matches!(state, AppContext::Table)),
-            frame.area(),
-            &mut self.tabs,
-        );
+        match &mut self.overlay {
+            Overlay::Schema(schema) => {
+                frame.render_stateful_widget(Schema::default(), frame.area(), schema);
+            }
+            Overlay::Empty => {
+                frame.render_stateful_widget(
+                    Tab::new()
+                        .with_borders(self.borders)
+                        .selection(matches!(state, AppContext::Table)),
+                    frame.area(),
+                    &mut self.tabs,
+                );
+            }
+        }
 
         if let Some(msg) = self.error.as_ref() {
             let error = ErrorPopup::new().with_message(msg);
