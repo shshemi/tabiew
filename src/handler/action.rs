@@ -170,12 +170,12 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::AppGotoLine(line) => {
             match app.context() {
-                crate::app::AppContext::Table => {
+                crate::app::Context::Table => {
                     if let Some(tabular) = app.tabs_mut().selected_mut() {
                         tabular.table_mut().select(line)
                     }
                 }
-                crate::app::AppContext::Schema => {
+                crate::app::Context::Schema => {
                     if let Overlay::Schema(schema) = app.overlay_mut() {
                         schema.names_mut().table_mut().select(line.into());
                     }
