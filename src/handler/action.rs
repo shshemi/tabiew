@@ -318,7 +318,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TabNew(query) => {
-            if let Result::Ok(df) = sql().execute(&format!("SELECT * FROM '{}'", query)) {
+            if sql().schema().iter().any(|(name, _)| name == &query) {
+                let df = sql().execute(&format!("SELECT * FROM '{}'", query))?;
                 app.tabs_mut()
                     .add(TabularState::new(df, TableType::Name(query)));
             } else {
