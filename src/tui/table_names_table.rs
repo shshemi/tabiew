@@ -87,15 +87,15 @@ where
                     .border_style(theme().block())
                     .title("Tables")
                     .title_bottom(Line::from_iter([
-                        Span::raw("Up "),
-                        Span::raw(" K ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" Open ").style(theme().block_tag()),
+                        Span::raw(" Enter ")
+                            .style(theme().block_tag())
+                            .add_modifier(Modifier::REVERSED),
                         Span::raw(" "),
-                        Span::raw(" \u{2191} ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" ─── "),
-                        Span::raw("Down "),
-                        Span::raw(" J ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" "),
-                        Span::raw(" \u{2193} ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" Unload ").style(theme().block_tag()),
+                        Span::raw(" Delete ")
+                            .style(theme().block_tag())
+                            .add_modifier(Modifier::REVERSED),
                     ]))
                     .title_alignment(Alignment::Center),
             )

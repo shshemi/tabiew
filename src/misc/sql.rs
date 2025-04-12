@@ -37,6 +37,11 @@ impl SqlBackend {
         name
     }
 
+    pub fn unregister(&mut self, name: &str) {
+        self.schema.remove(name);
+        self.sql.unregister(name);
+    }
+
     pub fn set_default(&mut self, data_frame: DataFrame) {
         self.sql.register("_", data_frame.lazy());
     }

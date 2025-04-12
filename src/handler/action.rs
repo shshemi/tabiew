@@ -2,6 +2,7 @@ use std::{ops::Div, path::PathBuf};
 
 use anyhow::{Ok, anyhow};
 use rand::Rng;
+use ratatui::widgets::TableState;
 
 use crate::{
     AppResult,
@@ -13,7 +14,7 @@ use crate::{
     },
     tui::{
         TableType, TabularState, schema::SchemaState, search_bar::SearchBarState, tab::Content,
-        tabular::Modal,
+        table_names_table::TableNamesTableState, tabular::Modal,
     },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
 };
@@ -123,6 +124,8 @@ pub enum AppAction {
     SchemaTablesGotoLast,
     SchemaFieldsScrollUp,
     SchemaFieldsScrollDown,
+    SchemaOpenTable,
+    SchemaUnloadTable,
 
     Help,
     Quit,
@@ -822,6 +825,61 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(schema) = app.tabs_mut().selected_mut().and_then(Content::schema_mut) {
                 *schema.fields_mut().table_state_mut().offset_mut() =
                     schema.fields().table_state().offset().saturating_add(1);
+            }
+            Ok(None)
+        }
+        AppAction::SchemaOpenTable => {
+            if let Some(table_name) = app
+                .tabs_mut()
+                .selected()
+                .and_then(Content::schema)
+                .map(SchemaState::names)
+                .map(TableNamesTableState::table)
+                .and_then(TableState::selected)
+                .and_then(|idx| {
+                    sql()
+                        .schema()
+                        .get_by_index(idx)
+                        .map(|(name, _)| name.to_owned())
+                })
+            {
+                if let Some(tab_idx) = app
+                    .tabs_mut()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, content)| {
+                        content.tabular().map(|tabular| (idx, tabular.table_type()))
+                    })
+                    .find_map(|(idx, tab_type)| match tab_type {
+                        TableType::Name(name) if name.as_str() == table_name.as_str() => Some(idx),
+                        _ => None,
+                    })
+                {
+                    Ok(Some(AppAction::TabSelect(tab_idx)))
+                } else {
+                    Ok(Some(AppAction::TabNew(table_name)))
+                }
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::SchemaUnloadTable => {
+            //
+            if let Some(table_name) = app
+                .tabs_mut()
+                .selected()
+                .and_then(Content::schema)
+                .map(SchemaState::names)
+                .map(TableNamesTableState::table)
+                .and_then(TableState::selected)
+                .and_then(|idx| {
+                    sql()
+                        .schema()
+                        .get_by_index(idx)
+                        .map(|(name, _)| name.to_owned())
+                })
+            {
+                sql().unregister(&table_name);
             }
             Ok(None)
         }
