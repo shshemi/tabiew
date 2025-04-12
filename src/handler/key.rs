@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Debug};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::{app::AppContext, handler::action::AppAction};
+use crate::{app::Context, handler::action::AppAction};
 
 enum Action {
     Direct(AppAction),
@@ -123,11 +123,11 @@ impl Keybinds {
 }
 
 pub struct KeyHandler {
-    map: HashMap<AppContext, Keybinds>,
+    map: HashMap<Context, Keybinds>,
 }
 
 impl KeyHandler {
-    pub fn action(&self, mut context: AppContext, event: KeyEvent) -> AppAction {
+    pub fn action(&self, mut context: Context, event: KeyEvent) -> AppAction {
         loop {
             if let Some(act) = self.map.get(&context).and_then(|kbl| kbl.find(event)) {
                 return act;
@@ -139,7 +139,7 @@ impl KeyHandler {
         }
     }
 
-    fn keybinds(&mut self, context: AppContext) -> &mut Keybinds {
+    fn keybinds(&mut self, context: Context) -> &mut Keybinds {
         self.map.entry(context).or_default()
     }
 }
@@ -151,7 +151,7 @@ impl Default for KeyHandler {
         };
 
         // ----- empty keybindings
-        hndl.keybinds(AppContext::Empty)
+        hndl.keybinds(Context::Empty)
             // :
             .add(
                 Keybind::default()
@@ -172,7 +172,7 @@ impl Default for KeyHandler {
             });
 
         // ----- error keybindings
-        hndl.keybinds(AppContext::Error)
+        hndl.keybinds(Context::Error)
             .add(
                 Keybind::default()
                     .char(':')
@@ -181,7 +181,7 @@ impl Default for KeyHandler {
             .fallback(|_| Some(AppAction::DismissError));
 
         // ----- table keybindings
-        hndl.keybinds(AppContext::Table)
+        hndl.keybinds(Context::Table)
             // q
             .add(
                 Keybind::default()
@@ -352,7 +352,7 @@ impl Default for KeyHandler {
             );
 
         // ---- schema keybindings
-        hndl.keybinds(AppContext::Schema)
+        hndl.keybinds(Context::Schema)
             // up & down
             .add(
                 Keybind::default()
@@ -430,7 +430,7 @@ impl Default for KeyHandler {
             .add(Keybind::default().char('q').action(AppAction::SchemaHide));
 
         // ---- command keybindings
-        hndl.keybinds(AppContext::Command)
+        hndl.keybinds(Context::Command)
             .add(
                 Keybind::default()
                     .code(KeyCode::Left)
@@ -505,7 +505,7 @@ impl Default for KeyHandler {
             });
 
         // ---- sheet keybindings
-        hndl.keybinds(AppContext::Sheet)
+        hndl.keybinds(Context::Sheet)
             // q and esc
             .add(
                 Keybind::default()
@@ -542,7 +542,7 @@ impl Default for KeyHandler {
             );
 
         // ---- search keybindings
-        hndl.keybinds(AppContext::Search)
+        hndl.keybinds(Context::Search)
             // left right home end backspace delete
             .add(
                 Keybind::default()
