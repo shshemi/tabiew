@@ -1,7 +1,7 @@
 use std::ops::Div;
 
 use ratatui::{
-    layout::{Alignment, Constraint, Flex, Layout},
+    layout::{Constraint, Flex, Layout},
     widgets::{Block, BorderType, Paragraph, StatefulWidget, Widget, Wrap},
 };
 

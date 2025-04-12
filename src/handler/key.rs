@@ -152,33 +152,24 @@ impl Default for KeyHandler {
 
         // ----- empty keybindings
         hndl.keybinds(AppContext::Empty)
-            // q
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TabRemoveOrQuit),
-            )
-            // shift-h shift-l shift-left shift-right
-            .add(Keybind::default().char('H').action(AppAction::TabPrev))
-            .add(Keybind::default().char('L').action(AppAction::TabNext))
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Left)
-                    .shift()
-                    .action(AppAction::TabPrev),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Right)
-                    .shift()
-                    .action(AppAction::TabNext),
-            )
             // :
             .add(
                 Keybind::default()
                     .char(':')
                     .action(AppAction::PalleteShow(String::default())),
-            );
+            )
+            .fallback(|event| match event.code {
+                KeyCode::Char('1') => Some(AppAction::PalleteShow("goto 1".to_owned())),
+                KeyCode::Char('2') => Some(AppAction::PalleteShow("goto 2".to_owned())),
+                KeyCode::Char('3') => Some(AppAction::PalleteShow("goto 3".to_owned())),
+                KeyCode::Char('4') => Some(AppAction::PalleteShow("goto 4".to_owned())),
+                KeyCode::Char('5') => Some(AppAction::PalleteShow("goto 5".to_owned())),
+                KeyCode::Char('6') => Some(AppAction::PalleteShow("goto 6".to_owned())),
+                KeyCode::Char('7') => Some(AppAction::PalleteShow("goto 7".to_owned())),
+                KeyCode::Char('8') => Some(AppAction::PalleteShow("goto 8".to_owned())),
+                KeyCode::Char('9') => Some(AppAction::PalleteShow("goto 9".to_owned())),
+                _ => None,
+            });
 
         // ----- error keybindings
         hndl.keybinds(AppContext::Error)
@@ -191,6 +182,12 @@ impl Default for KeyHandler {
 
         // ----- table keybindings
         hndl.keybinds(AppContext::Table)
+            // q
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::TabRemoveOrQuit),
+            )
             // enter
             .add(
                 Keybind::default()
@@ -338,19 +335,21 @@ impl Default for KeyHandler {
                     .code(KeyCode::Char('r'))
                     .ctrl()
                     .action(AppAction::TableReset),
+            ) // shift-h shift-l shift-left shift-right
+            .add(Keybind::default().char('H').action(AppAction::TabPrev))
+            .add(Keybind::default().char('L').action(AppAction::TabNext))
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Left)
+                    .shift()
+                    .action(AppAction::TabPrev),
             )
-            .fallback(|event| match event.code {
-                KeyCode::Char('1') => Some(AppAction::PalleteShow("goto 1".to_owned())),
-                KeyCode::Char('2') => Some(AppAction::PalleteShow("goto 2".to_owned())),
-                KeyCode::Char('3') => Some(AppAction::PalleteShow("goto 3".to_owned())),
-                KeyCode::Char('4') => Some(AppAction::PalleteShow("goto 4".to_owned())),
-                KeyCode::Char('5') => Some(AppAction::PalleteShow("goto 5".to_owned())),
-                KeyCode::Char('6') => Some(AppAction::PalleteShow("goto 6".to_owned())),
-                KeyCode::Char('7') => Some(AppAction::PalleteShow("goto 7".to_owned())),
-                KeyCode::Char('8') => Some(AppAction::PalleteShow("goto 8".to_owned())),
-                KeyCode::Char('9') => Some(AppAction::PalleteShow("goto 9".to_owned())),
-                _ => None,
-            });
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Right)
+                    .shift()
+                    .action(AppAction::TabNext),
+            );
 
         // ---- schema keybindings
         hndl.keybinds(AppContext::Schema)
@@ -411,6 +410,7 @@ impl Default for KeyHandler {
                     .char('G')
                     .action(AppAction::SchemaTablesGotoLast),
             )
+            // enter and delete
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
@@ -420,7 +420,14 @@ impl Default for KeyHandler {
                 Keybind::default()
                     .code(KeyCode::Delete)
                     .action(AppAction::SchemaUnloadTable),
-            );
+            )
+            // q esc
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::SchemaHide),
+            )
+            .add(Keybind::default().char('q').action(AppAction::SchemaHide));
 
         // ---- command keybindings
         hndl.keybinds(AppContext::Command)
