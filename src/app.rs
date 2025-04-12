@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum AppContext {
+pub enum Context {
     Empty,
     Table,
     Sheet,
@@ -27,16 +27,16 @@ pub enum AppContext {
     Schema,
 }
 
-impl AppContext {
-    pub fn parent(&self) -> Option<AppContext> {
+impl Context {
+    pub fn parent(&self) -> Option<Context> {
         match self {
-            AppContext::Empty => None,
-            AppContext::Table => AppContext::Empty.into(),
-            AppContext::Sheet => AppContext::Table.into(),
-            AppContext::Command => AppContext::Empty.into(),
-            AppContext::Error => AppContext::Empty.into(),
-            AppContext::Search => AppContext::Table.into(),
-            AppContext::Schema => AppContext::Empty.into(),
+            Context::Empty => None,
+            Context::Table => Context::Empty.into(),
+            Context::Sheet => Context::Table.into(),
+            Context::Command => Context::Empty.into(),
+            Context::Error => Context::Empty.into(),
+            Context::Search => Context::Table.into(),
+            Context::Schema => Context::Empty.into(),
         }
     }
 }
@@ -132,21 +132,21 @@ impl App {
         self.running = false;
     }
 
-    pub fn context(&self) -> AppContext {
+    pub fn context(&self) -> Context {
         if self.error.is_some() {
-            AppContext::Error
+            Context::Error
         } else if self.pallete.is_some() {
-            AppContext::Command
+            Context::Command
         } else if let Overlay::Schema(_) = self.overlay {
-            AppContext::Schema
+            Context::Schema
         } else if let Some(tabular) = self.tabs.selected() {
             match tabular.modal() {
-                Modal::SearchBar(_) => AppContext::Search,
-                Modal::Sheet(_) => AppContext::Sheet,
-                Modal::None => AppContext::Table,
+                Modal::SearchBar(_) => Context::Search,
+                Modal::Sheet(_) => Context::Sheet,
+                Modal::None => Context::Table,
             }
         } else {
-            AppContext::Empty
+            Context::Empty
         }
     }
 
@@ -161,7 +161,7 @@ impl App {
                 frame.render_stateful_widget(
                     Tab::new()
                         .with_borders(self.borders)
-                        .selection(matches!(state, AppContext::Table)),
+                        .selection(matches!(state, Context::Table)),
                     frame.area(),
                     &mut self.tabs,
                 );
