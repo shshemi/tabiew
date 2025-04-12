@@ -410,6 +410,16 @@ impl Default for KeyHandler {
                 Keybind::default()
                     .char('G')
                     .action(AppAction::SchemaTablesGotoLast),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::SchemaOpenTable),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Delete)
+                    .action(AppAction::SchemaUnloadTable),
             );
 
         // ---- command keybindings
