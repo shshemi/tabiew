@@ -11,7 +11,7 @@ use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::globals::{set_theme, sql};
 use tabiew::reader::{BuildReader, InputSource};
-use tabiew::tui::tab::Content;
+
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
 use tabiew::tui::{TableType, TabularState};
 use tabiew::{AppResult, tui};
@@ -21,9 +21,6 @@ use tabiew::misc::history::{History, enforce_line_limit};
 fn main() -> AppResult<()> {
     // Parse CLI
     let args = Args::parse();
-
-    // Create the sql backend.
-    // let mut sql_backend = SqlBackend::new();
 
     // Load files to data frames
     let tabs = if args.files.is_empty() {
@@ -87,7 +84,6 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
     sql().set_default(
         app.tabs_mut()
             .selected()
-            .and_then(Content::tabular)
             .map(|tab| tab.table().data_frame().clone())
             .unwrap(),
     );

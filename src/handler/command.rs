@@ -170,7 +170,7 @@ static ENTRIES: [Entry; 17] = [
         prefix: Prefix::Long("schema"),
         usage: "schema",
         description: "Show loaded data frame(s) and their schmea(s)",
-        parser: |_| Ok(AppAction::SqlSchema),
+        parser: |_| Ok(AppAction::SchemaShow),
     },
     Entry {
         prefix: Prefix::Long("rand"),

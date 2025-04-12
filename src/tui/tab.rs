@@ -1,81 +1,21 @@
 use ratatui::widgets::{Block, BorderType, Borders, StatefulWidget, Widget};
 
-use crate::misc::globals::{sql, theme};
+use crate::misc::globals::theme;
 
 use super::{
-    schema::{Schema, SchemaState},
     status_bar::{StatusBar, Tag},
     tabular::{Tabular, TabularState},
 };
 
 #[derive(Debug)]
-pub enum Content {
-    Tabular(TabularState),
-    Schema(SchemaState),
-}
-
-impl Content {
-    pub fn tabular(&self) -> Option<&TabularState> {
-        if let Content::Tabular(tabular) = self {
-            Some(tabular)
-        } else {
-            None
-        }
-    }
-
-    pub fn tabular_mut(&mut self) -> Option<&mut TabularState> {
-        if let Content::Tabular(tabular) = self {
-            Some(tabular)
-        } else {
-            None
-        }
-    }
-
-    pub fn schema(&self) -> Option<&SchemaState> {
-        if let Content::Schema(schema) = self {
-            Some(schema)
-        } else {
-            None
-        }
-    }
-
-    pub fn schema_mut(&mut self) -> Option<&mut SchemaState> {
-        if let Content::Schema(schema) = self {
-            Some(schema)
-        } else {
-            None
-        }
-    }
-
-    pub fn tick(&mut self) {
-        match self {
-            Content::Tabular(tab_content_state) => tab_content_state.tick(),
-            Content::Schema(_schema_state) => (),
-        }
-    }
-}
-
-impl From<TabularState> for Content {
-    fn from(value: TabularState) -> Self {
-        Content::Tabular(value)
-    }
-}
-
-impl From<SchemaState> for Content {
-    fn from(value: SchemaState) -> Self {
-        Content::Schema(value)
-    }
-}
-
-#[derive(Debug)]
 pub struct TabState {
-    tabulars: Vec<Content>,
+    tabulars: Vec<TabularState>,
     idx: usize,
 }
 
 impl TabState {
-    pub fn add(&mut self, tabular: impl Into<Content>) {
-        self.tabulars.push(tabular.into());
+    pub fn add(&mut self, tabular: TabularState) {
+        self.tabulars.push(tabular);
     }
 
     pub fn len(&self) -> usize {
@@ -90,11 +30,11 @@ impl TabState {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&Content> {
+    pub fn selected(&self) -> Option<&TabularState> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut Content> {
+    pub fn selected_mut(&mut self) -> Option<&mut TabularState> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -108,11 +48,11 @@ impl TabState {
         self.idx = idx;
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Content> {
+    pub fn iter(&self) -> impl Iterator<Item = &TabularState> {
         self.tabulars.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Content> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabularState> {
         self.tabulars.iter_mut()
     }
 }
@@ -120,7 +60,7 @@ impl TabState {
 impl FromIterator<TabularState> for TabState {
     fn from_iter<T: IntoIterator<Item = TabularState>>(iter: T) -> Self {
         Self {
-            tabulars: iter.into_iter().map(Into::into).collect(),
+            tabulars: iter.into_iter().collect(),
             idx: 0,
         }
     }
@@ -169,56 +109,47 @@ impl StatefulWidget for Tab {
         state.idx = state.idx().min(state.len().saturating_sub(1));
 
         // build the status bar
-        let status_bar = match state.selected() {
-            Some(Content::Tabular(tabular)) => StatusBar::default()
-                .tag(Tag::new(
-                    "Tab",
-                    format!("{} / {}", state.idx + 1, state.len()),
-                ))
-                .tag(match tabular.table_type() {
-                    super::TableType::Help => Tag::new("Table", "Help"),
-                    super::TableType::Name(name) => Tag::new("Table", name),
-                    super::TableType::Query(query) => Tag::new("Query", query),
-                })
-                .tag(Tag::new(
-                    "Auto-Fit",
-                    if !tabular.table().expanded() {
-                        "Yes"
-                    } else {
-                        " No"
-                    },
-                ))
-                .tag(Tag::new(
-                    "Row",
-                    format!(
-                        "{:>width$}",
-                        tabular.table().selected() + 1,
-                        width = tabular.table().data_frame().height().to_string().len()
-                    ),
-                ))
-                .tag(Tag::new(
-                    "Shape",
-                    format!(
-                        "{} x {}",
-                        tabular.table().data_frame().height(),
-                        tabular.table().data_frame().width()
-                    ),
-                )),
+        let status_bar = state
+            .selected()
+            .map(|tabular| {
+                StatusBar::default()
+                    .tag(Tag::new(
+                        "Tab",
+                        format!("{} / {}", state.idx + 1, state.len()),
+                    ))
+                    .tag(match tabular.table_type() {
+                        super::TableType::Help => Tag::new("Table", "Help"),
+                        super::TableType::Name(name) => Tag::new("Table", name),
+                        super::TableType::Query(query) => Tag::new("Query", query),
+                    })
+                    .tag(Tag::new(
+                        "Auto-Fit",
+                        if !tabular.table().expanded() {
+                            "Yes"
+                        } else {
+                            " No"
+                        },
+                    ))
+                    .tag(Tag::new(
+                        "Row",
+                        format!(
+                            "{:>width$}",
+                            tabular.table().selected() + 1,
+                            width = tabular.table().data_frame().height().to_string().len()
+                        ),
+                    ))
+                    .tag(Tag::new(
+                        "Shape",
+                        format!(
+                            "{} x {}",
+                            tabular.table().data_frame().height(),
+                            tabular.table().data_frame().width()
+                        ),
+                    ))
+            })
+            .unwrap_or_default();
 
-            Some(Content::Schema(_)) => StatusBar::default()
-                .tag(Tag::new(
-                    "Tab",
-                    format!("{} / {}", state.idx + 1, state.len()),
-                ))
-                .tag(Tag::new("Tables", sql().schema().len().to_string())),
-
-            None => StatusBar::default().tag(Tag::new(
-                "Tab",
-                format!("{} / {}", state.idx + 1, state.len()),
-            )),
-        };
-
-        // draw block with status bar
+        // render block with status bar
         let area = {
             let blk = Block::bordered()
                 .border_type(BorderType::Rounded)
@@ -230,15 +161,9 @@ impl StatefulWidget for Tab {
             new
         };
 
-        // draw tab content
-        match state.selected_mut() {
-            Some(Content::Tabular(state)) => {
-                Tabular::default().render(area, buf, state);
-            }
-            Some(Content::Schema(schema_state)) => {
-                Schema::default().render(area, buf, schema_state)
-            }
-            None => (),
+        // render tabular
+        if let Some(tabular) = state.selected_mut() {
+            Tabular::default().render(area, buf, tabular);
         }
     }
 }
