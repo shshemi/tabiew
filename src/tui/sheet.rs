@@ -109,15 +109,15 @@ impl StatefulWidget for Sheet {
                     .border_style(theme().block())
                     .border_type(BorderType::Rounded)
                     .title_bottom(Line::from_iter([
-                        Span::raw("Up "),
-                        Span::raw(" Shift+K ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" Scroll Up ").style(theme().block_tag()),
+                        Span::raw(" Shift+K | Shift+\u{2191} ")
+                            .style(theme().block_tag())
+                            .add_modifier(Modifier::REVERSED),
                         Span::raw(" "),
-                        Span::raw(" Shift+\u{2191} ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" ─── "),
-                        Span::raw("Down "),
-                        Span::raw(" Shift+J ").add_modifier(Modifier::REVERSED),
-                        Span::raw(" "),
-                        Span::raw(" Shift+\u{2193} ").add_modifier(Modifier::REVERSED),
+                        Span::raw(" Scroll Down ").style(theme().block_tag()),
+                        Span::raw(" Shift+J | Shift+\u{2193} ")
+                            .style(theme().block_tag())
+                            .add_modifier(Modifier::REVERSED),
                     ]))
                     .title_alignment(Alignment::Center)
                     .borders(Borders::ALL),

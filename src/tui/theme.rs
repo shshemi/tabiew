@@ -7,6 +7,7 @@ pub trait Styler {
     fn header(&self, col: usize) -> Style;
     fn tag(&self, col: usize) -> Style;
     fn block(&self) -> Style;
+    fn block_tag(&self) -> Style;
     fn text(&self) -> Style;
     fn subtext(&self) -> Style;
     fn error(&self) -> Style;
@@ -64,6 +65,12 @@ where
         Style::default()
             .bg(Self::BACKGROUND)
             .fg(Self::HIGHTLIGHT_BACKGROUND)
+    }
+
+    fn block_tag(&self) -> Style {
+        Style::default()
+            .bg(Self::HIGHTLIGHT_BACKGROUND)
+            .fg(Self::LIGHT_BACKGROUND)
     }
 
     fn text(&self) -> Style {
@@ -274,6 +281,10 @@ impl Styler for Terminal {
                 Color::Green,
             ][idx % 5])
             .fg(Color::Gray)
+    }
+
+    fn block_tag(&self) -> Style {
+        Style::default().bg(Color::LightYellow).fg(Color::Gray)
     }
 
     fn block(&self) -> Style {
