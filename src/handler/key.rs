@@ -357,23 +357,23 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Up)
-                    .action(AppAction::SchemaTablesGotoPrev),
+                    .action(AppAction::SchemaNamesSelectPrev),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Down)
-                    .action(AppAction::SchemaTablesGotoNext),
+                    .action(AppAction::SchemaNamesSelectNext),
             )
             // KJ
             .add(
                 Keybind::default()
                     .code(KeyCode::Char('k'))
-                    .action(AppAction::SchemaTablesGotoPrev),
+                    .action(AppAction::SchemaNamesSelectPrev),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Char('j'))
-                    .action(AppAction::SchemaTablesGotoNext),
+                    .action(AppAction::SchemaNamesSelectNext),
             )
             // shift - up & down
             .add(
@@ -403,12 +403,12 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char('g')
-                    .action(AppAction::SchemaTablesGotoFirst),
+                    .action(AppAction::SchemaNamesSelectFirst),
             )
             .add(
                 Keybind::default()
                     .char('G')
-                    .action(AppAction::SchemaTablesGotoLast),
+                    .action(AppAction::SchemaNamesSelectLast),
             )
             // enter
             .add(

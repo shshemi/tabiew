@@ -76,6 +76,10 @@ impl App {
         self.running
     }
 
+    pub fn tabs(&self) -> &TabState {
+        &self.tabs
+    }
+
     pub fn tabs_mut(&mut self) -> &mut TabState {
         &mut self.tabs
     }
