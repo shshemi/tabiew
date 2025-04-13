@@ -1,11 +1,12 @@
 use std::{ops::Div, path::PathBuf};
 
 use anyhow::{Ok, anyhow};
+use polars::frame::DataFrame;
 use rand::Rng;
 
 use crate::{
     AppResult,
-    app::{App, Overlay},
+    app::{App, Content},
     misc::globals::sql,
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, InputSource, JsonLineToDataFrame,
@@ -17,13 +18,15 @@ use crate::{
 
 use super::command::{commands_help_data_frame, parse_into_action};
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Clone)]
 pub enum AppAction {
     NoAction,
     ToggleBorders,
     DismissError,
     DismissErrorAndShowPallete,
-    AppGotoLine(usize),
+    GotoLine(usize),
+    SwitchToSchema,
+    SwitchToTabulars,
 
     TableDismissModal,
     TableScrollRight,
@@ -42,16 +45,16 @@ pub enum AppAction {
     TableGoDown(usize),
     TableGoDownHalfPage,
     TableGoDownFullPage,
+    TableSelect(String),
+    TableOrder(String),
+    TableFilter(String),
+    TableQuery(String),
+    TableSetDataFrame(DataFrame),
+    TableReset,
 
     SheetShow,
     SheetScrollUp,
     SheetScrollDown,
-
-    TableSelect(String),
-    TableOrder(String),
-    TableFilter(String),
-    SqlQuery(String),
-    TableReset,
 
     PalleteGotoNext,
     PalleteGotoPrev,
@@ -77,7 +80,7 @@ pub enum AppAction {
     SearchRollback,
     SearchCommit,
 
-    TabNew(String),
+    TabNewQuery(String),
     TabSelect(usize),
     TabRemove(usize),
     TabPrev,
@@ -113,8 +116,6 @@ pub enum AppAction {
         has_header: bool,
     },
 
-    SchemaShow,
-    SchemaHide,
     SchemaTablesGotoPrev,
     SchemaTablesGotoNext,
     SchemaTablesGotoFirst,
@@ -137,6 +138,14 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::ToggleBorders => {
             app.toggle_borders();
+            Ok(None)
+        }
+        AppAction::SwitchToSchema => {
+            app.switch_schema();
+            Ok(None)
+        }
+        AppAction::SwitchToTabulars => {
+            app.switch_tabular();
             Ok(None)
         }
         AppAction::DismissErrorAndShowPallete => {
@@ -162,13 +171,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::SqlQuery(query) => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.table_mut().set_data_frame(sql().execute(&query)?)
-            }
-            Ok(None)
-        }
-        AppAction::AppGotoLine(line) => {
+        AppAction::GotoLine(line) => {
             match app.context() {
                 crate::app::Context::Table => {
                     if let Some(tabular) = app.tabs_mut().selected_mut() {
@@ -176,9 +179,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                     }
                 }
                 crate::app::Context::Schema => {
-                    if let Overlay::Schema(schema) = app.overlay_mut() {
-                        schema.names_mut().table_mut().select(line.into());
-                    }
+                    app.schema_mut().names_mut().table_mut().select(line.into());
                 }
                 _ => (),
             }
@@ -243,6 +244,37 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
+        AppAction::TableSelect(select) => Ok(Some(AppAction::TableQuery(format!(
+            "SELECT {} FROM _",
+            select
+        )))),
+        AppAction::TableOrder(order) => Ok(Some(AppAction::TableQuery(format!(
+            "SELECT * FROM _ ORDER BY {}",
+            order
+        )))),
+        AppAction::TableFilter(filter) => Ok(Some(AppAction::TableQuery(
+            format! {"SELECT * FROM _ where {}", filter},
+        ))),
+        AppAction::TableQuery(query) => {
+            let df = sql().execute(&query)?;
+            Ok(Some(AppAction::TableSetDataFrame(df)))
+        }
+        AppAction::TableSetDataFrame(df) => {
+            if let Some(tab) = app.tabs_mut().selected_mut() {
+                tab.table_mut().set_data_frame(df.clone());
+                sql().set_default(df);
+            }
+            Ok(None)
+        }
+        AppAction::TableReset => {
+            let query = match app.tabs_mut().selected().map(|ts| ts.table_type()) {
+                Some(TableType::Name(name)) => Some(format!("SELECT * FROM '{}'", name)),
+                Some(TableType::Query(query)) => Some(query.to_owned()),
+                Some(_) => None,
+                None => None,
+            };
+            Ok(query.map(AppAction::TableQuery))
+        }
         AppAction::SheetScrollUp => {
             if let Some(sheet) = app
                 .tabs_mut()
@@ -265,43 +297,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::TableReset => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                let df = match tab.table_type() {
-                    TableType::Name(name) => {
-                        Some(sql().execute(&format!("SELECT * FROM '{}'", name))?)
-                    }
-                    TableType::Query(query) => Some(sql().execute(query)?),
-                    _ => None,
-                };
-                if let Some(df) = df {
-                    tab.table_mut().set_data_frame(df);
-                }
-            }
-            Ok(None)
-        }
-        AppAction::TableSelect(select) => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.table_mut()
-                    .set_data_frame(sql().execute(&format!("SELECT {} FROM _", select))?)
-            }
-            Ok(None)
-        }
-        AppAction::TableOrder(order) => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.table_mut()
-                    .set_data_frame(sql().execute(&format!("SELECT * FROM _ ORDER BY {}", order))?)
-            }
-            Ok(None)
-        }
-        AppAction::TableFilter(filter) => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.table_mut()
-                    .set_data_frame(sql().execute(&format!("SELECT * FROM _ where {}", filter))?)
-            }
-            Ok(None)
-        }
-        AppAction::TabNew(query) => {
+        AppAction::TabNewQuery(query) => {
             if sql().schema().iter().any(|(name, _)| name == &query) {
                 let df = sql().execute(&format!("SELECT * FROM '{}'", query))?;
                 app.tabs_mut()
@@ -322,6 +318,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(tabular) = app.tabs_mut().selected_mut() {
                 sql().set_default(tabular.table_mut().data_frame().clone());
             }
+            app.switch_tabular();
             Ok(None)
         }
         AppAction::TabRemove(idx) => {
@@ -745,110 +742,96 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::SchemaShow => {
-            if matches!(app.overlay_mut(), Overlay::Empty) {
-                app.show_schema();
-            }
-            Ok(None)
-        }
-        AppAction::SchemaHide => {
-            app.hide_schema();
-            Ok(None)
-        }
         AppAction::SchemaTablesGotoPrev => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                schema.select_table(
-                    schema
-                        .names()
-                        .table()
-                        .selected()
-                        .map(|i| i.saturating_sub(1))
-                        .unwrap_or(0),
-                );
+            if app.content() == &Content::Tabulars {
+                app.schema_mut().names_mut().table_mut().select_previous();
             }
             Ok(None)
         }
         AppAction::SchemaTablesGotoNext => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                schema.select_table(
-                    schema
-                        .names()
-                        .table()
-                        .selected()
-                        .map(|i| i.saturating_add(1))
-                        .unwrap_or(0),
-                );
+            if app.content() == &Content::Schema {
+                app.schema_mut().names_mut().table_mut().select_next();
             }
             Ok(None)
         }
         AppAction::SchemaTablesGotoFirst => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                schema.select_table(0);
+            if app.content() == &Content::Schema {
+                app.schema_mut().names_mut().table_mut().select_first();
             }
             Ok(None)
         }
         AppAction::SchemaTablesGotoLast => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                schema.select_table(usize::MAX);
+            if app.content() == &Content::Schema {
+                app.schema_mut().names_mut().table_mut().select_last();
             }
             Ok(None)
         }
         AppAction::SchemaFieldsScrollUp => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                *schema.fields_mut().table_state_mut().offset_mut() =
-                    schema.fields().table_state().offset().saturating_sub(1);
+            if app.content() == &Content::Schema {
+                *app.schema_mut().fields_mut().table_state_mut().offset_mut() = app
+                    .schema()
+                    .fields()
+                    .table_state()
+                    .offset()
+                    .saturating_sub(1);
             }
             Ok(None)
         }
         AppAction::SchemaFieldsScrollDown => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                *schema.fields_mut().table_state_mut().offset_mut() =
-                    schema.fields().table_state().offset().saturating_add(1);
+            if app.content() == &Content::Schema {
+                *app.schema_mut().fields_mut().table_state_mut().offset_mut() = app
+                    .schema()
+                    .fields()
+                    .table_state()
+                    .offset()
+                    .saturating_add(1);
             }
             Ok(None)
         }
         AppAction::SchemaOpenTable => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                if let Some(table_name) = schema.names().table().selected().and_then(|selection| {
+            let table_name = app
+                .schema()
+                .names()
+                .table()
+                .selected()
+                .and_then(|idx| {
                     sql()
                         .schema()
-                        .get_by_index(selection)
+                        .get_by_index(idx)
                         .map(|(name, _)| name.to_owned())
-                }) {
-                    if let Some(tab_idx) =
-                        app.tabs_mut()
-                            .iter()
-                            .enumerate()
-                            .find_map(|(idx, tab_type)| match tab_type.table_type() {
-                                TableType::Name(name) if name.as_str() == table_name.as_str() => {
-                                    Some(idx)
-                                }
-                                _ => None,
-                            })
-                    {
-                        Ok(Some(AppAction::TabSelect(tab_idx)))
-                    } else {
-                        Ok(Some(AppAction::TabNew(table_name)))
-                    }
-                } else {
-                    Ok(None)
-                }
+                })
+                .ok_or(anyhow!("No table is selected"))?;
+
+            let tab_idx = app
+                .tabs_mut()
+                .iter()
+                .map(|tabular| tabular.table_type())
+                .enumerate()
+                .find_map(|(idx, tab_type)| match tab_type {
+                    TableType::Name(name) if name.as_str() == table_name => Some(idx),
+                    _ => None,
+                });
+
+            if let Some(tab_idx) = tab_idx {
+                Ok(Some(AppAction::TabSelect(tab_idx)))
             } else {
-                Ok(None)
+                Ok(Some(AppAction::TabNewQuery(table_name)))
             }
         }
         AppAction::SchemaUnloadTable => {
-            if let Overlay::Schema(schema) = app.overlay_mut() {
-                if let Some(selection) = schema.names().table().selected() {
-                    if let Some(name) = sql()
+            let table_name = app
+                .schema()
+                .names()
+                .table()
+                .selected()
+                .and_then(|idx| {
+                    sql()
                         .schema()
-                        .get_by_index(selection)
+                        .get_by_index(idx)
                         .map(|(name, _)| name.to_owned())
-                    {
-                        sql().unregister(&name);
-                    }
-                }
-            }
+                })
+                .ok_or(anyhow!("No table is selected"))?;
+            sql().unregister(&table_name);
             Ok(None)
         }
     }

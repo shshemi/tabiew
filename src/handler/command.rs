@@ -94,7 +94,7 @@ static ENTRIES: [Entry; 17] = [
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
         description: "Query the data in Structured Query Language(SQL).",
-        parser: |query| Ok(AppAction::SqlQuery(query.to_owned())),
+        parser: |query| Ok(AppAction::TableQuery(query.to_owned())),
     },
     Entry {
         prefix: Prefix::ShortAndLong("q", "quit"),
@@ -107,7 +107,7 @@ static ENTRIES: [Entry; 17] = [
         usage: "goto <line_index>",
         description: "Jumps to the specified line",
         parser: |line| {
-            Ok(AppAction::AppGotoLine(
+            Ok(AppAction::GotoLine(
                 line.parse::<usize>()?.saturating_sub(1),
             ))
         },
@@ -170,7 +170,7 @@ static ENTRIES: [Entry; 17] = [
         prefix: Prefix::Long("schema"),
         usage: "schema",
         description: "Show loaded data frame(s) and their schmea(s)",
-        parser: |_| Ok(AppAction::SchemaShow),
+        parser: |_| Ok(AppAction::SwitchToSchema),
     },
     Entry {
         prefix: Prefix::Long("rand"),
@@ -182,7 +182,7 @@ static ENTRIES: [Entry; 17] = [
         prefix: Prefix::Long("tabn"),
         usage: "tabn <query>",
         description: "Create a new tab using the query",
-        parser: |query| Ok(AppAction::TabNew(query.to_owned())),
+        parser: |query| Ok(AppAction::TabNewQuery(query.to_owned())),
     },
     Entry {
         prefix: Prefix::Long("tabr"),
