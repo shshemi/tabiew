@@ -151,10 +151,14 @@ impl StatefulWidget for Tab {
 
         // render block with status bar
         let area = {
-            let blk = Block::bordered()
+            let blk = Block::default()
+                .borders(if self.borders {
+                    Borders::all()
+                } else {
+                    Borders::empty()
+                })
                 .border_type(BorderType::Rounded)
                 .border_style(theme().block())
-                .borders(Borders::empty())
                 .title_bottom(status_bar);
             let new = blk.inner(area);
             blk.render(area, buf);
