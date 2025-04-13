@@ -41,16 +41,16 @@ impl Context {
     }
 }
 
-#[derive(Debug, Default)]
-pub enum Overlay {
-    Schema(SchemaState),
-    #[default]
-    Empty,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Content {
+    Schema,
+    Tabulars,
 }
 
 pub struct App {
     tabs: TabState,
-    overlay: Overlay,
+    schema: SchemaState,
+    content: Content,
     error: Option<String>,
     pallete: Option<CommandPalleteState>,
     history: History,
@@ -62,10 +62,11 @@ impl App {
     pub fn new(tabs: TabState, history: History) -> Self {
         Self {
             tabs,
-            overlay: Default::default(),
+            history,
+            schema: SchemaState::default(),
+            content: Content::Tabulars,
             error: None,
             pallete: None,
-            history,
             borders: true,
             running: true,
         }
@@ -79,6 +80,14 @@ impl App {
         &mut self.tabs
     }
 
+    pub fn schema(&self) -> &SchemaState {
+        &self.schema
+    }
+
+    pub fn schema_mut(&mut self) -> &mut SchemaState {
+        &mut self.schema
+    }
+
     pub fn pallete_mut(&mut self) -> Option<&mut CommandPalleteState> {
         self.pallete.as_mut()
     }
@@ -87,8 +96,8 @@ impl App {
         &mut self.history
     }
 
-    pub fn overlay_mut(&mut self) -> &mut Overlay {
-        &mut self.overlay
+    pub fn content(&self) -> &Content {
+        &self.content
     }
 
     pub fn show_pallete(&mut self, cmd: impl ToString) {
@@ -109,12 +118,12 @@ impl App {
         self.error = None;
     }
 
-    pub fn show_schema(&mut self) {
-        self.overlay = Overlay::Schema(Default::default());
+    pub fn switch_schema(&mut self) {
+        self.content = Content::Schema;
     }
 
-    pub fn hide_schema(&mut self) {
-        self.overlay = Overlay::Empty;
+    pub fn switch_tabular(&mut self) {
+        self.content = Content::Tabulars;
     }
 
     pub fn toggle_borders(&mut self) {
@@ -137,7 +146,7 @@ impl App {
             Context::Error
         } else if self.pallete.is_some() {
             Context::Command
-        } else if let Overlay::Schema(_) = self.overlay {
+        } else if let Content::Schema = self.content {
             Context::Schema
         } else if let Some(tabular) = self.tabs.selected() {
             match tabular.modal() {
@@ -153,11 +162,11 @@ impl App {
     pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
         // Draw table / item
         let state = self.context();
-        match &mut self.overlay {
-            Overlay::Schema(schema) => {
-                frame.render_stateful_widget(Schema::default(), frame.area(), schema);
+        match &mut self.content {
+            Content::Schema => {
+                frame.render_stateful_widget(Schema::default(), frame.area(), &mut self.schema);
             }
-            Overlay::Empty => {
+            Content::Tabulars => {
                 frame.render_stateful_widget(
                     Tab::new()
                         .with_borders(self.borders)

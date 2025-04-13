@@ -73,7 +73,7 @@ impl Modal {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TableType {
     Help,
     Name(String),
