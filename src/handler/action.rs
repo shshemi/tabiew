@@ -12,7 +12,10 @@ use crate::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, InputSource, JsonLineToDataFrame,
         JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
     },
-    tui::{TableType, TabularState, search_bar::SearchBarState, tabular::Modal},
+    tui::{
+        TableType, TabularState, data_frame_table::DataFrameTableState, search_bar::SearchBarState,
+        tabular::Modal,
+    },
     writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
 };
 
@@ -116,10 +119,10 @@ pub enum AppAction {
         has_header: bool,
     },
 
-    SchemaTablesGotoPrev,
-    SchemaTablesGotoNext,
-    SchemaTablesGotoFirst,
-    SchemaTablesGotoLast,
+    SchemaNamesSelectPrev,
+    SchemaNamesSelectNext,
+    SchemaNamesSelectFirst,
+    SchemaNamesSelectLast,
     SchemaFieldsScrollUp,
     SchemaFieldsScrollDown,
     SchemaOpenTable,
@@ -142,10 +145,19 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SwitchToSchema => {
             app.switch_schema();
+            sql().unset_default();
             Ok(None)
         }
         AppAction::SwitchToTabulars => {
             app.switch_tabular();
+            if let Some(df) = app
+                .tabs()
+                .selected()
+                .map(TabularState::table)
+                .map(DataFrameTableState::data_frame)
+            {
+                sql().set_default(df.clone());
+            }
             Ok(None)
         }
         AppAction::DismissErrorAndShowPallete => {
@@ -742,25 +754,25 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::SchemaTablesGotoPrev => {
-            if app.content() == &Content::Tabulars {
+        AppAction::SchemaNamesSelectPrev => {
+            if app.content() == &Content::Schema {
                 app.schema_mut().names_mut().table_mut().select_previous();
             }
             Ok(None)
         }
-        AppAction::SchemaTablesGotoNext => {
+        AppAction::SchemaNamesSelectNext => {
             if app.content() == &Content::Schema {
                 app.schema_mut().names_mut().table_mut().select_next();
             }
             Ok(None)
         }
-        AppAction::SchemaTablesGotoFirst => {
+        AppAction::SchemaNamesSelectFirst => {
             if app.content() == &Content::Schema {
                 app.schema_mut().names_mut().table_mut().select_first();
             }
             Ok(None)
         }
-        AppAction::SchemaTablesGotoLast => {
+        AppAction::SchemaNamesSelectLast => {
             if app.content() == &Content::Schema {
                 app.schema_mut().names_mut().table_mut().select_last();
             }
