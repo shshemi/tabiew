@@ -410,12 +410,13 @@ impl Default for KeyHandler {
                     .char('G')
                     .action(AppAction::SchemaTablesGotoLast),
             )
-            // enter and delete
+            // enter
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
                     .action(AppAction::SchemaOpenTable),
             )
+            // delete
             .add(
                 Keybind::default()
                     .code(KeyCode::Delete)
@@ -425,9 +426,13 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::SchemaHide),
+                    .action(AppAction::SwitchToTabulars),
             )
-            .add(Keybind::default().char('q').action(AppAction::SchemaHide));
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::SwitchToTabulars),
+            );
 
         // ---- command keybindings
         hndl.keybinds(Context::Command)
