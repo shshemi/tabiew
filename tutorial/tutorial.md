@@ -123,7 +123,9 @@ tabn SELECT * FROM user WHERE marriage='Married' AND balance < 10000
 
 ![image not found](images/new_tab.png)
 
-The table names are their file names without the extension. For instance, the table name for `housing.csv` is `housing`. If multiple files have the same name, subsequent files will have `_2`, `_3`, and so on appended to their names. The `:schema` command displays all loaded tables.
+## Schema
+
+Table names are chosen based on their file names without the extension. For instance, the table name for `housing.csv` is `housing`. If multiple files have the same name, subsequent files will have `_2`, `_3`, and so on appended to their names. The `:schema` command displays all loaded tables.
 
 ![image not found](images/schema.png)
 
