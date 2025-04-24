@@ -303,7 +303,7 @@ mod import {
             .as_str()
             .to_owned();
         Ok(AppAction::ImportDsv {
-            path: path.into(),
+            source: path.into(),
             separator: ',',
             quote: '"',
             has_header: true,
@@ -327,7 +327,7 @@ mod import {
             .try_fold(CsvImportArgs::default(), |args, slice| args.update(slice))?;
 
         Ok(AppAction::ImportDsv {
-            path: path.into(),
+            source: path.into(),
             separator: args.separator.unwrap_or(','),
             has_header: args.has_header.unwrap_or(true),
             quote: args.quote.unwrap_or('"'),
@@ -386,7 +386,7 @@ mod import {
             .as_str()
             .to_owned();
         Ok(AppAction::ImportFwf {
-            path: path.into(),
+            source: path.into(),
             widths: Vec::default(),
             separator_length: 0,
             flexible_width: false,
@@ -409,7 +409,7 @@ mod import {
             .filter(|slice| !slice.is_empty())
             .try_fold(FwfImportArgs::default(), |args, slice| args.update(slice))?;
         Ok(AppAction::ImportFwf {
-            path: path.into(),
+            source: path.into(),
             widths: args.widths,
             separator_length: args.separator_length.unwrap_or_default(),
             flexible_width: args.flexible_width.unwrap_or(false),

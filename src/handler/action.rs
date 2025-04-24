@@ -101,18 +101,18 @@ pub enum AppAction {
     ExportJson(PathBuf, JsonFormat),
     ExportArrow(PathBuf),
     ImportDsv {
-        path: PathBuf,
+        source: InputSource,
         separator: char,
         has_header: bool,
         quote: char,
     },
 
-    ImportParquet(PathBuf),
-    ImportJson(PathBuf, JsonFormat),
-    ImportArrow(PathBuf),
-    ImportSqlite(PathBuf),
+    ImportParquet(InputSource),
+    ImportJson(InputSource, JsonFormat),
+    ImportArrow(InputSource),
+    ImportSqlite(InputSource),
     ImportFwf {
-        path: PathBuf,
+        source: InputSource,
         widths: Vec<usize>,
         separator_length: usize,
         flexible_width: bool,
@@ -400,12 +400,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ImportDsv {
-            path,
+            source,
             separator,
             has_header,
             quote,
         } => {
-            let source = InputSource::File(path.clone());
             let frames = CsvToDataFrame::default()
                 .with_separator(separator)
                 .with_quote_char(quote)
@@ -418,8 +417,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::ImportParquet(path) => {
-            let source = InputSource::File(path);
+        AppAction::ImportParquet(source) => {
             let frames = ParquetToDataFrame.named_frames(source.clone())?;
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
@@ -430,8 +428,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 app.tabs_mut().len().saturating_sub(1),
             )))
         }
-        AppAction::ImportJson(path, json_format) => {
-            let source = InputSource::File(path);
+        AppAction::ImportJson(source, json_format) => {
             let frames = match json_format {
                 JsonFormat::Json => JsonToDataFrame::default().named_frames(source.clone())?,
                 JsonFormat::JsonLine => {
@@ -447,8 +444,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 app.tabs_mut().len().saturating_sub(1),
             )))
         }
-        AppAction::ImportArrow(path) => {
-            let source = InputSource::File(path.clone());
+        AppAction::ImportArrow(source) => {
             let frames = ArrowIpcToDataFrame.named_frames(source.clone())?;
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
@@ -459,8 +455,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 app.tabs_mut().len().saturating_sub(1),
             )))
         }
-        AppAction::ImportSqlite(path) => {
-            let source = InputSource::File(path.clone());
+        AppAction::ImportSqlite(source) => {
             let frames = SqliteToDataFrames.named_frames(source.clone())?;
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
@@ -472,13 +467,12 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             )))
         }
         AppAction::ImportFwf {
-            path,
+            source,
             widths,
             separator_length,
             flexible_width,
             has_header,
         } => {
-            let source = InputSource::File(path.clone());
             let frames = FwfToDataFrame::default()
                 .with_widths(widths)
                 .with_separator_length(separator_length)
