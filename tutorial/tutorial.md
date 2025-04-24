@@ -187,7 +187,7 @@ Some formats, like `csv` and `fwf`, accept additional arguments. These arguments
 import csv[\t no-header] sample.tsv
 ```
 
-It goes without saying that, Not providing arguments for `csv` or `fwf` results in using default arguments instead.
+It goes without saying that, Not providing arguments for `csv` or `fwf` results in using default arguments instead. You may also pass `$stdin` as the path to read the standard input instead of a file.
 
 ### Arguments for `csv` Format
 

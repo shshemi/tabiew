@@ -8,7 +8,6 @@ pub use sqlite::SqliteToDataFrames;
 use std::{
     ffi::OsStr,
     fs::File,
-    io::{self},
     path::{Path, PathBuf},
 };
 
@@ -23,10 +22,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Format, InferSchema},
-    misc::{
-        polars_ext::SafeInferSchema,
-        type_ext::{ReadToCursor, ToAscii},
-    },
+    misc::{globals::stdin, polars_ext::SafeInferSchema, type_ext::ToAscii},
 };
 
 type NamedFrames = Box<[(String, DataFrame)]>;
@@ -53,6 +49,15 @@ impl InputSource {
         match self {
             InputSource::File(path_buf) => path_buf.to_string_lossy().into_owned(),
             InputSource::Stdin => "Stdin".to_owned(),
+        }
+    }
+}
+
+impl From<String> for InputSource {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "$stdin" => InputSource::File(value.into()),
+            _ => InputSource::Stdin,
         }
     }
 }
@@ -171,7 +176,7 @@ impl ReadToDataFrames for CsvToDataFrame {
     fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
         let df = match &input {
             InputSource::File(path) => self.try_into_frame(File::open(path)?),
-            InputSource::Stdin => self.try_into_frame(io::stdin().read_to_cursor()?),
+            InputSource::Stdin => self.try_into_frame(stdin()),
         }?;
         Ok([(input.table_name(), df)].into())
     }
@@ -186,9 +191,7 @@ impl ReadToDataFrames for ParquetToDataFrame {
                 .set_rechunk(true)
                 .finish()?,
 
-            InputSource::Stdin => ParquetReader::new(io::stdin().read_to_cursor()?)
-                .set_rechunk(true)
-                .finish()?,
+            InputSource::Stdin => ParquetReader::new(stdin()).set_rechunk(true).finish()?,
         };
         Ok([(input.table_name(), df)].into())
     }
@@ -225,7 +228,7 @@ impl ReadToDataFrames for JsonLineToDataFrame {
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            InputSource::Stdin => JsonLineReader::new(io::stdin().read_to_cursor()?)
+            InputSource::Stdin => JsonLineReader::new(stdin())
                 .with_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
@@ -272,7 +275,7 @@ impl ReadToDataFrames for JsonToDataFrame {
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            InputSource::Stdin => JsonReader::new(io::stdin().read_to_cursor()?)
+            InputSource::Stdin => JsonReader::new(stdin())
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
@@ -296,9 +299,7 @@ impl ReadToDataFrames for ArrowIpcToDataFrame {
             InputSource::File(path) => IpcReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .finish()?,
-            InputSource::Stdin => IpcReader::new(io::stdin().read_to_cursor()?)
-                .set_rechunk(true)
-                .finish()?,
+            InputSource::Stdin => IpcReader::new(stdin()).set_rechunk(true).finish()?,
         };
         Ok([(input.table_name(), df)].into())
     }

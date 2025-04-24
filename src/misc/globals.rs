@@ -1,7 +1,8 @@
 use std::{
     cell::UnsafeCell,
+    io::{Cursor, Read},
     ops::{Deref, DerefMut},
-    sync::{Mutex, MutexGuard, Once, RwLock, RwLockReadGuard},
+    sync::{Mutex, MutexGuard, Once, OnceLock, RwLock, RwLockReadGuard},
 };
 
 use crate::tui::theme::{Monokai, Styler};
@@ -11,6 +12,7 @@ use super::sql::SqlBackend;
 static NEW_THEME: RwLock<Lazy<Box<dyn Styler + Send + Sync>>> =
     RwLock::new(Lazy::new(|| Box::new(Monokai)));
 static SQL_BACKEND: Mutex<Lazy<SqlBackend>> = Mutex::new(Lazy::new(SqlBackend::default));
+static STDIN_CONTENT: OnceLock<Vec<u8>> = OnceLock::new();
 
 pub fn set_theme(theme: Box<dyn Styler + Send + Sync>) {
     NEW_THEME.write().unwrap().set(theme);
@@ -26,6 +28,14 @@ pub fn sql() -> impl DerefMut<Target = SqlBackend> {
     Global {
         inner: SQL_BACKEND.lock().unwrap(),
     }
+}
+
+pub fn stdin() -> Cursor<&'static Vec<u8>> {
+    Cursor::new(STDIN_CONTENT.get_or_init(|| {
+        let mut buf = Vec::new();
+        std::io::stdin().read_to_end(&mut buf).unwrap();
+        buf
+    }))
 }
 
 pub struct Global<T> {

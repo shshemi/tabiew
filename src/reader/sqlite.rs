@@ -1,3 +1,5 @@
+use std::{io::Read, path::Path};
+
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
@@ -6,7 +8,7 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::AppResult;
+use crate::{AppResult, misc::globals::stdin};
 
 use super::{NamedFrames, ReadToDataFrames};
 
@@ -14,31 +16,37 @@ pub struct SqliteToDataFrames;
 
 impl ReadToDataFrames for SqliteToDataFrames {
     fn named_frames(&self, input: super::InputSource) -> AppResult<NamedFrames> {
-        let path = match input {
-            crate::reader::InputSource::File(path) => path,
-            crate::reader::InputSource::Stdin => NamedTempFile::new()?.keep()?.1,
-        };
-
-        let conn = Connection::open(path)?;
-
-        // Fetch table names
-        let names = conn
-            .prepare(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
-            )?
-            .query_map([], |row| row.get(0))?
-            .collect::<Result<Vec<String>, _>>()?;
-
-        // Iterate over tables and transform them into data_frames
-        names
-            .into_iter()
-            .map(|name| {
-                let df = get_data_frame(&conn, &name)?;
-                Ok((name, df))
-            })
-            .collect::<AppResult<Vec<_>>>()
-            .map(|vec| vec.into_boxed_slice())
+        match input {
+            crate::reader::InputSource::File(path) => path_to_name_frames(path),
+            crate::reader::InputSource::Stdin => {
+                let path = NamedTempFile::new()?.keep()?.1;
+                let mut buf = Vec::new();
+                stdin().read_to_end(&mut buf).unwrap();
+                std::fs::write(&path, buf).unwrap();
+                path_to_name_frames(path)
+            }
+        }
     }
+}
+
+fn path_to_name_frames(path: impl AsRef<Path>) -> AppResult<NamedFrames> {
+    let conn = Connection::open(path)?;
+
+    // Fetch table names
+    let names = conn
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")?
+        .query_map([], |row| row.get(0))?
+        .collect::<Result<Vec<String>, _>>()?;
+
+    // Iterate over tables and transform them into data_frames
+    names
+        .into_iter()
+        .map(|name| {
+            let df = get_data_frame(&conn, &name)?;
+            Ok((name, df))
+        })
+        .collect::<AppResult<Vec<_>>>()
+        .map(|vec| vec.into_boxed_slice())
 }
 
 fn get_data_frame(conn: &Connection, table_name: &str) -> AppResult<DataFrame> {
