@@ -19,11 +19,11 @@ impl ReadToDataFrames for SqliteToDataFrames {
         match input {
             crate::reader::InputSource::File(path) => path_to_name_frames(path),
             crate::reader::InputSource::Stdin => {
-                let path = NamedTempFile::new()?.keep()?.1;
+                let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf).unwrap();
-                std::fs::write(&path, buf).unwrap();
-                path_to_name_frames(path)
+                std::fs::write(temp_file.path(), buf).unwrap();
+                path_to_name_frames(temp_file.path())
             }
         }
     }
