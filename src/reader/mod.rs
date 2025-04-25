@@ -1,7 +1,9 @@
+mod excel;
 mod fwf;
 mod sqlite;
 
 use anyhow::{Ok, anyhow};
+use excel::ExcelToDataFarmes;
 pub use fwf::FwfToDataFrame;
 pub use sqlite::SqliteToDataFrames;
 
@@ -80,6 +82,7 @@ impl BuildReader for Args {
             Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
             Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
             Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames)),
+            Some(Format::Excel) => Ok(Box::new(ExcelToDataFarmes)),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let mut reader = CsvToDataFrame::from_args(self);
@@ -92,6 +95,9 @@ impl BuildReader for Args {
                 Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
                 Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
                 Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames)),
+                Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
+                    Ok(Box::new(ExcelToDataFarmes))
+                }
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
         }

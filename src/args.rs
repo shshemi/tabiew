@@ -108,6 +108,7 @@ pub enum Format {
     Arrow,
     Fwf,
     Sqlite,
+    Excel,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
