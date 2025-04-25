@@ -13,9 +13,9 @@ Tabiew is a lightweight TUI application that allows users to view and query tabu
 - 📝 Scripting support
 - 🗂️ Multi-table functionality
 
-## Tutorial
+## Wiki
 
-For a guide on using Tabiew, including instructions on opening files, navigating tables, performing queries, and using inline queries, kindly visit the [tutorial page](https://github.com/shshemi/tabiew/blob/main/tutorial/tutorial.md).
+Tabiew started as a humble hobby project but has evolved into a more sophisticated software application through continuous updates and valuable feedback from its user community. What began as a simple tool for viewing tabular data has grown to incorporate various features and improved usability with each iteration. As the project expanded, so did the need for comprehensive documentation, leading to the creation of the [Wiki page](https://github.com/shshemi/tabiew/wiki). This wiki offers explanations of features and the best practices to get the most out of Tabiew.
 
 ## Keybindings️
 
