@@ -10,129 +10,125 @@ env:
 
 jobs:
   linux-x86-64-dist:
-
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: startsWith(github.event.release.tag_name, 'v')
 
     steps:
-    - name: Checkout to the latest version 
-      uses: actions/checkout@v4
+      - name: Checkout to the latest version
+        uses: actions/checkout@v4
 
-    - name: Test
-      run: cargo test --all --release
+      - name: Test
+        run: cargo test --all --release
 
-    - name: Install cargo deb
-      run: cargo install cargo-deb --version 2.11.1 --force
+      - name: Install cargo deb
+        run: cargo install cargo-deb --version 2.11.1 --force
 
-    - name: Install cargo generate rpm
-      run: cargo install cargo-generate-rpm --version 0.16.0 --force
+      - name: Install cargo generate rpm
+        run: cargo install cargo-generate-rpm --version 0.16.0 --force
 
-    - name: Make upload directory
-      run: mkdir upload
+      - name: Make upload directory
+        run: mkdir upload
 
-    - name: Build
-      run: |
-        cargo build --release --verbose
-        cp target/release/tw upload/tw-x86-linux-gnu
-        zip -r upload/manual.zip target/manual
-        zip -r upload/completion.zip target/completion
-    
-    - name: Build .deb package
-      run: cargo deb --output upload/tabiew-x86_64-linux-gnu.deb
+      - name: Build
+        run: |
+          cargo build --release --verbose
+          cp target/release/tw upload/tw-x86-linux-gnu
+          zip -r upload/manual.zip target/manual
+          zip -r upload/completion.zip target/completion
 
-    - name: Build .rpm package
-      run: cargo generate-rpm --output upload/tabiew-x86_64-linux-gnu.rpm
+      - name: Build .deb package
+        run: cargo deb --output upload/tabiew-x86_64-linux-gnu.deb
 
-    - name: Upload artifacts to release
-      uses: AButler/upload-release-assets@v3.0
-      with:
-        files: "./upload/*"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build .rpm package
+        run: cargo generate-rpm --output upload/tabiew-x86_64-linux-gnu.rpm
+
+      - name: Upload artifacts to release
+        uses: AButler/upload-release-assets@v3.0
+        with:
+          files: "./upload/*"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   linux-armv7-dist:
-
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: startsWith(github.event.release.tag_name, 'v')
 
     steps:
-    - name: Checkout to the latest version 
-      uses: actions/checkout@v4
+      - name: Checkout to the latest version
+        uses: actions/checkout@v4
 
-    - name: Test
-      run: cargo test --all --release
+      - name: Test
+        run: cargo test --all --release
 
-    - name: Install build tools
-      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libzstd-dev gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libzstd-dev gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
 
-    - name: Install Rust for cross compile
-      run: rustup target add armv7-unknown-linux-gnueabihf
+      - name: Install Rust for cross compile
+        run: rustup target add armv7-unknown-linux-gnueabihf
 
-    - name: Install cargo deb
-      run: cargo install cargo-deb --version 2.11.1 --force
+      - name: Install cargo deb
+        run: cargo install cargo-deb --version 2.11.1 --force
 
-    - name: Install cargo generate rpm
-      run: cargo install cargo-generate-rpm --version 0.16.0 --force
+      - name: Install cargo generate rpm
+        run: cargo install cargo-generate-rpm --version 0.16.0 --force
 
-    - name: Make upload directory
-      run: mkdir upload
+      - name: Make upload directory
+        run: mkdir upload
 
-    - name: Build binary, deb, and rpm
-      run: |
-        export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
-        cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
-        cp target/armv7-unknown-linux-gnueabihf/release/tw upload/tw-armv7-linux-gnueabihf
-        cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target armv7-unknown-linux-gnueabihf
-        cargo generate-rpm --output upload/tabiew-armv7-linux-gnueabihf.rpm --target armv7-unknown-linux-gnueabihf
+      - name: Build binary, deb, and rpm
+        run: |
+          export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
+          cargo build --release --verbose --target armv7-unknown-linux-gnueabihf
+          cp target/armv7-unknown-linux-gnueabihf/release/tw upload/tw-armv7-linux-gnueabihf
+          cargo deb --output upload/tabiew-armv7-linux-gnueabihf.deb --target armv7-unknown-linux-gnueabihf
+          cargo generate-rpm --output upload/tabiew-armv7-linux-gnueabihf.rpm --target armv7-unknown-linux-gnueabihf
 
-    - name: Upload artifacts to release
-      uses: AButler/upload-release-assets@v3.0
-      with:
-        files: "./upload/*"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts to release
+        uses: AButler/upload-release-assets@v3.0
+        with:
+          files: "./upload/*"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   linux-aarch64-dist:
-
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: startsWith(github.event.release.tag_name, 'v')
 
     steps:
-    - name: Checkout to the latest version 
-      uses: actions/checkout@v4
+      - name: Checkout to the latest version
+        uses: actions/checkout@v4
 
-    - name: Test
-      run: cargo test --all --release
+      - name: Test
+        run: cargo test --all --release
 
-    - name: Install build tools
-      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libzstd-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libzstd-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross
 
-    - name: Install Rust cross compile
-      run: rustup target add aarch64-unknown-linux-gnu
+      - name: Install Rust cross compile
+        run: rustup target add aarch64-unknown-linux-gnu
 
-    - name: Install cargo deb
-      run: cargo install cargo-deb --version 2.11.1 --force
+      - name: Install cargo deb
+        run: cargo install cargo-deb --version 2.11.1 --force
 
-    - name: Install cargo generate rpm
-      run: cargo install cargo-generate-rpm --version 0.16.0 --force
-      
-    - name: Make upload directory
-      run: mkdir upload
+      - name: Install cargo generate rpm
+        run: cargo install cargo-generate-rpm --version 0.16.0 --force
 
-    - name: Build binary, deb, and rpm
-      run: |
-        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
-        cargo build --release --verbose --target aarch64-unknown-linux-gnu
-        cp target/aarch64-unknown-linux-gnu/release/tw upload/tw-aarch64-unknown-linux-gnu
-        cargo deb --output upload/tabiew-aarch64-linux-gnu.deb --target aarch64-unknown-linux-gnu
-        cargo generate-rpm --output upload/tabiew-aarch64-linux-gnu.rpm --target aarch64-unknown-linux-gnu
+      - name: Make upload directory
+        run: mkdir upload
 
-    - name: Upload artifacts to release
-      uses: AButler/upload-release-assets@v3.0
-      with:
-        files: "./upload/*"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build binary, deb, and rpm
+        run: |
+          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+          cargo build --release --verbose --target aarch64-unknown-linux-gnu
+          cp target/aarch64-unknown-linux-gnu/release/tw upload/tw-aarch64-unknown-linux-gnu
+          cargo deb --output upload/tabiew-aarch64-linux-gnu.deb --target aarch64-unknown-linux-gnu
+          cargo generate-rpm --output upload/tabiew-aarch64-linux-gnu.rpm --target aarch64-unknown-linux-gnu
+
+      - name: Upload artifacts to release
+        uses: AButler/upload-release-assets@v3.0
+        with:
+          files: "./upload/*"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   macos-dist:
-
     if: startsWith(github.event.release.tag_name, 'v')
     strategy:
       matrix:
@@ -141,41 +137,39 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout to the latest version 
-      uses: actions/checkout@v4
+      - name: Checkout to the latest version
+        uses: actions/checkout@v4
 
-    - name: Build
-      run: cargo build --release --verbose --target ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --verbose --target ${{ matrix.target }}
 
-    - name: Test
-      run: cargo test --all --release 
+      - name: Test
+        run: cargo test --all --release
 
-    - name: Rename before upload
-      run: mv target/${{ matrix.target }}/release/tw tw-${{matrix.target}}
+      - name: Rename before upload
+        run: mv target/${{ matrix.target }}/release/tw tw-${{matrix.target}}
 
-    - name: Upload artifacts to release
-      uses: AButler/upload-release-assets@v3.0
-      with:
-        files: tw-${{matrix.target}}
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts to release
+        uses: AButler/upload-release-assets@v3.0
+        with:
+          files: tw-${{matrix.target}}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   upload-to-crates-io:
-
     if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
-    needs: [linux-x86-64-dist, linux-aarch64-dist, linux-armv7-dist, macos-dist ]
+    needs: [linux-x86-64-dist, linux-aarch64-dist, linux-armv7-dist, macos-dist]
     steps:
+      - name: Checkout to the latest version
+        uses: actions/checkout@v4
 
-    - name: Checkout to the latest version 
-      uses: actions/checkout@v4
-    
-    - name: Remove things to reduce size
-      run: |
-        rm -rf tutorial
-        rm -rf .git
+      - name: Remove things to reduce size
+        run: |
+          rm -rf tutorial
+          rm -rf .git
 
-    - name: Local install
-      run: cargo install --path .
+      - name: Local install
+        run: cargo install --path .
 
-    - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
