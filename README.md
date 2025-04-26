@@ -90,7 +90,7 @@ To open parquet file(s), use:
 tw <path_to_parquet(s)> -f parquet
 ```
 
-To Open a URL, use curl to pipe the output directly to Tabiew:
+To open a URL, use curl to pipe the output directly to Tabiew:
 ```bash
 curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 ```
