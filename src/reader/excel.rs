@@ -7,7 +7,7 @@ use calamine::{Data, Range, Reader, open_workbook_auto_from_rs};
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, NamedFrom},
+    prelude::{AnyValue, NamedFrom, PlSmallStr},
     series::Series,
 };
 
@@ -44,6 +44,7 @@ impl ReadToDataFrames for ExcelToDataFarmes {
 }
 
 fn sheet_to_data_frame(sheet: Range<Data>) -> DataFrame {
+    let col_offset = sheet.start().unwrap_or_default().1 as usize;
     let mut data = HashMap::<usize, Vec<AnyValue>>::new();
     for row in sheet.rows() {
         for (idx, cell) in row.iter().enumerate() {
@@ -60,7 +61,21 @@ fn sheet_to_data_frame(sheet: Range<Data>) -> DataFrame {
     }
     DataFrame::from_iter(
         data.into_iter()
-            .sorted_by_key(|(idx, _)| *idx)
-            .map(|(idx, vec)| Series::new(format!("column_{}", idx + 1).into(), vec)),
+            .sorted_by_key(|(col_idx, _)| *col_idx)
+            .map(|(col_idx, vec)| Series::new(col_idx_to_letter(col_offset + col_idx), vec)),
     )
+}
+
+fn col_idx_to_letter(mut col_index: usize) -> PlSmallStr {
+    let mut col_letter = String::new();
+    loop {
+        let rem = (col_index % 26) as u8;
+        col_letter.insert(0, (b'A' + rem) as char);
+        col_index /= 26;
+        if col_index == 0 {
+            break;
+        }
+        col_index -= 1;
+    }
+    col_letter.into()
 }
