@@ -71,9 +71,7 @@ cargo build --release
 cp ./target/release/tw <system_or_local_bin_path>
 ```
 
-## Getting Started
-
-### Usage
+## Usage
 
 Start Tabiew with `tw`
 ```bash
@@ -95,7 +93,7 @@ To open a URL, use curl to pipe the output directly to Tabiew:
 curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 ```
 
-### Useful Keybindings️
+## Useful Keybindings️
 
 |Key Combination|Functionality|
 |-|-|
@@ -111,7 +109,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 | `:`| Command Pallete|
 | `/`| Fuzzy Search|
 
-### Useful Commands
+## Useful Commands
 
 |Command|Example|Description|
 |-|-|-|
@@ -126,7 +124,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 |`help`| `help`| Show help menu|
 
 
-### Themes
+## Themes
 
 ### Monokai (default):
 
