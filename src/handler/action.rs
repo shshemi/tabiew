@@ -145,7 +145,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SwitchToSchema => {
             app.switch_schema();
-            sql().unset_default();
             Ok(None)
         }
         AppAction::SwitchToTabulars => {
