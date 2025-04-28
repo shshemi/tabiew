@@ -13,7 +13,7 @@ use polars::{
 
 use crate::{
     AppResult,
-    misc::{globals::stdin, polars_ext::SafeInferSchema},
+    misc::{globals::stdin, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
 };
 
 use super::{InputSource, NamedFrames, ReadToDataFrames};
@@ -45,28 +45,24 @@ impl ReadToDataFrames for ExcelToDataFarmes {
 
 fn sheet_to_data_frame(sheet: Range<Data>) -> DataFrame {
     let col_offset = sheet.start().unwrap_or_default().1 as usize;
-    let mut data = HashMap::<usize, Vec<AnyValue>>::new();
+    let mut columns = vec![Vec::new(); sheet.width()];
     for row in sheet.rows() {
         for (idx, cell) in row.iter().enumerate() {
-            data.entry(idx)
-                .and_modify(|vec| {
-                    let val = match cell {
-                        Data::Empty => AnyValue::Null,
-                        _ => AnyValue::StringOwned(cell.to_string().into()),
-                    };
-                    vec.push(val);
-                })
-                .or_default();
+            columns[idx].push(match cell {
+                Data::Empty => AnyValue::Null,
+                _ => AnyValue::StringOwned(cell.to_string().into()),
+            });
         }
     }
     DataFrame::from_iter(
-        data.into_iter()
-            .sorted_by_key(|(col_idx, _)| *col_idx)
-            .map(|(col_idx, vec)| Series::new(col_idx_to_letter(col_offset + col_idx), vec)),
+        columns
+            .into_iter()
+            .enumerate()
+            .map(|(idx, column)| Series::new(col_letter(col_offset + idx).into(), column)),
     )
 }
 
-fn col_idx_to_letter(mut col_index: usize) -> PlSmallStr {
+fn col_letter(mut col_index: usize) -> String {
     let mut col_letter = String::new();
     loop {
         let rem = (col_index % 26) as u8;
@@ -77,5 +73,5 @@ fn col_idx_to_letter(mut col_index: usize) -> PlSmallStr {
         }
         col_index -= 1;
     }
-    col_letter.into()
+    col_letter
 }
