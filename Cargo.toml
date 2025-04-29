@@ -33,6 +33,7 @@ tui-input = "0.11.1"
 home = "0.5.11"
 unicode-width = "0.2.0"
 calamine = "0.27.0"
+base64 = "0.22.1"
 
 [build-dependencies]
 clap = { version = "4.5.31", features = ["derive"] }

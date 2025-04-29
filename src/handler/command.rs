@@ -218,14 +218,14 @@ mod export {
                     .ok_or(anyhow!("Export should provide format and path"))?;
                 match fmt {
                     "csv" => Ok(AppAction::ExportDsv {
-                        path: path_str.into(),
+                        destination: path_str.into(),
                         separator: ',',
                         quote: '"',
                         header: true,
                     }),
 
                     "tsv" => Ok(AppAction::ExportDsv {
-                        path: path_str.into(),
+                        destination: path_str.into(),
                         separator: '\t',
                         quote: '"',
                         header: true,

@@ -15,10 +15,10 @@ use super::{NamedFrames, ReadToDataFrames};
 pub struct SqliteToDataFrames;
 
 impl ReadToDataFrames for SqliteToDataFrames {
-    fn named_frames(&self, input: super::InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: super::Source) -> AppResult<NamedFrames> {
         match input {
-            crate::reader::InputSource::File(path) => path_to_name_frames(path),
-            crate::reader::InputSource::Stdin => {
+            crate::reader::Source::File(path) => path_to_name_frames(path),
+            crate::reader::Source::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf).unwrap();

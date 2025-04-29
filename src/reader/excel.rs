@@ -13,15 +13,15 @@ use crate::{
     misc::{globals::stdin, polars_ext::SafeInferSchema},
 };
 
-use super::{InputSource, NamedFrames, ReadToDataFrames};
+use super::{NamedFrames, ReadToDataFrames, Source};
 
 pub struct ExcelToDataFarmes;
 
 impl ReadToDataFrames for ExcelToDataFarmes {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let buffer = match input {
-            InputSource::File(path) => Cursor::new(std::fs::read(path)?),
-            InputSource::Stdin => {
+            Source::File(path) => Cursor::new(std::fs::read(path)?),
+            Source::Stdin => {
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf).unwrap();
                 Cursor::new(buf)

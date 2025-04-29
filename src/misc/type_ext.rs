@@ -1,3 +1,9 @@
+use std::io::{Write, stdout};
+
+use base64::Engine;
+
+use crate::AppResult;
+
 pub trait ToAscii {
     fn to_ascii(self) -> Option<u8>;
 }
@@ -70,6 +76,24 @@ pub trait SnakeCaseNameGenExt {
 impl SnakeCaseNameGenExt for str {
     fn snake_case_names(&self) -> SnakeCaseNameGen {
         SnakeCaseNameGen::with(self)
+    }
+}
+
+pub trait CopyToClipboardOsc52 {
+    fn copy_to_clipboard_via_osc52(&self) -> AppResult<()>;
+}
+
+impl<T> CopyToClipboardOsc52 for T
+where
+    T: AsRef<[u8]>,
+{
+    fn copy_to_clipboard_via_osc52(&self) -> AppResult<()> {
+        let encoded = base64::engine::general_purpose::STANDARD.encode(self);
+        let sequence = format!("\x1b]52;c;{}\x07", encoded);
+        let mut out = stdout();
+        out.write_all(sequence.as_bytes())?;
+        out.flush()?;
+        Ok(())
     }
 }
 

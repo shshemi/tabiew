@@ -3230,6 +3230,7 @@ name = "tabiew"
 version = "0.9.0"
 dependencies = [
  "anyhow",
+ "base64",
  "calamine",
  "clap",
  "clap_complete",
