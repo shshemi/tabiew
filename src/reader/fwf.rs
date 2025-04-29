@@ -15,7 +15,7 @@ use crate::{
     misc::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
 };
 
-use super::{InputSource, NamedFrames, ReadToDataFrames};
+use super::{Source, NamedFrames, ReadToDataFrames};
 
 pub struct FwfToDataFrame {
     widths: Vec<usize>,
@@ -70,10 +70,10 @@ impl Default for FwfToDataFrame {
 }
 
 impl ReadToDataFrames for FwfToDataFrame {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let file_content = match &input {
-            InputSource::File(path) => read_to_string(path)?,
-            InputSource::Stdin => {
+            Source::File(path) => read_to_string(path)?,
+            Source::Stdin => {
                 let mut buf = String::new();
                 io::stdin().read_to_string(&mut buf)?;
                 buf

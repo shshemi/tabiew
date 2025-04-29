@@ -30,42 +30,42 @@ use crate::{
 type NamedFrames = Box<[(String, DataFrame)]>;
 
 #[derive(Debug, Clone)]
-pub enum InputSource {
+pub enum Source {
     File(PathBuf),
     Stdin,
 }
 
-impl InputSource {
+impl Source {
     pub fn table_name(&self) -> String {
         match self {
-            InputSource::File(path_buf) => path_buf
+            Source::File(path_buf) => path_buf
                 .file_stem()
                 .map(OsStr::to_string_lossy)
                 .unwrap_or("unknown".into())
                 .into_owned(),
-            InputSource::Stdin => String::from("Stdin"),
+            Source::Stdin => String::from("Stdin"),
         }
     }
 
     pub fn display_path(&self) -> String {
         match self {
-            InputSource::File(path_buf) => path_buf.to_string_lossy().into_owned(),
-            InputSource::Stdin => "Stdin".to_owned(),
+            Source::File(path_buf) => path_buf.to_string_lossy().into_owned(),
+            Source::Stdin => "Stdin".to_owned(),
         }
     }
 }
 
-impl From<String> for InputSource {
+impl From<String> for Source {
     fn from(value: String) -> Self {
         match value.as_str() {
-            "$stdin" => InputSource::File(value.into()),
-            _ => InputSource::Stdin,
+            "$stdin" => Source::File(value.into()),
+            _ => Source::Stdin,
         }
     }
 }
 
 pub trait ReadToDataFrames {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames>;
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames>;
 }
 
 pub trait BuildReader {
@@ -179,10 +179,10 @@ impl Default for CsvToDataFrame {
 }
 
 impl ReadToDataFrames for CsvToDataFrame {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
-            InputSource::File(path) => self.try_into_frame(File::open(path)?),
-            InputSource::Stdin => self.try_into_frame(stdin()),
+            Source::File(path) => self.try_into_frame(File::open(path)?),
+            Source::Stdin => self.try_into_frame(stdin()),
         }?;
         Ok([(input.table_name(), df)].into())
     }
@@ -191,13 +191,13 @@ impl ReadToDataFrames for CsvToDataFrame {
 pub struct ParquetToDataFrame;
 
 impl ReadToDataFrames for ParquetToDataFrame {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
-            InputSource::File(path) => ParquetReader::new(File::open(path)?)
+            Source::File(path) => ParquetReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .finish()?,
 
-            InputSource::Stdin => ParquetReader::new(stdin()).set_rechunk(true).finish()?,
+            Source::Stdin => ParquetReader::new(stdin()).set_rechunk(true).finish()?,
         };
         Ok([(input.table_name(), df)].into())
     }
@@ -227,14 +227,14 @@ impl Default for JsonLineToDataFrame {
 }
 
 impl ReadToDataFrames for JsonLineToDataFrame {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let mut df = match &input {
-            InputSource::File(path) => JsonLineReader::new(File::open(path)?)
+            Source::File(path) => JsonLineReader::new(File::open(path)?)
                 .with_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            InputSource::Stdin => JsonLineReader::new(stdin())
+            Source::Stdin => JsonLineReader::new(stdin())
                 .with_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
@@ -274,14 +274,14 @@ impl Default for JsonToDataFrame {
 }
 
 impl ReadToDataFrames for JsonToDataFrame {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let mut df = match &input {
-            InputSource::File(path) => JsonReader::new(File::open(path)?)
+            Source::File(path) => JsonReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            InputSource::Stdin => JsonReader::new(stdin())
+            Source::Stdin => JsonReader::new(stdin())
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
@@ -300,12 +300,12 @@ impl ReadToDataFrames for JsonToDataFrame {
 pub struct ArrowIpcToDataFrame;
 
 impl ReadToDataFrames for ArrowIpcToDataFrame {
-    fn named_frames(&self, input: InputSource) -> AppResult<NamedFrames> {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
-            InputSource::File(path) => IpcReader::new(File::open(path)?)
+            Source::File(path) => IpcReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .finish()?,
-            InputSource::Stdin => IpcReader::new(stdin()).set_rechunk(true).finish()?,
+            Source::Stdin => IpcReader::new(stdin()).set_rechunk(true).finish()?,
         };
         Ok([(input.table_name(), df)].into())
     }

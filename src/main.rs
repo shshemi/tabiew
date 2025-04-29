@@ -10,7 +10,7 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::globals::{set_theme, sql};
-use tabiew::reader::{BuildReader, InputSource};
+use tabiew::reader::{BuildReader, Source};
 
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
 use tabiew::tui::{TableType, TabularState};
@@ -25,14 +25,14 @@ fn main() -> AppResult<()> {
     // Load files to data frames
     let tabs = if args.files.is_empty() {
         let mut vec = Vec::new();
-        for (name, df) in args.build_reader("")?.named_frames(InputSource::Stdin)? {
-            vec.push((df.clone(), sql().register(&name, df, InputSource::Stdin)))
+        for (name, df) in args.build_reader("")?.named_frames(Source::Stdin)? {
+            vec.push((df.clone(), sql().register(&name, df, Source::Stdin)))
         }
         vec
     } else {
         let mut vec = Vec::new();
         for path in args.files.iter() {
-            let source = InputSource::File(path.clone());
+            let source = Source::File(path.clone());
             let reader = args.build_reader(path)?;
             let frames = reader
                 .named_frames(source.clone())
