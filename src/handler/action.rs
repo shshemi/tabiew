@@ -1,4 +1,4 @@
-use std::{ops::Div, path::PathBuf};
+use std::ops::Div;
 
 use anyhow::{Ok, anyhow};
 use polars::frame::DataFrame;
@@ -9,14 +9,16 @@ use crate::{
     app::{App, Content},
     misc::globals::sql,
     reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, InputSource, JsonLineToDataFrame,
-        JsonToDataFrame, ParquetToDataFrame, ReadToDataFrames, SqliteToDataFrames,
+        ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
+        ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
     },
     tui::{
         TableType, TabularState, data_frame_table::DataFrameTableState, search_bar::SearchBarState,
         tabular::Modal,
     },
-    writer::{JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet},
+    writer::{
+        Destination, JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet,
+    },
 };
 
 use super::command::{commands_help_data_frame, parse_into_action};
@@ -92,27 +94,27 @@ pub enum AppAction {
     TabRename(usize, String),
 
     ExportDsv {
-        path: PathBuf,
+        destination: Destination,
         separator: char,
         quote: char,
         header: bool,
     },
-    ExportParquet(PathBuf),
-    ExportJson(PathBuf, JsonFormat),
-    ExportArrow(PathBuf),
+    ExportParquet(Destination),
+    ExportJson(Destination, JsonFormat),
+    ExportArrow(Destination),
     ImportDsv {
-        source: InputSource,
+        source: Source,
         separator: char,
         has_header: bool,
         quote: char,
     },
 
-    ImportParquet(InputSource),
-    ImportJson(InputSource, JsonFormat),
-    ImportArrow(InputSource),
-    ImportSqlite(InputSource),
+    ImportParquet(Source),
+    ImportJson(Source, JsonFormat),
+    ImportArrow(Source),
+    ImportSqlite(Source),
     ImportFwf {
-        source: InputSource,
+        source: Source,
         widths: Vec<usize>,
         separator_length: usize,
         flexible_width: bool,
@@ -356,7 +358,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ExportDsv {
-            path,
+            destination,
             separator,
             quote,
             header,
@@ -366,7 +368,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                     .with_separator_char(separator)
                     .with_quote_char(quote)
                     .with_header(header)
-                    .write_to_file(path, tab.table_mut().data_frame_mut())?;
+                    .write_to_file(destination, tab.table_mut().data_frame_mut())?;
                 Ok(None)
             } else {
                 Err(anyhow!("Unable to export the data frame"))

@@ -6,7 +6,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::{misc::type_ext::SnakeCaseNameGenExt, reader::InputSource};
+use crate::{misc::type_ext::SnakeCaseNameGenExt, reader::Source};
 
 use super::{polars_ext::IntoString, vec_map::VecMap};
 
@@ -29,7 +29,7 @@ impl SqlBackend {
         &self.schema
     }
 
-    pub fn register(&mut self, name: &str, data_frame: DataFrame, input: InputSource) -> String {
+    pub fn register(&mut self, name: &str, data_frame: DataFrame, input: Source) -> String {
         let name = self.schema.available_name(name);
         self.schema
             .insert(name.clone(), TableInfo::new(input, &data_frame));
@@ -107,7 +107,7 @@ impl BackendSchema {
 
 #[derive(Debug)]
 pub struct TableInfo {
-    source: InputSource,
+    source: Source,
     height: usize,
     width: usize,
     total_null: usize,
@@ -116,7 +116,7 @@ pub struct TableInfo {
 }
 
 impl TableInfo {
-    pub fn new(input: InputSource, df: &DataFrame) -> Self {
+    pub fn new(input: Source, df: &DataFrame) -> Self {
         let schema = TableSchema::new(df);
         Self {
             source: input,
@@ -128,7 +128,7 @@ impl TableInfo {
         }
     }
 
-    pub fn source(&self) -> &InputSource {
+    pub fn source(&self) -> &Source {
         &self.source
     }
 
