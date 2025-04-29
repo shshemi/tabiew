@@ -1,19 +1,16 @@
-use std::{
-    collections::HashMap,
-    io::{Cursor, Read},
-};
+use std::io::{Cursor, Read};
 
 use calamine::{Data, Range, Reader, open_workbook_auto_from_rs};
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, NamedFrom, PlSmallStr},
+    prelude::{AnyValue, NamedFrom},
     series::Series,
 };
 
 use crate::{
     AppResult,
-    misc::{globals::stdin, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
+    misc::{globals::stdin, polars_ext::SafeInferSchema},
 };
 
 use super::{InputSource, NamedFrames, ReadToDataFrames};
