@@ -74,7 +74,8 @@ pub enum AppAction {
     PalleteSelectPrevious,
     PalleteSelectNext,
 
-    SearchShow,
+    SearchFuzzyShow,
+    SearchExactShow,
     SearchGotoNext,
     SearchGotoPrev,
     SearchGotoStart,
@@ -178,9 +179,15 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::SearchShow => {
+        AppAction::SearchFuzzyShow => {
             if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.show_search();
+                tab.show_fuzzy_search();
+            }
+            Ok(None)
+        }
+        AppAction::SearchExactShow => {
+            if let Some(tab) = app.tabs_mut().selected_mut() {
+                tab.show_exact_search();
             }
             Ok(None)
         }

@@ -136,8 +136,12 @@ impl TabularState {
         self.modal = Modal::Sheet(Default::default());
     }
 
-    pub fn show_search(&mut self) {
-        self.modal = Modal::SearchBar(SearchBarState::new(self.table.data_frame().clone()));
+    pub fn show_fuzzy_search(&mut self) {
+        self.modal = Modal::SearchBar(SearchBarState::fuzzy(self.table.data_frame().clone()));
+    }
+
+    pub fn show_exact_search(&mut self) {
+        self.modal = Modal::SearchBar(SearchBarState::exact(self.table.data_frame().clone()));
     }
 
     pub fn modal(&self) -> &Modal {

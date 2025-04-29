@@ -194,8 +194,18 @@ impl Default for KeyHandler {
                     .code(KeyCode::Enter)
                     .action(AppAction::SheetShow),
             )
-            //  /
-            .add(Keybind::default().char('/').action(AppAction::SearchShow))
+            //  / ?
+            .add(
+                Keybind::default()
+                    .char('/')
+                    .action(AppAction::SearchFuzzyShow),
+            )
+            //  / ?
+            .add(
+                Keybind::default()
+                    .char('?')
+                    .action(AppAction::SearchExactShow),
+            )
             // f
             .add(
                 Keybind::default()
