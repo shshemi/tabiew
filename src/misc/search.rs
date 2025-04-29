@@ -1,5 +1,7 @@
 use std::{
     collections::HashMap,
+    fmt::Debug,
+    marker::PhantomData,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -16,14 +18,48 @@ use rayon::prelude::*;
 
 use crate::misc::polars_ext::IntoString;
 
+pub trait Score {
+    fn score(&self, a: &str, b: &str) -> Option<i64>;
+}
+
+#[derive(Default)]
+pub struct Skim {
+    matcher: SkimMatcherV2,
+}
+
+impl Debug for Skim {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Skim()")
+    }
+}
+
+impl Score for Skim {
+    fn score(&self, a: &str, b: &str) -> Option<i64> {
+        self.matcher.fuzzy_match(a, b)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Contain;
+
+impl Score for Contain {
+    fn score(&self, a: &str, b: &str) -> Option<i64> {
+        a.contains(b).then_some(1)
+    }
+}
+
 #[derive(Debug)]
-pub struct Search {
+pub struct Search<S> {
     pat: String,
     df: SyncDataFrame,
     _alive: SetFalseOnDrop,
+    score: PhantomData<S>,
 }
 
-impl Search {
+impl<S> Search<S>
+where
+    S: Score + Default + Sync + Send + 'static,
+{
     pub fn new(df: DataFrame, pat: String) -> Self {
         let sync_df = SyncDataFrame::new();
         let alive = Arc::new(AtomicBool::new(true));
@@ -33,6 +69,7 @@ impl Search {
             Self {
                 df: sync_df,
                 _alive: SetFalseOnDrop(alive),
+                score: Default::default(),
                 pat,
             }
         } else {
@@ -42,12 +79,11 @@ impl Search {
 
             // search thread
             std::thread::spawn({
-                let matcher = SkimMatcherV2::default();
+                let matcher = S::default();
                 let alive = alive.clone();
                 let df = df.clone();
                 let pat = pat.clone();
                 move || {
-                    //
                     let _ = df
                         .iter()
                         .flat_map(|series| series.iter().enumerate())
@@ -58,7 +94,8 @@ impl Search {
                             if value == pat {
                                 Some((idx, i64::MAX))
                             } else {
-                                matcher.fuzzy_match(&value, &pat).map(|score| (idx, score))
+                                // matcher.fuzzy_match(&value, &pat).map(|score| (idx, score))
+                                matcher.score(&value, &pat).map(|score| (idx, score))
                             }
                         })
                         .try_for_each(|(idx, score)| tx.send((idx as u32, score)));
@@ -86,7 +123,7 @@ impl Search {
                                 "name".into(),
                                 idx_score
                                     .iter()
-                                    .sorted_by_key(|(_, score)| -*score)
+                                    .sorted_by_key(|(idx, score)| (-*score, *idx))
                                     .map(|(idx, _)| *idx)
                                     .collect(),
                             ))
@@ -100,6 +137,7 @@ impl Search {
                 df: sync_df,
                 _alive: SetFalseOnDrop(alive),
                 pat,
+                score: Default::default(),
             }
         }
     }
