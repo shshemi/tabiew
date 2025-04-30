@@ -118,7 +118,7 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
                         let mut action = keybind.action(app.context(), key_event);
                         loop {
-                            match execute(action, &mut app, &mut sql_backend) {
+                            match execute(action, &mut app) {
                                 Ok(Some(next_action)) => action = next_action,
                                 Ok(_) => break,
                                 Err(err) => {
