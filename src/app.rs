@@ -1,4 +1,7 @@
+
+
 use anyhow::Ok;
+
 use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout},
@@ -25,6 +28,7 @@ pub enum Context {
     Error,
     Search,
     Schema,
+    TabSidePanel,
 }
 
 impl Context {
@@ -37,6 +41,7 @@ impl Context {
             Context::Error => Context::Empty.into(),
             Context::Search => Context::Table.into(),
             Context::Schema => Context::Empty.into(),
+            Context::TabSidePanel => Context::Empty.into(),
         }
     }
 }
@@ -152,6 +157,8 @@ impl App {
             Context::Command
         } else if let Content::Schema = self.content {
             Context::Schema
+        } else if self.tabs.side_panel().is_some() {
+            Context::TabSidePanel
         } else if let Some(tabular) = self.tabs.selected() {
             match tabular.modal() {
                 Modal::SearchBar(_) => Context::Search,

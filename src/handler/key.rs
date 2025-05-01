@@ -359,7 +359,8 @@ impl Default for KeyHandler {
                     .code(KeyCode::Right)
                     .shift()
                     .action(AppAction::TabNext),
-            );
+            )
+            .add(Keybind::default().char('t').action(AppAction::TabShowPanel));
 
         // ---- schema keybindings
         hndl.keybinds(Context::Schema)
@@ -556,6 +557,31 @@ impl Default for KeyHandler {
                     .action(AppAction::SheetScrollDown),
             );
 
+        // ---- tabs keybindings
+        hndl.keybinds(Context::TabSidePanel)
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::TabPanelPrev),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::TabPanelNext),
+            )
+            .add(Keybind::default().char('k').action(AppAction::TabPanelPrev))
+            .add(Keybind::default().char('j').action(AppAction::TabPanelNext))
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::TabPanelSelect),
+            )
+            .add(Keybind::default().char('q').action(AppAction::TabHidePanel))
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::TabHidePanel),
+            );
         // ---- search keybindings
         hndl.keybinds(Context::Search)
             // left right home end backspace delete

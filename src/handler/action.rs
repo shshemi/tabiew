@@ -93,6 +93,11 @@ pub enum AppAction {
     TabNext,
     TabRemoveOrQuit,
     TabRename(usize, String),
+    TabShowPanel,
+    TabHidePanel,
+    TabPanelPrev,
+    TabPanelNext,
+    TabPanelSelect,
 
     ExportDsv {
         destination: Destination,
@@ -846,6 +851,36 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 })
                 .ok_or(anyhow!("No table is selected"))?;
             sql().unregister(&table_name);
+            Ok(None)
+        }
+        AppAction::TabShowPanel => {
+            app.tabs_mut().show_side_panel();
+            Ok(None)
+        }
+        AppAction::TabHidePanel => {
+            app.tabs_mut().take_side_panel();
+            Ok(None)
+        }
+        AppAction::TabPanelPrev => {
+            if let Some(side_panel) = app.tabs_mut().side_panel_mut() {
+                side_panel.list_mut().select_previous();
+            }
+            Ok(None)
+        }
+        AppAction::TabPanelNext => {
+            if let Some(side_panel) = app.tabs_mut().side_panel_mut() {
+                side_panel.list_mut().select_next();
+            }
+            Ok(None)
+        }
+        AppAction::TabPanelSelect => {
+            if let Some(idx) = app
+                .tabs_mut()
+                .take_side_panel()
+                .and_then(|panel| panel.list().selected())
+            {
+                app.tabs_mut().select(idx);
+            }
             Ok(None)
         }
     }
