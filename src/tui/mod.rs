@@ -6,6 +6,7 @@ pub mod input;
 pub mod schema;
 pub mod search_bar;
 pub mod sheet;
+pub mod side_panel;
 pub mod status_bar;
 pub mod tab;
 pub mod table_info_table;
