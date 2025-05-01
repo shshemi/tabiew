@@ -125,12 +125,21 @@ impl StatefulWidget for Tab {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
+        // index of tabular to show
+        let tabular_idx = state
+            .side_panel
+            .as_ref()
+            .map(SidePanelState::list)
+            .and_then(ListState::selected)
+            .unwrap_or(state.idx);
+
         // fix state (if invalid)
         state.idx = state.idx().min(state.len().saturating_sub(1));
 
         // build the status bar
         let status_bar = state
-            .selected()
+            .tabulars
+            .get(tabular_idx)
             .map(|tabular| {
                 StatusBar::default()
                     .tag(Tag::new(
@@ -186,15 +195,7 @@ impl StatefulWidget for Tab {
         };
 
         // render tabular
-        if let Some(tabular) = state
-            .side_panel
-            .as_ref()
-            .map(SidePanelState::list)
-            .and_then(ListState::selected)
-            .and_then(|idx| state.tabulars.get_mut(idx))
-        {
-            Tabular::default().render(area, buf, tabular);
-        } else if let Some(tabular) = state.selected_mut() {
+        if let Some(tabular) = state.tabulars.get_mut(tabular_idx) {
             Tabular::default().render(area, buf, tabular);
         }
 
