@@ -879,9 +879,10 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 .take_side_panel()
                 .and_then(|panel| panel.list().selected())
             {
-                app.tabs_mut().select(idx);
+                Ok(Some(AppAction::TabSelect(idx)))
+            } else {
+                Ok(None)
             }
-            Ok(None)
         }
     }
 }

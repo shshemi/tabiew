@@ -59,7 +59,8 @@ impl StatefulWidget for SidePanel<'_, '_> {
             .iter()
             .map(|s| s.len() as u16)
             .max()
-            .map(|w| w.clamp(32, area.width.saturating_div(2)) + 2)
+            .map(|max| max + 2)
+            .map(|w| w.clamp(34, area.width.saturating_div(2)))
             .unwrap_or(34);
         let area = Rect::new(area.x + area.width - width, area.y, width, area.height);
 

@@ -131,7 +131,8 @@ impl StatefulWidget for Tab {
             .as_ref()
             .map(SidePanelState::list)
             .and_then(ListState::selected)
-            .unwrap_or(state.idx);
+            .unwrap_or(state.idx)
+            .min(state.tabulars.len().saturating_sub(1));
 
         // fix state (if invalid)
         state.idx = state.idx().min(state.len().saturating_sub(1));
