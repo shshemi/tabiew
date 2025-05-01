@@ -1,8 +1,10 @@
-use ratatui::widgets::{Block, BorderType, Borders, StatefulWidget, Widget};
+use itertools::Itertools;
+use ratatui::widgets::{Block, BorderType, Borders, ListState, StatefulWidget, Widget};
 
 use crate::misc::globals::theme;
 
 use super::{
+    side_panel::{SidePanel, SidePanelState},
     status_bar::{StatusBar, Tag},
     tabular::{Tabular, TabularState},
 };
@@ -10,6 +12,7 @@ use super::{
 #[derive(Debug)]
 pub struct TabState {
     tabulars: Vec<TabularState>,
+    side_panel: Option<SidePanelState>,
     idx: usize,
 }
 
@@ -55,6 +58,22 @@ impl TabState {
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabularState> {
         self.tabulars.iter_mut()
     }
+
+    pub fn side_panel(&self) -> Option<&SidePanelState> {
+        self.side_panel.as_ref()
+    }
+
+    pub fn side_panel_mut(&mut self) -> Option<&mut SidePanelState> {
+        self.side_panel.as_mut()
+    }
+
+    pub fn show_side_panel(&mut self) {
+        self.side_panel = Some(SidePanelState::new(self.idx));
+    }
+
+    pub fn take_side_panel(&mut self) -> Option<SidePanelState> {
+        self.side_panel.take()
+    }
 }
 
 impl FromIterator<TabularState> for TabState {
@@ -62,6 +81,7 @@ impl FromIterator<TabularState> for TabState {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
+            side_panel: None,
         }
     }
 }
@@ -166,8 +186,33 @@ impl StatefulWidget for Tab {
         };
 
         // render tabular
-        if let Some(tabular) = state.selected_mut() {
+        if let Some(tabular) = state
+            .side_panel
+            .as_ref()
+            .map(SidePanelState::list)
+            .and_then(ListState::selected)
+            .and_then(|idx| state.tabulars.get_mut(idx))
+        {
             Tabular::default().render(area, buf, tabular);
+        } else if let Some(tabular) = state.selected_mut() {
+            Tabular::default().render(area, buf, tabular);
+        }
+
+        // render tabs
+        let tab_titles = state
+            .iter()
+            .map(|tabular| {
+                match tabular.table_type() {
+                    crate::tui::TableType::Help => "Help",
+                    crate::tui::TableType::Name(name) => name.as_str(),
+                    crate::tui::TableType::Query(query) => query.as_str(),
+                }
+                .to_owned()
+            })
+            .collect_vec();
+        if let Some(side_panel_state) = state.side_panel.as_mut() {
+            let side_panel = SidePanel::new(&tab_titles).title("Tabs");
+            side_panel.render(area, buf, side_panel_state);
         }
     }
 }
