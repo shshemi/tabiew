@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: 'Choose the version bump style'
+        description: 'Version bump'
         required: true
         default: 'patch'
         type: choice
