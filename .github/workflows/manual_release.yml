@@ -14,33 +14,66 @@ on:
           - minor
           - major
 
-# 2) Define a single job with an OS matrix
 jobs:
-  build:
-    name: Build & Test on ${{ matrix.os }}
+  build-and-run:
+    name: Build & Run on ${{ matrix.os }} / ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          # Linux
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+          # macOS
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          # Windows
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          override: true
+          targets: ${{ matrix.target }}
           components: clippy
 
-      - name: Build (release)
-        run: cargo build --release
+      # Cache dependencies to speed up builds
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
 
-      - name: Run tests
-        run: cargo test --release -- --color=always
-
-      - name: Smoke-test the CLI
+      # Linux build
+      - name: Build and Test (Linux cross-compilation - default)
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          BIN=target/release/my-cli${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-          echo "Running $BIN --version"
-          $BIN --version
+          cargo install cross --git https://github.com/cross-rs/cross
+          cross build --release --verbose --target ${{ matrix.target }}
+          cross test --release --verbose --target ${{ matrix.target }}
+
+      # MacOS and Windows build 
+      - name: Add target {{ matrix.target }}
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          rustup target add ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }}
+          cargo test --release --target ${{ matrix.target }}
