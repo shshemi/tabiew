@@ -1,0 +1,46 @@
+name: Manual Release
+
+# 1) Allow manual runs via the UI, CLI or API
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Choose the version bump style'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+# 2) Define a single job with an OS matrix
+jobs:
+  build:
+    name: Build & Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: clippy
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Run tests
+        run: cargo test --release -- --color=always
+
+      - name: Smoke-test the CLI
+        run: |
+          BIN=target/release/my-cli${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          echo "Running $BIN --version"
+          $BIN --version
