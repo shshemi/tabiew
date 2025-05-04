@@ -1,6 +1,5 @@
 name: Manual Release
 
-# 1) Allow manual runs via the UI, CLI or API
 on:
   workflow_dispatch:
     inputs:
@@ -28,7 +27,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - os: ubuntu-latest
             target: armv7-unknown-linux-gnueabihf
-          # macOS
+          # MacOS
           - os: macos-latest
             target: x86_64-apple-darwin
           - os: macos-latest
@@ -36,14 +35,14 @@ jobs:
           # Windows
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-          - os: windows-latest
+          - os: windows-11-arm
             target: aarch64-pc-windows-msvc
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Rust
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
@@ -51,7 +50,7 @@ jobs:
           components: clippy
 
       # Cache dependencies to speed up builds
-      - name: Cache cargo registry
+      - name: Cache Cargo Registry
         uses: actions/cache@v3
         with:
           path: |
@@ -63,15 +62,18 @@ jobs:
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
       # Linux build
-      - name: Build and Test (Linux cross-compilation - default)
+      - name: Install Cross
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build and Test (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cargo install cross --git https://github.com/cross-rs/cross
           cross build --release --verbose --target ${{ matrix.target }}
           cross test --release --verbose --target ${{ matrix.target }}
 
       # MacOS and Windows build 
-      - name: Add target {{ matrix.target }}
+      - name: Build and Test (Windows & MacOS)
         if: matrix.os != 'ubuntu-latest'
         run: |
           rustup target add ${{ matrix.target }}
