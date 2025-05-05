@@ -182,7 +182,7 @@ jobs:
 
       # Make the release
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: v${{ env.CRATE_VERSION }}
@@ -190,7 +190,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            uploads/**
+            uploads/*
 
       # Publish to crates.io
       - name: Clean Up Project
