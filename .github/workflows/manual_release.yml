@@ -104,11 +104,19 @@ jobs:
           cargo test --release --target ${{ matrix.target }}
 
       # Upload compiled binary to GitHub artifact
-      - name: Upload Binary to GitHub Artifact
+      - name: Upload Binary to GitHub Artifact (Linux and MacOS)
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/tw
+
+      - name: Upload Binary to GitHub Artifact (Windows)
+        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tw-${{ matrix.target }}.exe
+          path: target/${{ matrix.target }}/release/tw.exe
 
       # Upload Deb and RPM
       - name: Upload Deb Package to GitHub Artifact
@@ -144,10 +152,9 @@ jobs:
 
       - name: Fetch Crate Version
         run: |
-          # Option A: using `cargo metadata` + `jq`
           VERSION="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
           echo "CRATE_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Got version $VERSION"
+          echo "New crate version: $VERSION"
 
       # Commit new version
       - name: Commit and Push
