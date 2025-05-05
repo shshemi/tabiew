@@ -85,7 +85,7 @@ jobs:
 
       - name: Generate Deb Package
         if: matrix.os == 'ubuntu-latest'
-        run: cargo deb --no-build --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
+        run: cargo deb --no-build --no-strip --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
 
       - name: Install Cargo RPM
         if: matrix.os == 'ubuntu-latest'
