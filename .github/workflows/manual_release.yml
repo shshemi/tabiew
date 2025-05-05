@@ -100,9 +100,16 @@ jobs:
           path: target/${{ matrix.target }}/release/tw
 
       # Upload Deb and RPM
-      - name: Upload Deb and RPM package to GitHub Artifact
+      - name: Upload Deb package to GitHub Artifact
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
-          name: tw-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/tw
+          name: tabiew-${{ matrix.target }}.deb
+          path: tabiew-${{ matrix.target }}.deb
+
+      - name: Upload RPM package to GitHub Artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: tabiew-${{ matrix.target }}.rpm
+          path: tabiew-${{ matrix.target }}.rpm
