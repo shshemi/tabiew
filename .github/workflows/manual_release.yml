@@ -14,7 +14,7 @@ on:
           - major
 
 jobs:
-  build-and-run:
+  build:
     name: Build & Run on ${{ matrix.os }} / ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -124,3 +124,45 @@ jobs:
         with:
           name: tabiew-${{ matrix.target }}.rpm
           path: tabiew-${{ matrix.target }}.rpm
+
+  release:
+    name: Release on successful tests and merge
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # Bump version
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Cargo Bump
+        run: cargo install cargo-bump
+
+      - name: Bump Version
+        run: cargo bump ${{ github.event.inputs.version_bump }}
+
+      - name: Fetch Crate Version
+        run: |
+          # Option A: using `cargo metadata` + `jq`
+          VERSION="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
+          echo "CRATE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Got version $VERSION"
+
+      # Commit new version
+      - name: Commit and Push
+        run: echo "Push the new version"
+      
+
+      # Download Artifacts
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: upload/
+
+      - name: List All Artifacts
+        run: ls uploads
+
+      # Make the release
+      - name: Make Release
+        run: echo "Releaseing v${{ env.CRATE_VERSION }}"
