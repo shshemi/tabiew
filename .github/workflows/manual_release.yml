@@ -3,7 +3,7 @@ name: Manual Release
 on:
   workflow_dispatch:
     inputs:
-      env:
+      version_bump:
         description: 'Version bump'
         required: true
         default: 'patch'
@@ -61,6 +61,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
+      # Bump version
+      - name: Install Cargo Bump
+        run: cargo install cargo-bump
+
+      - name: Bump Version
+        run: cargo bump ${{ github.event.inputs.version_bump }}
+
       # Linux build
       - name: Install Cross
         if: matrix.os == 'ubuntu-latest'
@@ -72,17 +79,21 @@ jobs:
           cross build --release --verbose --target ${{ matrix.target }}
           cross test --release --verbose --target ${{ matrix.target }}
 
-      - name: Install Cargo Deb and RPM
+      - name: Install Cargo Deb
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo install cargo-deb --version 2.11.1 --force
-          cargo install cargo-generate-rpm --version 0.16.0 --force
+        run: cargo install cargo-deb --version 2.11.1 --force
 
-      - name: Generate Deb and RPM Packages
+      - name: Generate Deb Package
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo deb --no-build --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
-          cargo generate-rpm --no-build --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
+        run: cargo deb --no-build --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
+
+      - name: Install Cargo RPM
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo install cargo-generate-rpm --version 0.16.0 --force
+
+      - name: Generate RPM Packages
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo generate-rpm --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
 
       # MacOS and Windows build 
       - name: Build and Test (Windows & MacOS)
@@ -100,14 +111,14 @@ jobs:
           path: target/${{ matrix.target }}/release/tw
 
       # Upload Deb and RPM
-      - name: Upload Deb package to GitHub Artifact
+      - name: Upload Deb Package to GitHub Artifact
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.deb
           path: tabiew-${{ matrix.target }}.deb
 
-      - name: Upload RPM package to GitHub Artifact
+      - name: Upload RPM Package to GitHub Artifact
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
