@@ -153,6 +153,10 @@ jobs:
       - name: Bump Version
         run: cargo bump ${{ github.event.inputs.version_bump }}
 
+      - name: Build
+        run: |
+          cargo build --release
+
       - name: Fetch Crate Version
         run: |
           VERSION="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
