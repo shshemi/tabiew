@@ -78,6 +78,7 @@ jobs:
         run: |
           cross build --release --verbose --target ${{ matrix.target }}
           cross test --release --verbose --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
 
       - name: Install Cargo Deb
         if: matrix.os == 'ubuntu-latest'
@@ -95,13 +96,23 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: cargo generate-rpm --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
 
-      # MacOS and Windows build 
-      - name: Build and Test (Windows & MacOS)
-        if: matrix.os != 'ubuntu-latest'
+      # MacOS build 
+      - name: Build and Test (MacOS)
+        if: matrix.os == 'macos-latest'
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
           cargo test --release --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
+
+      # Windows build 
+      - name: Build and Test (Windows)
+        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        run: |
+          rustup target add ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }}
+          cargo test --release --target ${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tw.exe tw-${{ matrix.target }}.exe
 
       # Upload compiled binary to GitHub artifact
       - name: Upload Binary to GitHub Artifact (Linux and MacOS)
@@ -109,14 +120,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/tw
+          path: tw-${{ matrix.target }}
 
       - name: Upload Binary to GitHub Artifact (Windows)
         if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}.exe
-          path: target/${{ matrix.target }}/release/tw.exe
+          path: tw-${{ matrix.target }}.exe
 
       # Upload Deb and RPM
       - name: Upload Deb Package to GitHub Artifact
@@ -194,7 +205,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            uploads/*
+            uploads/**
 
       # Publish to crates.io
       - name: Clean Up Project
