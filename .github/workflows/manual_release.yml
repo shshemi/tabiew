@@ -137,12 +137,15 @@ jobs:
     name: Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       # Bump version
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
 
       - name: Install Cargo Bump
         run: cargo install cargo-bump
@@ -158,18 +161,40 @@ jobs:
 
       # Commit new version
       - name: Commit and Push
-        run: echo "Push the new version"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.*
+          git commit -m "v${{ env.CRATE_VERSION }}"
+          git push
+          git tag "v${{ env.CRATE_VERSION }}"
+          git push origin "v${{ env.CRATE_VERSION }}"
       
 
-      # Download Artifacts
-      - name: Download All Artifacts
+      # Download artifacts
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           path: uploads/
 
-      - name: List All Artifacts
-        run: ls uploads
+      # Make the GitHub release
+      - name: create github release
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          token: ${{ secrets.github_token }}
+          tag_name: v${{ env.crate_version }}
+          name: v${{ env.crate_version }}
+          draft: false
+          prerelease: false
+          files: |
+            uploads/*
 
-      # Make the release
-      - name: Make Release
-        run: echo "Releaseing v${{ env.CRATE_VERSION }}"
+      # publish to crates.io
+      - name: clean up project
+        run: |
+          cargo clean
+          rm -rf .git
+          rm -rf uploads
+
+      - name: publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
