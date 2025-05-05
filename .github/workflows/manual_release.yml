@@ -94,7 +94,7 @@ jobs:
 
       # Upload compiled binary to GitHub artifact
       - name: Upload Binary to GitHub Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/tw
@@ -102,14 +102,14 @@ jobs:
       # Upload Deb and RPM
       - name: Upload Deb package to GitHub Artifact
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.deb
           path: tabiew-${{ matrix.target }}.deb
 
       - name: Upload RPM package to GitHub Artifact
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.rpm
           path: tabiew-${{ matrix.target }}.rpm
