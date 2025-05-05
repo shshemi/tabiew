@@ -176,25 +176,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: uploads/
+        
+      - name: List Compiled Artifacts
+        run: ls uploads
 
-      # Make the GitHub release
-      - name: create github release
+      # Make the release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.2.1
         with:
-          token: ${{ secrets.github_token }}
-          tag_name: v${{ env.crate_version }}
-          name: v${{ env.crate_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ env.CRATE_VERSION }}
+          name: v${{ env.CRATE_VERSION }}
           draft: false
           prerelease: false
           files: |
-            uploads/*
+            uploads/**
 
-      # publish to crates.io
-      - name: clean up project
+      # Publish to crates.io
+      - name: Clean Up Project
         run: |
           cargo clean
           rm -rf .git
           rm -rf uploads
 
-      - name: publish to crates.io
+      - name: Publish to crates.io
         run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
