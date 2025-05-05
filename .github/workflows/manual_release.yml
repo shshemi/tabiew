@@ -72,6 +72,18 @@ jobs:
           cross build --release --verbose --target ${{ matrix.target }}
           cross test --release --verbose --target ${{ matrix.target }}
 
+      - name: Install Cargo Deb and RPM
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo install cargo-deb --version 2.11.1 --force
+          cargo install cargo-generate-rpm --version 0.16.0 --force
+
+      - name: Generate Deb and RPM Packages
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo deb --no-build --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
+          cargo generate-rpm --no-build --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
+
       # MacOS and Windows build 
       - name: Build and Test (Windows & MacOS)
         if: matrix.os != 'ubuntu-latest'
@@ -79,3 +91,18 @@ jobs:
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
           cargo test --release --target ${{ matrix.target }}
+
+      # Upload compiled binary to GitHub artifact
+      - name: Upload Binary to GitHub Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tw-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/tw
+
+      # Upload Deb and RPM
+      - name: Upload Deb and RPM package to GitHub Artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: tw-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/tw
