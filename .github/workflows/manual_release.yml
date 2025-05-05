@@ -126,7 +126,7 @@ jobs:
           path: tabiew-${{ matrix.target }}.rpm
 
   release:
-    name: Release on successful tests and merge
+    name: Release
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -156,9 +156,9 @@ jobs:
 
       # Download Artifacts
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          path: upload/
+          path: uploads/
 
       - name: List All Artifacts
         run: ls uploads
