@@ -60,30 +60,49 @@ fn type_infered_series(series: &Series) -> Option<Series> {
 }
 
 fn cast_int64(series: &Series) -> Option<Series> {
-    let new_series = series.cast(&DataType::Int64).ok()?;
-    series
-        .is_null()
-        .equal(&new_series.is_null())
-        .all()
-        .then_some(new_series)
+    cast_custom(series, |value| match value {
+        AnyValue::Null => Some(AnyValue::Null),
+        AnyValue::String(slice) => slice.parse::<i64>().ok().map(AnyValue::Int64),
+        AnyValue::StringOwned(pl_small_str) => {
+            pl_small_str.parse::<i64>().ok().map(AnyValue::Int64)
+        }
+        AnyValue::Int8(i) => Some(AnyValue::Int64(i.into())),
+        AnyValue::Int16(i) => Some(AnyValue::Int64(i.into())),
+        AnyValue::Int32(i) => Some(AnyValue::Int64(i.into())),
+        AnyValue::Int64(i) => Some(AnyValue::Int64(i)),
+        _ => None,
+    })
 }
 
 fn cast_float64(series: &Series) -> Option<Series> {
-    let new_series = series.cast(&DataType::Float64).ok()?;
-    series
-        .is_null()
-        .equal(&new_series.is_null())
-        .all()
-        .then_some(new_series)
+    cast_custom(series, |value| match value {
+        AnyValue::Null => Some(AnyValue::Null),
+        AnyValue::String(slice) => slice.parse::<f64>().ok().map(AnyValue::Float64),
+        AnyValue::StringOwned(pl_small_str) => {
+            pl_small_str.parse::<f64>().ok().map(AnyValue::Float64)
+        }
+        AnyValue::Float32(f) => Some(AnyValue::Float64(f.into())),
+        AnyValue::Float64(f) => Some(AnyValue::Float64(f)),
+        _ => None,
+    })
 }
 
 fn cast_boolean(series: &Series) -> Option<Series> {
-    let new_series = series.cast(&DataType::Boolean).ok()?;
-    series
-        .is_null()
-        .equal(&new_series.is_null())
-        .all()
-        .then_some(new_series)
+    cast_custom(series, |value| match value {
+        AnyValue::Null => Some(AnyValue::Null),
+        AnyValue::String(slice) => match slice {
+            "true" => Some(AnyValue::Boolean(true)),
+            "false" => Some(AnyValue::Boolean(false)),
+            _ => None,
+        },
+        AnyValue::StringOwned(pl_small_str) => match pl_small_str.as_str() {
+            "true" => Some(AnyValue::Boolean(true)),
+            "false" => Some(AnyValue::Boolean(false)),
+            _ => None,
+        },
+        AnyValue::Boolean(b) => Some(AnyValue::Boolean(b)),
+        _ => None,
+    })
 }
 
 fn cast_datetime(series: &Series) -> Option<Series> {
@@ -149,7 +168,11 @@ fn cast_custom(
     let break_out = Arc::new(AtomicBool::new(false));
     let mut new = vec![AnyValue::Null; series.len()];
     std::thread::scope(|scope| {
-        let piece_len = series.len() / num_cpus::get();
+        let piece_len = if series.len() > num_cpus::get() {
+            series.len() / num_cpus::get()
+        } else {
+            series.len()
+        };
         for (idx, new_chunk) in new.chunks_mut(piece_len).enumerate() {
             let offset = (idx * piece_len) as i64;
             let break_out = break_out.clone();
@@ -286,7 +309,7 @@ mod tests {
         let mut df = df! {
             "integers"=> ["1", "2", "3", "4"],
             "floats"=> ["1.1", "2.2", "3.3", "4.4"],
-            "dates"=> [ "2022-1-1", "2022-1-2", "2022-1-3", "2022-1-4" ],
+            "datetimes"=> [ "2022-1-1 00:00:00", "2022-1-2 00:00:00", "2022-1-3 00:00:00", "2022-1-4 00:00:00" ],
             "strings"=> ["a", "b", "c", "d"],
         }
         .unwrap();
@@ -294,7 +317,108 @@ mod tests {
 
         assert_eq!(df.column("integers").unwrap().dtype(), &DataType::Int64);
         assert_eq!(df.column("floats").unwrap().dtype(), &DataType::Float64);
-        assert_eq!(df.column("dates").unwrap().dtype(), &DataType::Date);
+        assert!(matches!(
+            df.column("datetimes").unwrap().dtype(),
+            &DataType::Datetime(_, _)
+        ));
         assert_eq!(df.column("strings").unwrap().dtype(), &DataType::String);
+    }
+
+    #[test]
+    fn test_cast_float64_valid_strings() {
+        let series = Series::new("floats".into(), &["1.1", "2.2", "3.3", "4.4"]);
+        let result = cast_float64(&series).unwrap();
+        assert_eq!(result.dtype(), &DataType::Float64);
+        assert_eq!(result.get(0).unwrap(), AnyValue::Float64(1.1));
+        assert_eq!(result.get(1).unwrap(), AnyValue::Float64(2.2));
+        assert_eq!(result.get(2).unwrap(), AnyValue::Float64(3.3));
+        assert_eq!(result.get(3).unwrap(), AnyValue::Float64(4.4));
+    }
+
+    #[test]
+    fn test_cast_float64_invalid_strings() {
+        let series = Series::new("floats".into(), &["1.1", "invalid", "3.3", "4.4"]);
+        let result = cast_float64(&series);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_cast_int64_valid_strings() {
+        let series = Series::new("integers".into(), &["1", "2", "3", "4"]);
+        let result = cast_int64(&series).unwrap();
+        assert_eq!(result.dtype(), &DataType::Int64);
+        assert_eq!(result.get(0).unwrap(), AnyValue::Int64(1));
+        assert_eq!(result.get(1).unwrap(), AnyValue::Int64(2));
+        assert_eq!(result.get(2).unwrap(), AnyValue::Int64(3));
+        assert_eq!(result.get(3).unwrap(), AnyValue::Int64(4));
+    }
+
+    #[test]
+    fn test_cast_int64_invalid_strings() {
+        let series = Series::new("integers".into(), &["1", "invalid", "3", "4"]);
+        let result = cast_int64(&series);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_cast_boolean_valid_strings() {
+        let series = Series::new("booleans".into(), &["true", "false", "true", "false"]);
+        let result = cast_boolean(&series).unwrap();
+        assert_eq!(result.dtype(), &DataType::Boolean);
+        assert_eq!(result.get(0).unwrap(), AnyValue::Boolean(true));
+        assert_eq!(result.get(1).unwrap(), AnyValue::Boolean(false));
+        assert_eq!(result.get(2).unwrap(), AnyValue::Boolean(true));
+        assert_eq!(result.get(3).unwrap(), AnyValue::Boolean(false));
+    }
+
+    #[test]
+    fn test_cast_boolean_invalid_strings() {
+        let series = Series::new("booleans".into(), &["true", "invalid", "false", "true"]);
+        let result = cast_boolean(&series);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_cast_datetime_valid_strings() {
+        let series = Series::new(
+            "datetimes".into(),
+            &[
+                "2022-01-01 00:00:00",
+                "2022-01-02 00:00:00",
+                "2022-01-03 00:00:00",
+                "2022-01-04 00:00:00",
+            ],
+        );
+        let result = cast_datetime(&series).unwrap();
+        assert_eq!(
+            result.dtype(),
+            &DataType::Datetime(TimeUnit::Milliseconds, None)
+        );
+        assert!(matches!(
+            result.get(0).unwrap(),
+            AnyValue::Datetime(_, _, _)
+        ));
+        assert!(matches!(
+            result.get(1).unwrap(),
+            AnyValue::Datetime(_, _, _)
+        ));
+        assert!(matches!(
+            result.get(2).unwrap(),
+            AnyValue::Datetime(_, _, _)
+        ));
+        assert!(matches!(
+            result.get(3).unwrap(),
+            AnyValue::Datetime(_, _, _)
+        ));
+    }
+
+    #[test]
+    fn test_cast_datetime_invalid_strings() {
+        let series = Series::new(
+            "dates".into(),
+            &["2022-01-01", "invalid", "2022-01-03", "2022-01-04"],
+        );
+        let result = cast_datetime(&series);
+        assert!(result.is_none());
     }
 }
