@@ -146,10 +146,6 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 
 ![Image Alt text](images/theme-tokyo-night.png "Tokyo Night")
 
-### Terminal:
-
-![Image Alt text](images/theme-terminal.png "Terminal")
-
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
