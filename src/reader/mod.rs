@@ -24,7 +24,11 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Format, InferSchema},
-    misc::{globals::stdin, polars_ext::SafeInferSchema, type_ext::ToAscii},
+    misc::{
+        globals::stdin,
+        polars_ext::{FullInferSchema, SafeInferSchema},
+        type_ext::ToAscii,
+    },
 };
 
 type NamedFrames = Box<[(String, DataFrame)]>;
@@ -82,7 +86,7 @@ impl BuildReader for Args {
             Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
             Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
             Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames)),
-            Some(Format::Excel) => Ok(Box::new(ExcelToDataFarmes)),
+            Some(Format::Excel) => Ok(Box::new(ExcelToDataFarmes::from_args(self))),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let mut reader = CsvToDataFrame::from_args(self);
@@ -96,7 +100,7 @@ impl BuildReader for Args {
                 Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
                 Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames)),
                 Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
-                    Ok(Box::new(ExcelToDataFarmes))
+                    Ok(Box::new(ExcelToDataFarmes::from_args(self)))
                 }
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
@@ -158,8 +162,14 @@ impl CsvToDataFrame {
             .with_rechunk(true)
             .into_reader_with_file_handle(reader)
             .finish()?;
-        if matches!(self.infer_schema, InferSchema::Safe) {
-            df.safe_infer_schema();
+        match self.infer_schema {
+            InferSchema::Fast | InferSchema::Safe => {
+                df.safe_infer_schema();
+            }
+            InferSchema::Full => {
+                df.full_infer_schema();
+            }
+            _ => (),
         }
         Ok(df)
     }
@@ -240,11 +250,15 @@ impl ReadToDataFrames for JsonLineToDataFrame {
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
         };
-        if matches!(
-            self.infer_schema,
-            InferSchema::Safe | InferSchema::Full | InferSchema::Fast
-        ) {
-            df.safe_infer_schema();
+
+        match self.infer_schema {
+            InferSchema::Fast | InferSchema::Safe => {
+                df.safe_infer_schema();
+            }
+            InferSchema::Full => {
+                df.full_infer_schema();
+            }
+            _ => (),
         }
         Ok([(input.table_name(), df)].into())
     }
@@ -287,11 +301,14 @@ impl ReadToDataFrames for JsonToDataFrame {
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
         };
-        if matches!(
-            self.infer_schema,
-            InferSchema::Safe | InferSchema::Full | InferSchema::Fast
-        ) {
-            df.safe_infer_schema();
+        match self.infer_schema {
+            InferSchema::Fast | InferSchema::Safe => {
+                df.safe_infer_schema();
+            }
+            InferSchema::Full => {
+                df.full_infer_schema();
+            }
+            _ => (),
         }
         Ok([(input.table_name(), df)].into())
     }
