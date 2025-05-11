@@ -6,7 +6,7 @@ use std::{
     },
 };
 
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
@@ -21,6 +21,10 @@ use super::type_ext::HasSubsequence;
 
 pub trait SafeInferSchema {
     fn safe_infer_schema(&mut self);
+}
+
+pub trait FullInferSchema {
+    fn full_infer_schema(&mut self);
 }
 
 pub trait IntoString {
@@ -53,10 +57,43 @@ impl SafeInferSchema for DataFrame {
     }
 }
 
+impl FullInferSchema for DataFrame {
+    fn full_infer_schema(&mut self) {
+        self.iter()
+            .filter_map(type_infered_series_full)
+            .map(|series| (series.name().to_owned(), series))
+            .collect_vec()
+            .into_iter()
+            .for_each(|(name, series)| {
+                self.replace(name.as_str(), series).unwrap();
+            });
+    }
+}
+
 fn type_infered_series(series: &Series) -> Option<Series> {
-    [cast_int64, cast_float64, cast_boolean, cast_datetime]
-        .iter()
-        .find_map(|func_map| func_map(series))
+    [
+        DataType::Int64,
+        DataType::Float64,
+        DataType::Boolean,
+        DataType::Date,
+        DataType::Time,
+        DataType::Datetime(TimeUnit::Milliseconds, None),
+    ]
+    .iter()
+    .filter_map(|dtype| series.cast(dtype).ok())
+    .find(|dtype_series| series.is_null().equal(&dtype_series.is_null()).all())
+}
+
+fn type_infered_series_full(series: &Series) -> Option<Series> {
+    [
+        cast_int64,
+        cast_float64,
+        cast_boolean,
+        cast_date,
+        cast_datetime,
+    ]
+    .iter()
+    .find_map(|func_map| func_map(series))
 }
 
 fn cast_int64(series: &Series) -> Option<Series> {
@@ -105,33 +142,48 @@ fn cast_boolean(series: &Series) -> Option<Series> {
     })
 }
 
-fn cast_datetime(series: &Series) -> Option<Series> {
-    cast_datetime_polars(series).or_else(|| {
-        [
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S%.f",
-            "%Y%m%dT%H%M%S",
-            "%Y-%m-%d",
-            "%Y %m %d",
-            "%Y.%m.%d",
-            "%Y%m%d",
-            "%Y-%j",
-        ]
-        .into_iter()
-        .find_map(|fmt| cast_datetime_custom(series, fmt))
-    })
+fn cast_date(series: &Series) -> Option<Series> {
+    [
+        "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y %m %d", "%Y%m%d", "%d-%m-%Y", "%d/%m/%Y",
+        "%d.%m.%Y", "%d %m %Y", "%d%m%Y", "%m-%d-%Y", "%m/%d/%Y", "%m.%d.%Y", "%m %d %Y", "%m%d%Y",
+        "%B %d %Y", "%B-%d-%Y", "%Y-%j",
+    ]
+    .into_iter()
+    .find_map(|fmt| cast_date_custom(series, fmt))
 }
 
-fn cast_datetime_polars(series: &Series) -> Option<Series> {
-    let new_series = series
-        .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))
-        .ok()?;
-    series
-        .is_null()
-        .equal(&new_series.is_null())
-        .all()
-        .then_some(new_series)
+fn cast_datetime(series: &Series) -> Option<Series> {
+    [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S%.f",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y %m %d %H:%M:%S",
+        "%Y.%m.%d %H:%M:%S",
+        "%d-%m-%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M:%S",
+        "%d %m %Y %H:%M:%S",
+        "%d.%m.%Y %H:%M:%S",
+        "%m-%d-%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M:%S",
+        "%m %d %Y %H:%M:%S",
+        "%m.%d.%Y %H:%M:%S",
+        "%B %d %Y %H:%M:%S",
+        "%B-%d-%Y %H:%M:%S",
+        "%Y%m%dT%H%M%S",
+    ]
+    .into_iter()
+    .find_map(|fmt| cast_datetime_custom(series, fmt))
+}
+
+fn cast_date_custom(series: &Series, fmt: &'static str) -> Option<Series> {
+    cast_custom(series, |val| match val {
+        AnyValue::String(s) => parse_date(s, fmt),
+        AnyValue::StringOwned(s) => parse_date(s.as_str(), fmt),
+        AnyValue::Date(days) => Some(AnyValue::Date(days)),
+        AnyValue::Null => Some(AnyValue::Null),
+        _ => None,
+    })
 }
 
 fn cast_datetime_custom(series: &Series, fmt: &'static str) -> Option<Series> {
@@ -147,18 +199,6 @@ fn cast_datetime_custom(series: &Series, fmt: &'static str) -> Option<Series> {
         AnyValue::Null => Some(AnyValue::Null),
         _ => None,
     })
-}
-
-fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-    NaiveDateTime::parse_from_str(slice, fmt)
-        .map(|date| {
-            AnyValue::DatetimeOwned(
-                date.and_utc().timestamp_millis(),
-                TimeUnit::Milliseconds,
-                None,
-            )
-        })
-        .ok()
 }
 
 fn cast_custom(
@@ -194,6 +234,29 @@ fn cast_custom(
         }
     });
     (!break_out.load(Ordering::Relaxed)).then_some(Series::new(series.name().to_owned(), new))
+}
+
+fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
+    NaiveDateTime::parse_from_str(slice, fmt)
+        .map(|date| {
+            AnyValue::DatetimeOwned(
+                date.and_utc().timestamp_millis(),
+                TimeUnit::Milliseconds,
+                None,
+            )
+        })
+        .ok()
+}
+
+fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
+    NaiveDate::parse_from_str(slice, fmt)
+        .map(|date| {
+            AnyValue::Date(
+                date.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap())
+                    .num_days() as i32,
+            )
+        })
+        .ok()
 }
 
 impl IntoString for AnyValue<'_> {
@@ -300,7 +363,7 @@ impl GetSheetSections for DataFrame {
 
 #[cfg(test)]
 mod tests {
-    use polars::df;
+    use polars::{df, prelude::DataType};
 
     use super::*;
 
