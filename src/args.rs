@@ -115,8 +115,8 @@ pub enum Format {
 pub enum InferSchema {
     No,
     Fast,
-    Full,
     Safe,
+    Full,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

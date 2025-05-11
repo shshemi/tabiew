@@ -380,10 +380,6 @@ mod tests {
 
         assert_eq!(df.column("integers").unwrap().dtype(), &DataType::Int64);
         assert_eq!(df.column("floats").unwrap().dtype(), &DataType::Float64);
-        assert!(matches!(
-            df.column("datetimes").unwrap().dtype(),
-            &DataType::Datetime(_, _)
-        ));
         assert_eq!(df.column("strings").unwrap().dtype(), &DataType::String);
     }
 

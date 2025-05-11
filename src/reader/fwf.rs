@@ -12,10 +12,14 @@ use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 use crate::{
     AppResult,
     args::{Args, InferSchema},
-    misc::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
+    misc::{
+        iter_ext::ZipItersExt,
+        polars_ext::{FullInferSchema, SafeInferSchema},
+        type_ext::SnakeCaseNameGenExt,
+    },
 };
 
-use super::{Source, NamedFrames, ReadToDataFrames};
+use super::{NamedFrames, ReadToDataFrames, Source};
 
 pub struct FwfToDataFrame {
     widths: Vec<usize>,
@@ -145,13 +149,15 @@ impl ReadToDataFrames for FwfToDataFrame {
             .map(|(name, vals)| Series::new(name.into(), vals))
             .collect();
 
-        if matches!(
-            self.infer_schema,
-            InferSchema::Fast | InferSchema::Full | InferSchema::Safe
-        ) {
-            df.safe_infer_schema();
+        match self.infer_schema {
+            InferSchema::Fast | InferSchema::Safe => {
+                df.safe_infer_schema();
+            }
+            InferSchema::Full => {
+                df.full_infer_schema();
+            }
+            _ => (),
         }
-
         Ok([(input.table_name(), df)].into())
     }
 }

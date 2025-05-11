@@ -10,12 +10,26 @@ use polars::{
 
 use crate::{
     AppResult,
-    misc::{globals::stdin, polars_ext::SafeInferSchema},
+    args::{Args, InferSchema},
+    misc::{
+        globals::stdin,
+        polars_ext::{FullInferSchema, SafeInferSchema},
+    },
 };
 
 use super::{NamedFrames, ReadToDataFrames, Source};
 
-pub struct ExcelToDataFarmes;
+pub struct ExcelToDataFarmes {
+    infer_schema: InferSchema,
+}
+
+impl ExcelToDataFarmes {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            infer_schema: args.infer_schema,
+        }
+    }
+}
 
 impl ReadToDataFrames for ExcelToDataFarmes {
     fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
@@ -32,7 +46,15 @@ impl ReadToDataFrames for ExcelToDataFarmes {
             .into_iter()
             .map(|(name, sheet)| {
                 let mut df = sheet_to_data_frame(sheet);
-                df.safe_infer_schema();
+                match self.infer_schema {
+                    InferSchema::Fast | InferSchema::Safe => {
+                        df.safe_infer_schema();
+                    }
+                    InferSchema::Full => {
+                        df.full_infer_schema();
+                    }
+                    _ => (),
+                }
                 (name, df)
             })
             .collect_vec()
