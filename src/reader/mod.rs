@@ -24,11 +24,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Format, InferSchema},
-    misc::{
-        globals::stdin,
-        polars_ext::{FullInferSchema, SafeInferSchema},
-        type_ext::ToAscii,
-    },
+    misc::{globals::stdin, polars_ext::SafeInferSchema, type_ext::ToAscii},
 };
 
 type NamedFrames = Box<[(String, DataFrame)]>;
@@ -166,9 +162,6 @@ impl CsvToDataFrame {
             InferSchema::Fast | InferSchema::Safe => {
                 df.safe_infer_schema();
             }
-            InferSchema::Full => {
-                df.full_infer_schema();
-            }
             _ => (),
         }
         Ok(df)
@@ -255,9 +248,6 @@ impl ReadToDataFrames for JsonLineToDataFrame {
             InferSchema::Fast | InferSchema::Safe => {
                 df.safe_infer_schema();
             }
-            InferSchema::Full => {
-                df.full_infer_schema();
-            }
             _ => (),
         }
         Ok([(input.table_name(), df)].into())
@@ -281,7 +271,7 @@ impl JsonToDataFrame {
 impl Default for JsonToDataFrame {
     fn default() -> Self {
         Self {
-            infer_schema: InferSchema::Full,
+            infer_schema: InferSchema::Safe,
             ignore_errors: true,
         }
     }
@@ -304,9 +294,6 @@ impl ReadToDataFrames for JsonToDataFrame {
         match self.infer_schema {
             InferSchema::Fast | InferSchema::Safe => {
                 df.safe_infer_schema();
-            }
-            InferSchema::Full => {
-                df.full_infer_schema();
             }
             _ => (),
         }

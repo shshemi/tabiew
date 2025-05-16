@@ -23,8 +23,8 @@ pub trait SafeInferSchema {
     fn safe_infer_schema(&mut self);
 }
 
-pub trait FullInferSchema {
-    fn full_infer_schema(&mut self);
+pub trait InferDatetimeColumns {
+    fn infer_datetime_columns(&mut self);
 }
 
 pub trait IntoString {
@@ -44,23 +44,17 @@ pub trait GetSheetSections {
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
 }
 
+pub trait TryMapAll {
+    fn try_map_all(
+        &self,
+        f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
+    ) -> Option<Series>;
+}
+
 impl SafeInferSchema for DataFrame {
     fn safe_infer_schema(&mut self) {
         self.iter()
             .filter_map(type_infered_series)
-            .map(|series| (series.name().to_owned(), series))
-            .collect_vec()
-            .into_iter()
-            .for_each(|(name, series)| {
-                self.replace(name.as_str(), series).unwrap();
-            });
-    }
-}
-
-impl FullInferSchema for DataFrame {
-    fn full_infer_schema(&mut self) {
-        self.iter()
-            .filter_map(type_infered_series_full)
             .map(|series| (series.name().to_owned(), series))
             .collect_vec()
             .into_iter()
@@ -84,62 +78,21 @@ fn type_infered_series(series: &Series) -> Option<Series> {
     .find(|dtype_series| series.is_null().equal(&dtype_series.is_null()).all())
 }
 
-fn type_infered_series_full(series: &Series) -> Option<Series> {
-    [
-        cast_int64,
-        cast_float64,
-        cast_boolean,
-        cast_date,
-        cast_datetime,
-    ]
-    .iter()
-    .find_map(|func_map| func_map(series))
-}
-
-fn cast_int64(series: &Series) -> Option<Series> {
-    cast_custom(series, |value| match value {
-        AnyValue::Null => Some(AnyValue::Null),
-        AnyValue::String(slice) => slice.parse::<i64>().ok().map(AnyValue::Int64),
-        AnyValue::StringOwned(pl_small_str) => {
-            pl_small_str.parse::<i64>().ok().map(AnyValue::Int64)
-        }
-        AnyValue::Int8(i) => Some(AnyValue::Int64(i.into())),
-        AnyValue::Int16(i) => Some(AnyValue::Int64(i.into())),
-        AnyValue::Int32(i) => Some(AnyValue::Int64(i.into())),
-        AnyValue::Int64(i) => Some(AnyValue::Int64(i)),
-        _ => None,
-    })
-}
-
-fn cast_float64(series: &Series) -> Option<Series> {
-    cast_custom(series, |value| match value {
-        AnyValue::Null => Some(AnyValue::Null),
-        AnyValue::String(slice) => slice.parse::<f64>().ok().map(AnyValue::Float64),
-        AnyValue::StringOwned(pl_small_str) => {
-            pl_small_str.parse::<f64>().ok().map(AnyValue::Float64)
-        }
-        AnyValue::Float32(f) => Some(AnyValue::Float64(f.into())),
-        AnyValue::Float64(f) => Some(AnyValue::Float64(f)),
-        _ => None,
-    })
-}
-
-fn cast_boolean(series: &Series) -> Option<Series> {
-    cast_custom(series, |value| match value {
-        AnyValue::Null => Some(AnyValue::Null),
-        AnyValue::String(slice) => match slice {
-            "true" => Some(AnyValue::Boolean(true)),
-            "false" => Some(AnyValue::Boolean(false)),
-            _ => None,
-        },
-        AnyValue::StringOwned(pl_small_str) => match pl_small_str.as_str() {
-            "true" => Some(AnyValue::Boolean(true)),
-            "false" => Some(AnyValue::Boolean(false)),
-            _ => None,
-        },
-        AnyValue::Boolean(b) => Some(AnyValue::Boolean(b)),
-        _ => None,
-    })
+impl InferDatetimeColumns for DataFrame {
+    fn infer_datetime_columns(&mut self) {
+        self.iter()
+            .filter_map(|series| {
+                [cast_date, cast_datetime]
+                    .iter()
+                    .find_map(|func_map| func_map(series))
+            })
+            .map(|series| (series.name().to_owned(), series))
+            .collect_vec()
+            .into_iter()
+            .for_each(|(name, series)| {
+                self.replace(name.as_str(), series).unwrap();
+            });
+    }
 }
 
 fn cast_date(series: &Series) -> Option<Series> {
@@ -177,7 +130,7 @@ fn cast_datetime(series: &Series) -> Option<Series> {
 }
 
 fn cast_date_custom(series: &Series, fmt: &'static str) -> Option<Series> {
-    cast_custom(series, |val| match val {
+    series.try_map_all(|val| match val {
         AnyValue::String(s) => parse_date(s, fmt),
         AnyValue::StringOwned(s) => parse_date(s.as_str(), fmt),
         AnyValue::Date(days) => Some(AnyValue::Date(days)),
@@ -187,7 +140,7 @@ fn cast_date_custom(series: &Series, fmt: &'static str) -> Option<Series> {
 }
 
 fn cast_datetime_custom(series: &Series, fmt: &'static str) -> Option<Series> {
-    cast_custom(series, |val| match val {
+    series.try_map_all(|val| match val {
         AnyValue::String(s) => parse_datetime(s, fmt),
         AnyValue::StringOwned(s) => parse_datetime(s.as_str(), fmt),
         AnyValue::Datetime(ts, unit, zone) => Some(AnyValue::DatetimeOwned(
@@ -199,41 +152,6 @@ fn cast_datetime_custom(series: &Series, fmt: &'static str) -> Option<Series> {
         AnyValue::Null => Some(AnyValue::Null),
         _ => None,
     })
-}
-
-fn cast_custom(
-    series: &Series,
-    cast: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
-) -> Option<Series> {
-    let break_out = Arc::new(AtomicBool::new(false));
-    let mut new = vec![AnyValue::Null; series.len()];
-    std::thread::scope(|scope| {
-        let piece_len = if series.len() > num_cpus::get() {
-            series.len() / num_cpus::get()
-        } else {
-            series.len()
-        };
-        for (idx, new_chunk) in new.chunks_mut(piece_len).enumerate() {
-            let offset = (idx * piece_len) as i64;
-            let break_out = break_out.clone();
-            let cast = &cast;
-            scope.spawn(move || {
-                let series = series.slice(offset, piece_len);
-                for (new_val, val) in new_chunk.iter_mut().zip(series.iter()) {
-                    if let Some(parsed) = cast(val) {
-                        *new_val = parsed;
-                    } else {
-                        break_out.store(true, Ordering::Relaxed);
-                        break;
-                    }
-                    if break_out.load(Ordering::Relaxed) {
-                        break;
-                    }
-                }
-            });
-        }
-    });
-    (!break_out.load(Ordering::Relaxed)).then_some(Series::new(series.name().to_owned(), new))
 }
 
 fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
@@ -361,6 +279,43 @@ impl GetSheetSections for DataFrame {
     }
 }
 
+impl TryMapAll for Series {
+    fn try_map_all(
+        &self,
+        cast: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
+    ) -> Option<Series> {
+        let break_out = Arc::new(AtomicBool::new(false));
+        let mut new = vec![AnyValue::Null; self.len()];
+        std::thread::scope(|scope| {
+            let piece_len = if self.len() > num_cpus::get() {
+                self.len() / num_cpus::get()
+            } else {
+                1
+            };
+            for (idx, new_chunk) in new.chunks_mut(piece_len).enumerate() {
+                let offset = (idx * piece_len) as i64;
+                let break_out = break_out.clone();
+                let cast = &cast;
+                scope.spawn(move || {
+                    let series = self.slice(offset, piece_len);
+                    for (new_val, val) in new_chunk.iter_mut().zip(series.iter()) {
+                        if let Some(parsed) = cast(val) {
+                            *new_val = parsed;
+                        } else {
+                            break_out.store(true, Ordering::Relaxed);
+                            break;
+                        }
+                        if break_out.load(Ordering::Relaxed) {
+                            break;
+                        }
+                    }
+                });
+            }
+        });
+        (!break_out.load(Ordering::Relaxed)).then_some(Series::new(self.name().to_owned(), new))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use polars::{df, prelude::DataType};
@@ -381,60 +336,6 @@ mod tests {
         assert_eq!(df.column("integers").unwrap().dtype(), &DataType::Int64);
         assert_eq!(df.column("floats").unwrap().dtype(), &DataType::Float64);
         assert_eq!(df.column("strings").unwrap().dtype(), &DataType::String);
-    }
-
-    #[test]
-    fn test_cast_float64_valid_strings() {
-        let series = Series::new("floats".into(), &["1.1", "2.2", "3.3", "4.4"]);
-        let result = cast_float64(&series).unwrap();
-        assert_eq!(result.dtype(), &DataType::Float64);
-        assert_eq!(result.get(0).unwrap(), AnyValue::Float64(1.1));
-        assert_eq!(result.get(1).unwrap(), AnyValue::Float64(2.2));
-        assert_eq!(result.get(2).unwrap(), AnyValue::Float64(3.3));
-        assert_eq!(result.get(3).unwrap(), AnyValue::Float64(4.4));
-    }
-
-    #[test]
-    fn test_cast_float64_invalid_strings() {
-        let series = Series::new("floats".into(), &["1.1", "invalid", "3.3", "4.4"]);
-        let result = cast_float64(&series);
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_cast_int64_valid_strings() {
-        let series = Series::new("integers".into(), &["1", "2", "3", "4"]);
-        let result = cast_int64(&series).unwrap();
-        assert_eq!(result.dtype(), &DataType::Int64);
-        assert_eq!(result.get(0).unwrap(), AnyValue::Int64(1));
-        assert_eq!(result.get(1).unwrap(), AnyValue::Int64(2));
-        assert_eq!(result.get(2).unwrap(), AnyValue::Int64(3));
-        assert_eq!(result.get(3).unwrap(), AnyValue::Int64(4));
-    }
-
-    #[test]
-    fn test_cast_int64_invalid_strings() {
-        let series = Series::new("integers".into(), &["1", "invalid", "3", "4"]);
-        let result = cast_int64(&series);
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_cast_boolean_valid_strings() {
-        let series = Series::new("booleans".into(), &["true", "false", "true", "false"]);
-        let result = cast_boolean(&series).unwrap();
-        assert_eq!(result.dtype(), &DataType::Boolean);
-        assert_eq!(result.get(0).unwrap(), AnyValue::Boolean(true));
-        assert_eq!(result.get(1).unwrap(), AnyValue::Boolean(false));
-        assert_eq!(result.get(2).unwrap(), AnyValue::Boolean(true));
-        assert_eq!(result.get(3).unwrap(), AnyValue::Boolean(false));
-    }
-
-    #[test]
-    fn test_cast_boolean_invalid_strings() {
-        let series = Series::new("booleans".into(), &["true", "invalid", "false", "true"]);
-        let result = cast_boolean(&series);
-        assert!(result.is_none());
     }
 
     #[test]
