@@ -11,10 +11,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, InferSchema},
-    misc::{
-        globals::stdin,
-        polars_ext::{FullInferSchema, SafeInferSchema},
-    },
+    misc::{globals::stdin, polars_ext::SafeInferSchema},
 };
 
 use super::{NamedFrames, ReadToDataFrames, Source};
@@ -49,9 +46,6 @@ impl ReadToDataFrames for ExcelToDataFarmes {
                 match self.infer_schema {
                     InferSchema::Fast | InferSchema::Safe => {
                         df.safe_infer_schema();
-                    }
-                    InferSchema::Full => {
-                        df.full_infer_schema();
                     }
                     _ => (),
                 }
