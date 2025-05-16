@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{Ok, anyhow};
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
@@ -89,7 +89,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 17] = [
+static ENTRIES: [Entry; 18] = [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
@@ -195,6 +195,12 @@ static ENTRIES: [Entry; 17] = [
         usage: "tab <tab_index>",
         description: "Select the tab at the index",
         parser: |query| Ok(AppAction::TabSelect(query.parse()?)),
+    },
+    Entry {
+        prefix: Prefix::Long("infer-types"),
+        usage: "infer-types",
+        description: "Perform extra processing to infer column types",
+        parser: |_| Ok(AppAction::TableInferColumns),
     },
     export::entry(),
     import::entry(),
