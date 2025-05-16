@@ -10,6 +10,7 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::globals::{set_theme, sql};
+use tabiew::misc::polars_ext::InferDatetimeColumns;
 use tabiew::reader::{BuildReader, Source};
 
 use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
@@ -25,7 +26,10 @@ fn main() -> AppResult<()> {
     // Load files to data frames
     let tabs = if args.files.is_empty() {
         let mut vec = Vec::new();
-        for (name, df) in args.build_reader("")?.named_frames(Source::Stdin)? {
+        for (name, mut df) in args.build_reader("")?.named_frames(Source::Stdin)? {
+            if args.infer_datetimes {
+                df.infer_datetime_columns();
+            }
             vec.push((df.clone(), sql().register(&name, df, Source::Stdin)))
         }
         vec
@@ -37,7 +41,10 @@ fn main() -> AppResult<()> {
             let frames = reader
                 .named_frames(source.clone())
                 .unwrap_or_else(|err| panic!("{}", err));
-            for (name, df) in frames {
+            for (name, mut df) in frames {
+                if args.infer_datetimes {
+                    df.infer_datetime_columns();
+                }
                 let name = sql().register(&name, df.clone(), source.clone());
                 vec.push((df, name))
             }

@@ -43,6 +43,13 @@ pub struct Args {
 
     #[arg(
         long,
+        help = "Performs additional processing to parse date and datetime columns",
+        default_value_t = false
+    )]
+    pub infer_datetimes: bool,
+
+    #[arg(
+        long,
         help = "Character used as the field separator or delimiter while loading DSV files.",
         required = false,
         default_value_t = ','
@@ -116,7 +123,6 @@ pub enum InferSchema {
     No,
     Fast,
     Safe,
-    Full,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -134,7 +140,6 @@ impl InferSchema {
         match self {
             InferSchema::No => Some(0),
             InferSchema::Fast => Some(128),
-            InferSchema::Full => None,
             InferSchema::Safe => Some(0),
         }
     }
@@ -143,7 +148,6 @@ impl InferSchema {
         match self {
             InferSchema::No => None,
             InferSchema::Fast => Some(NonZero::new(128).unwrap()),
-            InferSchema::Full => None,
             InferSchema::Safe => None,
         }
     }
