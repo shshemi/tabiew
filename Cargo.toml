@@ -69,9 +69,9 @@ clap = { version = "4.5.38", features = ["derive"] }
 crossterm = { version = "0.29.0", features = ["use-dev-tty"] }
 fwf-rs = "0.2.0"
 itertools = "0.14.0"
-polars = { version = "0.48.0", features = ["full"] }
-polars-sql = "0.48.0"
-polars-lazy = "0.48.0"
+polars = { version = "0.48.1", features = ["full"] }
+polars-sql = "0.48.1"
+polars-lazy = "0.48.1"
 rand = "0.9.1"
 ratatui = "0.29.0"
 rayon = "1.10.0"
