@@ -13,7 +13,7 @@ use tabiew::misc::globals::{set_theme, sql};
 use tabiew::misc::polars_ext::InferDatetimeColumns;
 use tabiew::reader::{BuildReader, Source};
 
-use tabiew::tui::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
+use tabiew::tui::theme::{Argonaut, Catppuccin, Chakra, Monokai, Nord, Terminal, TokyoNight};
 use tabiew::tui::{TableType, TabularState};
 use tabiew::{AppResult, tui};
 
@@ -70,6 +70,7 @@ fn main() -> AppResult<()> {
         AppTheme::Catppuccin => Box::new(Catppuccin),
         AppTheme::TokyoNight => Box::new(TokyoNight),
         AppTheme::Terminal => Box::new(Terminal),
+        AppTheme::Chakra => Box::new(Chakra),
     });
 
     let _ = start_tui(tabs, script, history);
