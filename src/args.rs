@@ -132,6 +132,7 @@ pub enum AppTheme {
     Nord,
     Catppuccin,
     TokyoNight,
+    Chakra,
     Terminal,
 }
 
