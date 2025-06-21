@@ -96,14 +96,16 @@ pub struct Args {
     )]
     pub truncate_ragged_lines: bool,
 
+    #[arg(long, help = "Tabiew theme", required = false, value_enum, default_value_t = AppTheme::Monokai)]
+    pub theme: AppTheme,
+
     #[arg(
         long,
-        help = "Tabiew theme",
+        help = "Generate a sample theme file in $HOME/.config/tabiew",
         required = false,
-        value_enum,
-        default_value_t = AppTheme::Monokai
+        default_value_t = false
     )]
-    pub theme: AppTheme,
+    pub generate_theme: bool,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -134,6 +136,7 @@ pub enum AppTheme {
     TokyoNight,
     Chakra,
     Terminal,
+    Config,
 }
 
 impl InferSchema {
