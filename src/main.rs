@@ -1,8 +1,10 @@
+use anyhow::anyhow;
 use clap::Parser;
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
 use std::fs::{self};
 use std::io::{self};
+use std::path::PathBuf;
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
 use tabiew::handler::action::execute;
@@ -13,7 +15,9 @@ use tabiew::misc::globals::{set_theme, sql};
 use tabiew::misc::polars_ext::InferDatetimeColumns;
 use tabiew::reader::{BuildReader, Source};
 
-use tabiew::tui::theme::{Argonaut, Catppuccin, Chakra, Monokai, Nord, Terminal, TokyoNight};
+use tabiew::tui::theme::{
+    Argonaut, Catppuccin, Chakra, Monokai, Nord, Terminal, Theme, TokyoNight,
+};
 use tabiew::tui::{TableType, TabularState};
 use tabiew::{AppResult, tui};
 
@@ -22,6 +26,21 @@ use tabiew::misc::history::{History, enforce_line_limit};
 fn main() -> AppResult<()> {
     // Parse CLI
     let args = Args::parse();
+
+    if args.generate_theme {
+        let path = theme_path().ok_or(anyhow!("Home directory not found"))?;
+        let _ = fs::create_dir_all(path.parent().ok_or(anyhow!("Unable to make parent dir"))?);
+        if path.exists() {
+            println!(
+                "The theme already exists at ~/.config/tabiew/theme.toml, remove it first and retry.",
+            )
+        } else {
+            let contents = toml::to_string(&Theme::sample())?;
+            fs::write(&path, contents)?;
+            println!("Sample theme generated at ~/.config/tabiew/theme.toml")
+        }
+        return Ok(());
+    }
 
     // Load files to data frames
     let tabs = if args.files.is_empty() {
@@ -57,8 +76,7 @@ fn main() -> AppResult<()> {
         .transpose()?
         .unwrap_or_default();
 
-    let history_path = home::home_dir().map(|path| path.join(".tabiew_history"));
-    let history = history_path
+    let history = history_path()
         .as_ref()
         .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
@@ -71,10 +89,17 @@ fn main() -> AppResult<()> {
         AppTheme::TokyoNight => Box::new(TokyoNight),
         AppTheme::Terminal => Box::new(Terminal),
         AppTheme::Chakra => Box::new(Chakra),
+        AppTheme::Config => {
+            let theme: Theme = toml::from_str(
+                &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found"))?)
+                    .map_err(|_| anyhow!("Please create the theme at ~/.config/tabiew/theme.toml first or use --generate-theme to generate a sample theme in that location."))?,
+            )?;
+            Box::new(theme)
+        }
     });
 
     let _ = start_tui(tabs, script, history);
-    if let Some(history_path) = history_path {
+    if let Some(history_path) = history_path() {
         enforce_line_limit(history_path, 999);
     }
     Ok(())
@@ -160,4 +185,12 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
     // Exit the user interface.
     tui.exit()?;
     Ok(())
+}
+
+fn history_path() -> Option<PathBuf> {
+    home::home_dir().map(|path| path.join(".tabiew_history"))
+}
+
+fn theme_path() -> Option<PathBuf> {
+    home::home_dir().map(|path| path.join(".config").join("tabiew").join("theme.toml"))
 }
