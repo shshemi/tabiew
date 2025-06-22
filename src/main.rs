@@ -32,12 +32,12 @@ fn main() -> AppResult<()> {
         let _ = fs::create_dir_all(path.parent().ok_or(anyhow!("Unable to make parent dir"))?);
         if path.exists() {
             println!(
-                "The theme already exists at ~/.config/tabiew/theme.toml, remove it first and retry.",
+                "Theme file already exists at ~/.config/tabiew/theme.toml, remove it first before retrying.",
             )
         } else {
             let contents = toml::to_string(&Theme::sample())?;
             fs::write(&path, contents)?;
-            println!("Sample theme generated at ~/.config/tabiew/theme.toml")
+            println!("Theme generated at ~/.config/tabiew/theme.toml")
         }
         return Ok(());
     }
@@ -92,7 +92,7 @@ fn main() -> AppResult<()> {
         AppTheme::Config => {
             let theme: Theme = toml::from_str(
                 &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found"))?)
-                    .map_err(|_| anyhow!("Please create the theme at ~/.config/tabiew/theme.toml first or use --generate-theme to generate a sample theme in that location."))?,
+                    .map_err(|_| anyhow!("Create the theme at ~/.config/tabiew/theme.toml first or use --generate-theme to generate one."))?,
             )?;
             Box::new(theme)
         }
