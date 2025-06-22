@@ -184,17 +184,9 @@ jobs:
           git add Cargo.*
           git commit -m "v${{ env.CRATE_VERSION }}"
 
-      # Publish to crates.io
+      # Test cargo install locally
       - name: Test Cargo Install Locally
         run: cargo install --path .
-
-      - name: Clean Up Project
-        run: |
-          cargo clean
-          rm -rf .git
-
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
 
       # Download artifacts
       - name: Download Artifacts
@@ -222,3 +214,12 @@ jobs:
           prerelease: false
           files: |
             uploads/**
+
+      # Publish to crates.io
+      - name: Clean Up Project
+        run: |
+          cargo clean
+          rm -rf .git
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
