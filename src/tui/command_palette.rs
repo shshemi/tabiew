@@ -15,12 +15,12 @@ use crate::misc::globals::theme;
 
 use super::input::{Input, InputState};
 
-pub struct CommandPalleteState {
+pub struct CommandPaletteState {
     input: InputState,
     list: ListState,
 }
 
-impl CommandPalleteState {
+impl CommandPaletteState {
     pub fn new(cmd: String) -> Self {
         let mut input = InputState::default();
         for c in cmd.chars() {
@@ -49,22 +49,22 @@ impl CommandPalleteState {
     }
 }
 
-pub struct CommandPallete<Iter> {
+pub struct CommandPalette<Iter> {
     items: Iter,
 }
 
-impl<Iter> CommandPallete<Iter> {
+impl<Iter> CommandPalette<Iter> {
     pub fn new(items: Iter) -> Self {
         Self { items }
     }
 }
 
-impl<'a, Iter> StatefulWidget for CommandPallete<Iter>
+impl<'a, Iter> StatefulWidget for CommandPalette<Iter>
 where
     Iter: IntoIterator,
     Iter::Item: Into<Cow<'a, str>>,
 {
-    type State = CommandPalleteState;
+    type State = CommandPaletteState;
 
     fn render(
         self,

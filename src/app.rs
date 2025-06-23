@@ -1,5 +1,3 @@
-
-
 use anyhow::Ok;
 
 use ratatui::{
@@ -7,11 +5,11 @@ use ratatui::{
     layout::{Constraint, Flex, Layout},
 };
 
+use crate::tui::command_palette::{CommandPalette, CommandPaletteState};
 use crate::{
     AppResult,
     misc::history::History,
     tui::{
-        command_pallete::{CommandPallete, CommandPalleteState},
         error_popup::ErrorPopup,
         schema::{Schema, SchemaState},
         tab::{Tab, TabState},
@@ -57,7 +55,7 @@ pub struct App {
     schema: SchemaState,
     content: Content,
     error: Option<String>,
-    pallete: Option<CommandPalleteState>,
+    palette: Option<CommandPaletteState>,
     history: History,
     borders: bool,
     running: bool,
@@ -71,7 +69,7 @@ impl App {
             schema: SchemaState::default(),
             content: Content::Tabulars,
             error: None,
-            pallete: None,
+            palette: None,
             borders: true,
             running: true,
         }
@@ -97,8 +95,8 @@ impl App {
         &mut self.schema
     }
 
-    pub fn pallete_mut(&mut self) -> Option<&mut CommandPalleteState> {
-        self.pallete.as_mut()
+    pub fn palette_mut(&mut self) -> Option<&mut CommandPaletteState> {
+        self.palette.as_mut()
     }
 
     pub fn history_mut(&mut self) -> &mut History {
@@ -109,14 +107,14 @@ impl App {
         &self.content
     }
 
-    pub fn show_pallete(&mut self, cmd: impl ToString) {
-        self.pallete = Some(CommandPalleteState::new(cmd.to_string()));
+    pub fn show_palette(&mut self, cmd: impl ToString) {
+        self.palette = Some(CommandPaletteState::new(cmd.to_string()));
     }
 
-    pub fn hide_pallete(&mut self) -> Option<String> {
-        self.pallete
+    pub fn hide_palette(&mut self) -> Option<String> {
+        self.palette
             .take()
-            .map(|mut pallete| pallete.input().value().to_owned())
+            .map(|mut palette| palette.input().value().to_owned())
     }
 
     pub fn error(&mut self, error: impl ToString) {
@@ -153,7 +151,7 @@ impl App {
     pub fn context(&self) -> Context {
         if self.error.is_some() {
             Context::Error
-        } else if self.pallete.is_some() {
+        } else if self.palette.is_some() {
             Context::Command
         } else if let Content::Schema = self.content {
             Context::Schema
@@ -202,7 +200,7 @@ impl App {
             frame.render_widget(error, mid);
         }
 
-        if let Some(cmd) = self.pallete.as_mut() {
+        if let Some(cmd) = self.palette.as_mut() {
             let upmid = {
                 let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
                     .flex(Flex::Center)
@@ -213,7 +211,7 @@ impl App {
                 mid_hor
             };
             frame.render_stateful_widget(
-                CommandPallete::new(self.history.iter().take(100)),
+                CommandPalette::new(self.history.iter().take(100)),
                 upmid,
                 cmd,
             );

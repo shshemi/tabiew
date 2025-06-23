@@ -156,18 +156,18 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char(':')
-                    .action(AppAction::PalleteShow(String::default())),
+                    .action(AppAction::PaletteShow(String::default())),
             )
             .fallback(|event| match event.code {
-                KeyCode::Char('1') => Some(AppAction::PalleteShow("goto 1".to_owned())),
-                KeyCode::Char('2') => Some(AppAction::PalleteShow("goto 2".to_owned())),
-                KeyCode::Char('3') => Some(AppAction::PalleteShow("goto 3".to_owned())),
-                KeyCode::Char('4') => Some(AppAction::PalleteShow("goto 4".to_owned())),
-                KeyCode::Char('5') => Some(AppAction::PalleteShow("goto 5".to_owned())),
-                KeyCode::Char('6') => Some(AppAction::PalleteShow("goto 6".to_owned())),
-                KeyCode::Char('7') => Some(AppAction::PalleteShow("goto 7".to_owned())),
-                KeyCode::Char('8') => Some(AppAction::PalleteShow("goto 8".to_owned())),
-                KeyCode::Char('9') => Some(AppAction::PalleteShow("goto 9".to_owned())),
+                KeyCode::Char('1') => Some(AppAction::PaletteShow("goto 1".to_owned())),
+                KeyCode::Char('2') => Some(AppAction::PaletteShow("goto 2".to_owned())),
+                KeyCode::Char('3') => Some(AppAction::PaletteShow("goto 3".to_owned())),
+                KeyCode::Char('4') => Some(AppAction::PaletteShow("goto 4".to_owned())),
+                KeyCode::Char('5') => Some(AppAction::PaletteShow("goto 5".to_owned())),
+                KeyCode::Char('6') => Some(AppAction::PaletteShow("goto 6".to_owned())),
+                KeyCode::Char('7') => Some(AppAction::PaletteShow("goto 7".to_owned())),
+                KeyCode::Char('8') => Some(AppAction::PaletteShow("goto 8".to_owned())),
+                KeyCode::Char('9') => Some(AppAction::PaletteShow("goto 9".to_owned())),
                 _ => None,
             });
 
@@ -176,7 +176,7 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char(':')
-                    .action(AppAction::DismissErrorAndShowPallete),
+                    .action(AppAction::DismissErrorAndShowPalette),
             )
             .fallback(|_| Some(AppAction::DismissError));
 
@@ -450,71 +450,71 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Left)
-                    .action(AppAction::PalleteGotoPrev),
+                    .action(AppAction::PaletteGotoPrev),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Right)
-                    .action(AppAction::PalleteGotoNext),
+                    .action(AppAction::PaletteGotoNext),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Home)
-                    .action(AppAction::PalleteGotoStart),
+                    .action(AppAction::PaletteGotoStart),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::End)
-                    .action(AppAction::PalleteGotoEnd),
+                    .action(AppAction::PaletteGotoEnd),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Backspace)
-                    .action(AppAction::PalleteDeletePrev),
+                    .action(AppAction::PaletteDeletePrev),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Delete)
-                    .action(AppAction::PalleteDeleteNext),
+                    .action(AppAction::PaletteDeleteNext),
             )
             // change selection
             .add(
                 Keybind::default()
                     .code(KeyCode::Up)
-                    .action(AppAction::PalleteSelectPrevious),
+                    .action(AppAction::PaletteSelectPrevious),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Down)
-                    .action(AppAction::PalleteSelectNext),
+                    .action(AppAction::PaletteSelectNext),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Char('p'))
                     .ctrl()
-                    .action(AppAction::PalleteSelectPrevious),
+                    .action(AppAction::PaletteSelectPrevious),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Char('n'))
                     .ctrl()
-                    .action(AppAction::PalleteSelectNext),
+                    .action(AppAction::PaletteSelectNext),
             )
             // enter esc
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
-                    .action(AppAction::PalleteInsertSelectedOrCommit),
+                    .action(AppAction::PaletteInsertSelectedOrCommit),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::PalleteDeselectOrDismiss),
+                    .action(AppAction::PaletteDeselectOrDismiss),
             )
             // insert characters
             .fallback(|event| {
                 if let KeyCode::Char(c) = event.code {
-                    Some(AppAction::PalleteInsert(c))
+                    Some(AppAction::PaletteInsert(c))
                 } else {
                     None
                 }
