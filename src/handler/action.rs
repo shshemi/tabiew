@@ -31,7 +31,7 @@ pub enum AppAction {
     NoAction,
     ToggleBorders,
     DismissError,
-    DismissErrorAndShowPallete,
+    DismissErrorAndShowPalette,
     GotoLine(usize),
     SwitchToSchema,
     SwitchToTabulars,
@@ -65,18 +65,18 @@ pub enum AppAction {
     SheetScrollUp,
     SheetScrollDown,
 
-    PalleteGotoNext,
-    PalleteGotoPrev,
-    PalleteGotoStart,
-    PalleteGotoEnd,
-    PalleteDeleteNext,
-    PalleteDeletePrev,
-    PalleteInsert(char),
-    PalleteInsertSelectedOrCommit,
-    PalleteShow(String),
-    PalleteDeselectOrDismiss,
-    PalleteSelectPrevious,
-    PalleteSelectNext,
+    PaletteGotoNext,
+    PaletteGotoPrev,
+    PaletteGotoStart,
+    PaletteGotoEnd,
+    PaletteDeleteNext,
+    PaletteDeletePrev,
+    PaletteInsert(char),
+    PaletteInsertSelectedOrCommit,
+    PaletteShow(String),
+    PaletteDeselectOrDismiss,
+    PaletteSelectPrevious,
+    PaletteSelectNext,
 
     SearchFuzzyShow,
     SearchExactShow,
@@ -171,9 +171,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::DismissErrorAndShowPallete => {
+        AppAction::DismissErrorAndShowPalette => {
             app.dismiss_error();
-            app.show_pallete("");
+            app.show_palette("");
             Ok(None)
         }
         AppAction::TableDismissModal => {
@@ -680,64 +680,64 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::PalleteGotoNext => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().goto_next();
+        AppAction::PaletteGotoNext => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().goto_next();
             }
             Ok(None)
         }
-        AppAction::PalleteGotoPrev => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().goto_prev();
+        AppAction::PaletteGotoPrev => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().goto_prev();
             }
             Ok(None)
         }
-        AppAction::PalleteGotoStart => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().goto_start();
+        AppAction::PaletteGotoStart => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().goto_start();
             }
             Ok(None)
         }
-        AppAction::PalleteGotoEnd => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().goto_end();
+        AppAction::PaletteGotoEnd => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().goto_end();
             }
             Ok(None)
         }
-        AppAction::PalleteDeleteNext => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().delete_next();
+        AppAction::PaletteDeleteNext => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().delete_next();
             }
             Ok(None)
         }
-        AppAction::PalleteDeletePrev => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().delete_prev();
+        AppAction::PaletteDeletePrev => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().delete_prev();
             }
             Ok(None)
         }
-        AppAction::PalleteInsert(c) => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.input().insert(c);
-                pallete.list().select(None);
+        AppAction::PaletteInsert(c) => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().insert(c);
+                palette.list().select(None);
             }
             Ok(None)
         }
-        AppAction::PalleteInsertSelectedOrCommit => {
+        AppAction::PaletteInsertSelectedOrCommit => {
             if let Some(selected) = app
-                .pallete_mut()
-                .and_then(|pallete| pallete.list().selected())
+                .palette_mut()
+                .and_then(|palette| palette.list().selected())
             {
                 if let Some(cmd) = app.history_mut().get(selected).map(String::to_owned) {
-                    if let Some(pallete) = app.pallete_mut() {
-                        pallete.set_input(cmd);
-                        pallete.list().select(None);
+                    if let Some(palette) = app.palette_mut() {
+                        palette.set_input(cmd);
+                        palette.list().select(None);
                     }
                 }
                 Ok(None)
-            } else if let Some(cmd) = app.hide_pallete() {
+            } else if let Some(cmd) = app.hide_palette() {
                 if cmd.is_empty() {
-                    Ok(Some(AppAction::PalleteDeselectOrDismiss))
+                    Ok(Some(AppAction::PaletteDeselectOrDismiss))
                 } else {
                     app.history_mut().push(cmd.clone());
                     parse_into_action(cmd).map(Some)
@@ -746,29 +746,29 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 Ok(None)
             }
         }
-        AppAction::PalleteShow(text) => {
-            app.show_pallete(text);
+        AppAction::PaletteShow(text) => {
+            app.show_palette(text);
             Ok(None)
         }
-        AppAction::PalleteDeselectOrDismiss => {
-            if let Some(pallete) = app.pallete_mut() {
-                if pallete.list().selected().is_some() {
-                    pallete.list().select(None);
+        AppAction::PaletteDeselectOrDismiss => {
+            if let Some(palette) = app.palette_mut() {
+                if palette.list().selected().is_some() {
+                    palette.list().select(None);
                 } else {
-                    app.hide_pallete();
+                    app.hide_palette();
                 }
             }
             Ok(None)
         }
-        AppAction::PalleteSelectPrevious => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.list().select_previous();
+        AppAction::PaletteSelectPrevious => {
+            if let Some(palette) = app.palette_mut() {
+                palette.list().select_previous();
             }
             Ok(None)
         }
-        AppAction::PalleteSelectNext => {
-            if let Some(pallete) = app.pallete_mut() {
-                pallete.list().select_next();
+        AppAction::PaletteSelectNext => {
+            if let Some(palette) = app.palette_mut() {
+                palette.list().select_next();
             }
             Ok(None)
         }
