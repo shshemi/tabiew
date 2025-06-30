@@ -281,16 +281,14 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableSelect(select) => Ok(Some(AppAction::TableQuery(format!(
-            "SELECT {} FROM _",
-            select
+            "SELECT {select} FROM _"
         )))),
         AppAction::TableOrder(order) => Ok(Some(AppAction::TableQuery(format!(
-            "SELECT * FROM _ ORDER BY {}",
-            order
+            "SELECT * FROM _ ORDER BY {order}"
         )))),
-        AppAction::TableFilter(filter) => Ok(Some(AppAction::TableQuery(
-            format! {"SELECT * FROM _ where {}", filter},
-        ))),
+        AppAction::TableFilter(filter) => Ok(Some(AppAction::TableQuery(format!(
+            "SELECT * FROM _ where {filter}"
+        )))),
         AppAction::TableQuery(query) => {
             let df = sql().execute(&query)?;
             Ok(Some(AppAction::TableSetDataFrame(df)))
@@ -304,7 +302,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TableReset => {
             let query = match app.tabs_mut().selected().map(|ts| ts.table_type()) {
-                Some(TableType::Name(name)) => Some(format!("SELECT * FROM '{}'", name)),
+                Some(TableType::Name(name)) => Some(format!("SELECT * FROM '{name}'")),
                 Some(TableType::Query(query)) => Some(query.to_owned()),
                 Some(_) => None,
                 None => None,
@@ -335,7 +333,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TabNewQuery(query) => {
             if sql().schema().iter().any(|(name, _)| name == &query) {
-                let df = sql().execute(&format!("SELECT * FROM '{}'", query))?;
+                let df = sql().execute(&format!("SELECT * FROM '{query}'"))?;
                 app.tabs_mut()
                     .add(TabularState::new(df, TableType::Name(query)));
             } else {
