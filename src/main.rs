@@ -133,9 +133,9 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
 
     // Run startup script
     for line in script.lines().filter(|line| !line.is_empty()) {
-        let action = parse_into_action(line)
-            .unwrap_or_else(|err| panic!("Error in startup script: {}", err));
-        execute(action, &mut app).unwrap_or_else(|err| panic!("Error in startup script: {}", err));
+        let action =
+            parse_into_action(line).unwrap_or_else(|err| panic!("Error in startup script: {err}"));
+        execute(action, &mut app).unwrap_or_else(|err| panic!("Error in startup script: {err}"));
     }
 
     // Main loop

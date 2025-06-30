@@ -386,7 +386,7 @@ mod tests {
         let mut map = VecMap::new();
         map.insert(1, "one");
 
-        let debug_str = format!("{:?}", map);
+        let debug_str = format!("{map:?}");
         assert!(debug_str.contains("VecMap"));
     }
 
@@ -447,7 +447,7 @@ mod tests {
         // Update some values
         for i in 0..10 {
             if i % 2 == 0 {
-                map.insert(i, format!("even_{}", i));
+                map.insert(i, format!("even_{i}"));
             }
         }
 

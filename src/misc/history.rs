@@ -63,7 +63,7 @@ impl Drop for History {
                 .open(path)
             {
                 for line in self.history.drain(..).skip(self.start_len) {
-                    let _ = writeln!(file, "{}", line);
+                    let _ = writeln!(file, "{line}");
                 }
             }
         }
@@ -78,7 +78,7 @@ pub fn enforce_line_limit(path: impl AsRef<Path>, limit: usize) {
 
             if let Ok(mut file) = File::create(path) {
                 content.lines().skip(skips).for_each(|line| {
-                    let _ = writeln!(file, "{}", line);
+                    let _ = writeln!(file, "{line}");
                 })
             }
         }
