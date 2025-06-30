@@ -89,7 +89,7 @@ where
 {
     fn copy_to_clipboard_via_osc52(&self) -> AppResult<()> {
         let encoded = base64::engine::general_purpose::STANDARD.encode(self);
-        let sequence = format!("\x1b]52;c;{}\x07", encoded);
+        let sequence = format!("\x1b]52;c;{encoded}\x07");
         let mut out = stdout();
         out.write_all(sequence.as_bytes())?;
         out.flush()?;
