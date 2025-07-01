@@ -57,9 +57,10 @@ fn main() -> AppResult<()> {
         for path in args.files.iter() {
             let source = Source::File(path.clone());
             let reader = args.build_reader(path)?;
-            let frames = reader
-                .named_frames(source.clone())
-                .unwrap_or_else(|err| panic!("{}", err));
+            let frames = reader.named_frames(source.clone()).unwrap_or_else(|err| {
+                eprintln!("tw: {err}");
+                std::process::exit(1)
+            });
             for (name, mut df) in frames {
                 if args.infer_datetimes {
                     df.infer_datetime_columns();
@@ -133,9 +134,14 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
 
     // Run startup script
     for line in script.lines().filter(|line| !line.is_empty()) {
-        let action =
-            parse_into_action(line).unwrap_or_else(|err| panic!("Error in startup script: {err}"));
-        execute(action, &mut app).unwrap_or_else(|err| panic!("Error in startup script: {err}"));
+        let action = parse_into_action(line).unwrap_or_else(|err| {
+            eprintln!("tw: Error in startup script: {err}");
+            std::process::exit(1);
+        });
+        execute(action, &mut app).unwrap_or_else(|err| {
+            eprintln!("tw: Error in startup script: {err}");
+            std::process::exit(1);
+        });
     }
 
     // Main loop
