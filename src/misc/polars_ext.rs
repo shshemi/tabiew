@@ -217,7 +217,7 @@ fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
         "Blob (Length: {})\n{}",
         buf.len(),
         buf.iter()
-            .map(|b| format!("{:02X}", b))
+            .map(|b| format!("{b:02X}"))
             .chunks(8)
             .into_iter()
             .map(|mut chunk| chunk.join(" "))
