@@ -5,4 +5,5 @@ pub mod polars_ext;
 pub mod search;
 pub mod sql;
 pub mod type_ext;
+pub mod type_inference;
 pub mod vec_map;
