@@ -158,14 +158,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SwitchToTabulars => {
             app.switch_tabular();
-            if let Some(df) = app
-                .tabs()
-                .selected()
-                .map(TabularState::table)
-                .map(DataFrameTableState::data_frame)
-            {
-                sql().set_default(df.clone());
-            }
             Ok(None)
         }
         AppAction::DismissErrorAndShowPalette => {
@@ -213,7 +205,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TableInferColumns(type_inferer) => {
             if let Some(tab) = app.tabs_mut().selected_mut() {
-                type_inferer.update(tab.table_mut().data_frame_mut());
+                let df = tab.table_mut().data_frame_mut();
+                type_inferer.update(df);
             }
             Ok(None)
         }
@@ -286,13 +279,19 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             "SELECT * FROM _ where {filter}"
         )))),
         AppAction::TableQuery(query) => {
-            let df = sql().execute(&query)?;
+            let df = sql().execute(
+                &query,
+                app.tabs()
+                    .selected()
+                    .map(TabularState::table)
+                    .map(DataFrameTableState::data_frame)
+                    .cloned(),
+            )?;
             Ok(Some(AppAction::TableSetDataFrame(df)))
         }
         AppAction::TableSetDataFrame(df) => {
             if let Some(tab) = app.tabs_mut().selected_mut() {
                 tab.table_mut().set_data_frame(df.clone());
-                sql().set_default(df);
             }
             Ok(None)
         }
@@ -329,11 +328,18 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TabNewQuery(query) => {
             if sql().schema().iter().any(|(name, _)| name == &query) {
-                let df = sql().execute(&format!("SELECT * FROM '{query}'"))?;
+                let df = sql().execute(&format!("SELECT * FROM '{query}'"), None)?;
                 app.tabs_mut()
                     .add(TabularState::new(df, TableType::Name(query)));
             } else {
-                let df = sql().execute(&query)?;
+                let df = sql().execute(
+                    &query,
+                    app.tabs()
+                        .selected()
+                        .map(TabularState::table)
+                        .map(DataFrameTableState::data_frame)
+                        .cloned(),
+                )?;
                 app.tabs_mut()
                     .add(TabularState::new(df, TableType::Query(query)));
             }
@@ -345,9 +351,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::TabSelect(idx) => {
             let idx = idx.min(app.tabs_mut().len().saturating_sub(1));
             app.tabs_mut().select(idx);
-            if let Some(tabular) = app.tabs_mut().selected_mut() {
-                sql().set_default(tabular.table_mut().data_frame().clone());
-            }
             app.switch_tabular();
             Ok(None)
         }

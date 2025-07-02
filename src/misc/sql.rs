@@ -42,15 +42,18 @@ impl SqlBackend {
         self.sql.unregister(name);
     }
 
-    pub fn set_default(&mut self, data_frame: DataFrame) {
-        self.sql.register("_", data_frame.lazy());
-    }
-
     pub fn unset_default(&mut self) {
         self.sql.unregister("_");
     }
 
-    pub fn execute(&mut self, query: &str) -> PolarsResult<DataFrame> {
+    pub fn execute(
+        &mut self,
+        query: &str,
+        default_table: impl Into<Option<DataFrame>>,
+    ) -> PolarsResult<DataFrame> {
+        if let Some(data_frame) = default_table.into() {
+            self.sql.register("_", data_frame.lazy());
+        }
         let mut df = self.sql.execute(query).and_then(LazyFrame::collect)?;
         df.as_single_chunk_par();
         Ok(df)
