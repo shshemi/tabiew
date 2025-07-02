@@ -12,7 +12,7 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::globals::{set_theme, sql};
-use tabiew::misc::type_inference::TypeInference;
+use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::reader::{BuildReader, Source};
 
 use tabiew::tui::theme::{
@@ -42,16 +42,13 @@ fn main() -> AppResult<()> {
         return Ok(());
     }
 
-    let type_infer = TypeInference::from_args(&args);
+    let type_infer = TypeInferer::from_args(&args);
 
     // Load files to data frames
     let tabs = if args.files.is_empty() {
         let mut vec = Vec::new();
-        for (name, df) in args.build_reader("")?.named_frames(Source::Stdin)? {
-            let df = type_infer.infer(df).unwrap_or_else(|err| {
-                eprintln!("tw: {err}");
-                std::process::exit(1)
-            });
+        for (name, mut df) in args.build_reader("")?.named_frames(Source::Stdin)? {
+            type_infer.update(&mut df);
             vec.push((df.clone(), sql().register(&name, df, Source::Stdin)))
         }
         vec
@@ -64,11 +61,8 @@ fn main() -> AppResult<()> {
                 eprintln!("tw: {err}");
                 std::process::exit(1)
             });
-            for (name, df) in frames {
-                let df = type_infer.infer(df).unwrap_or_else(|err| {
-                    eprintln!("tw: {err}");
-                    std::process::exit(1)
-                });
+            for (name, mut df) in frames {
+                type_infer.update(&mut df);
                 let name = sql().register(&name, df.clone(), source.clone());
                 vec.push((df, name))
             }
