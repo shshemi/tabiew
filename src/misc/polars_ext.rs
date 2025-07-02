@@ -9,8 +9,8 @@ use std::{
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, DataType, NamedFrom, TimeUnit},
-    series::{ChunkCompareEq, Series},
+    prelude::{AnyValue, NamedFrom},
+    series::Series,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -40,20 +40,6 @@ pub trait TryMapAll {
         &self,
         f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
     ) -> Option<Series>;
-}
-
-fn type_infered_series(series: &Series) -> Option<Series> {
-    [
-        DataType::Int64,
-        DataType::Float64,
-        DataType::Boolean,
-        DataType::Date,
-        DataType::Time,
-        DataType::Datetime(TimeUnit::Milliseconds, None),
-    ]
-    .iter()
-    .filter_map(|dtype| series.cast(dtype).ok())
-    .find(|dtype_series| series.is_null().equal(&dtype_series.is_null()).all())
 }
 
 impl IntoString for AnyValue<'_> {
