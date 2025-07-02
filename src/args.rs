@@ -106,6 +106,22 @@ pub struct Args {
         default_value_t = false
     )]
     pub generate_theme: bool,
+
+    #[arg(
+        long,
+        help = "Specifies the types to infer for text-based files.",
+        required = false,
+        default_value_t = TypeVec(vec![Type::Int, Type::Float]),
+    )]
+    pub infer_types: TypeVec,
+
+    #[arg(
+        long,
+        help = "Disables type inference",
+        required = false,
+        default_value_t = false
+    )]
+    pub no_type_inference: bool,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -118,6 +134,72 @@ pub enum Format {
     Fwf,
     Sqlite,
     Excel,
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeVec(Vec<Type>);
+
+impl TypeVec {
+    pub fn inner(&self) -> &[Type] {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for TypeVec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let type_strings: Vec<String> = self.0.iter().map(|t| t.to_string()).collect();
+        write!(f, "{}", type_strings.join(" "))
+    }
+}
+
+impl std::str::FromStr for TypeVec {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.split(' ')
+            .map(|t| t.trim().parse::<Type>())
+            .collect::<Result<Vec<_>, _>>()
+            .map(TypeVec)
+    }
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Type {
+    All,
+    Int,
+    Float,
+    Boolean,
+    Date,
+    Datetime,
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::All => write!(f, "all"),
+            Type::Int => write!(f, "int"),
+            Type::Float => write!(f, "float"),
+            Type::Boolean => write!(f, "boolean"),
+            Type::Date => write!(f, "date"),
+            Type::Datetime => write!(f, "datetime"),
+        }
+    }
+}
+
+impl std::str::FromStr for Type {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "all" => Ok(Type::All),
+            "int" => Ok(Type::Int),
+            "float" => Ok(Type::Float),
+            "boolean" => Ok(Type::Boolean),
+            "date" => Ok(Type::Date),
+            "datetime" => Ok(Type::Datetime),
+            _ => Err(format!("Unknown type: {s}")),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

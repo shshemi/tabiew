@@ -12,7 +12,7 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::globals::{set_theme, sql};
-use tabiew::misc::polars_ext::InferDatetimeColumns;
+use tabiew::misc::type_inference::TypeInference;
 use tabiew::reader::{BuildReader, Source};
 
 use tabiew::tui::theme::{
@@ -42,13 +42,16 @@ fn main() -> AppResult<()> {
         return Ok(());
     }
 
+    let type_infer = TypeInference::from_args(&args);
+
     // Load files to data frames
     let tabs = if args.files.is_empty() {
         let mut vec = Vec::new();
-        for (name, mut df) in args.build_reader("")?.named_frames(Source::Stdin)? {
-            if args.infer_datetimes {
-                df.infer_datetime_columns();
-            }
+        for (name, df) in args.build_reader("")?.named_frames(Source::Stdin)? {
+            let df = type_infer.infer(df).unwrap_or_else(|err| {
+                eprintln!("tw: {err}");
+                std::process::exit(1)
+            });
             vec.push((df.clone(), sql().register(&name, df, Source::Stdin)))
         }
         vec
@@ -61,10 +64,11 @@ fn main() -> AppResult<()> {
                 eprintln!("tw: {err}");
                 std::process::exit(1)
             });
-            for (name, mut df) in frames {
-                if args.infer_datetimes {
-                    df.infer_datetime_columns();
-                }
+            for (name, df) in frames {
+                let df = type_infer.infer(df).unwrap_or_else(|err| {
+                    eprintln!("tw: {err}");
+                    std::process::exit(1)
+                });
                 let name = sql().register(&name, df.clone(), source.clone());
                 vec.push((df, name))
             }

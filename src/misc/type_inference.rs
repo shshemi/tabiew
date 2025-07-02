@@ -4,12 +4,16 @@ use chrono::{NaiveDate, NaiveDateTime};
 use polars::{
     frame::DataFrame,
     prelude::{AnyValue, DataType, PlSmallStr, TimeUnit},
-    series::Series,
+    series::{ChunkCompareEq, Series},
 };
 
-use crate::{AppResult, misc::polars_ext::TryMapAll};
+use crate::{
+    AppResult,
+    args::{Args, Type},
+    misc::polars_ext::TryMapAll,
+};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TypeInference {
     int: bool,
     float: bool,
@@ -18,46 +22,24 @@ pub struct TypeInference {
     datetime: bool,
 }
 
-impl Default for TypeInference {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl TypeInference {
-    pub fn new() -> Self {
-        Self {
-            int: false,
-            float: false,
-            boolean: false,
-            date: false,
-            datetime: false,
+    pub fn from_args(args: &Args) -> Self {
+        if args.no_type_inference {
+            Self::default()
+        } else {
+            let mut type_infer = TypeInference::default();
+            for t in args.infer_types.inner() {
+                type_infer = match t {
+                    Type::Int => type_infer.int(),
+                    Type::Float => type_infer.float(),
+                    Type::Boolean => type_infer.boolean(),
+                    Type::Date => type_infer.date(),
+                    Type::Datetime => type_infer.datetime(),
+                    Type::All => type_infer.int().float().boolean().date().datetime(),
+                };
+            }
+            type_infer
         }
-    }
-
-    pub fn infer_int(mut self) -> Self {
-        self.int = true;
-        self
-    }
-
-    pub fn infer_float(mut self) -> Self {
-        self.float = true;
-        self
-    }
-
-    pub fn infer_boolean(mut self) -> Self {
-        self.boolean = true;
-        self
-    }
-
-    pub fn infer_date(mut self) -> Self {
-        self.date = true;
-        self
-    }
-
-    pub fn infer_datetime(mut self) -> Self {
-        self.datetime = true;
-        self
     }
 
     pub fn infer(&self, mut data_frame: DataFrame) -> AppResult<DataFrame> {
@@ -100,18 +82,69 @@ impl TypeInference {
 
         Ok(data_frame)
     }
+
+    pub fn int(mut self) -> Self {
+        self.int = true;
+        self
+    }
+
+    pub fn float(mut self) -> Self {
+        self.float = true;
+        self
+    }
+
+    pub fn boolean(mut self) -> Self {
+        self.boolean = true;
+        self
+    }
+
+    pub fn date(mut self) -> Self {
+        self.date = true;
+        self
+    }
+
+    pub fn datetime(mut self) -> Self {
+        self.datetime = true;
+        self
+    }
 }
 
 fn cast_int(ser: &Series) -> Option<Series> {
-    ser.cast(&DataType::Int64).ok()
+    ser.cast(&DataType::Int64).ok().and_then(|casted| {
+        casted
+            .is_null()
+            .equal(&ser.is_null())
+            .all()
+            .then_some(casted)
+    })
 }
 
 fn cast_float(ser: &Series) -> Option<Series> {
-    ser.cast(&DataType::Float64).ok()
+    ser.cast(&DataType::Float64).ok().and_then(|casted| {
+        casted
+            .is_null()
+            .equal(&ser.is_null())
+            .all()
+            .then_some(casted)
+    })
 }
 
 fn cast_boolean(ser: &Series) -> Option<Series> {
-    ser.cast(&DataType::Boolean).ok()
+    ser.try_map_all(|val| match val {
+        AnyValue::String(s) => parse_boolean(s),
+        AnyValue::StringOwned(s) => parse_boolean(s.as_str()),
+        AnyValue::Date(days) => Some(AnyValue::Date(days)),
+        AnyValue::Null => Some(AnyValue::Null),
+        _ => None,
+    })
+}
+
+fn parse_boolean(s: &str) -> Option<AnyValue<'static>> {
+    match s {
+        "true" => Some(AnyValue::Boolean(true)),
+        "false" => Some(AnyValue::Boolean(false)),
+        _ => None,
+    }
 }
 
 fn cast_date(series: &Series) -> Option<Series> {
