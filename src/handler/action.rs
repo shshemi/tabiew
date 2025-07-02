@@ -7,7 +7,7 @@ use rand::Rng;
 use crate::{
     AppResult,
     app::{App, Content},
-    misc::globals::sql,
+    misc::{globals::sql, type_inferer::TypeInferer},
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
@@ -33,7 +33,7 @@ pub enum AppAction {
     SwitchToSchema,
     SwitchToTabulars,
 
-    TableInferColumns,
+    TableInferColumns(TypeInferer),
     TableDismissModal,
     TableScrollRight,
     TableScrollLeft,
@@ -211,10 +211,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::TableInferColumns => {
+        AppAction::TableInferColumns(type_inferer) => {
             if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.table_mut().data_frame_mut();
-                tab.table_mut().data_frame_mut();
+                type_inferer.update(tab.table_mut().data_frame_mut());
             }
             Ok(None)
         }
