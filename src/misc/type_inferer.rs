@@ -68,6 +68,7 @@ impl TypeInferer {
 
         let updates = data_frame
             .iter()
+            .filter(|ser| matches!(ser.dtype(), DataType::String))
             .filter_map(|ser| {
                 cast_fns
                     .iter()
@@ -130,7 +131,6 @@ fn cast_boolean(ser: &Series) -> Option<Series> {
     ser.try_map_all(|val| match val {
         AnyValue::String(s) => parse_boolean(s),
         AnyValue::StringOwned(s) => parse_boolean(s.as_str()),
-        AnyValue::Date(days) => Some(AnyValue::Date(days)),
         AnyValue::Null => Some(AnyValue::Null),
         _ => None,
     })
@@ -151,7 +151,7 @@ fn cast_date(series: &Series) -> Option<Series> {
         "%B %d %Y", "%B-%d-%Y", "%Y-%j",
     ]
     .into_iter()
-    .find_map(|fmt| cast_date_custom(series, fmt))
+    .find_map(|fmt| cast_date_with_format(series, fmt))
 }
 
 fn cast_datetime(series: &Series) -> Option<Series> {
@@ -175,29 +175,33 @@ fn cast_datetime(series: &Series) -> Option<Series> {
         "%Y%m%dT%H%M%S",
     ]
     .into_iter()
-    .find_map(|fmt| cast_datetime_custom(series, fmt))
+    .find_map(|fmt| cast_datetime_with_format(series, fmt))
 }
 
-fn cast_date_custom(series: &Series, fmt: &'static str) -> Option<Series> {
+fn cast_date_with_format(series: &Series, fmt: &'static str) -> Option<Series> {
     series.try_map_all(|val| match val {
         AnyValue::String(s) => parse_date(s, fmt),
         AnyValue::StringOwned(s) => parse_date(s.as_str(), fmt),
-        AnyValue::Date(days) => Some(AnyValue::Date(days)),
         AnyValue::Null => Some(AnyValue::Null),
         _ => None,
     })
 }
 
-fn cast_datetime_custom(series: &Series, fmt: &'static str) -> Option<Series> {
+fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
+    NaiveDate::parse_from_str(slice, fmt)
+        .map(|date| {
+            AnyValue::Date(
+                date.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap())
+                    .num_days() as i32,
+            )
+        })
+        .ok()
+}
+
+fn cast_datetime_with_format(series: &Series, fmt: &'static str) -> Option<Series> {
     series.try_map_all(|val| match val {
         AnyValue::String(s) => parse_datetime(s, fmt),
         AnyValue::StringOwned(s) => parse_datetime(s.as_str(), fmt),
-        AnyValue::Datetime(ts, unit, zone) => Some(AnyValue::DatetimeOwned(
-            ts,
-            unit,
-            zone.map(|sm| sm.to_owned().into()),
-        )),
-        AnyValue::DatetimeOwned(ts, unit, zone) => Some(AnyValue::DatetimeOwned(ts, unit, zone)),
         AnyValue::Null => Some(AnyValue::Null),
         _ => None,
     })
@@ -210,17 +214,6 @@ fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
                 date.and_utc().timestamp_millis(),
                 TimeUnit::Milliseconds,
                 None,
-            )
-        })
-        .ok()
-}
-
-fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-    NaiveDate::parse_from_str(slice, fmt)
-        .map(|date| {
-            AnyValue::Date(
-                date.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap())
-                    .num_days() as i32,
             )
         })
         .ok()
