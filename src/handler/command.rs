@@ -2,7 +2,7 @@ use anyhow::{Ok, anyhow};
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::{AppResult, handler::action::AppAction};
+use crate::{AppResult, handler::action::AppAction, misc::type_inferer::TypeInferer};
 
 pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
     let (s1, s2) = cmd.as_ref().split_once(' ').unwrap_or((cmd.as_ref(), ""));
@@ -197,10 +197,23 @@ static ENTRIES: [Entry; 18] = [
         parser: |query| Ok(AppAction::TabSelect(query.parse()?)),
     },
     Entry {
-        prefix: Prefix::Long("infer-types"),
-        usage: "infer-types",
+        prefix: Prefix::Long("infer"),
+        usage: "infer <types>",
         description: "Perform extra processing to infer column types",
-        parser: |_| Ok(AppAction::TableInferColumns),
+        parser: |args| {
+            let ti = args
+                .split(' ')
+                .try_fold(TypeInferer::default(), |ti, slice| match slice {
+                    "int" => Ok(ti.int()),
+                    "float" => Ok(ti.float()),
+                    "boolean" => Ok(ti.boolean()),
+                    "date" => Ok(ti.date()),
+                    "datetime" => Ok(ti.datetime()),
+                    "all" => Ok(ti.int().float().boolean().date().datetime()),
+                    _ => Err(anyhow!("Invalid type {slice}")),
+                })?;
+            Ok(AppAction::TableInferColumns(ti))
+        },
     },
     export::entry(),
     import::entry(),
