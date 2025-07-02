@@ -7,10 +7,7 @@ use rand::Rng;
 use crate::{
     AppResult,
     app::{App, Content},
-    misc::{
-        globals::sql,
-        polars_ext::{InferDatetimeColumns, SafeInferSchema},
-    },
+    misc::globals::sql,
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
@@ -216,8 +213,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TableInferColumns => {
             if let Some(tab) = app.tabs_mut().selected_mut() {
-                tab.table_mut().data_frame_mut().safe_infer_schema();
-                tab.table_mut().data_frame_mut().infer_datetime_columns();
+                tab.table_mut().data_frame_mut();
+                tab.table_mut().data_frame_mut();
             }
             Ok(None)
         }

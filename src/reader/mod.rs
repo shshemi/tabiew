@@ -24,7 +24,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Format, InferSchema},
-    misc::{globals::stdin, polars_ext::SafeInferSchema, type_ext::ToAscii},
+    misc::{globals::stdin, type_ext::ToAscii},
 };
 
 type NamedFrames = Box<[(String, DataFrame)]>;
@@ -141,7 +141,7 @@ impl CsvToDataFrame {
     }
 
     fn try_into_frame(&self, reader: impl MmapBytesReader) -> AppResult<DataFrame> {
-        let mut df = CsvReadOptions::default()
+        let df = CsvReadOptions::default()
             .with_ignore_errors(self.ignore_errors)
             .with_infer_schema_length(self.infer_schema.to_csv_infer_schema_length())
             .with_has_header(!self.no_header)
@@ -158,12 +158,6 @@ impl CsvToDataFrame {
             .with_rechunk(true)
             .into_reader_with_file_handle(reader)
             .finish()?;
-        match self.infer_schema {
-            InferSchema::Fast | InferSchema::Safe => {
-                df.safe_infer_schema();
-            }
-            _ => (),
-        }
         Ok(df)
     }
 }
@@ -207,14 +201,12 @@ impl ReadToDataFrames for ParquetToDataFrame {
 }
 
 pub struct JsonLineToDataFrame {
-    infer_schema: InferSchema,
     ignore_errors: bool,
 }
 
 impl JsonLineToDataFrame {
     pub fn from_args(args: &Args) -> Self {
         Self {
-            infer_schema: args.infer_schema,
             ignore_errors: args.ignore_errors,
         }
     }
@@ -223,7 +215,6 @@ impl JsonLineToDataFrame {
 impl Default for JsonLineToDataFrame {
     fn default() -> Self {
         Self {
-            infer_schema: InferSchema::Safe,
             ignore_errors: true,
         }
     }
@@ -231,7 +222,7 @@ impl Default for JsonLineToDataFrame {
 
 impl ReadToDataFrames for JsonLineToDataFrame {
     fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
-        let mut df = match &input {
+        let df = match &input {
             Source::File(path) => JsonLineReader::new(File::open(path)?)
                 .with_rechunk(true)
                 .infer_schema_len(None)
@@ -243,26 +234,17 @@ impl ReadToDataFrames for JsonLineToDataFrame {
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
         };
-
-        match self.infer_schema {
-            InferSchema::Fast | InferSchema::Safe => {
-                df.safe_infer_schema();
-            }
-            _ => (),
-        }
         Ok([(input.table_name(), df)].into())
     }
 }
 
 pub struct JsonToDataFrame {
-    infer_schema: InferSchema,
     ignore_errors: bool,
 }
 
 impl JsonToDataFrame {
     pub fn from_args(args: &Args) -> Self {
         Self {
-            infer_schema: args.infer_schema,
             ignore_errors: args.ignore_errors,
         }
     }
@@ -271,7 +253,6 @@ impl JsonToDataFrame {
 impl Default for JsonToDataFrame {
     fn default() -> Self {
         Self {
-            infer_schema: InferSchema::Safe,
             ignore_errors: true,
         }
     }
@@ -279,7 +260,7 @@ impl Default for JsonToDataFrame {
 
 impl ReadToDataFrames for JsonToDataFrame {
     fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
-        let mut df = match &input {
+        let df = match &input {
             Source::File(path) => JsonReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .infer_schema_len(None)
@@ -291,12 +272,6 @@ impl ReadToDataFrames for JsonToDataFrame {
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
         };
-        match self.infer_schema {
-            InferSchema::Fast | InferSchema::Safe => {
-                df.safe_infer_schema();
-            }
-            _ => (),
-        }
         Ok([(input.table_name(), df)].into())
     }
 }
