@@ -8,13 +8,12 @@ use polars::{
 };
 
 use crate::{
-    AppResult,
     args::{Args, Type},
     misc::polars_ext::TryMapAll,
 };
 
-#[derive(Debug, Default)]
-pub struct TypeInference {
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TypeInferer {
     int: bool,
     float: bool,
     boolean: bool,
@@ -22,12 +21,12 @@ pub struct TypeInference {
     datetime: bool,
 }
 
-impl TypeInference {
+impl TypeInferer {
     pub fn from_args(args: &Args) -> Self {
         if args.no_type_inference {
             Self::default()
         } else {
-            let mut type_infer = TypeInference::default();
+            let mut type_infer = TypeInferer::default();
             for t in args.infer_types.inner() {
                 type_infer = match t {
                     Type::Int => type_infer.int(),
@@ -42,7 +41,7 @@ impl TypeInference {
         }
     }
 
-    pub fn infer(&self, mut data_frame: DataFrame) -> AppResult<DataFrame> {
+    pub fn update(&self, data_frame: &mut DataFrame) {
         let cast_fns = {
             let mut vec = Vec::<fn(&Series) -> Option<Series>>::new();
             if self.int {
@@ -77,10 +76,8 @@ impl TypeInference {
             .collect::<HashMap<PlSmallStr, Series>>();
 
         for (col, ser) in updates.into_iter() {
-            data_frame.replace(&col, ser)?;
+            data_frame.replace(&col, ser).unwrap();
         }
-
-        Ok(data_frame)
     }
 
     pub fn int(mut self) -> Self {
