@@ -6,7 +6,6 @@ use std::{
     },
 };
 
-use chrono::{NaiveDate, NaiveDateTime};
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
@@ -18,14 +17,6 @@ use unicode_width::UnicodeWidthStr;
 use crate::tui::sheet::SheetSection;
 
 use super::type_ext::HasSubsequence;
-
-pub trait SafeInferSchema {
-    fn safe_infer_schema(&mut self);
-}
-
-pub trait InferDatetimeColumns {
-    fn infer_datetime_columns(&mut self);
-}
 
 pub trait IntoString {
     fn into_single_line(self) -> String;
@@ -51,19 +42,6 @@ pub trait TryMapAll {
     ) -> Option<Series>;
 }
 
-impl SafeInferSchema for DataFrame {
-    fn safe_infer_schema(&mut self) {
-        self.iter()
-            .filter_map(type_infered_series)
-            .map(|series| (series.name().to_owned(), series))
-            .collect_vec()
-            .into_iter()
-            .for_each(|(name, series)| {
-                self.replace(name.as_str(), series).unwrap();
-            });
-    }
-}
-
 fn type_infered_series(series: &Series) -> Option<Series> {
     [
         DataType::Int64,
@@ -76,105 +54,6 @@ fn type_infered_series(series: &Series) -> Option<Series> {
     .iter()
     .filter_map(|dtype| series.cast(dtype).ok())
     .find(|dtype_series| series.is_null().equal(&dtype_series.is_null()).all())
-}
-
-impl InferDatetimeColumns for DataFrame {
-    fn infer_datetime_columns(&mut self) {
-        self.iter()
-            .filter_map(|series| {
-                [cast_date, cast_datetime]
-                    .iter()
-                    .find_map(|func_map| func_map(series))
-            })
-            .map(|series| (series.name().to_owned(), series))
-            .collect_vec()
-            .into_iter()
-            .for_each(|(name, series)| {
-                self.replace(name.as_str(), series).unwrap();
-            });
-    }
-}
-
-fn cast_date(series: &Series) -> Option<Series> {
-    [
-        "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y %m %d", "%Y%m%d", "%d-%m-%Y", "%d/%m/%Y",
-        "%d.%m.%Y", "%d %m %Y", "%d%m%Y", "%m-%d-%Y", "%m/%d/%Y", "%m.%d.%Y", "%m %d %Y", "%m%d%Y",
-        "%B %d %Y", "%B-%d-%Y", "%Y-%j",
-    ]
-    .into_iter()
-    .find_map(|fmt| cast_date_custom(series, fmt))
-}
-
-fn cast_datetime(series: &Series) -> Option<Series> {
-    [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S%.f",
-        "%Y/%m/%d %H:%M:%S",
-        "%Y %m %d %H:%M:%S",
-        "%Y.%m.%d %H:%M:%S",
-        "%d-%m-%Y %H:%M:%S",
-        "%d/%m/%Y %H:%M:%S",
-        "%d %m %Y %H:%M:%S",
-        "%d.%m.%Y %H:%M:%S",
-        "%m-%d-%Y %H:%M:%S",
-        "%m/%d/%Y %H:%M:%S",
-        "%m %d %Y %H:%M:%S",
-        "%m.%d.%Y %H:%M:%S",
-        "%B %d %Y %H:%M:%S",
-        "%B-%d-%Y %H:%M:%S",
-        "%Y%m%dT%H%M%S",
-    ]
-    .into_iter()
-    .find_map(|fmt| cast_datetime_custom(series, fmt))
-}
-
-fn cast_date_custom(series: &Series, fmt: &'static str) -> Option<Series> {
-    series.try_map_all(|val| match val {
-        AnyValue::String(s) => parse_date(s, fmt),
-        AnyValue::StringOwned(s) => parse_date(s.as_str(), fmt),
-        AnyValue::Date(days) => Some(AnyValue::Date(days)),
-        AnyValue::Null => Some(AnyValue::Null),
-        _ => None,
-    })
-}
-
-fn cast_datetime_custom(series: &Series, fmt: &'static str) -> Option<Series> {
-    series.try_map_all(|val| match val {
-        AnyValue::String(s) => parse_datetime(s, fmt),
-        AnyValue::StringOwned(s) => parse_datetime(s.as_str(), fmt),
-        AnyValue::Datetime(ts, unit, zone) => Some(AnyValue::DatetimeOwned(
-            ts,
-            unit,
-            zone.map(|sm| sm.to_owned().into()),
-        )),
-        AnyValue::DatetimeOwned(ts, unit, zone) => Some(AnyValue::DatetimeOwned(ts, unit, zone)),
-        AnyValue::Null => Some(AnyValue::Null),
-        _ => None,
-    })
-}
-
-fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-    NaiveDateTime::parse_from_str(slice, fmt)
-        .map(|date| {
-            AnyValue::DatetimeOwned(
-                date.and_utc().timestamp_millis(),
-                TimeUnit::Milliseconds,
-                None,
-            )
-        })
-        .ok()
-}
-
-fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-    NaiveDate::parse_from_str(slice, fmt)
-        .map(|date| {
-            AnyValue::Date(
-                date.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap())
-                    .num_days() as i32,
-            )
-        })
-        .ok()
 }
 
 impl IntoString for AnyValue<'_> {
@@ -313,72 +192,5 @@ impl TryMapAll for Series {
             }
         });
         (!break_out.load(Ordering::Relaxed)).then_some(Series::new(self.name().to_owned(), new))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use polars::{df, prelude::DataType};
-
-    use super::*;
-
-    #[test]
-    fn test_infer_schema_safe_basic() {
-        let mut df = df! {
-            "integers"=> ["1", "2", "3", "4"],
-            "floats"=> ["1.1", "2.2", "3.3", "4.4"],
-            "datetimes"=> [ "2022-1-1 00:00:00", "2022-1-2 00:00:00", "2022-1-3 00:00:00", "2022-1-4 00:00:00" ],
-            "strings"=> ["a", "b", "c", "d"],
-        }
-        .unwrap();
-        df.safe_infer_schema();
-
-        assert_eq!(df.column("integers").unwrap().dtype(), &DataType::Int64);
-        assert_eq!(df.column("floats").unwrap().dtype(), &DataType::Float64);
-        assert_eq!(df.column("strings").unwrap().dtype(), &DataType::String);
-    }
-
-    #[test]
-    fn test_cast_datetime_valid_strings() {
-        let series = Series::new(
-            "datetimes".into(),
-            &[
-                "2022-01-01 00:00:00",
-                "2022-01-02 00:00:00",
-                "2022-01-03 00:00:00",
-                "2022-01-04 00:00:00",
-            ],
-        );
-        let result = cast_datetime(&series).unwrap();
-        assert_eq!(
-            result.dtype(),
-            &DataType::Datetime(TimeUnit::Milliseconds, None)
-        );
-        assert!(matches!(
-            result.get(0).unwrap(),
-            AnyValue::Datetime(_, _, _)
-        ));
-        assert!(matches!(
-            result.get(1).unwrap(),
-            AnyValue::Datetime(_, _, _)
-        ));
-        assert!(matches!(
-            result.get(2).unwrap(),
-            AnyValue::Datetime(_, _, _)
-        ));
-        assert!(matches!(
-            result.get(3).unwrap(),
-            AnyValue::Datetime(_, _, _)
-        ));
-    }
-
-    #[test]
-    fn test_cast_datetime_invalid_strings() {
-        let series = Series::new(
-            "dates".into(),
-            &["2022-01-01", "invalid", "2022-01-03", "2022-01-04"],
-        );
-        let result = cast_datetime(&series);
-        assert!(result.is_none());
     }
 }

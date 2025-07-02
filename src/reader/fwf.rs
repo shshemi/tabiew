@@ -11,8 +11,8 @@ use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
 
 use crate::{
     AppResult,
-    args::{Args, InferSchema},
-    misc::{iter_ext::ZipItersExt, polars_ext::SafeInferSchema, type_ext::SnakeCaseNameGenExt},
+    args::Args,
+    misc::{iter_ext::ZipItersExt, type_ext::SnakeCaseNameGenExt},
 };
 
 use super::{NamedFrames, ReadToDataFrames, Source};
@@ -22,7 +22,6 @@ pub struct FwfToDataFrame {
     has_header: bool,
     separator_length: usize,
     flexible_width: bool,
-    infer_schema: InferSchema,
 }
 
 impl FwfToDataFrame {
@@ -32,7 +31,6 @@ impl FwfToDataFrame {
             has_header: !args.no_header,
             separator_length: args.separator_length,
             flexible_width: !args.no_flexible_width,
-            infer_schema: args.infer_schema,
         })
     }
 
@@ -64,7 +62,6 @@ impl Default for FwfToDataFrame {
             has_header: true,
             separator_length: 0,
             flexible_width: true,
-            infer_schema: InferSchema::Safe,
         }
     }
 }
@@ -139,18 +136,12 @@ impl ReadToDataFrames for FwfToDataFrame {
             .zip_iters()
             .collect_vec();
 
-        let mut df: DataFrame = header
+        let df: DataFrame = header
             .into_iter()
             .zip(columns)
             .map(|(name, vals)| Series::new(name.into(), vals))
             .collect();
 
-        match self.infer_schema {
-            InferSchema::Fast | InferSchema::Safe => {
-                df.safe_infer_schema();
-            }
-            _ => (),
-        }
         Ok([(input.table_name(), df)].into())
     }
 }
