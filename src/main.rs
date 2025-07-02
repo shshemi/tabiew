@@ -112,14 +112,6 @@ fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -
     let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
 
-    // Set default data frame to the first tab
-    sql().set_default(
-        app.tabs_mut()
-            .selected()
-            .map(|tab| tab.table().data_frame().clone())
-            .unwrap(),
-    );
-
     // Initialize the terminal user interface.
     let mut tui = tui::Terminal::new(
         ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
