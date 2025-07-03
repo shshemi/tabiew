@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use polars::{
     error::PolarsResult,
     frame::DataFrame,
@@ -6,7 +8,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::{misc::type_ext::SnakeCaseNameGenExt, reader::Source};
+use crate::misc::type_ext::SnakeCaseNameGenExt;
 
 use super::{polars_ext::IntoString, vec_map::VecMap};
 
@@ -29,10 +31,15 @@ impl SqlBackend {
         &self.schema
     }
 
-    pub fn register(&mut self, name: &str, data_frame: DataFrame, input: Source) -> String {
+    pub fn register(
+        &mut self,
+        name: &str,
+        data_frame: DataFrame,
+        input: impl Into<Source>,
+    ) -> String {
         let name = self.schema.available_name(name);
         self.schema
-            .insert(name.clone(), TableInfo::new(input, &data_frame));
+            .insert(name.clone(), TableInfo::new(input.into(), &data_frame));
         self.sql.register(&name, data_frame.lazy());
         name
     }
@@ -153,6 +160,32 @@ impl TableInfo {
 
     pub fn schema(&self) -> &TableSchema {
         &self.schema
+    }
+}
+
+#[derive(Debug)]
+pub enum Source {
+    File(PathBuf),
+    Stdin,
+    User,
+}
+
+impl Source {
+    pub fn display_path(&self) -> String {
+        match self {
+            Source::File(path_buf) => path_buf.to_string_lossy().into_owned(),
+            Source::Stdin => "Standard Input".to_owned(),
+            Source::User => "User".to_owned(),
+        }
+    }
+}
+
+impl From<crate::reader::Source> for Source {
+    fn from(value: crate::reader::Source) -> Self {
+        match value {
+            crate::reader::Source::File(path_buf) => Source::File(path_buf),
+            crate::reader::Source::Stdin => Source::Stdin,
+        }
     }
 }
 
