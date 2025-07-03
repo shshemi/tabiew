@@ -1,6 +1,7 @@
 use std::ops::Div;
 
 use anyhow::{Ok, anyhow};
+use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
 
@@ -137,6 +138,7 @@ pub enum AppAction {
     SchemaOpenTable,
     SchemaUnloadTable,
 
+    RegisterDataFrame(String),
     Help,
     Quit,
 }
@@ -889,6 +891,24 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             {
                 Ok(Some(AppAction::TabSelect(idx)))
             } else {
+                Ok(None)
+            }
+        }
+        AppAction::RegisterDataFrame(name) => {
+            //
+            if sql().schema().iter().map(|(name, _)| name).contains(&name) {
+                Err(anyhow!("Data frame with name '{}' already exists.", &name))
+            } else {
+                if let Some(data_frame) = app
+                    .tabs()
+                    .selected()
+                    .map(TabularState::table)
+                    .map(DataFrameTableState::data_frame)
+                    .cloned()
+                {
+                    sql().register(&name, data_frame, crate::misc::sql::Source::User);
+                }
+
                 Ok(None)
             }
         }

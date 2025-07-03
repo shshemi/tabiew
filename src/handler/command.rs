@@ -89,7 +89,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 18] = [
+static ENTRIES: [Entry; 19] = [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
@@ -214,6 +214,12 @@ static ENTRIES: [Entry; 18] = [
                 })?;
             Ok(AppAction::TableInferColumns(ti))
         },
+    },
+    Entry {
+        prefix: Prefix::Long("register"),
+        usage: "register <data_frame_name>",
+        description: "register current data frame to the SQL backend with the given name",
+        parser: |name| Ok(AppAction::RegisterDataFrame(name.to_owned())),
     },
     export::entry(),
     import::entry(),
