@@ -6,7 +6,7 @@ use std::{
     },
 };
 
-use itertools::Itertools;
+use itertools::{Itertools, izip};
 use polars::{
     frame::DataFrame,
     prelude::{AnyValue, NamedFrom},
@@ -129,18 +129,16 @@ impl FuzzyCmp for AnyValue<'_> {
 
 impl GetSheetSections for DataFrame {
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection> {
-        self.get_column_names()
-            .into_iter()
-            .map(|pl_str| pl_str.to_string().to_owned())
-            .zip(
-                self.get(pos)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(IntoString::into_multi_line)
-                    .collect_vec(),
-            )
-            .map(|(header, content)| SheetSection::new(header, content))
-            .collect_vec()
+        izip!(
+            self.get_column_names().into_iter(),
+            self.get(pos)
+                .unwrap_or_default()
+                .into_iter()
+                .map(IntoString::into_multi_line),
+            self.dtypes()
+        )
+        .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
+        .collect_vec()
     }
 }
 
