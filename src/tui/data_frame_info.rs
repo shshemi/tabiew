@@ -48,7 +48,6 @@ impl<'a> StatefulWidget for DataFrameInfo<'a> {
         let [area2, area3] =
             Layout::vertical([Constraint::Length(6), Constraint::Fill(1)]).areas(area);
         Widget::render(DataFrameMetaInfo::new(self.table_info), area2, buf);
-
         StatefulWidget::render(
             DataFrameFieldInfo::new(self.table_info.schema()),
             area3,

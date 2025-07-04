@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Row, Table, Widget},
 };
 
-use crate::misc::{globals::theme, sql};
+use crate::misc::{globals::theme, sql, type_ext::human_readable_size};
 
 pub struct DataFrameMetaInfo<'a> {
     info: &'a sql::TableInfo,
@@ -40,7 +40,10 @@ impl Widget for DataFrameMetaInfo<'_> {
                 ]),
                 Row::new([
                     Span::styled("Total Estimated Memory", theme().header(2)),
-                    Span::styled(self.info.total_est_size().to_string(), theme().text()),
+                    Span::styled(
+                        human_readable_size(self.info.total_est_size()),
+                        theme().text(),
+                    ),
                 ]),
                 Row::new([
                     Span::styled("Total Null Count", theme().header(3)),
