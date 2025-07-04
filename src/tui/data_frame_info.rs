@@ -6,22 +6,22 @@ use ratatui::{
 use crate::{
     misc::sql::TableInfo,
     tui::{
-        field_info_table::{FieldInfoTable, FieldInfoTableState},
-        table_info_table::TableInfoTable,
+        data_frame_field_info::{DataFrameFieldInfo, DataFrameFieldInfoState},
+        data_frame_meta_info::DataFrameMetaInfo,
     },
 };
 
 #[derive(Debug, Default)]
 pub struct DataFrameInfoState {
-    field_info: FieldInfoTableState,
+    field_info: DataFrameFieldInfoState,
 }
 
 impl DataFrameInfoState {
-    pub fn field_info_mut(&mut self) -> &mut FieldInfoTableState {
+    pub fn field_info_mut(&mut self) -> &mut DataFrameFieldInfoState {
         &mut self.field_info
     }
 
-    pub fn field_info(&self) -> &FieldInfoTableState {
+    pub fn field_info(&self) -> &DataFrameFieldInfoState {
         &self.field_info
     }
 }
@@ -47,10 +47,10 @@ impl<'a> StatefulWidget for DataFrameInfo<'a> {
     ) {
         let [area2, area3] =
             Layout::vertical([Constraint::Length(6), Constraint::Fill(1)]).areas(area);
-        Widget::render(TableInfoTable::new(self.table_info), area2, buf);
+        Widget::render(DataFrameMetaInfo::new(self.table_info), area2, buf);
 
         StatefulWidget::render(
-            FieldInfoTable::new(self.table_info.schema()),
+            DataFrameFieldInfo::new(self.table_info.schema()),
             area3,
             buf,
             &mut state.field_info,
