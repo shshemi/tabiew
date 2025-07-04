@@ -10,17 +10,17 @@ use ratatui::{
 
 use crate::misc::{globals::theme, sql};
 
-pub struct TableInfoTable<'a> {
+pub struct DataFrameMetaInfo<'a> {
     info: &'a sql::TableInfo,
 }
 
-impl<'a> TableInfoTable<'a> {
+impl<'a> DataFrameMetaInfo<'a> {
     pub fn new(info: &'a sql::TableInfo) -> Self {
         Self { info }
     }
 }
 
-impl Widget for TableInfoTable<'_> {
+impl Widget for DataFrameMetaInfo<'_> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,

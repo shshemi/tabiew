@@ -10,11 +10,11 @@ use ratatui::{
 use crate::misc::globals::theme;
 
 #[derive(Debug)]
-pub struct TableNamesTableState {
+pub struct DataFrameNamesState {
     table: TableState,
 }
 
-impl Default for TableNamesTableState {
+impl Default for DataFrameNamesState {
     fn default() -> Self {
         Self {
             table: TableState::default().with_selected(0),
@@ -22,7 +22,7 @@ impl Default for TableNamesTableState {
     }
 }
 
-impl TableNamesTableState {
+impl DataFrameNamesState {
     pub fn table(&self) -> &TableState {
         &self.table
     }
@@ -31,22 +31,22 @@ impl TableNamesTableState {
         &mut self.table
     }
 }
-pub struct TableNamesTable<I> {
+pub struct DataFrameNames<I> {
     names: I,
 }
 
-impl<T> TableNamesTable<T> {
+impl<T> DataFrameNames<T> {
     pub fn new(names: T) -> Self {
-        TableNamesTable { names }
+        DataFrameNames { names }
     }
 }
 
-impl<'a, I> StatefulWidget for TableNamesTable<I>
+impl<'a, I> StatefulWidget for DataFrameNames<I>
 where
     I: IntoIterator,
     I::Item: Into<Cow<'a, str>>,
 {
-    type State = TableNamesTableState;
+    type State = DataFrameNamesState;
 
     fn render(
         self,
