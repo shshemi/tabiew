@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Alignment, Constraint},
     symbols::{
         border::{ROUNDED, Set},
-        line::{HORIZONTAL_DOWN, VERTICAL_LEFT, VERTICAL_RIGHT},
+        line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Span,
     widgets::{Block, BorderType, Borders, Row, Table, Widget},
@@ -53,7 +53,6 @@ impl Widget for TableInfoTable<'_> {
                     .borders(Borders::all())
                     .border_type(BorderType::Rounded)
                     .border_set(Set {
-                        top_left: HORIZONTAL_DOWN,
                         bottom_left: VERTICAL_RIGHT,
                         bottom_right: VERTICAL_LEFT,
                         ..ROUNDED
