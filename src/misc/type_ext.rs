@@ -97,6 +97,28 @@ where
     }
 }
 
+pub fn human_readable_size(volume: usize) -> String {
+    if volume < 1024 {
+        format!("{volume} B")
+    } else if volume < 1024 * 1024 {
+        format!("{:.2} KB", volume as f64 / 1024.0)
+    } else if volume < 1024 * 1024 * 1024 {
+        format!("{:.2} MB", volume as f64 / (1024.0 * 1024.0))
+    } else if volume < 1024 * 1024 * 1024 * 1024 {
+        format!("{:.2} GB", volume as f64 / (1024.0 * 1024.0 * 1024.0))
+    } else if volume < 1024 * 1024 * 1024 * 1024 * 1024 {
+        format!(
+            "{:.2} TB",
+            volume as f64 / (1024.0 * 1024.0 * 1024.0 * 1024.0)
+        )
+    } else {
+        format!(
+            "{:.2} PB",
+            volume as f64 / (1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0)
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ratatui::widgets::{Block, BorderType, Borders, ListState, StatefulWidget, TableState, Widget};
+use ratatui::widgets::{Block, BorderType, Borders, StatefulWidget, TableState, Widget};
 
 use crate::misc::globals::theme;
 
