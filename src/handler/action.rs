@@ -797,9 +797,14 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SchemaFieldsScrollUp => {
             if app.content() == &Content::Schema {
-                *app.schema_mut().fields_mut().table_state_mut().offset_mut() = app
+                *app.schema_mut()
+                    .data_frame_info_mut()
+                    .field_info_mut()
+                    .table_state_mut()
+                    .offset_mut() = app
                     .schema()
-                    .fields()
+                    .data_frame_info()
+                    .field_info()
                     .table_state()
                     .offset()
                     .saturating_sub(1);
@@ -808,9 +813,14 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SchemaFieldsScrollDown => {
             if app.content() == &Content::Schema {
-                *app.schema_mut().fields_mut().table_state_mut().offset_mut() = app
+                *app.schema_mut()
+                    .data_frame_info_mut()
+                    .field_info_mut()
+                    .table_state_mut()
+                    .offset_mut() = app
                     .schema()
-                    .fields()
+                    .data_frame_info()
+                    .field_info()
                     .table_state()
                     .offset()
                     .saturating_add(1);
