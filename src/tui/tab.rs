@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ratatui::widgets::{Block, BorderType, Borders, ListState, StatefulWidget, Widget};
+use ratatui::widgets::{Block, BorderType, Borders, ListState, StatefulWidget, TableState, Widget};
 
 use crate::misc::globals::theme;
 
@@ -130,7 +130,7 @@ impl StatefulWidget for Tab {
             .side_panel
             .as_ref()
             .map(SidePanelState::list)
-            .and_then(ListState::selected)
+            .and_then(TableState::selected)
             .unwrap_or(state.idx)
             .min(state.tabulars.len().saturating_sub(1));
 
@@ -145,7 +145,7 @@ impl StatefulWidget for Tab {
                 StatusBar::default()
                     .tag(Tag::new(
                         "Tab",
-                        format!("{} / {}", state.idx + 1, state.len()),
+                        format!("{} / {}", tabular_idx + 1, state.len()),
                     ))
                     .tag(match tabular.table_type() {
                         super::TableType::Help => Tag::new("Table", "Help"),
