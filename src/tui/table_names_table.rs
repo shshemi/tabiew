@@ -3,10 +3,6 @@ use std::borrow::Cow;
 use ratatui::{
     layout::{Alignment, Constraint},
     style::{Modifier, Stylize},
-    symbols::{
-        border::{ROUNDED, Set},
-        line::{HORIZONTAL_DOWN, HORIZONTAL_UP},
-    },
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Row, StatefulWidget, Table, TableState},
 };
@@ -77,13 +73,8 @@ where
             .column_spacing(1)
             .block(
                 Block::new()
-                    .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
+                    .borders(Borders::all())
                     .border_type(BorderType::Rounded)
-                    .border_set(Set {
-                        top_right: HORIZONTAL_DOWN,
-                        bottom_right: HORIZONTAL_UP,
-                        ..ROUNDED
-                    })
                     .border_style(theme().block())
                     .title("Tables")
                     .title_bottom(Line::from_iter([

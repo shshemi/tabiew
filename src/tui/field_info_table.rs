@@ -1,12 +1,8 @@
 use ratatui::{
     layout::{Alignment, Constraint},
     style::{Modifier, Stylize},
-    symbols::{
-        border::{ROUNDED, Set},
-        line::HORIZONTAL_UP,
-    },
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Row, StatefulWidget, Table, TableState},
+    widgets::{Block, BorderType, Borders, Row, StatefulWidget, Table, TableState},
 };
 
 use crate::misc::{globals::theme, sql::TableSchema};
@@ -89,10 +85,7 @@ impl StatefulWidget for FieldInfoTable<'_> {
             .block(
                 Block::new()
                     .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
-                    .border_set(Set {
-                        bottom_left: HORIZONTAL_UP,
-                        ..ROUNDED
-                    })
+                    .border_type(BorderType::Rounded)
                     .border_style(theme().block())
                     .title_bottom(Line::from_iter([
                         Span::raw(" Scroll Up ").style(theme().block_tag()),
