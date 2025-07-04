@@ -11,13 +11,13 @@ use crate::{
 };
 
 use super::{
-    table_names_table::{TableNamesTable, TableNamesTableState},
+    data_frame_names::{DataFrameNames, DataFrameNamesState},
     utils::line_count,
 };
 
 #[derive(Debug, Default)]
 pub struct SchemaState {
-    names: TableNamesTableState,
+    names: DataFrameNamesState,
     data_frame_info: DataFrameInfoState,
 }
 
@@ -31,11 +31,11 @@ impl SchemaState {
             .offset_mut() = 0;
     }
 
-    pub fn names(&self) -> &TableNamesTableState {
+    pub fn names(&self) -> &DataFrameNamesState {
         &self.names
     }
 
-    pub fn names_mut(&mut self) -> &mut TableNamesTableState {
+    pub fn names_mut(&mut self) -> &mut DataFrameNamesState {
         &mut self.names
     }
 
@@ -97,7 +97,7 @@ impl StatefulWidget for Schema {
             let [area1, area23] =
                 Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(area);
 
-            TableNamesTable::new(sql().schema().iter().map(|(name, _)| name)).render(
+            DataFrameNames::new(sql().schema().iter().map(|(name, _)| name)).render(
                 area1,
                 buf,
                 &mut state.names,

@@ -8,11 +8,11 @@ use ratatui::{
 use crate::misc::{globals::theme, sql::TableSchema};
 
 #[derive(Debug, Default)]
-pub struct FieldInfoTableState {
+pub struct DataFrameFieldInfoState {
     table_state: TableState,
 }
 
-impl FieldInfoTableState {
+impl DataFrameFieldInfoState {
     pub fn table_state(&self) -> &TableState {
         &self.table_state
     }
@@ -22,11 +22,11 @@ impl FieldInfoTableState {
     }
 }
 
-pub struct FieldInfoTable<'a> {
+pub struct DataFrameFieldInfo<'a> {
     table_schema: &'a TableSchema,
 }
 
-impl<'a> FieldInfoTable<'a> {
+impl<'a> DataFrameFieldInfo<'a> {
     pub fn new(field_info: &'a TableSchema) -> Self {
         Self {
             table_schema: field_info,
@@ -34,8 +34,8 @@ impl<'a> FieldInfoTable<'a> {
     }
 }
 
-impl StatefulWidget for FieldInfoTable<'_> {
-    type State = FieldInfoTableState;
+impl StatefulWidget for DataFrameFieldInfo<'_> {
+    type State = DataFrameFieldInfoState;
 
     fn render(
         self,
