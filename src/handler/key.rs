@@ -360,6 +360,13 @@ impl Default for KeyHandler {
                     .shift()
                     .action(AppAction::TabNext),
             )
+            // I
+            .add(
+                Keybind::default()
+                    .char('I')
+                    .action(AppAction::DataFrameInfoShow),
+            )
+            // t
             .add(Keybind::default().char('t').action(AppAction::TabShowPanel));
 
         // ---- schema keybindings
@@ -635,6 +642,42 @@ impl Default for KeyHandler {
                 }
             });
 
+        // ---- data frame info keybindings
+        hndl.keybinds(Context::DataFrameInfo)
+            // J K
+            .add(
+                Keybind::default()
+                    .char('K')
+                    .action(AppAction::DataFrameInfoScrollUp),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .shift()
+                    .action(AppAction::DataFrameInfoScrollUp),
+            )
+            .add(
+                Keybind::default()
+                    .char('J')
+                    .action(AppAction::DataFrameInfoScrollDown),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .shift()
+                    .action(AppAction::DataFrameInfoScrollDown),
+            )
+            // q esc
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::DataFrameInfoDismiss),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::DataFrameInfoDismiss),
+            );
         hndl
     }
 }

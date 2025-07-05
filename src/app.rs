@@ -27,6 +27,7 @@ pub enum Context {
     Search,
     Schema,
     TabSidePanel,
+    DataFrameInfo,
 }
 
 impl Context {
@@ -40,6 +41,7 @@ impl Context {
             Context::Search => Context::Table.into(),
             Context::Schema => Context::Empty.into(),
             Context::TabSidePanel => Context::Empty.into(),
+            Context::DataFrameInfo => Context::Empty.into(),
         }
     }
 }
@@ -162,6 +164,7 @@ impl App {
                 Modal::SearchBar(_) => Context::Search,
                 Modal::Sheet(_) => Context::Sheet,
                 Modal::None => Context::Table,
+                Modal::DataFrameInfo(_) => Context::DataFrameInfo,
             }
         } else {
             Context::Empty

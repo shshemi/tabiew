@@ -1,6 +1,6 @@
 use polars::frame::DataFrame;
 use ratatui::{
-    layout::{Constraint, Layout, Margin, Rect},
+    layout::{Constraint, Flex, Layout, Margin, Rect},
     widgets::StatefulWidget,
 };
 
@@ -9,12 +9,20 @@ use super::{
     search_bar::{SearchBar, SearchBarState},
     sheet::{Sheet, SheetState},
 };
-use crate::misc::polars_ext::GetSheetSections;
+use crate::{
+    misc::{
+        globals::sql,
+        polars_ext::GetSheetSections,
+        sql::{Source, TableInfo},
+    },
+    tui::data_frame_info::{DataFrameInfo, DataFrameInfoState},
+};
 
 #[derive(Debug, Default)]
 pub enum Modal {
     Sheet(SheetState),
     SearchBar(SearchBarState),
+    DataFrameInfo(DataFrameInfoState),
     #[default]
     None,
 }
@@ -116,6 +124,7 @@ impl TabularState {
                 }
             }
             Modal::Sheet(_) => (),
+            Modal::DataFrameInfo(_) => (),
             Modal::None => (),
         }
     }
@@ -192,6 +201,36 @@ impl StatefulWidget for Tabular {
                     buf,
                     search_bar_state,
                 );
+            }
+
+            Modal::DataFrameInfo(data_frame_info) => {
+                //
+                let [area] = Layout::horizontal([Constraint::Length(100)])
+                    .flex(Flex::Center)
+                    .areas(area);
+                let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(25)])
+                    // .flex(Flex::Center)
+                    .areas(area);
+                match &state.table_type {
+                    TableType::Help => todo!(),
+                    TableType::Name(name) => {
+                        if let Some(tbl_info) = sql().schema().get(name) {
+                            let source = tbl_info.source().clone();
+                            DataFrameInfo::new(&TableInfo::new(
+                                source,
+                                state.table.data_frame_mut(),
+                            ))
+                            .render(area, buf, data_frame_info);
+                        }
+                    }
+                    TableType::Query(_) => {
+                        DataFrameInfo::new(&TableInfo::new(
+                            Source::User,
+                            state.table.data_frame_mut(),
+                        ))
+                        .render(area, buf, data_frame_info);
+                    }
+                };
             }
 
             _ => (),
