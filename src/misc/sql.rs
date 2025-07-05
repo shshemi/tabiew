@@ -163,7 +163,7 @@ impl TableInfo {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Source {
     File(PathBuf),
     Stdin,

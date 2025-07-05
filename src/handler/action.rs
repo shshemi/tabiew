@@ -14,8 +14,8 @@ use crate::{
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
     },
     tui::{
-        TableType, TabularState, data_frame_table::DataFrameTableState, search_bar::SearchBarState,
-        tabular::Modal,
+        TableType, TabularState, data_frame_info::DataFrameInfoState,
+        data_frame_table::DataFrameTableState, search_bar::SearchBarState, tabular::Modal,
     },
     writer::{
         Destination, JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet,
@@ -137,6 +137,11 @@ pub enum AppAction {
     SchemaFieldsScrollDown,
     SchemaOpenTable,
     SchemaUnloadTable,
+
+    DataFrameInfoScrollUp,
+    DataFrameInfoScrollDown,
+    DataFrameInfoShow,
+    DataFrameInfoDismiss,
 
     RegisterDataFrame(String),
     Help,
@@ -921,6 +926,48 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
 
                 Ok(None)
             }
+        }
+        AppAction::DataFrameInfoScrollUp => {
+            if let Some(tabular) = app.tabs_mut().selected_mut() {
+                if let Modal::DataFrameInfo(data_frame_info_state) = tabular.modal_mut() {
+                    *data_frame_info_state
+                        .field_info_mut()
+                        .table_state_mut()
+                        .offset_mut() = data_frame_info_state
+                        .field_info()
+                        .table_state()
+                        .offset()
+                        .saturating_sub(1);
+                }
+            }
+            Ok(None)
+        }
+        AppAction::DataFrameInfoScrollDown => {
+            if let Some(tabular) = app.tabs_mut().selected_mut() {
+                if let Modal::DataFrameInfo(data_frame_info_state) = tabular.modal_mut() {
+                    *data_frame_info_state
+                        .field_info_mut()
+                        .table_state_mut()
+                        .offset_mut() = data_frame_info_state
+                        .field_info()
+                        .table_state()
+                        .offset()
+                        .saturating_add(1);
+                }
+            }
+            Ok(None)
+        }
+        AppAction::DataFrameInfoShow => {
+            if let Some(tabular) = app.tabs_mut().selected_mut() {
+                *tabular.modal_mut() = Modal::DataFrameInfo(DataFrameInfoState::default());
+            }
+            Ok(None)
+        }
+        AppAction::DataFrameInfoDismiss => {
+            if let Some(tabular) = app.tabs_mut().selected_mut() {
+                *tabular.modal_mut() = Modal::None;
+            }
+            Ok(None)
         }
     }
 }
