@@ -5,7 +5,7 @@ use ratatui::{
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Span,
-    widgets::{Block, BorderType, Borders, Row, Table, Widget},
+    widgets::{Block, BorderType, Borders, Clear, Row, Table, Widget},
 };
 
 use crate::misc::{globals::theme, sql, type_ext::human_readable_size};
@@ -25,6 +25,7 @@ impl Widget for DataFrameMetaInfo<'_> {
     where
         Self: Sized,
     {
+        Widget::render(Clear, area, buf);
         Table::default()
             .rows([
                 Row::new([
