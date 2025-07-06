@@ -39,10 +39,10 @@ pub fn commands_help_data_frame() -> DataFrame {
     .unwrap()
 }
 
-static REGISTERY: OnceLock<Registery> = OnceLock::new();
+static REGISTRY: OnceLock<Registry> = OnceLock::new();
 
-fn registary() -> &'static Registery {
-    REGISTERY.get_or_init(|| {
+fn registary() -> &'static Registry {
+    REGISTRY.get_or_init(|| {
         ENTRIES
             .iter()
             .flat_map(|cmd| {
@@ -59,7 +59,7 @@ fn registary() -> &'static Registery {
 }
 
 type ParseFn = fn(&str) -> AppResult<AppAction>;
-type Registery = HashMap<&'static str, ParseFn>;
+type Registry = HashMap<&'static str, ParseFn>;
 
 enum Prefix {
     Long(&'static str),
@@ -99,7 +99,7 @@ static ENTRIES: [Entry; 19] = [
     Entry {
         prefix: Prefix::ShortAndLong("q", "quit"),
         usage: "q",
-        description: "Close all tabls and quit Tabiew",
+        description: "Close all tables and quit Tabiew",
         parser: |_| Ok(AppAction::Quit),
     },
     Entry {
@@ -169,7 +169,7 @@ static ENTRIES: [Entry; 19] = [
     Entry {
         prefix: Prefix::Long("schema"),
         usage: "schema",
-        description: "Show loaded data frame(s) and their schmea(s)",
+        description: "Show loaded data frame(s) and their schema(s)",
         parser: |_| Ok(AppAction::SwitchToSchema),
     },
     Entry {

@@ -66,7 +66,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "A comma-separeted list of widths, which specifies the column widths for FWF files.",
+        help = "A comma-separated list of widths, which specifies the column widths for FWF files.",
         required = false,
         default_value_t = String::default(),
     )]
