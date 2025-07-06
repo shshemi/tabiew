@@ -24,8 +24,8 @@ pub trait SixColorsTwoRowsStyler {
     const DARK_COLORS: [Color; 6];
 
     const ROW_BACKGROUNDS: [Color; 2];
-    const HIGHTLIGHT_BACKGROUND: Color;
-    const HIGHTLIGHT_FOREGROUND: Color;
+    const HIGHLIGHT_BACKGROUND: Color;
+    const HIGHLIGHT_FOREGROUND: Color;
 
     const STATUS_BAR_ERROR: Color;
 }
@@ -52,8 +52,8 @@ where
 
     fn highlight(&self) -> Style {
         Style::new()
-            .bg(Self::HIGHTLIGHT_BACKGROUND)
-            .fg(Self::HIGHTLIGHT_FOREGROUND)
+            .bg(Self::HIGHLIGHT_BACKGROUND)
+            .fg(Self::HIGHLIGHT_FOREGROUND)
     }
 
     fn tag(&self, idx: usize) -> Style {
@@ -65,12 +65,12 @@ where
     fn block(&self) -> Style {
         Style::default()
             .bg(Self::BACKGROUND)
-            .fg(Self::HIGHTLIGHT_BACKGROUND)
+            .fg(Self::HIGHLIGHT_BACKGROUND)
     }
 
     fn block_tag(&self) -> Style {
         Style::default()
-            .bg(Self::HIGHTLIGHT_BACKGROUND)
+            .bg(Self::HIGHLIGHT_BACKGROUND)
             .fg(Self::LIGHT_BACKGROUND)
     }
 
@@ -136,8 +136,8 @@ impl SixColorsTwoRowsStyler for Monokai {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00232024), Color::from_u32(0x001c191d)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00c89f2d);
-    const HIGHTLIGHT_FOREGROUND: Color = Self::BACKGROUND;
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00c89f2d);
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d02d00);
 }
@@ -166,8 +166,8 @@ impl SixColorsTwoRowsStyler for Argonaut {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0011131b), Color::from_u32(0x0001030b)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00204a5b);
-    const HIGHTLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00204a5b);
+    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00dd0000);
 }
@@ -197,8 +197,8 @@ impl SixColorsTwoRowsStyler for Nord {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x003B4252), Color::from_u32(0x00434C5E)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00DBBB7B);
-    const HIGHTLIGHT_FOREGROUND: Color = Color::from_u32(0x002E3440);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DBBB7B);
+    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x002E3440);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BF616A);
 }
 
@@ -225,8 +225,8 @@ impl SixColorsTwoRowsStyler for Catppuccin {
         Color::from_u32(0x0089b4fa),
     ];
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00181825), Color::from_u32(0x001e1e2e)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00f9e2af);
-    const HIGHTLIGHT_FOREGROUND: Color = Color::from_u32(0x0011111b);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00f9e2af);
+    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x0011111b);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d36b98);
 }
 
@@ -253,8 +253,8 @@ impl SixColorsTwoRowsStyler for TokyoNight {
         Color::from_u32(0x0041a6b5),
     ];
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00292e42), Color::from_u32(0x0024283b)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00ffc777);
-    const HIGHTLIGHT_FOREGROUND: Color = Color::from_u32(0x001f2335);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ffc777);
+    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x001f2335);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00c53b53);
 }
 
@@ -280,8 +280,8 @@ impl SixColorsTwoRowsStyler for Chakra {
         Color::from_u32(0x0022c55e),
     ];
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0018181b), Color::from_u32(0x00111111)];
-    const HIGHTLIGHT_BACKGROUND: Color = Color::from_u32(0x00ca8a04);
-    const HIGHTLIGHT_FOREGROUND: Color = Color::from_u32(0x00fafafa);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ca8a04);
+    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00fafafa);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00991919);
 }
 

@@ -457,7 +457,7 @@ fn viewport(line: &str, start_column: usize, available_width: usize) -> String {
         current_column += char_width;
     }
 
-    // if not run out all available_width (chars not enouch), pad it.
+    // if not run out all available_width (chars not enough), pad it.
     for _ in current_column..end_column {
         output.push(' ');
     }
