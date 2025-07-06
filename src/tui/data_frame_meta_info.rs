@@ -42,7 +42,7 @@ impl Widget for DataFrameMetaInfo<'_> {
                 Row::new([
                     Span::styled("Total Estimated Memory", theme().header(2)),
                     Span::styled(
-                        human_readable_size(self.info.total_est_size()),
+                        human_readable_size(self.info.total_est_size() as u64),
                         theme().text(),
                     ),
                 ]),

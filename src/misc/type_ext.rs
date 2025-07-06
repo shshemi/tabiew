@@ -97,7 +97,7 @@ where
     }
 }
 
-pub fn human_readable_size(volume: usize) -> String {
+pub fn human_readable_size(volume: u64) -> String {
     if volume < 1024 {
         format!("{volume} B")
     } else if volume < 1024 * 1024 {

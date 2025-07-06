@@ -68,7 +68,7 @@ impl StatefulWidget for DataFrameFieldInfo<'_> {
                             Row::new([
                                 name.to_owned(),
                                 format!("{}", info.dtype()),
-                                human_readable_size(info.estimated_size()),
+                                human_readable_size(info.estimated_size() as u64),
                                 format!("{}", info.null_count()),
                                 info.min().to_string(),
                                 info.max().to_string(),
