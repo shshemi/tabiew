@@ -219,6 +219,7 @@ jobs:
       - name: Clean Up Project
         run: |
           cargo clean
+          rm -rf uploads
           rm -rf .git
 
       - name: Publish to crates.io
