@@ -62,6 +62,7 @@ impl Widget for DataFrameMetaInfo<'_> {
                         ..ROUNDED
                     })
                     .border_style(theme().block())
+                    .style(theme().text())
                     .title_alignment(Alignment::Center)
                     .title("Info"),
             )
