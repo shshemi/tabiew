@@ -101,26 +101,21 @@ where
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
                     .border_type(BorderType::Rounded)
                     .style(theme().block())
-                    // .title_alignment(Alignment::Center)
                     .title_bottom(
                         if state.list.selected().is_some() {
                             Line::from_iter([
-                                Span::raw("Insert using "),
-                                Span::raw(" Enter ").add_modifier(Modifier::REVERSED),
-                                Span::raw(", cancel using "),
-                                Span::raw(" Esc ").add_modifier(Modifier::REVERSED),
+                                Span::raw(" Insert ").style(theme().block_tag()),
+                                Span::raw(" Enter ")
+                                    .style(theme().block_tag())
+                                    .add_modifier(Modifier::REVERSED),
+                                Span::raw(" "),
+                                Span::raw(" Cancel ").style(theme().block_tag()),
+                                Span::raw(" Esc ")
+                                    .style(theme().block_tag())
+                                    .add_modifier(Modifier::REVERSED),
                             ])
                         } else {
-                            Line::from_iter([
-                                Span::raw("Select up with "),
-                                Span::raw(" \u{2191} ").add_modifier(Modifier::REVERSED),
-                                Span::raw(" or "),
-                                Span::raw(" Ctrl+P ").add_modifier(Modifier::REVERSED),
-                                Span::raw(", select down with "),
-                                Span::raw(" \u{2193} ").add_modifier(Modifier::REVERSED),
-                                Span::raw(" or "),
-                                Span::raw(" Ctrl+N ").add_modifier(Modifier::REVERSED),
-                            ])
+                            Line::from("")
                         }
                         .alignment(Alignment::Center),
                     ),
