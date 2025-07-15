@@ -99,13 +99,13 @@ impl AsRef<str> for TableType {
 }
 
 #[derive(Debug)]
-pub struct TabularState {
+pub struct TabContentState {
     table: DataFrameTableState,
     modal: Modal,
     table_type: TableType,
 }
 
-impl TabularState {
+impl TabContentState {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, table_type: TableType) -> Self {
         Self {
@@ -167,10 +167,10 @@ impl TabularState {
 }
 
 #[derive(Debug, Default)]
-pub struct Tabular {}
+pub struct TabContent {}
 
-impl StatefulWidget for Tabular {
-    type State = TabularState;
+impl StatefulWidget for TabContent {
+    type State = TabContentState;
 
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
         let (search_bar_area, table_area) = match state.modal {

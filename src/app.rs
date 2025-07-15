@@ -13,7 +13,7 @@ use crate::{
         error_popup::ErrorPopup,
         schema::{Schema, SchemaState},
         tab::{Tab, TabState},
-        tabular::Modal,
+        tab_content::Modal,
     },
 };
 
