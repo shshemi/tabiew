@@ -12,12 +12,12 @@ pub mod sheet;
 pub mod side_panel;
 pub mod status_bar;
 pub mod tab;
-pub mod tabular;
+pub mod tab_content;
 pub mod terminal;
 pub mod theme;
 mod utils;
 
-pub use tabular::{TableType, TabularState};
+pub use tab_content::{TabContentState, TableType};
 pub use terminal::Terminal;
 pub use theme::Styler;
 

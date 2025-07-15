@@ -6,18 +6,18 @@ use crate::misc::globals::theme;
 use super::{
     side_panel::{SidePanel, SidePanelState},
     status_bar::{StatusBar, Tag},
-    tabular::{Tabular, TabularState},
+    tab_content::{TabContent, TabContentState},
 };
 
 #[derive(Debug)]
 pub struct TabState {
-    tabulars: Vec<TabularState>,
+    tabulars: Vec<TabContentState>,
     side_panel: Option<SidePanelState>,
     idx: usize,
 }
 
 impl TabState {
-    pub fn add(&mut self, tabular: TabularState) {
+    pub fn add(&mut self, tabular: TabContentState) {
         self.tabulars.push(tabular);
     }
 
@@ -33,11 +33,11 @@ impl TabState {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&TabularState> {
+    pub fn selected(&self) -> Option<&TabContentState> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut TabularState> {
+    pub fn selected_mut(&mut self) -> Option<&mut TabContentState> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -51,11 +51,11 @@ impl TabState {
         self.idx = idx;
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &TabularState> {
+    pub fn iter(&self) -> impl Iterator<Item = &TabContentState> {
         self.tabulars.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabularState> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabContentState> {
         self.tabulars.iter_mut()
     }
 
@@ -76,8 +76,8 @@ impl TabState {
     }
 }
 
-impl FromIterator<TabularState> for TabState {
-    fn from_iter<T: IntoIterator<Item = TabularState>>(iter: T) -> Self {
+impl FromIterator<TabContentState> for TabState {
+    fn from_iter<T: IntoIterator<Item = TabContentState>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
@@ -197,7 +197,7 @@ impl StatefulWidget for Tab {
 
         // render tabular
         if let Some(tabular) = state.tabulars.get_mut(tabular_idx) {
-            Tabular::default().render(area, buf, tabular);
+            TabContent::default().render(area, buf, tabular);
         }
 
         // render tabs

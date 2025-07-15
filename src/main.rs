@@ -18,7 +18,7 @@ use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::theme::{
     Argonaut, Catppuccin, Chakra, Monokai, Nord, Terminal, Theme, TokyoNight,
 };
-use tabiew::tui::{TableType, TabularState};
+use tabiew::tui::{TabContentState, TableType};
 use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
@@ -107,7 +107,7 @@ fn main() -> AppResult<()> {
 fn start_tui(tabs: Vec<(DataFrame, String)>, script: String, history: History) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(df, name)| TabularState::new(df, TableType::Name(name)))
+        .map(|(df, name)| TabContentState::new(df, TableType::Name(name)))
         .collect();
     let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
