@@ -1,4 +1,5 @@
 use anyhow::{Ok, anyhow};
+use itertools::Itertools;
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
@@ -89,7 +90,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 19] = [
+static ENTRIES: [Entry; 20] = [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
@@ -220,6 +221,18 @@ static ENTRIES: [Entry; 19] = [
         usage: "register <data_frame_name>",
         description: "register current data frame to the SQL backend with the given name",
         parser: |name| Ok(AppAction::RegisterDataFrame(name.to_owned())),
+    },
+    Entry {
+        prefix: Prefix::Long("scatter"),
+        usage: "scatter <x-axis> <y-axis> <group-by>",
+        description: "Draw a scatter plot given the axes",
+        parser: |args| {
+            let mut args = args.split(' ').map(|s| s.to_owned());
+            let x = args.next().ok_or(anyhow!("require two axes"))?;
+            let y = args.next().ok_or(anyhow!("require two axes"))?;
+            let gb = args.collect_vec();
+            Ok(AppAction::ScatterPlot(x, y, gb))
+        },
     },
     export::entry(),
     import::entry(),

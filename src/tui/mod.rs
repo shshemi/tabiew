@@ -6,6 +6,7 @@ pub mod data_frame_names;
 pub mod data_frame_table;
 pub mod error_popup;
 pub mod input;
+pub mod scatter_plot;
 pub mod schema;
 pub mod search_bar;
 pub mod sheet;

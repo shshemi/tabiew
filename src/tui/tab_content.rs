@@ -15,7 +15,10 @@ use crate::{
         polars_ext::GetSheetSections,
         sql::{Source, TableInfo},
     },
-    tui::data_frame_info::{DataFrameInfo, DataFrameInfoState},
+    tui::{
+        data_frame_info::{DataFrameInfo, DataFrameInfoState},
+        scatter_plot::{ScatterPlot, ScatterPlotState},
+    },
 };
 
 #[derive(Debug, Default)]
@@ -23,6 +26,7 @@ pub enum Modal {
     Sheet(SheetState),
     SearchBar(SearchBarState),
     DataFrameInfo(DataFrameInfoState),
+    ScatterPlot(ScatterPlotState),
     #[default]
     None,
 }
@@ -126,6 +130,7 @@ impl TabContentState {
             Modal::Sheet(_) => (),
             Modal::DataFrameInfo(_) => (),
             Modal::None => (),
+            Modal::ScatterPlot(_) => (),
         }
     }
 
@@ -194,7 +199,6 @@ impl StatefulWidget for TabContent {
                     .with_sections(sections)
                     .render(area, buf, sheet_state);
             }
-
             Modal::SearchBar(search_bar_state) => {
                 SearchBar::new().with_selection(true).render(
                     search_bar_area,
@@ -202,7 +206,6 @@ impl StatefulWidget for TabContent {
                     search_bar_state,
                 );
             }
-
             Modal::DataFrameInfo(data_frame_info) => {
                 //
                 let [area] = Layout::horizontal([Constraint::Length(100)])
@@ -232,8 +235,16 @@ impl StatefulWidget for TabContent {
                     }
                 };
             }
-
-            _ => (),
+            Modal::ScatterPlot(state) => {
+                let [area] = Layout::horizontal([Constraint::Length(120)])
+                    .flex(Flex::Center)
+                    .areas(area);
+                let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(40)])
+                    // .flex(Flex::Center)
+                    .areas(area);
+                ScatterPlot::default().render(area, buf, state);
+            }
+            Modal::None => (),
         }
     }
 }

@@ -9,12 +9,12 @@ use std::{
 use itertools::{Itertools, izip};
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, NamedFrom},
+    prelude::{AnyValue, DataType, NamedFrom},
     series::Series,
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::tui::sheet::SheetSection;
+use crate::{AppResult, tui::sheet::SheetSection};
 
 use super::type_ext::HasSubsequence;
 
@@ -40,6 +40,10 @@ pub trait TryMapAll {
         &self,
         f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
     ) -> Option<Series>;
+}
+
+pub trait PlotData {
+    fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>>;
 }
 
 impl IntoString for AnyValue<'_> {
@@ -176,5 +180,18 @@ impl TryMapAll for Series {
             }
         });
         (!break_out.load(Ordering::Relaxed)).then_some(Series::new(self.name().to_owned(), new))
+    }
+}
+
+impl PlotData for DataFrame {
+    fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>> {
+        Ok(self
+            .column(x_lab)?
+            .cast(&DataType::Float64)?
+            .f64()?
+            .iter()
+            .zip(self.column(y_lab)?.cast(&DataType::Float64)?.f64()?.iter())
+            .filter_map(|(x, y)| Some((x?, y?)))
+            .collect_vec())
     }
 }
