@@ -12,6 +12,7 @@ pub trait Styler {
     fn text(&self) -> Style;
     fn subtext(&self) -> Style;
     fn error(&self) -> Style;
+    fn graph(&self, idx: usize) -> Style;
 }
 
 pub trait SixColorsTwoRowsStyler {
@@ -88,6 +89,12 @@ where
         Style::default()
             .bg(Self::STATUS_BAR_ERROR)
             .fg(Self::FOREGROUND)
+    }
+
+    fn graph(&self, idx: usize) -> Style {
+        Style::default()
+            .fg(Self::DARK_COLORS[idx % Self::DARK_COLORS.len()])
+            .bold()
     }
 }
 
@@ -333,6 +340,10 @@ impl Styler for Terminal {
     fn error(&self) -> Style {
         Style::default().bg(Color::Red).fg(Color::White)
     }
+
+    fn graph(&self, _idx: usize) -> Style {
+        Style::default().fg(Color::White)
+    }
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -348,6 +359,7 @@ pub struct Theme {
     text: Style,
     subtext: Style,
     error: Style,
+    chart: Vec<Style>,
 }
 
 impl Theme {
@@ -401,6 +413,17 @@ impl Theme {
             error: Style::default()
                 .bg(Color::from_u32(0x00ff0000))
                 .fg(Color::from_u32(0x00ffffff)),
+            chart: vec![
+                Style::default()
+                    .bg(Color::from_u32(0x00000000))
+                    .fg(Color::from_u32(0x00ffff00)),
+                Style::default()
+                    .bg(Color::from_u32(0x00000000))
+                    .fg(Color::from_u32(0x00ff00ff)),
+                Style::default()
+                    .bg(Color::from_u32(0x00000000))
+                    .fg(Color::from_u32(0x0000ffff)),
+            ],
         }
     }
 }
@@ -444,5 +467,9 @@ impl super::Styler for Theme {
 
     fn error(&self) -> Style {
         self.error
+    }
+
+    fn graph(&self, idx: usize) -> Style {
+        self.chart[idx % self.table_tags.len()]
     }
 }
