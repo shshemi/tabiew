@@ -671,12 +671,25 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char('q')
-                    .action(AppAction::DataFrameInfoDismiss),
+                    .action(AppAction::TableDismissModal),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::DataFrameInfoDismiss),
+                    .action(AppAction::TableDismissModal),
+            );
+        // ---- scatter plot keybindings
+        hndl.keybinds(Context::ScatterPlot)
+            // q esc
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::TableDismissModal),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::TableDismissModal),
             );
         hndl
     }

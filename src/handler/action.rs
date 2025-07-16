@@ -8,14 +8,19 @@ use rand::Rng;
 use crate::{
     AppResult,
     app::{App, Content},
-    misc::{globals::sql, type_inferer::TypeInferer},
+    misc::{
+        globals::sql,
+        polars_ext::{IntoString, PlotData},
+        type_inferer::TypeInferer,
+    },
     reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, FwfToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
     },
     tui::{
         TabContentState, TableType, data_frame_info::DataFrameInfoState,
-        data_frame_table::DataFrameTableState, search_bar::SearchBarState, tab_content::Modal,
+        data_frame_table::DataFrameTableState, scatter_plot::ScatterPlotState,
+        search_bar::SearchBarState, tab_content::Modal,
     },
     writer::{
         Destination, JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet,
@@ -141,7 +146,8 @@ pub enum AppAction {
     DataFrameInfoScrollUp,
     DataFrameInfoScrollDown,
     DataFrameInfoShow,
-    DataFrameInfoDismiss,
+
+    ScatterPlot(String, String, Vec<String>),
 
     RegisterDataFrame(String),
     Help,
@@ -963,9 +969,33 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::DataFrameInfoDismiss => {
-            if let Some(tabular) = app.tabs_mut().selected_mut() {
-                *tabular.modal_mut() = Modal::None;
+
+        AppAction::ScatterPlot(x_lab, y_lab, group_by) => {
+            if let Some(tab_content) = app.tabs_mut().selected_mut() {
+                let df = tab_content.table().data_frame();
+                if group_by.is_empty() {
+                    let data = df.scatter_plot_data(&x_lab, &y_lab)?;
+                    *tab_content.modal_mut() =
+                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, vec![data]))
+                } else {
+                    let mut groups = Vec::new();
+                    let mut data = Vec::new();
+                    for df in df.partition_by(&group_by, true)? {
+                        let name = group_by
+                            .iter()
+                            .map(|col| {
+                                df.column(col)
+                                    .and_then(|column| column.get(0))
+                                    .map(IntoString::into_single_line)
+                                    .unwrap_or("null".to_owned())
+                            })
+                            .join(" - ");
+                        groups.push(name);
+                        data.push(df.scatter_plot_data(&x_lab, &y_lab)?);
+                    }
+                    *tab_content.modal_mut() =
+                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, data).groups(groups))
+                }
             }
             Ok(None)
         }

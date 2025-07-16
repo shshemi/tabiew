@@ -28,6 +28,7 @@ pub enum Context {
     Schema,
     TabSidePanel,
     DataFrameInfo,
+    ScatterPlot,
 }
 
 impl Context {
@@ -42,6 +43,7 @@ impl Context {
             Context::Schema => Context::Empty.into(),
             Context::TabSidePanel => Context::Empty.into(),
             Context::DataFrameInfo => Context::Empty.into(),
+            Context::ScatterPlot => Context::Empty.into(),
         }
     }
 }
@@ -165,6 +167,7 @@ impl App {
                 Modal::Sheet(_) => Context::Sheet,
                 Modal::None => Context::Table,
                 Modal::DataFrameInfo(_) => Context::DataFrameInfo,
+                Modal::ScatterPlot(_) => Context::ScatterPlot,
             }
         } else {
             Context::Empty
