@@ -89,7 +89,7 @@ impl BuildReader for Args {
                     reader.separator_char = '\t';
                     Ok(Box::new(reader))
                 }
-                Some("parquet") => Ok(Box::new(ParquetToDataFrame)),
+                Some("parquet") | Some("pqt") => Ok(Box::new(ParquetToDataFrame)),
                 Some("json") => Ok(Box::new(JsonToDataFrame::from_args(self))),
                 Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
                 Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
