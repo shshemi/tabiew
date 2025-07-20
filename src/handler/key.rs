@@ -691,6 +691,19 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::TableDismissModal),
             );
+        // ---- histogram plot keybindings
+        hndl.keybinds(Context::HistogramPlot)
+            // q esc
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::TableDismissModal),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::TableDismissModal),
+            );
         hndl
     }
 }
