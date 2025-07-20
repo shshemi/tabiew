@@ -227,7 +227,7 @@ static ENTRIES: [Entry; 21] = [
         usage: "scatter <x-axis> <y-axis> <group-by>",
         description: "Draw a scatter plot given the axes",
         parser: |args| {
-            let mut args = args.split(' ').map(|s| s.to_owned());
+            let mut args = shell_words::split(args)?.into_iter();
             let x = args.next().ok_or(anyhow!("require two axes"))?;
             let y = args.next().ok_or(anyhow!("require two axes"))?;
             let gb = args.collect_vec();
@@ -238,13 +238,7 @@ static ENTRIES: [Entry; 21] = [
         prefix: Prefix::Long("hist"),
         usage: "hist <axes>",
         description: "Draw a histogram plot given the axes",
-        parser: |col| {
-            // let mut args = args.split(' ').map(|s| s.to_owned());
-            // let x = args.next().ok_or(anyhow!("require two axes"))?;
-            // let y = args.next().ok_or(anyhow!("require two axes"))?;
-            // let gb = args.collect_vec();
-            Ok(AppAction::HistogramPlot(col.to_owned()))
-        },
+        parser: |col| Ok(AppAction::HistogramPlot(col.to_owned())),
     },
     export::entry(),
     import::entry(),
