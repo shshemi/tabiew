@@ -17,6 +17,7 @@ use crate::{
     },
     tui::{
         data_frame_info::{DataFrameInfo, DataFrameInfoState},
+        histogram_plot::{HistogramPlot, HistogramPlotState},
         scatter_plot::{ScatterPlot, ScatterPlotState},
     },
 };
@@ -27,6 +28,7 @@ pub enum Modal {
     SearchBar(SearchBarState),
     DataFrameInfo(DataFrameInfoState),
     ScatterPlot(ScatterPlotState),
+    HistogramPlot(HistogramPlotState),
     #[default]
     None,
 }
@@ -114,7 +116,7 @@ impl TabContentState {
     pub fn new(data_frame: DataFrame, table_type: TableType) -> Self {
         Self {
             table: DataFrameTableState::new(data_frame.clone()),
-            modal: Default::default(),
+            modal: Modal::None,
             table_type,
         }
     }
@@ -131,6 +133,7 @@ impl TabContentState {
             Modal::DataFrameInfo(_) => (),
             Modal::None => (),
             Modal::ScatterPlot(_) => (),
+            Modal::HistogramPlot(_) => (),
         }
     }
 
@@ -243,6 +246,15 @@ impl StatefulWidget for TabContent {
                     // .flex(Flex::Center)
                     .areas(area);
                 ScatterPlot::default().render(area, buf, state);
+            }
+            Modal::HistogramPlot(state) => {
+                let [area] = Layout::horizontal([Constraint::Length(122)])
+                    .flex(Flex::Center)
+                    .areas(area);
+                let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(40)])
+                    // .flex(Flex::Center)
+                    .areas(area);
+                HistogramPlot.render(area, buf, state);
             }
             Modal::None => (),
         }

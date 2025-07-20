@@ -90,7 +90,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 20] = [
+static ENTRIES: [Entry; 21] = [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
@@ -232,6 +232,18 @@ static ENTRIES: [Entry; 20] = [
             let y = args.next().ok_or(anyhow!("require two axes"))?;
             let gb = args.collect_vec();
             Ok(AppAction::ScatterPlot(x, y, gb))
+        },
+    },
+    Entry {
+        prefix: Prefix::Long("hist"),
+        usage: "hist <axes>",
+        description: "Draw a histogram plot given the axes",
+        parser: |col| {
+            // let mut args = args.split(' ').map(|s| s.to_owned());
+            // let x = args.next().ok_or(anyhow!("require two axes"))?;
+            // let y = args.next().ok_or(anyhow!("require two axes"))?;
+            // let gb = args.collect_vec();
+            Ok(AppAction::HistogramPlot(col.to_owned()))
         },
     },
     export::entry(),

@@ -29,6 +29,7 @@ pub enum Context {
     TabSidePanel,
     DataFrameInfo,
     ScatterPlot,
+    HistogramPlot,
 }
 
 impl Context {
@@ -44,6 +45,7 @@ impl Context {
             Context::TabSidePanel => Context::Empty.into(),
             Context::DataFrameInfo => Context::Empty.into(),
             Context::ScatterPlot => Context::Empty.into(),
+            Context::HistogramPlot => Context::Empty.into(),
         }
     }
 }
@@ -168,6 +170,7 @@ impl App {
                 Modal::None => Context::Table,
                 Modal::DataFrameInfo(_) => Context::DataFrameInfo,
                 Modal::ScatterPlot(_) => Context::ScatterPlot,
+                Modal::HistogramPlot(_) => Context::HistogramPlot,
             }
         } else {
             Context::Empty

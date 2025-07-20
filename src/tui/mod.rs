@@ -5,6 +5,7 @@ pub mod data_frame_meta_info;
 pub mod data_frame_names;
 pub mod data_frame_table;
 pub mod error_popup;
+pub mod histogram_plot;
 pub mod input;
 pub mod scatter_plot;
 pub mod schema;
