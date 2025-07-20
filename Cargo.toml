@@ -89,6 +89,7 @@ chrono = "0.4.41"
 num_cpus = "1.17.0"
 serde = { version = "1.0.219", features = ["derive"] }
 toml = "0.8.23"
+shell-words = "1.1.0"
 
 [build-dependencies]
 clap = { version = "4.5.40", features = ["derive"] }
