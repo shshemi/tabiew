@@ -918,7 +918,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::RegisterDataFrame(name) => {
-            //
             if sql().schema().iter().map(|(name, _)| name).contains(&name) {
                 Err(anyhow!("Data frame with name '{}' already exists.", &name))
             } else {
