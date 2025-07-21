@@ -26,7 +26,7 @@ impl<'a> ErrorPopup<'a> {
     }
 
     pub fn line_count(&self, width: usize) -> u16 {
-        line_count(self.message.as_ref(), width) as u16 + 2
+        line_count(self.message.as_ref(), width - 2) as u16 + 2
     }
 }
 
