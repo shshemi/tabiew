@@ -977,7 +977,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 if group_by.is_empty() {
                     let data = df.scatter_plot_data(&x_lab, &y_lab)?;
                     *tab_content.modal_mut() =
-                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, vec![data]))
+                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, vec![data])?)
                 } else {
                     let mut groups = Vec::new();
                     let mut data = Vec::new();
@@ -994,8 +994,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                         groups.push(name);
                         data.push(df.scatter_plot_data(&x_lab, &y_lab)?);
                     }
-                    *tab_content.modal_mut() =
-                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, data).groups(groups))
+                    *tab_content.modal_mut() = Modal::ScatterPlot(
+                        ScatterPlotState::new(x_lab, y_lab, data)?.groups(groups),
+                    )
                 }
             }
             Ok(None)
