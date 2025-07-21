@@ -238,7 +238,15 @@ static ENTRIES: [Entry; 21] = [
         prefix: Prefix::Long("hist"),
         usage: "hist <axes>",
         description: "Draw a histogram plot given the axes",
-        parser: |col| Ok(AppAction::HistogramPlot(col.to_owned())),
+        parser: |col| {
+            //
+            let args = shell_words::split(col)?;
+            if args.len() == 1 {
+                Ok(AppAction::HistogramPlot(args.into_iter().next().unwrap()))
+            } else {
+                Err(anyhow!("histogram should be supplied with only one column"))
+            }
+        },
     },
     export::entry(),
     import::entry(),
