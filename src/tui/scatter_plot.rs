@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use itertools::Itertools;
 use ratatui::{
     layout::{Alignment, Constraint},
@@ -9,7 +10,7 @@ use ratatui::{
     },
 };
 
-use crate::misc::globals::theme;
+use crate::{AppResult, misc::globals::theme};
 
 #[derive(Debug, Default)]
 pub struct ScatterPlot {}
@@ -25,24 +26,26 @@ pub struct ScatterPlotState {
 }
 
 impl ScatterPlotState {
-    pub fn new(x_label: String, y_label: String, data: Vec<Vec<(f64, f64)>>) -> Self {
-        let [x_bounds, y_bounds] = data.iter().flat_map(|v| v.iter()).fold(
-            [[f64::MAX, f64::MIN], [f64::MAX, f64::MIN]],
-            |bounds, p| {
-                [
+    pub fn new(x_label: String, y_label: String, data: Vec<Vec<(f64, f64)>>) -> AppResult<Self> {
+        let [x_bounds, y_bounds] = data
+            .iter()
+            .flat_map(|v| v.iter())
+            .fold(None, |bounds, p| {
+                let bounds = bounds.unwrap_or([[p.0, p.0], [p.1, p.1]]);
+                Some([
                     [bounds[0][0].min(p.0), bounds[0][1].max(p.0)],
                     [bounds[1][0].min(p.1), bounds[1][1].max(p.1)],
-                ]
-            },
-        );
-        Self {
+                ])
+            })
+            .ok_or(anyhow!("Empty dimension"))?;
+        Ok(Self {
             data,
             x_bounds,
             y_bounds,
             x_label,
             y_label,
             groups: None,
-        }
+        })
     }
 
     pub fn groups(self, groups: impl Into<Option<Vec<String>>>) -> Self {
