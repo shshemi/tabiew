@@ -12,6 +12,7 @@ Tabiew is a lightweight TUI application that allows users to view and query tabu
 - 🔍 Fuzzy search
 - 📝 Scripting support
 - 🗂️ Multi-table functionality
+- 📈 Plotting
 
 ## Wiki
 
