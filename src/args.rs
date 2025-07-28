@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum};
+use clap::{ArgAction, Parser, ValueEnum};
 use std::{num::NonZero, path::PathBuf};
 
 #[derive(Parser, Debug)]
@@ -6,6 +6,11 @@ use std::{num::NonZero, path::PathBuf};
 pub struct Args {
     #[arg(help = "Path(s) to the file(s) to be opened.", required = false)]
     pub files: Vec<PathBuf>,
+
+    #[arg(long, help = "Paths to be opened and concatenated vertically.",
+        num_args = 1..,
+        required = false)]
+    pub multiparts: Vec<PathBuf>,
 
     #[arg(short, long, help = "Path to the startup script.", required = false)]
     pub script: Option<PathBuf>,
@@ -237,4 +242,11 @@ impl InferSchema {
             InferSchema::Safe => None,
         }
     }
+}
+
+fn parse_vec_path_buf(s: &str) -> Result<Vec<PathBuf>, String> {
+    Ok(s.split(' ')
+        .map(ToOwned::to_owned)
+        .map(Into::into)
+        .collect())
 }
