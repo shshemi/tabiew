@@ -54,7 +54,6 @@ fn main() -> AppResult<()> {
     let mut name_dfs = Vec::new();
 
     // Load multiparts to data frames
-
     let mut multiparts = VecMap::<Arc<Schema>, (String, DataFrame)>::new();
     for path in args.multiparts.iter() {
         for (name, new_df) in try_read_path(&args, path)? {
