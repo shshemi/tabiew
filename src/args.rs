@@ -1,4 +1,4 @@
-use clap::{ArgAction, Parser, ValueEnum};
+use clap::{Parser, ValueEnum};
 use std::{num::NonZero, path::PathBuf};
 
 #[derive(Parser, Debug)]
@@ -242,11 +242,4 @@ impl InferSchema {
             InferSchema::Safe => None,
         }
     }
-}
-
-fn parse_vec_path_buf(s: &str) -> Result<Vec<PathBuf>, String> {
-    Ok(s.split(' ')
-        .map(ToOwned::to_owned)
-        .map(Into::into)
-        .collect())
 }
