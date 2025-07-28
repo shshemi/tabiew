@@ -1,9 +1,9 @@
 use anyhow::anyhow;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use polars::frame::DataFrame;
 use ratatui::backend::CrosstermBackend;
 use std::fs::{self};
-use std::io::{self};
+use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 use tabiew::app::App;
 use tabiew::args::{AppTheme, Args};
@@ -25,7 +25,16 @@ use tabiew::misc::history::{History, enforce_line_limit};
 
 fn main() -> AppResult<()> {
     // Parse CLI
-    let args = Args::parse();
+    let args = {
+        let args_os = std::env::args_os();
+
+        // Show help message if no arguments are given and stdin is not piped
+        if args_os.len() == 1 && std::io::stdin().is_terminal() {
+            return Ok(Args::command().print_help()?);
+        } else {
+            Args::parse_from(args_os)
+        }
+    };
 
     if args.generate_theme {
         let path = theme_path().ok_or(anyhow!("Home directory not found"))?;
