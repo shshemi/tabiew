@@ -1,10 +1,8 @@
 use anyhow::anyhow;
 use clap::Parser;
-use itertools::Itertools;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use ratatui::backend::CrosstermBackend;
-use std::collections::HashMap;
 use std::fs::{self};
 use std::io::{self};
 use std::path::PathBuf;
@@ -29,23 +27,29 @@ use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
 
-fn main() -> AppResult<()> {
+fn main() {
     // Parse CLI
     let args = Args::parse();
 
     if args.generate_theme {
-        let path = theme_path().ok_or(anyhow!("Home directory not found"))?;
-        let _ = fs::create_dir_all(path.parent().ok_or(anyhow!("Unable to make parent dir"))?);
+        let path = theme_path()
+            .ok_or(anyhow!("Home directory not found"))
+            .unwrap_or_graceful_shutdown();
+        let _ = fs::create_dir_all(
+            path.parent()
+                .ok_or(anyhow!("Unable to make parent dir"))
+                .unwrap_or_graceful_shutdown(),
+        );
         if path.exists() {
             println!(
                 "Theme file already exists at ~/.config/tabiew/theme.toml, remove it first before retrying.",
             )
         } else {
-            let contents = toml::to_string(&Theme::sample())?;
-            fs::write(&path, contents)?;
+            let contents = toml::to_string(&Theme::sample()).unwrap_or_graceful_shutdown();
+            fs::write(&path, contents).unwrap_or_graceful_shutdown();
             println!("Theme generated at ~/.config/tabiew/theme.toml")
         }
-        return Ok(());
+        return;
     }
 
     let type_infer = TypeInferer::from_args(&args);
@@ -56,11 +60,11 @@ fn main() -> AppResult<()> {
     // Load multiparts to data frames
     let mut multiparts = VecMap::<Arc<Schema>, (String, DataFrame)>::new();
     for path in args.multiparts.iter() {
-        for (name, new_df) in try_read_path(&args, path)? {
+        for (name, new_df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
             //
             let schema = new_df.schema().clone();
             if let Some((_, df)) = multiparts.get_mut(&schema) {
-                df.vstack_mut_owned(new_df)?;
+                df.vstack_mut_owned(new_df).unwrap_or_graceful_shutdown();
             } else {
                 multiparts.insert(schema, (name, new_df));
             }
@@ -75,7 +79,7 @@ fn main() -> AppResult<()> {
 
     // Load files to data frames
     for path in args.files.iter() {
-        for (name, mut df) in try_read_path(&args, path)? {
+        for (name, mut df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
             type_infer.update(&mut df);
             let name = sql().register(&name, df.clone(), Source::File(path.clone()));
             name_dfs.push((name, df))
@@ -83,7 +87,12 @@ fn main() -> AppResult<()> {
     }
 
     if name_dfs.is_empty() {
-        for (name, mut df) in args.build_reader("")?.named_frames(Source::Stdin)? {
+        for (name, mut df) in args
+            .build_reader("")
+            .unwrap_or_graceful_shutdown()
+            .named_frames(Source::Stdin)
+            .unwrap_or_graceful_shutdown()
+        {
             type_infer.update(&mut df);
             let name = sql().register(&name, df.clone(), Source::Stdin);
             name_dfs.push((name, df))
@@ -93,7 +102,8 @@ fn main() -> AppResult<()> {
     let script = args
         .script
         .map(fs::read_to_string)
-        .transpose()?
+        .transpose()
+        .unwrap_or_graceful_shutdown()
         .unwrap_or_default();
 
     let history = history_path()
@@ -111,9 +121,9 @@ fn main() -> AppResult<()> {
         AppTheme::Chakra => Box::new(Chakra),
         AppTheme::Config => {
             let theme: Theme = toml::from_str(
-                &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found"))?)
-                    .map_err(|_| anyhow!("Create the theme at ~/.config/tabiew/theme.toml first or use --generate-theme to generate one."))?,
-            )?;
+                &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found")).unwrap_or_graceful_shutdown())
+                    .map_err(|_| anyhow!("Create the theme at ~/.config/tabiew/theme.toml first or use --generate-theme to generate one.")).unwrap_or_graceful_shutdown(),
+            ).unwrap_or_graceful_shutdown();
             Box::new(theme)
         }
     });
@@ -122,7 +132,6 @@ fn main() -> AppResult<()> {
     if let Some(history_path) = history_path() {
         enforce_line_limit(history_path, 999);
     }
-    Ok(())
 }
 
 fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -> AppResult<()> {
