@@ -1,4 +1,7 @@
-use std::io::{Write, stdout};
+use std::{
+    fmt::Display,
+    io::{Write, stdout},
+};
 
 use base64::Engine;
 
@@ -17,6 +20,10 @@ impl ToAscii for char {
 
 pub trait HasSubsequence {
     fn has_subsequence(&self, other: &Self, max_space: usize) -> bool;
+}
+
+pub trait UnwrapOrGracefulShutdown<T> {
+    fn unwrap_or_graceful_shutdown(self) -> T;
 }
 
 impl HasSubsequence for str {
@@ -94,6 +101,21 @@ where
         out.write_all(sequence.as_bytes())?;
         out.flush()?;
         Ok(())
+    }
+}
+
+impl<T, E> UnwrapOrGracefulShutdown<T> for Result<T, E>
+where
+    E: Display,
+{
+    fn unwrap_or_graceful_shutdown(self) -> T {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                eprintln!("tw: Error in startup script: {err}");
+                std::process::exit(1);
+            }
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, vec::IntoIter};
 
 #[derive(Debug, Clone)]
 pub struct VecMap<K, V> {
@@ -69,6 +69,17 @@ impl<K, V> VecMap<K, V> {
             .map(|(_, v)| v)
     }
 
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: PartialEq + Eq + ?Sized,
+    {
+        self.vec
+            .iter_mut()
+            .find(|(k, _)| (*k).borrow() == key)
+            .map(|(_, v)| v)
+    }
+
     pub fn get_by_index(&self, idx: usize) -> Option<(&K, &V)> {
         self.vec.get(idx).map(|(k, v)| (k, v))
     }
@@ -83,6 +94,16 @@ impl<K, V> VecMap<K, V> {
 
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.vec.iter().map(|(k, v)| (k, v))
+    }
+}
+
+impl<K, V> IntoIterator for VecMap<K, V> {
+    type Item = (K, V);
+
+    type IntoIter = IntoIter<(K, V)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.into_iter()
     }
 }
 
