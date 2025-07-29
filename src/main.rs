@@ -34,7 +34,7 @@ fn main() {
 
         // Show help message if no arguments are given and stdin is not piped
         if args_os.len() == 1 && std::io::stdin().is_terminal() {
-            return Ok(Args::command().print_help()?);
+            return Args::command().print_help().unwrap_or_graceful_shutdown();
         } else {
             Args::parse_from(args_os)
         }
