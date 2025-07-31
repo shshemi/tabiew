@@ -182,6 +182,12 @@ impl Default for KeyHandler {
 
         // ----- table keybindings
         hndl.keybinds(Context::Table)
+            // Q
+            .add(
+                Keybind::default()
+                    .char('Q')
+                    .action(AppAction::QuitAll),
+            )
             // q
             .add(
                 Keybind::default()
@@ -583,6 +589,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Enter)
                     .action(AppAction::TabPanelSelect),
             )
+            .add(Keybind::default().char('Q').action(AppAction::QuitAll))
             .add(Keybind::default().char('q').action(AppAction::TabHidePanel))
             .add(
                 Keybind::default()
