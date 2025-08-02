@@ -107,6 +107,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 | `End` or `G`| Move to last row|
 | `Ctrl + r`| Reset data frame|
 | `q`| Close |
+| `Q`| Quit Application |
 | `:`| Command Palette|
 | `/`| Fuzzy Search|
 
