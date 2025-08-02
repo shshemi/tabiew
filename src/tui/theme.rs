@@ -470,6 +470,6 @@ impl super::Styler for Theme {
     }
 
     fn graph(&self, idx: usize) -> Style {
-        self.chart[idx % self.table_tags.len()]
+        self.chart[idx % self.chart.len()]
     }
 }
