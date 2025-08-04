@@ -186,7 +186,7 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .char('Q')
-                    .action(AppAction::QuitAll),
+                    .action(AppAction::Quit),
             )
             // q
             .add(
@@ -589,7 +589,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Enter)
                     .action(AppAction::TabPanelSelect),
             )
-            .add(Keybind::default().char('Q').action(AppAction::QuitAll))
+            .add(Keybind::default().char('Q').action(AppAction::Quit))
             .add(Keybind::default().char('q').action(AppAction::TabHidePanel))
             .add(
                 Keybind::default()
