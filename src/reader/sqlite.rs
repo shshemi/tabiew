@@ -8,30 +8,50 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::{AppResult, misc::globals::stdin};
+use crate::{AppResult, args::Args, misc::globals::stdin};
 
 use super::{NamedFrames, ReadToDataFrames};
 
-pub struct SqliteToDataFrames;
+#[derive(Default)]
+pub struct SqliteToDataFrames {
+    password: Option<String>,
+}
+
+impl SqliteToDataFrames {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            password: args.sqlite_password.clone(),
+        }
+    }
+
+    pub fn password(pw: String) -> Self {
+        SqliteToDataFrames { password: Some(pw) }
+    }
+}
 
 impl ReadToDataFrames for SqliteToDataFrames {
     fn named_frames(&self, input: super::Source) -> AppResult<NamedFrames> {
         match input {
-            crate::reader::Source::File(path) => path_to_name_frames(path),
+            crate::reader::Source::File(path) => {
+                path_to_name_frames(path, self.password.as_deref())
+            }
             crate::reader::Source::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf).unwrap();
                 std::fs::write(temp_file.path(), buf).unwrap();
-                path_to_name_frames(temp_file.path())
+                path_to_name_frames(temp_file.path(), self.password.as_deref())
             }
         }
     }
 }
 
-fn path_to_name_frames(path: impl AsRef<Path>) -> AppResult<NamedFrames> {
+fn path_to_name_frames(path: impl AsRef<Path>, password: Option<&str>) -> AppResult<NamedFrames> {
     let conn = Connection::open(path)?;
 
+    if let Some(password) = password {
+        conn.pragma_update(None, "key", password)?;
+    }
     // Fetch table names
     let names = conn
         .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")?
