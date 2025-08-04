@@ -32,7 +32,6 @@ use super::command::{commands_help_data_frame, parse_into_action};
 #[derive(Debug, Clone)]
 pub enum AppAction {
     NoAction,
-    QuitAll,
     ToggleBorders,
     DismissError,
     DismissErrorAndShowPalette,
@@ -392,10 +391,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 app.tabs_mut().remove(idx);
                 Ok(Some(AppAction::TabSelect(idx)))
             }
-        }
-        AppAction::QuitAll => {
-            app.quit();
-            Ok(None)
         }
         AppAction::ExportDsv {
             destination,
