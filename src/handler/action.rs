@@ -492,7 +492,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             )))
         }
         AppAction::ImportSqlite(source) => {
-            let frames = SqliteToDataFrames.named_frames(source.clone())?;
+            let frames = SqliteToDataFrames::default().named_frames(source.clone())?;
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tabs_mut()

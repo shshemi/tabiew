@@ -81,7 +81,7 @@ impl BuildReader for Args {
             Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
             Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
             Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
-            Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames)),
+            Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames::from_args(self))),
             Some(Format::Excel) => Ok(Box::new(ExcelToDataFarmes::from_args(self))),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
@@ -94,7 +94,7 @@ impl BuildReader for Args {
                 Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
                 Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
                 Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(self)?)),
-                Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames)),
+                Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames::from_args(self))),
                 Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
                     Ok(Box::new(ExcelToDataFarmes::from_args(self)))
                 }
