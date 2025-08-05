@@ -183,11 +183,7 @@ impl Default for KeyHandler {
         // ----- table keybindings
         hndl.keybinds(Context::Table)
             // Q
-            .add(
-                Keybind::default()
-                    .char('Q')
-                    .action(AppAction::Quit),
-            )
+            .add(Keybind::default().char('Q').action(AppAction::Quit))
             // q
             .add(
                 Keybind::default()
@@ -700,6 +696,28 @@ impl Default for KeyHandler {
             );
         // ---- histogram plot keybindings
         hndl.keybinds(Context::HistogramPlot)
+            // up down
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::HistogramScrollUp),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::HistogramScrollDown),
+            )
+            // jk
+            .add(
+                Keybind::default()
+                    .char('k')
+                    .action(AppAction::HistogramScrollUp),
+            )
+            .add(
+                Keybind::default()
+                    .char('j')
+                    .action(AppAction::HistogramScrollDown),
+            )
             // q esc
             .add(
                 Keybind::default()

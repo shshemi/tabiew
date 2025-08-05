@@ -150,6 +150,8 @@ pub enum AppAction {
     ScatterPlot(String, String, Vec<String>),
 
     HistogramPlot(String),
+    HistogramScrollUp,
+    HistogramScrollDown,
 
     RegisterDataFrame(String),
     Help,
@@ -1006,6 +1008,22 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 *tab_content.modal_mut() = Modal::HistogramPlot(HistogramPlotState::new(
                     df.histogram_plot_data(&group_by, 24)?,
                 ))
+            }
+            Ok(None)
+        }
+        AppAction::HistogramScrollUp => {
+            if let Some(tab_content) = app.tabs_mut().selected_mut() {
+                if let Modal::HistogramPlot(hist) = tab_content.modal_mut() {
+                    hist.scroll_up();
+                }
+            }
+            Ok(None)
+        }
+        AppAction::HistogramScrollDown => {
+            if let Some(tab_content) = app.tabs_mut().selected_mut() {
+                if let Modal::HistogramPlot(hist) = tab_content.modal_mut() {
+                    hist.scroll_down();
+                }
             }
             Ok(None)
         }
