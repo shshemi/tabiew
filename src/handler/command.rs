@@ -236,13 +236,22 @@ static ENTRIES: [Entry; 21] = [
     },
     Entry {
         prefix: Prefix::Long("hist"),
-        usage: "hist <axes>",
+        usage: "hist <axes> [buckets]",
         description: "Draw a histogram plot given the axes",
         parser: |col| {
             //
             let args = shell_words::split(col)?;
             if args.len() == 1 {
-                Ok(AppAction::HistogramPlot(args.into_iter().next().unwrap()))
+                Ok(AppAction::HistogramPlot(
+                    args.into_iter().next().unwrap(),
+                    38,
+                ))
+            } else if args.len() == 2 {
+                let mut args = args.into_iter();
+                Ok(AppAction::HistogramPlot(
+                    args.next().unwrap(),
+                    args.next().unwrap().parse()?,
+                ))
             } else {
                 Err(anyhow!("histogram should be supplied with only one column"))
             }
