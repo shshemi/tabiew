@@ -149,7 +149,7 @@ pub enum AppAction {
 
     ScatterPlot(String, String, Vec<String>),
 
-    HistogramPlot(String),
+    HistogramPlot(String, usize),
     HistogramScrollUp,
     HistogramScrollDown,
 
@@ -1002,11 +1002,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::HistogramPlot(group_by) => {
+        AppAction::HistogramPlot(group_by, buckets) => {
             if let Some(tab_content) = app.tabs_mut().selected_mut() {
                 let df = tab_content.table().data_frame();
                 *tab_content.modal_mut() = Modal::HistogramPlot(HistogramPlotState::new(
-                    df.histogram_plot_data(&group_by, 24)?,
+                    df.histogram_plot_data(&group_by, buckets)?,
                 ))
             }
             Ok(None)

@@ -45,7 +45,7 @@ pub trait TryMapAll {
 
 pub trait PlotData {
     fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>>;
-    fn histogram_plot_data(&self, col: &str, bucket: usize) -> AppResult<Vec<(String, u64)>>;
+    fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
 impl IntoString for AnyValue<'_> {
@@ -199,7 +199,7 @@ impl PlotData for DataFrame {
 
     fn histogram_plot_data(&self, col_name: &str, buckets: usize) -> AppResult<Vec<(String, u64)>> {
         let col = self.column(col_name)?;
-        match col.dtype().clone() {
+        match col.dtype() {
             DataType::UInt8
             | DataType::UInt16
             | DataType::UInt32
