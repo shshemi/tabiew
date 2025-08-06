@@ -23,8 +23,8 @@ pub struct Args {
     )]
     pub format: Option<Format>,
 
-    #[arg(long, help = "Sets the password for sqlite (if required)", value_enum)]
-    pub sqlite_password: Option<String>,
+    #[arg(long, help = "Sets the key for sqlite (if required)", value_enum)]
+    pub sqlite_key: Option<String>,
 
     #[arg(
         long,
