@@ -112,7 +112,7 @@ where
         match self {
             Ok(val) => val,
             Err(err) => {
-                eprintln!("tw: Error in startup script: {err}");
+                eprintln!("Error: {err}");
                 std::process::exit(1);
             }
         }
