@@ -70,7 +70,6 @@ fn main() {
     let mut multiparts = VecMap::<Arc<Schema>, (String, DataFrame)>::new();
     for path in args.multiparts.iter() {
         for (name, new_df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
-            //
             let schema = new_df.schema().clone();
             if let Some((_, df)) = multiparts.get_mut(&schema) {
                 df.vstack_mut_owned(new_df).unwrap_or_graceful_shutdown();
