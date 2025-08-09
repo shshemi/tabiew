@@ -592,6 +592,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::TabHidePanel),
             );
+
         // ---- search keybindings
         hndl.keybinds(Context::Search)
             // left right home end backspace delete
@@ -681,6 +682,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::TableDismissModal),
             );
+
         // ---- scatter plot keybindings
         hndl.keybinds(Context::ScatterPlot)
             // q esc
@@ -694,6 +696,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::TableDismissModal),
             );
+
         // ---- histogram plot keybindings
         hndl.keybinds(Context::HistogramPlot)
             // up down
