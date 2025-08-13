@@ -16,9 +16,11 @@ use crate::{
         sql::{Source, TableInfo},
     },
     tui::{
-        data_frame_info::{DataFrameInfo, DataFrameInfoState},
-        histogram_plot::{HistogramPlot, HistogramPlotState},
-        scatter_plot::{ScatterPlot, ScatterPlotState},
+        data_frame_info::data_frame_info::{DataFrameInfo, DataFrameInfoState},
+        plots::{
+            histogram_plot::{HistogramPlot, HistogramPlotState},
+            scatter_plot::{ScatterPlot, ScatterPlotState},
+        },
     },
 };
 

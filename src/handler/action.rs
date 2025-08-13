@@ -18,9 +18,12 @@ use crate::{
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
     },
     tui::{
-        TabContentState, TableType, data_frame_info::DataFrameInfoState,
-        data_frame_table::DataFrameTableState, histogram_plot::HistogramPlotState,
-        scatter_plot::ScatterPlotState, search_bar::SearchBarState, tab_content::Modal,
+        TabContentState, TableType,
+        data_frame_info::data_frame_info::DataFrameInfoState,
+        data_frame_table::DataFrameTableState,
+        plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
+        search_bar::SearchBarState,
+        tab_content::Modal,
     },
     writer::{
         Destination, JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet,

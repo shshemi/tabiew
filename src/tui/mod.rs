@@ -1,13 +1,9 @@
 pub mod command_palette;
-pub mod data_frame_field_info;
 pub mod data_frame_info;
-pub mod data_frame_meta_info;
-pub mod data_frame_names;
 pub mod data_frame_table;
 pub mod error_popup;
-pub mod histogram_plot;
 pub mod input;
-pub mod scatter_plot;
+pub mod plots;
 pub mod schema;
 pub mod search_bar;
 pub mod sheet;

@@ -7,13 +7,13 @@ use ratatui::{
 
 use crate::{
     misc::globals::{sql, theme},
-    tui::data_frame_info::{DataFrameInfo, DataFrameInfoState},
+    tui::data_frame_info::{
+        data_frame_info::{DataFrameInfo, DataFrameInfoState},
+        data_frame_names::{DataFrameNames, DataFrameNamesState},
+    },
 };
 
-use super::{
-    data_frame_names::{DataFrameNames, DataFrameNamesState},
-    utils::line_count,
-};
+use super::utils::line_count;
 
 #[derive(Debug, Default)]
 pub struct SchemaState {
