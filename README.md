@@ -103,6 +103,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 | `b` / `w` | Previous / next column|
 | `e` | Toggle Auto-Fit|
 | `Ctrl + u` / `Ctrl + d`| Move half page up/down|
+| `Ctrl + b` / `Ctrl + f`| Move full page up/down|
 | `Home` or `g`| Move to first row|
 | `End` or `G`| Move to last row|
 | `Ctrl + r`| Reset data frame|
