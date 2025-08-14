@@ -291,7 +291,7 @@ impl Default for KeyHandler {
             )
             .add(
                 Keybind::default()
-                    .char('d')
+                    .char('f')
                     .ctrl()
                     .action(AppAction::TableGoDownFullPage),
             )
