@@ -19,9 +19,9 @@ use crate::{
     },
     tui::{
         TabContentState, TableType,
-        data_frame_info::data_frame_info::DataFrameInfoState,
         data_frame_table::DataFrameTableState,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
+        schema::data_frame_info::DataFrameInfoState,
         search_bar::SearchBarState,
         tab_content::Modal,
     },

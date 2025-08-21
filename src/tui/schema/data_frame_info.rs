@@ -5,7 +5,7 @@ use ratatui::{
 
 use crate::{
     misc::sql::TableInfo,
-    tui::data_frame_info::{
+    tui::schema::{
         data_frame_field_info::{DataFrameFieldInfo, DataFrameFieldInfoState},
         data_frame_meta_info::DataFrameMetaInfo,
     },

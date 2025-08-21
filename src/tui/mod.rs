@@ -1,5 +1,4 @@
 pub mod command_palette;
-pub mod data_frame_info;
 pub mod data_frame_table;
 pub mod error_popup;
 pub mod input;
