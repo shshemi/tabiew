@@ -5,13 +5,15 @@ use ratatui::{
     layout::{Constraint, Flex, Layout},
 };
 
-use crate::tui::command_palette::{CommandPalette, CommandPaletteState};
+use crate::tui::{
+    command_palette::{CommandPalette, CommandPaletteState},
+    schema::schema::{Schema, SchemaState},
+};
 use crate::{
     AppResult,
     misc::history::History,
     tui::{
         error_popup::ErrorPopup,
-        schema::{Schema, SchemaState},
         tab::{Tab, TabState},
         tab_content::Modal,
     },
