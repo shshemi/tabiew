@@ -19,15 +19,11 @@ where
                 items.push(item);
                 any_valid = true;
             } else {
-                items.push(T::default()); // Using default to fill gaps
+                items.push(T::default());
             }
         }
 
-        if any_valid {
-            Some(items)
-        } else {
-            None // If no valid items, all iterators are exhausted
-        }
+        if any_valid { Some(items) } else { None }
     }
 }
 
