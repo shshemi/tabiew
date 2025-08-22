@@ -73,10 +73,14 @@ pub enum AppAction {
 
     PaletteGotoNext,
     PaletteGotoPrev,
+    PaletteGotoNextWord,
+    PaletteGotoPrevWord,
     PaletteGotoStart,
     PaletteGotoEnd,
     PaletteDeleteNext,
     PaletteDeletePrev,
+    PaletteDeleteNextWord,
+    PaletteDeletePrevWord,
     PaletteInsert(char),
     PaletteInsertSelectedOrCommit,
     PaletteShow(String),
@@ -88,10 +92,14 @@ pub enum AppAction {
     SearchExactShow,
     SearchGotoNext,
     SearchGotoPrev,
+    SearchGotoNextWord,
+    SearchGotoPrevWord,
     SearchGotoStart,
     SearchGotoEnd,
     SearchDeleteNext,
     SearchDeletePrev,
+    SearchDeleteNextWord,
+    SearchDeletePrevWord,
     SearchInsert(char),
     SearchRollback,
     SearchCommit,
@@ -551,6 +559,28 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
+        AppAction::SearchGotoNextWord => {
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .map(TabContentState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.goto_next_word();
+            }
+            Ok(None)
+        }
+        AppAction::SearchGotoPrevWord => {
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .map(TabContentState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.goto_prev_word();
+            }
+            Ok(None)
+        }
         AppAction::SearchGotoStart => {
             if let Some(sb) = app
                 .tabs_mut()
@@ -592,6 +622,28 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 .and_then(Modal::search_bar_mut)
             {
                 sb.delete_prev();
+            }
+            Ok(None)
+        }
+        AppAction::SearchDeleteNextWord => {
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .map(TabContentState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.delete_next_word();
+            }
+            Ok(None)
+        }
+        AppAction::SearchDeletePrevWord => {
+            if let Some(sb) = app
+                .tabs_mut()
+                .selected_mut()
+                .map(TabContentState::modal_mut)
+                .and_then(Modal::search_bar_mut)
+            {
+                sb.delete_prev_word();
             }
             Ok(None)
         }
@@ -715,6 +767,18 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
+        AppAction::PaletteGotoNextWord => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().goto_next_word();
+            }
+            Ok(None)
+        }
+        AppAction::PaletteGotoPrevWord => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().goto_prev_word();
+            }
+            Ok(None)
+        }
         AppAction::PaletteGotoEnd => {
             if let Some(palette) = app.palette_mut() {
                 palette.input().goto_end();
@@ -730,6 +794,18 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::PaletteDeletePrev => {
             if let Some(palette) = app.palette_mut() {
                 palette.input().delete_prev();
+            }
+            Ok(None)
+        }
+        AppAction::PaletteDeleteNextWord => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().delete_next_word();
+            }
+            Ok(None)
+        }
+        AppAction::PaletteDeletePrevWord => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().delete_prev_word();
             }
             Ok(None)
         }

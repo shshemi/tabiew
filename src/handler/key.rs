@@ -486,6 +486,42 @@ impl Default for KeyHandler {
                     .code(KeyCode::Delete)
                     .action(AppAction::PaletteDeleteNext),
             )
+            .add(
+                Keybind::default()
+                    .char('w')
+                    .alt()
+                    .action(AppAction::PaletteGotoPrevWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('e')
+                    .alt()
+                    .action(AppAction::PaletteGotoNextWord),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Left)
+                    .alt()
+                    .shift()
+                    .action(AppAction::PaletteGotoPrevWord),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Delete)
+                    .action(AppAction::PaletteGotoNextWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('d')
+                    .alt()
+                    .action(AppAction::PaletteDeletePrevWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('f')
+                    .alt()
+                    .action(AppAction::PaletteDeleteNextWord),
+            )
             // change selection
             .add(
                 Keybind::default()
@@ -636,6 +672,45 @@ impl Default for KeyHandler {
                 Keybind::default()
                     .code(KeyCode::Esc)
                     .action(AppAction::SearchRollback),
+            )
+            // alt-(w/e/left/right)
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Left)
+                    .alt()
+                    .shift()
+                    .action(AppAction::SearchGotoPrevWord),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Right)
+                    .alt()
+                    .shift()
+                    .action(AppAction::SearchGotoNextWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('w')
+                    .alt()
+                    .action(AppAction::SearchGotoPrevWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('e')
+                    .alt()
+                    .action(AppAction::SearchGotoNextWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('d')
+                    .alt()
+                    .action(AppAction::SearchDeletePrevWord),
+            )
+            .add(
+                Keybind::default()
+                    .char('f')
+                    .alt()
+                    .action(AppAction::SearchDeleteNextWord),
             )
             // insert characters
             .fallback(|event| {
