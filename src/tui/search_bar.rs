@@ -60,62 +60,27 @@ impl SearchBarState {
 
     pub fn insert(&mut self, c: char) {
         self.input.insert(c);
-        if self.input.value() != self.search.pattern() {
-            match self.search {
-                Search::Fuzzy(_) => {
-                    self.search = Search::Fuzzy(search::Search::new(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
-                }
-                Search::Exact(_) => {
-                    self.search = Search::Exact(search::Search::new(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
-                }
-            }
-        }
+        self.update_search();
     }
 
     pub fn delete_prev(&mut self) {
         self.input.delete_prev();
-        if self.input.value() != self.search.pattern() {
-            match self.search {
-                Search::Fuzzy(_) => {
-                    self.search = Search::Fuzzy(search::Search::new(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
-                }
-                Search::Exact(_) => {
-                    self.search = Search::Exact(search::Search::new(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
-                }
-            }
-        }
+        self.update_search();
     }
 
     pub fn delete_next(&mut self) {
         self.input.delete_next();
-        if self.input.value() != self.search.pattern() {
-            match self.search {
-                Search::Fuzzy(_) => {
-                    self.search = Search::Fuzzy(search::Search::new(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
-                }
-                Search::Exact(_) => {
-                    self.search = Search::Exact(search::Search::new(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
-                }
-            }
-        }
+        self.update_search();
+    }
+
+    pub fn delete_prev_word(&mut self) {
+        self.input.delete_prev_word();
+        self.update_search();
+    }
+
+    pub fn delete_next_word(&mut self) {
+        self.input.delete_next_word();
+        self.update_search();
     }
 
     pub fn goto_prev(&mut self) {
@@ -124,6 +89,14 @@ impl SearchBarState {
 
     pub fn goto_next(&mut self) {
         self.input.goto_next();
+    }
+
+    pub fn goto_prev_word(&mut self) {
+        self.input.goto_prev_word();
+    }
+
+    pub fn goto_next_word(&mut self) {
+        self.input.goto_next_word();
     }
 
     pub fn goto_start(&mut self) {
@@ -136,6 +109,25 @@ impl SearchBarState {
 
     pub fn into_rollback_df(self) -> DataFrame {
         self.rollback_df
+    }
+
+    fn update_search(&mut self) {
+        if self.input.value() != self.search.pattern() {
+            match self.search {
+                Search::Fuzzy(_) => {
+                    self.search = Search::Fuzzy(search::Search::new(
+                        self.rollback_df.clone(),
+                        self.input.value().to_owned(),
+                    ))
+                }
+                Search::Exact(_) => {
+                    self.search = Search::Exact(search::Search::new(
+                        self.rollback_df.clone(),
+                        self.input.value().to_owned(),
+                    ))
+                }
+            }
+        }
     }
 }
 

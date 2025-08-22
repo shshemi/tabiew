@@ -40,6 +40,22 @@ impl InputState {
         self.input.handle(tui_input::InputRequest::InsertChar(c));
     }
 
+    pub fn goto_next_word(&mut self) {
+        self.input.handle(tui_input::InputRequest::GoToNextWord);
+    }
+
+    pub fn goto_prev_word(&mut self) {
+        self.input.handle(tui_input::InputRequest::GoToPrevWord);
+    }
+
+    pub fn delete_next_word(&mut self) {
+        self.input.handle(tui_input::InputRequest::DeleteNextWord);
+    }
+
+    pub fn delete_prev_word(&mut self) {
+        self.input.handle(tui_input::InputRequest::DeletePrevWord);
+    }
+
     pub fn value(&self) -> &str {
         self.input.value()
     }
