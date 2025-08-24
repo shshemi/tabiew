@@ -4,6 +4,7 @@ use std::{
 };
 
 use base64::Engine;
+use unicode_width::UnicodeWidthChar;
 
 use crate::AppResult;
 
@@ -141,6 +142,25 @@ pub fn human_readable_size(volume: u64) -> String {
     }
 }
 
+pub trait FitToWidth {
+    fn fit_to_width(&self, width: usize) -> &Self;
+}
+
+impl FitToWidth for str {
+    fn fit_to_width(&self, width: usize) -> &Self {
+        let end = self
+            .char_indices()
+            .map(|(i, c)| (i + c.len_utf8(), c.width().unwrap_or_default()))
+            .scan(0, |s, (i, w)| {
+                *s += w;
+                (*s <= width).then_some(i)
+            })
+            .last()
+            .unwrap_or_default();
+        &self[..end]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,5 +222,76 @@ mod tests {
         assert_eq!(name_gen.next().unwrap(), "student_2");
         assert_eq!(name_gen.next().unwrap(), "student_3");
         assert_eq!(name_gen.next().unwrap(), "student_4");
+    }
+
+    #[test]
+    fn test_fit_to_width_ascii() {
+        // ASCII characters, each width 1
+        assert_eq!("hello".fit_to_width(0), "");
+        assert_eq!("hello".fit_to_width(1), "h");
+        assert_eq!("hello".fit_to_width(2), "he");
+        assert_eq!("hello".fit_to_width(5), "hello");
+        assert_eq!("hello".fit_to_width(10), "hello");
+    }
+
+    #[test]
+    fn test_fit_to_width_unicode_wide() {
+        // Unicode wide characters (e.g., CJK, emoji)
+        let s = "你好吗"; // Each Chinese char is width 2
+        assert_eq!(s.fit_to_width(0), "");
+        assert_eq!(s.fit_to_width(1), "");
+        assert_eq!(s.fit_to_width(2), "你");
+        assert_eq!(s.fit_to_width(3), "你");
+        assert_eq!(s.fit_to_width(4), "你好");
+        assert_eq!(s.fit_to_width(5), "你好");
+        assert_eq!(s.fit_to_width(6), "你好吗");
+        assert_eq!(s.fit_to_width(10), "你好吗");
+
+        let emoji = "🙂🙃"; // Each emoji is width 2
+        assert_eq!(emoji.fit_to_width(0), "");
+        assert_eq!(emoji.fit_to_width(1), "");
+        assert_eq!(emoji.fit_to_width(2), "🙂");
+        assert_eq!(emoji.fit_to_width(3), "🙂");
+        assert_eq!(emoji.fit_to_width(4), "🙂🙃");
+    }
+
+    #[test]
+    fn test_fit_to_width_mixed() {
+        let s = "a你b好c"; // a(1), 你(2), b(1), 好(2), c(1)
+        assert_eq!(s.fit_to_width(0), "");
+        assert_eq!(s.fit_to_width(1), "a");
+        assert_eq!(s.fit_to_width(2), "a");
+        assert_eq!(s.fit_to_width(3), "a你");
+        assert_eq!(s.fit_to_width(4), "a你b");
+        assert_eq!(s.fit_to_width(5), "a你b");
+        assert_eq!(s.fit_to_width(6), "a你b好");
+        assert_eq!(s.fit_to_width(7), "a你b好c");
+        assert_eq!(s.fit_to_width(10), "a你b好c");
+    }
+
+    #[test]
+    fn test_fit_to_width_empty() {
+        assert_eq!("".fit_to_width(0), "");
+        assert_eq!("".fit_to_width(10), "");
+    }
+
+    #[test]
+    fn test_fit_to_width_combining() {
+        let s = "a\u{0301}b";
+        assert_eq!(s.fit_to_width(0), "");
+        assert_eq!(s.fit_to_width(1), "a\u{0301}");
+        assert_eq!(s.fit_to_width(2), "a\u{0301}b");
+        assert_eq!(s.fit_to_width(3), "a\u{0301}b");
+    }
+
+    #[test]
+    fn test_fit_to_width_edge_cases() {
+        let s = "ab";
+        assert_eq!(s.fit_to_width(1), "a");
+        assert_eq!(s.fit_to_width(2), "ab");
+
+        let s = "你";
+        assert_eq!(s.fit_to_width(1), "");
+        assert_eq!(s.fit_to_width(2), "你");
     }
 }
