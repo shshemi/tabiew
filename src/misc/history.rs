@@ -55,16 +55,15 @@ impl History {
 
 impl Drop for History {
     fn drop(&mut self) {
-        if let Some(path) = self.path.take() {
-            if let Ok(mut file) = OpenOptions::new()
+        if let Some(path) = self.path.take()
+            && let Ok(mut file) = OpenOptions::new()
                 .read(false)
                 .append(true)
                 .create(true)
                 .open(path)
-            {
-                for line in self.history.drain(..).skip(self.start_len) {
-                    let _ = writeln!(file, "{line}");
-                }
+        {
+            for line in self.history.drain(..).skip(self.start_len) {
+                let _ = writeln!(file, "{line}");
             }
         }
     }

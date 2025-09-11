@@ -78,11 +78,11 @@ impl Iterator for SnakeCaseNameGen<'_> {
 }
 
 pub trait SnakeCaseNameGenExt {
-    fn snake_case_names(&self) -> SnakeCaseNameGen;
+    fn snake_case_names(&self) -> SnakeCaseNameGen<'_>;
 }
 
 impl SnakeCaseNameGenExt for str {
-    fn snake_case_names(&self) -> SnakeCaseNameGen {
+    fn snake_case_names(&self) -> SnakeCaseNameGen<'_> {
         SnakeCaseNameGen::with(self)
     }
 }
