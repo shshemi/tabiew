@@ -659,26 +659,24 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::SearchCommit => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                if let Some(df) = tab
+            if let Some(tab) = app.tabs_mut().selected_mut()
+                && let Some(df) = tab
                     .modal_take()
                     .into_search_bar()
                     .and_then(|sb| sb.search().latest())
-                {
-                    tab.table_mut().set_data_frame(df);
-                }
+            {
+                tab.table_mut().set_data_frame(df);
             }
             Ok(None)
         }
         AppAction::SearchRollback => {
-            if let Some(tab) = app.tabs_mut().selected_mut() {
-                if let Some(df) = tab
+            if let Some(tab) = app.tabs_mut().selected_mut()
+                && let Some(df) = tab
                     .modal_take()
                     .into_search_bar()
                     .map(SearchBarState::into_rollback_df)
-                {
-                    tab.table_mut().set_data_frame(df);
-                }
+            {
+                tab.table_mut().set_data_frame(df);
             }
             Ok(None)
         }
@@ -821,11 +819,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 .palette_mut()
                 .and_then(|palette| palette.list().selected())
             {
-                if let Some(cmd) = app.history_mut().get(selected).map(String::to_owned) {
-                    if let Some(palette) = app.palette_mut() {
-                        palette.set_input(cmd);
-                        palette.list().select(None);
-                    }
+                if let Some(cmd) = app.history_mut().get(selected).map(String::to_owned)
+                    && let Some(palette) = app.palette_mut()
+                {
+                    palette.set_input(cmd);
+                    palette.list().select(None);
                 }
                 Ok(None)
             } else if let Some(cmd) = app.hide_palette() {
@@ -1016,32 +1014,32 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::DataFrameInfoScrollUp => {
-            if let Some(tabular) = app.tabs_mut().selected_mut() {
-                if let Modal::DataFrameInfo(data_frame_info_state) = tabular.modal_mut() {
-                    *data_frame_info_state
-                        .field_info_mut()
-                        .table_state_mut()
-                        .offset_mut() = data_frame_info_state
-                        .field_info()
-                        .table_state()
-                        .offset()
-                        .saturating_sub(1);
-                }
+            if let Some(tabular) = app.tabs_mut().selected_mut()
+                && let Modal::DataFrameInfo(data_frame_info_state) = tabular.modal_mut()
+            {
+                *data_frame_info_state
+                    .field_info_mut()
+                    .table_state_mut()
+                    .offset_mut() = data_frame_info_state
+                    .field_info()
+                    .table_state()
+                    .offset()
+                    .saturating_sub(1);
             }
             Ok(None)
         }
         AppAction::DataFrameInfoScrollDown => {
-            if let Some(tabular) = app.tabs_mut().selected_mut() {
-                if let Modal::DataFrameInfo(data_frame_info_state) = tabular.modal_mut() {
-                    *data_frame_info_state
-                        .field_info_mut()
-                        .table_state_mut()
-                        .offset_mut() = data_frame_info_state
-                        .field_info()
-                        .table_state()
-                        .offset()
-                        .saturating_add(1);
-                }
+            if let Some(tabular) = app.tabs_mut().selected_mut()
+                && let Modal::DataFrameInfo(data_frame_info_state) = tabular.modal_mut()
+            {
+                *data_frame_info_state
+                    .field_info_mut()
+                    .table_state_mut()
+                    .offset_mut() = data_frame_info_state
+                    .field_info()
+                    .table_state()
+                    .offset()
+                    .saturating_add(1);
             }
             Ok(None)
         }
@@ -1091,18 +1089,18 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::HistogramScrollUp => {
-            if let Some(tab_content) = app.tabs_mut().selected_mut() {
-                if let Modal::HistogramPlot(hist) = tab_content.modal_mut() {
-                    hist.scroll_up();
-                }
+            if let Some(tab_content) = app.tabs_mut().selected_mut()
+                && let Modal::HistogramPlot(hist) = tab_content.modal_mut()
+            {
+                hist.scroll_up();
             }
             Ok(None)
         }
         AppAction::HistogramScrollDown => {
-            if let Some(tab_content) = app.tabs_mut().selected_mut() {
-                if let Modal::HistogramPlot(hist) = tab_content.modal_mut() {
-                    hist.scroll_down();
-                }
+            if let Some(tab_content) = app.tabs_mut().selected_mut()
+                && let Modal::HistogramPlot(hist) = tab_content.modal_mut()
+            {
+                hist.scroll_down();
             }
             Ok(None)
         }
