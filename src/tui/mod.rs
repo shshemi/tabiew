@@ -2,6 +2,7 @@ pub mod command_palette;
 pub mod data_frame_table;
 pub mod error_popup;
 pub mod input;
+pub mod pickers;
 pub mod plots;
 pub mod schema;
 pub mod search_bar;
