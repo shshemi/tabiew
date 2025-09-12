@@ -2,12 +2,14 @@ use std::borrow::Cow;
 
 use ratatui::{
     layout::{Alignment, Constraint},
-    style::{Modifier, Stylize},
-    text::{Line, Span},
+    text::Span,
     widgets::{Block, BorderType, Borders, Row, StatefulWidget, Table, TableState},
 };
 
-use crate::misc::globals::theme;
+use crate::{
+    misc::globals::theme,
+    tui::status_bar::{StatusBar, Tag},
+};
 
 #[derive(Debug)]
 pub struct DataFrameNamesState {
@@ -77,17 +79,13 @@ where
                     .border_type(BorderType::Rounded)
                     .border_style(theme().block())
                     .title("Tables")
-                    .title_bottom(Line::from_iter([
-                        Span::raw(" Open ").style(theme().block_tag()),
-                        Span::raw(" Enter ")
-                            .style(theme().block_tag())
-                            .add_modifier(Modifier::REVERSED),
-                        Span::raw(" "),
-                        Span::raw(" Unload ").style(theme().block_tag()),
-                        Span::raw(" Delete ")
-                            .style(theme().block_tag())
-                            .add_modifier(Modifier::REVERSED),
-                    ]))
+                    .title_bottom(
+                        StatusBar::new()
+                            .mono_color()
+                            .centered()
+                            .tag(Tag::new(" Open ", " Enter"))
+                            .tag(Tag::new(" Unload ", " Delete ")),
+                    )
                     .title_alignment(Alignment::Center),
             )
             .render(area, buf, &mut state.table);
