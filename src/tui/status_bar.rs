@@ -8,19 +8,45 @@ use ratatui::{
 
 use crate::misc::globals::theme;
 
+#[derive(Debug)]
+pub enum StatusBarStyle {
+    MultiColor,
+    MonoColor,
+}
+
+#[derive(Debug)]
 pub struct StatusBar<'a, 'b> {
     tags: Vec<Tag<'a, 'b>>,
+    style: StatusBarStyle,
+    alignment: Alignment,
 }
 
 impl<'a, 'b> StatusBar<'a, 'b> {
     pub fn new() -> Self {
         Self {
             tags: Default::default(),
+            style: StatusBarStyle::MultiColor,
+            alignment: Alignment::Right,
         }
     }
 
     pub fn tag(mut self, tag: Tag<'a, 'b>) -> Self {
         self.tags.push(tag);
+        self
+    }
+
+    pub fn multi_color(mut self) -> Self {
+        self.style = StatusBarStyle::MultiColor;
+        self
+    }
+
+    pub fn mono_color(mut self) -> Self {
+        self.style = StatusBarStyle::MonoColor;
+        self
+    }
+
+    pub fn alignment(mut self, alignment: Alignment) -> Self {
+        self.alignment = alignment;
         self
     }
 }
@@ -39,15 +65,19 @@ impl From<StatusBar<'_, '_>> for Line<'_> {
                     .tags
                     .into_iter()
                     .enumerate()
-                    .map(|(idx, tag)| tag.into_span(idx).into_iter()),
+                    .map(|(idx, tag)| match value.style {
+                        StatusBarStyle::MultiColor => tag.into_multi_color_span(idx).into_iter(),
+                        StatusBarStyle::MonoColor => tag.into_mono_color_span().into_iter(),
+                    }),
                 [Span::raw(" "), Span::raw("")].into_iter(),
             )
             .flatten(),
         )
-        .alignment(Alignment::Right)
+        .alignment(value.alignment)
     }
 }
 
+#[derive(Debug)]
 pub struct Tag<'a, 'b> {
     key: Cow<'a, str>,
     value: Cow<'b, str>,
@@ -61,11 +91,19 @@ impl<'a, 'b> Tag<'a, 'b> {
         }
     }
 
-    fn into_span(self, pos: usize) -> [Span<'static>; 2] {
+    fn into_multi_color_span(self, pos: usize) -> [Span<'static>; 2] {
         [
             Span::raw(format!(" {} ", self.key)).style(theme().tag(pos)),
             Span::raw(format!(" {} ", self.value))
                 .style(theme().tag(pos).add_modifier(Modifier::REVERSED)),
+        ]
+    }
+
+    fn into_mono_color_span(self) -> [Span<'static>; 2] {
+        [
+            Span::raw(format!(" {} ", self.key)).style(theme().block_tag()),
+            Span::raw(format!(" {} ", self.value))
+                .style(theme().block_tag().add_modifier(Modifier::REVERSED)),
         ]
     }
 }
