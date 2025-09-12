@@ -168,7 +168,7 @@ impl StatefulWidget for SearchBar {
             Search::Fuzzy(_) => "Fuzzy Search",
             Search::Exact(_) => "Search",
         };
-        Input::new()
+        Input::default()
             .style(theme().text())
             .selection(self.selection)
             .block(Block::default().title(title))
