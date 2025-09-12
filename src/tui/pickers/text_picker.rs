@@ -57,6 +57,11 @@ impl StatefulWidget for TextPicker<'_> {
             Layout::vertical([Constraint::Length(3), Constraint::Length(3)]).areas(area);
         Widget::render(Clear, area, buf);
 
-        StatefulWidget::render(Input::new().block(self.block), area, buf, &mut state.input);
+        StatefulWidget::render(
+            Input::default().block(self.block),
+            area,
+            buf,
+            &mut state.input,
+        );
     }
 }
