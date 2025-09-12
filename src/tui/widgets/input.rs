@@ -1,16 +1,13 @@
+use crate::tui::widgets::block::Block;
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
     widgets::{Paragraph, StatefulWidget, Widget},
 };
-use std::ops::Add;
-
-use crate::tui::widgets::block::Block;
 
 #[derive(Debug, Default)]
 pub struct InputState {
     input: tui_input::Input,
-    scroll: usize,
 }
 
 impl InputState {
@@ -65,7 +62,6 @@ impl InputState {
 
 #[derive(Debug)]
 pub struct Input<'a> {
-    scroll_pad: u16,
     block: Option<Block<'a>>,
     style: Style,
     selection: bool,
@@ -74,7 +70,6 @@ pub struct Input<'a> {
 impl Input<'_> {
     pub fn new() -> Self {
         Input {
-            scroll_pad: 4,
             block: Default::default(),
             style: Default::default(),
             selection: false,
@@ -89,11 +84,6 @@ impl Default for Input<'_> {
 }
 
 impl<'a> Input<'a> {
-    pub fn scroll_pad(mut self, pad: u16) -> Self {
-        self.scroll_pad = pad;
-        self
-    }
-
     pub fn block(mut self, block: Block<'a>) -> Self {
         self.block = Some(block);
         self
@@ -121,45 +111,26 @@ impl StatefulWidget for Input<'_> {
     ) {
         // draw block and update area
         let area = if let Some(block) = self.block {
-            let area = block.inner(area);
+            let new_area = block.inner(area);
             block.render(area, buf);
-            area
+            new_area
         } else {
             area
         };
 
-        // calculate scroll to stay between locks
-        state.scroll = {
-            let input_len = state.input.value().chars().count();
-            let cursor = state.input.visual_cursor();
-            let pad = self.scroll_pad as usize;
-            let width = area.width as usize;
-            let min_scroll = if input_len - cursor < pad {
-                cursor.add(1).saturating_sub(width)
-            } else {
-                cursor.add(1).add(pad).saturating_sub(width)
-            };
-            let max_scroll = cursor.saturating_sub(pad);
-            state.scroll.clamp(min_scroll, max_scroll)
-        };
-
         // draw text
-        Paragraph::new(
-            state
-                .input
-                .value()
-                .chars()
-                .skip(state.scroll)
-                .collect::<String>(),
-        )
-        .style(self.style)
-        .render(area, buf);
+        let scroll = state
+            .input
+            .visual_scroll(area.width.saturating_sub(1).into());
+        Paragraph::new(state.input.value().chars().skip(scroll).collect::<String>())
+            .style(self.style)
+            .render(area, buf);
 
         // draw cursor
         if self.selection {
             buf.set_style(
                 Rect {
-                    x: area.x + (state.input.visual_cursor() - state.scroll) as u16,
+                    x: area.x + state.input.visual_cursor().saturating_sub(scroll) as u16,
                     y: area.y,
                     width: 1,
                     height: 1,
