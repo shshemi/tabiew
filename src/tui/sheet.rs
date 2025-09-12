@@ -1,7 +1,7 @@
 use ratatui::{
     layout::Alignment,
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{Clear, Paragraph, StatefulWidget, Widget, Wrap},
 };
 
 use crate::{
@@ -9,6 +9,7 @@ use crate::{
     tui::{
         status_bar::{StatusBar, Tag},
         utils::{Scroll, line_count},
+        widgets::block::Block,
     },
 };
 
@@ -27,24 +28,17 @@ impl SheetSection {
 #[derive(Debug)]
 pub struct Sheet {
     sections: Vec<SheetSection>,
-    block: Option<Block<'static>>,
 }
 
 impl Sheet {
     pub fn new() -> Self {
         Self {
             sections: Default::default(),
-            block: None,
         }
     }
 
     pub fn with_sections(mut self, sections: Vec<SheetSection>) -> Self {
         self.sections = sections;
-        self
-    }
-
-    pub fn with_block(mut self, block: Block<'static>) -> Self {
-        self.block = Some(block);
         self
     }
 }
@@ -106,11 +100,8 @@ impl StatefulWidget for Sheet {
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true })
             .block(
-                Block::new()
-                    .style(theme().text())
-                    .border_style(theme().block())
-                    .border_type(BorderType::Rounded)
-                    .title_bottom(
+                Block::default()
+                    .bottom(
                         StatusBar::new()
                             .mono_color()
                             .centered()
@@ -118,7 +109,7 @@ impl StatefulWidget for Sheet {
                             .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
                     )
                     .title_alignment(Alignment::Center)
-                    .borders(Borders::ALL),
+                    .into_widget(),
             )
             .scroll((state.scroll.val_u16(), 0))
             .render(area, buf);

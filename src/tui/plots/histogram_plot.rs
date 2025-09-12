@@ -2,11 +2,11 @@ use itertools::Itertools;
 use ratatui::{
     layout::{Alignment, Direction, Size},
     text::Line,
-    widgets::{Bar, BarChart, BarGroup, Block, BorderType, Clear, StatefulWidget, Widget},
+    widgets::{Bar, BarChart, BarGroup, Clear, StatefulWidget, Widget},
 };
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
-use crate::misc::globals::theme;
+use crate::{misc::globals::theme, tui::widgets::block::Block};
 
 #[derive(Debug, Default)]
 pub struct HistogramPlot;
@@ -49,9 +49,7 @@ impl StatefulWidget for HistogramPlot {
     ) {
         Widget::render(Clear, area, buf);
         let area = {
-            let blk = Block::bordered()
-                .border_type(BorderType::Rounded)
-                .style(theme().block())
+            let blk = Block::default()
                 .title("Histogram Plot")
                 .title_alignment(Alignment::Center);
             let new_area = blk.inner(area);

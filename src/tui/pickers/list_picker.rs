@@ -1,12 +1,10 @@
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     text::Line,
-    widgets::{
-        Block, BorderType, Clear, List, ListItem, ListState, StatefulWidget, Widget, block::Title,
-    },
+    widgets::{Clear, List, ListItem, ListState, StatefulWidget, Widget, block::Title},
 };
 
-use crate::misc::globals::theme;
+use crate::{misc::globals::theme, tui::widgets::block::Block};
 
 #[derive(Debug)]
 pub struct ListPickerState {
@@ -31,7 +29,7 @@ impl Default for ListPickerState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ListPicker<'a> {
     items: Vec<ListItem<'a>>,
     block: Block<'a>,
@@ -45,7 +43,7 @@ impl<'a> ListPicker<'a> {
     }
 
     pub fn bottom<T: Into<Line<'a>>>(mut self, title: T) -> Self {
-        self.block = self.block.title_bottom(title);
+        self.block = self.block.bottom(title);
         self
     }
 
@@ -60,16 +58,6 @@ impl<'a> ListPicker<'a> {
             .inspect(|d| self.width = self.width.max(d.width() as u16))
             .collect();
         self
-    }
-}
-
-impl<'a> Default for ListPicker<'a> {
-    fn default() -> Self {
-        Self {
-            items: Default::default(),
-            block: Block::bordered().border_type(BorderType::Rounded),
-            width: 0,
-        }
     }
 }
 
@@ -96,7 +84,7 @@ impl<'a> StatefulWidget for ListPicker<'a> {
                 .style(theme().text())
                 .highlight_style(theme().highlight())
                 .items(self.items)
-                .block(self.block.style(theme().block())),
+                .block(self.block.into_widget()),
             area,
             buf,
             &mut state.list,

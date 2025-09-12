@@ -1,10 +1,10 @@
 use itertools::Itertools;
-use ratatui::widgets::{Block, BorderType, Borders, StatefulWidget, TableState, Widget};
+use ratatui::widgets::{Borders, StatefulWidget, TableState, Widget};
 
-use crate::misc::globals::theme;
+use crate::tui::widgets::block::Block;
 
 use super::{
-    side_panel::{SidePanel, SidePanelState},
+    enumerated_list::{EnumeratedList, EnumeratedListState},
     status_bar::{StatusBar, Tag},
     tab_content::{TabContent, TabContentState},
 };
@@ -12,7 +12,7 @@ use super::{
 #[derive(Debug)]
 pub struct TabState {
     tabulars: Vec<TabContentState>,
-    side_panel: Option<SidePanelState>,
+    side_panel: Option<EnumeratedListState>,
     idx: usize,
 }
 
@@ -59,19 +59,19 @@ impl TabState {
         self.tabulars.iter_mut()
     }
 
-    pub fn side_panel(&self) -> Option<&SidePanelState> {
+    pub fn side_panel(&self) -> Option<&EnumeratedListState> {
         self.side_panel.as_ref()
     }
 
-    pub fn side_panel_mut(&mut self) -> Option<&mut SidePanelState> {
+    pub fn side_panel_mut(&mut self) -> Option<&mut EnumeratedListState> {
         self.side_panel.as_mut()
     }
 
     pub fn show_side_panel(&mut self) {
-        self.side_panel = Some(SidePanelState::new(self.idx));
+        self.side_panel = Some(EnumeratedListState::new(self.idx));
     }
 
-    pub fn take_side_panel(&mut self) -> Option<SidePanelState> {
+    pub fn take_side_panel(&mut self) -> Option<EnumeratedListState> {
         self.side_panel.take()
     }
 }
@@ -129,7 +129,7 @@ impl StatefulWidget for Tab {
         let tabular_idx = state
             .side_panel
             .as_ref()
-            .map(SidePanelState::list)
+            .map(EnumeratedListState::list)
             .and_then(TableState::selected)
             .unwrap_or(state.idx)
             .min(state.tabulars.len().saturating_sub(1));
@@ -187,9 +187,7 @@ impl StatefulWidget for Tab {
                 } else {
                     Borders::empty()
                 })
-                .border_type(BorderType::Rounded)
-                .border_style(theme().block())
-                .title_bottom(status_bar);
+                .bottom(status_bar);
             let new = blk.inner(area);
             blk.render(area, buf);
             new
@@ -201,6 +199,7 @@ impl StatefulWidget for Tab {
         }
 
         // render tabs
+        // TODO: fix later
         let tab_titles = state
             .iter()
             .map(|tabular| {
@@ -213,7 +212,7 @@ impl StatefulWidget for Tab {
             })
             .collect_vec();
         if let Some(side_panel_state) = state.side_panel.as_mut() {
-            let side_panel = SidePanel::new(&tab_titles).title("Tabs");
+            let side_panel = EnumeratedList::default().items(tab_titles).title("Tabs");
             side_panel.render(area, buf, side_panel_state);
         }
     }
