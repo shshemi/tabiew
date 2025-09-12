@@ -2,16 +2,18 @@ use std::borrow::Cow;
 
 use ratatui::{
     layout::{Alignment, Constraint, Layout},
-    style::{Modifier, Stylize},
     symbols::{
         border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
-    text::{Line, Span},
+    text::Line,
     widgets::{Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget},
 };
 
-use crate::misc::globals::theme;
+use crate::{
+    misc::globals::theme,
+    tui::status_bar::{StatusBar, Tag},
+};
 
 use super::input::{Input, InputState};
 
@@ -101,24 +103,15 @@ where
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
                     .border_type(BorderType::Rounded)
                     .style(theme().block())
-                    .title_bottom(
-                        if state.list.selected().is_some() {
-                            Line::from_iter([
-                                Span::raw(" Insert ").style(theme().block_tag()),
-                                Span::raw(" Enter ")
-                                    .style(theme().block_tag())
-                                    .add_modifier(Modifier::REVERSED),
-                                Span::raw(" "),
-                                Span::raw(" Cancel ").style(theme().block_tag()),
-                                Span::raw(" Esc ")
-                                    .style(theme().block_tag())
-                                    .add_modifier(Modifier::REVERSED),
-                            ])
-                        } else {
-                            Line::from("")
-                        }
-                        .alignment(Alignment::Center),
-                    ),
+                    .title_bottom(if state.list.selected().is_some() {
+                        StatusBar::new()
+                            .mono_color()
+                            .centered()
+                            .tag(Tag::new(" Insert ", " Enter "))
+                            .tag(Tag::new(" Cancel ", " Esc "))
+                    } else {
+                        StatusBar::new()
+                    }),
             ),
             list_area,
             buf,

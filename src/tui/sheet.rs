@@ -1,13 +1,15 @@
 use ratatui::{
     layout::Alignment,
-    style::{Modifier, Stylize},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, StatefulWidget, Widget, Wrap},
 };
 
 use crate::{
     misc::globals::theme,
-    tui::utils::{Scroll, line_count},
+    tui::{
+        status_bar::{StatusBar, Tag},
+        utils::{Scroll, line_count},
+    },
 };
 
 #[derive(Debug)]
@@ -108,17 +110,13 @@ impl StatefulWidget for Sheet {
                     .style(theme().text())
                     .border_style(theme().block())
                     .border_type(BorderType::Rounded)
-                    .title_bottom(Line::from_iter([
-                        Span::raw(" Scroll Up ").style(theme().block_tag()),
-                        Span::raw(" Shift+K | Shift+\u{2191} ")
-                            .style(theme().block_tag())
-                            .add_modifier(Modifier::REVERSED),
-                        Span::raw(" "),
-                        Span::raw(" Scroll Down ").style(theme().block_tag()),
-                        Span::raw(" Shift+J | Shift+\u{2193} ")
-                            .style(theme().block_tag())
-                            .add_modifier(Modifier::REVERSED),
-                    ]))
+                    .title_bottom(
+                        StatusBar::new()
+                            .mono_color()
+                            .centered()
+                            .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
+                            .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
+                    )
                     .title_alignment(Alignment::Center)
                     .borders(Borders::ALL),
             )
