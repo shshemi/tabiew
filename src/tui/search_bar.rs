@@ -1,12 +1,15 @@
 use polars::frame::DataFrame;
-use ratatui::widgets::{Block, StatefulWidget};
+use ratatui::widgets::StatefulWidget;
 
-use crate::misc::{
-    globals::theme,
-    search::{self, Contain, Skim},
+use crate::{
+    misc::{
+        globals::theme,
+        search::{self, Contain, Skim},
+    },
+    tui::widgets::block::Block,
 };
 
-use super::input::{Input, InputState};
+use super::widgets::input::{Input, InputState};
 
 #[derive(Debug)]
 pub enum Search {
@@ -168,12 +171,7 @@ impl StatefulWidget for SearchBar {
         Input::new()
             .style(theme().text())
             .selection(self.selection)
-            .block(
-                Block::bordered()
-                    .title_top(title)
-                    .border_type(ratatui::widgets::BorderType::Rounded)
-                    .style(theme().block()),
-            )
+            .block(Block::default().title(title))
             .render(area, buf, &mut state.input);
     }
 }

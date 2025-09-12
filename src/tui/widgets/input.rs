@@ -1,9 +1,11 @@
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
-    widgets::{Block, Paragraph, StatefulWidget, Widget},
+    widgets::{Paragraph, StatefulWidget, Widget},
 };
 use std::ops::Add;
+
+use crate::tui::widgets::block::Block;
 
 #[derive(Debug, Default)]
 pub struct InputState {
@@ -119,8 +121,9 @@ impl StatefulWidget for Input<'_> {
     ) {
         // draw block and update area
         let area = if let Some(block) = self.block {
-            (&block).render(area, buf);
-            block.inner(area)
+            let area = block.inner(area);
+            block.render(area, buf);
+            area
         } else {
             area
         };

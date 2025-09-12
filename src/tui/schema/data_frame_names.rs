@@ -3,12 +3,15 @@ use std::borrow::Cow;
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Span,
-    widgets::{Block, BorderType, Borders, Row, StatefulWidget, Table, TableState},
+    widgets::{Row, StatefulWidget, Table, TableState},
 };
 
 use crate::{
     misc::globals::theme,
-    tui::status_bar::{StatusBar, Tag},
+    tui::{
+        status_bar::{StatusBar, Tag},
+        widgets::block::Block,
+    },
 };
 
 #[derive(Debug)]
@@ -74,19 +77,17 @@ where
             ])
             .column_spacing(1)
             .block(
-                Block::new()
-                    .borders(Borders::all())
-                    .border_type(BorderType::Rounded)
-                    .border_style(theme().block())
+                Block::default()
                     .title("Tables")
-                    .title_bottom(
+                    .bottom(
                         StatusBar::new()
                             .mono_color()
                             .centered()
                             .tag(Tag::new(" Open ", " Enter"))
                             .tag(Tag::new(" Unload ", " Delete ")),
                     )
-                    .title_alignment(Alignment::Center),
+                    .title_alignment(Alignment::Center)
+                    .into_widget(),
             )
             .render(area, buf, &mut state.table);
     }

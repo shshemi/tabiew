@@ -1,12 +1,15 @@
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Text,
-    widgets::{Block, BorderType, Borders, Clear, Row, StatefulWidget, Table, TableState, Widget},
+    widgets::{Borders, Clear, Row, StatefulWidget, Table, TableState, Widget},
 };
 
 use crate::{
     misc::{globals::theme, sql::TableSchema, type_ext::human_readable_size},
-    tui::status_bar::{StatusBar, Tag},
+    tui::{
+        status_bar::{StatusBar, Tag},
+        widgets::block::Block,
+    },
 };
 
 #[derive(Debug, Default)]
@@ -88,18 +91,17 @@ impl StatefulWidget for DataFrameFieldInfo<'_> {
                 ])
                 .style(theme().text())
                 .block(
-                    Block::new()
+                    Block::default()
                         .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
-                        .border_type(BorderType::Rounded)
-                        .border_style(theme().block())
-                        .title_bottom(
+                        .bottom(
                             StatusBar::new()
                                 .mono_color()
                                 .centered()
                                 .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
                                 .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
                         )
-                        .title_alignment(Alignment::Center),
+                        .title_alignment(Alignment::Center)
+                        .into_widget(),
                 ),
             area,
             buf,

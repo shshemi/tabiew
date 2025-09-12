@@ -5,10 +5,13 @@ use ratatui::{
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Span,
-    widgets::{Block, BorderType, Borders, Clear, Row, Table, Widget},
+    widgets::{Clear, Row, Table, Widget},
 };
 
-use crate::misc::{globals::theme, sql, type_ext::human_readable_size};
+use crate::{
+    misc::{globals::theme, sql, type_ext::human_readable_size},
+    tui::widgets::block::Block,
+};
 
 pub struct DataFrameMetaInfo<'a> {
     info: &'a sql::TableInfo,
@@ -53,18 +56,15 @@ impl Widget for DataFrameMetaInfo<'_> {
             ])
             .widths([Constraint::Max(23), Constraint::Fill(1)])
             .block(
-                Block::new()
-                    .borders(Borders::all())
-                    .border_type(BorderType::Rounded)
+                Block::default()
                     .border_set(Set {
                         bottom_left: VERTICAL_RIGHT,
                         bottom_right: VERTICAL_LEFT,
                         ..ROUNDED
                     })
-                    .border_style(theme().block())
-                    .style(theme().text())
                     .title_alignment(Alignment::Center)
-                    .title("Info"),
+                    .title("Info")
+                    .into_widget(),
             )
             .render(area, buf);
     }

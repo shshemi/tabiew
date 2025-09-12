@@ -1,25 +1,25 @@
 use ratatui::{
     layout::{Constraint, Rect},
-    text::Span,
-    widgets::{Block, BorderType, Cell, Clear, Row, StatefulWidget, Table, TableState, Widget},
+    text::{Span, Text},
+    widgets::{Cell, Clear, Row, StatefulWidget, Table, TableState, Widget, block::Title},
 };
 
-use crate::misc::globals::theme;
+use crate::{misc::globals::theme, tui::widgets::block::Block};
 
 #[derive(Debug)]
-pub struct SidePanelState {
+pub struct EnumeratedListState {
     list: TableState,
 }
 
-impl SidePanelState {
-    pub fn new(selected: usize) -> SidePanelState {
+impl EnumeratedListState {
+    pub fn new(selected: usize) -> EnumeratedListState {
         Self {
             list: TableState::default().with_selected(Some(selected)),
         }
     }
 }
 
-impl SidePanelState {
+impl EnumeratedListState {
     pub fn list(&self) -> &TableState {
         &self.list
     }
@@ -29,25 +29,30 @@ impl SidePanelState {
     }
 }
 
-#[derive(Debug)]
-pub struct SidePanel<'a, 'b> {
-    items: &'a [String],
-    title: Option<&'b str>,
+#[derive(Debug, Default)]
+pub struct EnumeratedList<'a> {
+    items: Vec<Text<'a>>,
+    block: Block<'a>,
 }
 
-impl<'a, 'b> SidePanel<'a, 'b> {
-    pub fn new(items: &'a [String]) -> Self {
-        Self { items, title: None }
+impl<'a> EnumeratedList<'a> {
+    pub fn title<T: Into<Title<'a>>>(mut self, title: T) -> Self {
+        self.block = self.block.title(title);
+        self
     }
 
-    pub fn title(mut self, title: impl Into<Option<&'b str>>) -> Self {
-        self.title = title.into();
+    pub fn items<T>(mut self, items: T) -> Self
+    where
+        T: IntoIterator,
+        T::Item: Into<Text<'a>>,
+    {
+        self.items = items.into_iter().map(Into::into).collect();
         self
     }
 }
 
-impl StatefulWidget for SidePanel<'_, '_> {
-    type State = SidePanelState;
+impl StatefulWidget for EnumeratedList<'_> {
+    type State = EnumeratedListState;
 
     fn render(
         self,
@@ -59,7 +64,7 @@ impl StatefulWidget for SidePanel<'_, '_> {
         let text_width = self
             .items
             .iter()
-            .map(|s| s.len() as u16)
+            .map(|s| s.width() as u16)
             .max()
             .map(|w| w.clamp(34, area.width.saturating_div(2)))
             .unwrap_or(34);
@@ -68,25 +73,18 @@ impl StatefulWidget for SidePanel<'_, '_> {
 
         Widget::render(Clear, area, buf);
 
-        let mut block = Block::bordered()
-            .border_type(BorderType::Rounded)
-            .border_style(theme().block());
-        if let Some(title) = self.title {
-            block = block.title(title);
-        }
-        let rows = self.items.iter().enumerate().map(|(i, s)| {
+        let rows = self.items.into_iter().enumerate().map(|(i, s)| {
             Row::new([
                 Cell::new(
                     Span::raw(format!(" {:>width$}", i + 1, width = num_width as usize))
                         .style(theme().subtext()),
                 ),
-                Cell::new(Span::raw(s.as_str()).style(theme().text())),
+                Cell::new(s),
             ])
         });
         StatefulWidget::render(
             Table::default()
                 .rows(rows)
-                // .items(self.items.iter().cloned())
                 .style(theme().text())
                 .row_highlight_style(theme().highlight())
                 .widths([
@@ -94,7 +92,7 @@ impl StatefulWidget for SidePanel<'_, '_> {
                     Constraint::Length(text_width),
                 ])
                 .column_spacing(1)
-                .block(block),
+                .block(self.block.into_widget()),
             area,
             buf,
             &mut state.list,

@@ -2,7 +2,7 @@ use std::ops::Div;
 
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Block, BorderType, Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{Paragraph, StatefulWidget, Widget, Wrap},
 };
 
 use crate::{
@@ -13,6 +13,7 @@ use crate::{
             data_frame_names::{DataFrameNames, DataFrameNamesState},
         },
         utils::line_count,
+        widgets::block::Block,
     },
 };
 
@@ -86,10 +87,7 @@ impl StatefulWidget for Schema {
             let [center] = Layout::horizontal([Constraint::Length(width)])
                 .flex(Flex::Center)
                 .areas(center);
-            Block::bordered()
-                .border_style(theme().block())
-                .border_type(BorderType::Rounded)
-                .render(area, buf);
+            Block::default().render(area, buf);
             Paragraph::new(msg)
                 .centered()
                 .wrap(Wrap { trim: true })
