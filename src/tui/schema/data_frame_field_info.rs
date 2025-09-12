@@ -1,11 +1,13 @@
 use ratatui::{
     layout::{Alignment, Constraint},
-    style::{Modifier, Stylize},
-    text::{Line, Span, Text},
+    text::Text,
     widgets::{Block, BorderType, Borders, Clear, Row, StatefulWidget, Table, TableState, Widget},
 };
 
-use crate::misc::{globals::theme, sql::TableSchema, type_ext::human_readable_size};
+use crate::{
+    misc::{globals::theme, sql::TableSchema, type_ext::human_readable_size},
+    tui::status_bar::{StatusBar, Tag},
+};
 
 #[derive(Debug, Default)]
 pub struct DataFrameFieldInfoState {
@@ -90,17 +92,13 @@ impl StatefulWidget for DataFrameFieldInfo<'_> {
                         .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
                         .border_type(BorderType::Rounded)
                         .border_style(theme().block())
-                        .title_bottom(Line::from_iter([
-                            Span::raw(" Scroll Up ").style(theme().block_tag()),
-                            Span::raw(" Shift+K | Shift+\u{2191} ")
-                                .style(theme().block_tag())
-                                .add_modifier(Modifier::REVERSED),
-                            Span::raw(" "),
-                            Span::raw(" Scroll Down ").style(theme().block_tag()),
-                            Span::raw(" Shift+J | Shift+\u{2193} ")
-                                .style(theme().block_tag())
-                                .add_modifier(Modifier::REVERSED),
-                        ]))
+                        .title_bottom(
+                            StatusBar::new()
+                                .mono_color()
+                                .centered()
+                                .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
+                                .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
+                        )
                         .title_alignment(Alignment::Center),
                 ),
             area,

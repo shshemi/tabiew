@@ -45,8 +45,18 @@ impl<'a, 'b> StatusBar<'a, 'b> {
         self
     }
 
-    pub fn alignment(mut self, alignment: Alignment) -> Self {
-        self.alignment = alignment;
+    pub fn centered(mut self) -> Self {
+        self.alignment = Alignment::Center;
+        self
+    }
+
+    pub fn right_aligned(mut self) -> Self {
+        self.alignment = Alignment::Right;
+        self
+    }
+
+    pub fn left_aligned(mut self) -> Self {
+        self.alignment = Alignment::Left;
         self
     }
 }
