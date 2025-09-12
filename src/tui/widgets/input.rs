@@ -60,27 +60,11 @@ impl InputState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Input<'a> {
     block: Option<Block<'a>>,
     style: Style,
     selection: bool,
-}
-
-impl Input<'_> {
-    pub fn new() -> Self {
-        Input {
-            block: Default::default(),
-            style: Default::default(),
-            selection: false,
-        }
-    }
-}
-
-impl Default for Input<'_> {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl<'a> Input<'a> {
