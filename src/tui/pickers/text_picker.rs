@@ -1,12 +1,12 @@
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     text::Line,
-    widgets::{Block, BorderType, Clear, StatefulWidget, Widget, block::Title},
+    widgets::{Clear, StatefulWidget, Widget, block::Title},
 };
 
-use crate::{
-    misc::globals::theme,
-    tui::input::{Input, InputState},
+use crate::tui::widgets::{
+    block::Block,
+    input::{Input, InputState},
 };
 
 #[derive(Debug, Default)]
@@ -24,7 +24,7 @@ impl TextPickerState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TextPicker<'a> {
     block: Block<'a>,
 }
@@ -36,18 +36,8 @@ impl<'a> TextPicker<'a> {
     }
 
     pub fn bottom<T: Into<Line<'a>>>(mut self, bottom: T) -> Self {
-        self.block = self.block.title_bottom(bottom);
+        self.block = self.block.bottom(bottom);
         self
-    }
-}
-
-impl Default for TextPicker<'_> {
-    fn default() -> Self {
-        Self {
-            block: Block::bordered()
-                .border_type(BorderType::Rounded)
-                .style(theme().block()),
-        }
     }
 }
 

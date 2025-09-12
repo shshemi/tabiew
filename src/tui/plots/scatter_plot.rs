@@ -5,12 +5,11 @@ use ratatui::{
     symbols::Marker,
     text::Span,
     widgets::{
-        Axis, Block, BorderType, Chart, Clear, Dataset, GraphType, LegendPosition, Padding,
-        StatefulWidget, Widget,
+        Axis, Chart, Clear, Dataset, GraphType, LegendPosition, Padding, StatefulWidget, Widget,
     },
 };
 
-use crate::{AppResult, misc::globals::theme};
+use crate::{AppResult, misc::globals::theme, tui::widgets::block::Block};
 
 #[derive(Debug, Default)]
 pub struct ScatterPlot {}
@@ -109,12 +108,11 @@ impl StatefulWidget for ScatterPlot {
             )
             .style(theme().text())
             .block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .style(theme().block())
+                Block::default()
                     .title("Scatter Plot")
                     .title_alignment(Alignment::Center)
-                    .padding(Padding::new(1, 2, 0, 0)),
+                    .padding(Padding::new(1, 2, 0, 0))
+                    .into_widget(),
             )
             .legend_position(Some(LegendPosition::TopRight))
             .hidden_legend_constraints((Constraint::Min(0), Constraint::Min(0)));

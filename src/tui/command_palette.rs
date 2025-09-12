@@ -1,21 +1,24 @@
 use std::borrow::Cow;
 
 use ratatui::{
-    layout::{Alignment, Constraint, Layout},
+    layout::{Constraint, Layout},
     symbols::{
         border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Line,
-    widgets::{Block, BorderType, Borders, Clear, List, ListState, StatefulWidget, Widget},
+    widgets::{Borders, Clear, List, ListState, StatefulWidget, Widget},
 };
 
 use crate::{
     misc::globals::theme,
-    tui::status_bar::{StatusBar, Tag},
+    tui::{
+        status_bar::{StatusBar, Tag},
+        widgets::block::Block,
+    },
 };
 
-use super::input::{Input, InputState};
+use super::widgets::input::{Input, InputState};
 
 pub struct CommandPaletteState {
     input: InputState,
@@ -80,16 +83,11 @@ where
         Input::new()
             .style(theme().text())
             .selection(state.list.selected().is_none())
-            .block(
-                Block::bordered()
-                    .title_alignment(Alignment::Center)
-                    .border_set(Set {
-                        bottom_left: VERTICAL_RIGHT,
-                        bottom_right: VERTICAL_LEFT,
-                        ..ROUNDED
-                    })
-                    .style(theme().block()),
-            )
+            .block(Block::default().border_set(Set {
+                bottom_left: VERTICAL_RIGHT,
+                bottom_right: VERTICAL_LEFT,
+                ..ROUNDED
+            }))
             .render(input_area, buf, &mut state.input);
         StatefulWidget::render(
             List::new(
@@ -99,11 +97,9 @@ where
             )
             .highlight_style(theme().highlight())
             .block(
-                Block::new()
+                Block::default()
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
-                    .border_type(BorderType::Rounded)
-                    .style(theme().block())
-                    .title_bottom(if state.list.selected().is_some() {
+                    .bottom(if state.list.selected().is_some() {
                         StatusBar::new()
                             .mono_color()
                             .centered()
@@ -111,7 +107,8 @@ where
                             .tag(Tag::new(" Cancel ", " Esc "))
                     } else {
                         StatusBar::new()
-                    }),
+                    })
+                    .into_widget(),
             ),
             list_area,
             buf,

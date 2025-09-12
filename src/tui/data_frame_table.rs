@@ -5,17 +5,18 @@ use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::PlSmallStr};
 use ratatui::{
     layout::Rect,
-    widgets::{Block, StatefulWidget, Widget},
+    widgets::{StatefulWidget, Widget},
 };
 use unicode_width::UnicodeWidthChar;
 
 use crate::{
     AppResult,
-    misc::globals::theme,
     misc::{
+        globals::theme,
         iter_ext::ZipItersExt,
         polars_ext::{IntoString, TuiWidths},
     },
+    tui::widgets::block::Block,
 };
 
 #[derive(Debug, Default)]
