@@ -198,17 +198,8 @@ impl App {
         }
 
         if let Some(msg) = self.error.as_ref() {
-            let error = ErrorPopup::new().with_message(msg);
-            let mid = {
-                let [mid_ver] = Layout::vertical([Constraint::Length(error.line_count(50))])
-                    .flex(Flex::Center)
-                    .areas(frame.area());
-                let [mid_hor] = Layout::horizontal([Constraint::Length(50)])
-                    .flex(Flex::Center)
-                    .areas(mid_ver);
-                mid_hor
-            };
-            frame.render_widget(error, mid);
+            let error = ErrorPopup::new().with_message(msg.as_str());
+            frame.render_widget(error, frame.area());
         }
 
         if let Some(cmd) = self.palette.as_mut() {
