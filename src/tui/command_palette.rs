@@ -81,7 +81,6 @@ where
         let [input_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
         Input::default()
-            .style(theme().text())
             .selection(state.list.selected().is_none())
             .block(Block::default().border_set(Set {
                 bottom_left: VERTICAL_RIGHT,
