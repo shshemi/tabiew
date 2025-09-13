@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{misc::globals::theme, tui::widgets::block::Block};
 use ratatui::{
     layout::Rect,
@@ -63,7 +65,9 @@ impl InputState {
 #[derive(Debug)]
 pub struct Input<'a> {
     block: Option<Block<'a>>,
+    hint: Cow<'a, str>,
     style: Style,
+    hint_style: Style,
     selection: bool,
 }
 
@@ -73,12 +77,22 @@ impl<'a> Input<'a> {
         self
     }
 
+    pub fn hint(mut self, hint: impl Into<Cow<'a, str>>) -> Self {
+        self.hint = hint.into();
+        self
+    }
+
+    pub fn hint_style(mut self, style: impl Into<Style>) -> Self {
+        self.hint_style = style.into();
+        self
+    }
+
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }
 
-    pub fn selection(mut self, selection: bool) -> Self {
+    pub fn with_show_cursor(mut self, selection: bool) -> Self {
         self.selection = selection;
         self
     }
@@ -88,7 +102,9 @@ impl<'a> Default for Input<'a> {
     fn default() -> Self {
         Self {
             block: None,
+            hint: Default::default(),
             style: theme().text(),
+            hint_style: theme().subtext(),
             selection: true,
         }
     }
@@ -112,25 +128,43 @@ impl StatefulWidget for Input<'_> {
             area
         };
 
-        // draw text
-        let scroll = state
-            .input
-            .visual_scroll(area.width.saturating_sub(1).into());
-        Paragraph::new(state.input.value().chars().skip(scroll).collect::<String>())
-            .style(self.style)
-            .render(area, buf);
-
-        // draw cursor
-        if self.selection {
-            buf.set_style(
-                Rect {
-                    x: area.x + state.input.visual_cursor().saturating_sub(scroll) as u16,
-                    y: area.y,
-                    width: 1,
-                    height: 1,
-                },
-                self.style.add_modifier(Modifier::REVERSED),
-            );
+        if state.input.value().is_empty() {
+            // draw hint
+            Paragraph::new(self.hint)
+                .style(self.hint_style)
+                .render(area, buf);
+            // draw cursor
+            if self.selection {
+                buf.set_style(
+                    Rect {
+                        x: area.x,
+                        y: area.y,
+                        width: 1,
+                        height: 1,
+                    },
+                    self.style.add_modifier(Modifier::REVERSED),
+                );
+            }
+        } else {
+            // draw text
+            let scroll = state
+                .input
+                .visual_scroll(area.width.saturating_sub(1).into());
+            Paragraph::new(state.input.value().chars().skip(scroll).collect::<String>())
+                .style(self.style)
+                .render(area, buf);
+            // draw cursor
+            if self.selection {
+                buf.set_style(
+                    Rect {
+                        x: area.x + state.input.visual_cursor().saturating_sub(scroll) as u16,
+                        y: area.y,
+                        width: 1,
+                        height: 1,
+                    },
+                    self.style.add_modifier(Modifier::REVERSED),
+                );
+            }
         }
     }
 }

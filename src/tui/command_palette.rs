@@ -81,7 +81,8 @@ where
         let [input_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
         Input::default()
-            .selection(state.list.selected().is_none())
+            .with_show_cursor(state.list.selected().is_none())
+            .hint("Execute a command")
             .block(Block::default().border_set(Set {
                 bottom_left: VERTICAL_RIGHT,
                 bottom_right: VERTICAL_LEFT,
