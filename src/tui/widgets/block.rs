@@ -1,5 +1,6 @@
 use ratatui::{
     layout::{Alignment, Rect},
+    style::Style,
     symbols::border::Set,
     text::Line,
     widgets::{BorderType, Borders, Padding, Widget, block::Title},
@@ -54,6 +55,11 @@ impl<'a> Block<'a> {
 
     pub fn border_set(mut self, border_set: Set) -> Self {
         self.inner = self.inner.border_set(border_set);
+        self
+    }
+
+    pub fn style(mut self, style: Style) -> Self {
+        self.inner = self.inner.style(style);
         self
     }
 

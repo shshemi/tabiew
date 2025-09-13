@@ -1,6 +1,6 @@
 use ratatui::{
     layout::Alignment,
-    text::{Line, Span},
+    text::Line,
     widgets::{Clear, Paragraph, StatefulWidget, Widget, Wrap},
 };
 
@@ -8,7 +8,7 @@ use crate::{
     misc::globals::theme,
     tui::{
         status_bar::{StatusBar, Tag},
-        utils::{Scroll, line_count},
+        utils::Scroll,
         widgets::block::Block,
     },
 };
@@ -73,45 +73,43 @@ impl StatefulWidget for Sheet {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        let mut lines = Vec::new();
-        for (idx, SheetSection { header, content }) in self.sections.iter().enumerate() {
-            lines.push(Line::from(Span::styled(
-                header.clone(),
-                theme().header(idx),
-            )));
-            for line in content.lines() {
-                lines.push(Line::from(Span::styled(line, theme().text())));
-            }
-            lines.push(Line::raw("\n"));
-        }
-
-        state.scroll.adjust(
-            lines
-                .iter()
-                .map(|line| line_count(&line.to_string(), area.width as usize))
-                .sum(),
-            area.height.saturating_sub(2),
-        );
-
         Clear.render(area, buf);
 
-        Paragraph::new(lines)
-            .style(theme().text())
-            .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true })
-            .block(
-                Block::default()
-                    .bottom(
-                        StatusBar::new()
-                            .mono_color()
-                            .centered()
-                            .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
-                            .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
-                    )
-                    .title_alignment(Alignment::Center)
-                    .into_widget(),
-            )
-            .scroll((state.scroll.val_u16(), 0))
-            .render(area, buf);
+        let pg = Paragraph::new(
+            self.sections
+                .iter()
+                .enumerate()
+                .flat_map(|(idx, SheetSection { header, content })| {
+                    std::iter::once(Line::raw(header).style(theme().header(idx)))
+                        .chain(
+                            content
+                                .lines()
+                                .map(|line| Line::raw(line).style(theme().text())),
+                        )
+                        .chain(std::iter::once(Line::raw("\n")))
+                })
+                .collect::<Vec<_>>(),
+        )
+        .style(theme().text())
+        .alignment(Alignment::Left)
+        .wrap(Wrap { trim: true })
+        .block(
+            Block::default()
+                .bottom(
+                    StatusBar::new()
+                        .mono_color()
+                        .centered()
+                        .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
+                        .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
+                )
+                .title_alignment(Alignment::Center)
+                .into_widget(),
+        );
+
+        state
+            .scroll
+            .adjust(pg.line_count(area.width), area.height.saturating_sub(2));
+
+        pg.scroll((state.scroll.val_u16(), 0)).render(area, buf);
     }
 }

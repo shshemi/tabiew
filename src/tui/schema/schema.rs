@@ -12,7 +12,6 @@ use crate::{
             data_frame_info::{DataFrameInfo, DataFrameInfoState},
             data_frame_names::{DataFrameNames, DataFrameNamesState},
         },
-        utils::line_count,
         widgets::block::Block,
     },
 };
@@ -78,9 +77,11 @@ impl StatefulWidget for Schema {
         // 3: Fields info
 
         if sql().schema().is_empty() {
-            let msg = "No data frame found in the backed. Use the 'import' command to import data frames from files.";
+            let pg = Paragraph::new(
+                "No data frame found in the backed. Use the 'import' command to import data frames from files.",
+            ).centered().wrap(Wrap { trim: true });
             let width = area.width.saturating_sub(2).div(3).min(64);
-            let lines = line_count(msg, width as usize) as u16;
+            let lines = pg.line_count(width) as u16;
             let [center] = Layout::vertical([Constraint::Length(lines)])
                 .flex(Flex::Center)
                 .areas(area);
@@ -88,10 +89,7 @@ impl StatefulWidget for Schema {
                 .flex(Flex::Center)
                 .areas(center);
             Block::default().render(area, buf);
-            Paragraph::new(msg)
-                .centered()
-                .wrap(Wrap { trim: true })
-                .render(center, buf);
+            pg.render(center, buf);
         } else {
             let [area1, area23] =
                 Layout::horizontal([Constraint::Length(40), Constraint::Fill(1)]).areas(area);
