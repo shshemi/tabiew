@@ -170,7 +170,7 @@ impl StatefulWidget for SearchBar {
         };
         Input::default()
             .style(theme().text())
-            .selection(self.selection)
+            .with_show_cursor(self.selection)
             .block(Block::default().title(title))
             .render(area, buf, &mut state.input);
     }
