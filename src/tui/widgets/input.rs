@@ -1,4 +1,4 @@
-use crate::tui::widgets::block::Block;
+use crate::{misc::globals::theme, tui::widgets::block::Block};
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
@@ -60,7 +60,7 @@ impl InputState {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Input<'a> {
     block: Option<Block<'a>>,
     style: Style,
@@ -81,6 +81,16 @@ impl<'a> Input<'a> {
     pub fn selection(mut self, selection: bool) -> Self {
         self.selection = selection;
         self
+    }
+}
+
+impl<'a> Default for Input<'a> {
+    fn default() -> Self {
+        Self {
+            block: None,
+            style: theme().text(),
+            selection: true,
+        }
     }
 }
 
