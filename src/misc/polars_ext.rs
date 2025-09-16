@@ -54,8 +54,12 @@ impl IntoString for AnyValue<'_> {
             AnyValue::Null => "".to_owned(),
             AnyValue::StringOwned(v) => v.to_string(),
             AnyValue::String(v) => v.to_string(),
-            AnyValue::Categorical(idx, rev_map, _) => rev_map.get(idx).to_owned(),
-            AnyValue::CategoricalOwned(idx, rev_map, _) => rev_map.get(idx).to_owned(),
+            AnyValue::Categorical(idx, rev_map) => {
+                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+            }
+            AnyValue::CategoricalOwned(idx, rev_map) => {
+                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+            }
             AnyValue::Binary(buf) => format!("Blob (Length: {})", buf.len()),
             AnyValue::BinaryOwned(buf) => format!("Blob (Length: {})", buf.len()),
             _ => self.to_string(),
@@ -67,8 +71,12 @@ impl IntoString for AnyValue<'_> {
             AnyValue::Null => "".to_owned(),
             AnyValue::StringOwned(v) => v.to_string(),
             AnyValue::String(v) => v.to_string(),
-            AnyValue::Categorical(idx, rev_map, _) => rev_map.get(idx).to_owned(),
-            AnyValue::CategoricalOwned(idx, rev_map, _) => rev_map.get(idx).to_owned(),
+            AnyValue::Categorical(idx, rev_map) => {
+                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+            }
+            AnyValue::CategoricalOwned(idx, rev_map) => {
+                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+            }
             AnyValue::Binary(buf) => bytes_to_string(buf),
             AnyValue::BinaryOwned(buf) => bytes_to_string(buf),
             _ => self.to_string(),
