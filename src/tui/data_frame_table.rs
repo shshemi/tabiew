@@ -16,7 +16,7 @@ use crate::{
         iter_ext::ZipItersExt,
         polars_ext::{IntoString, TuiWidths},
     },
-    tui::widgets::block::Block,
+    tui::{Styler, widgets::block::Block},
 };
 
 #[derive(Debug, Default)]

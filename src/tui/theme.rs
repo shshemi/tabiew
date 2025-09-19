@@ -1,6 +1,22 @@
+use enum_dispatch::enum_dispatch;
 use ratatui::style::{Color, Style, Stylize};
 use serde::{Deserialize, Serialize};
 
+#[allow(clippy::large_enum_variant)]
+#[enum_dispatch(Styler)]
+#[derive(Debug)]
+pub enum Theme {
+    Monokai,
+    Argonaut,
+    Terminal,
+    Nord,
+    Catppuccin,
+    TokyoNight,
+    Chakra,
+    Custom,
+}
+
+#[enum_dispatch]
 pub trait Styler {
     fn table_header(&self) -> Style;
     fn row(&self, row: usize) -> Style;
@@ -13,6 +29,30 @@ pub trait Styler {
     fn subtext(&self) -> Style;
     fn error(&self) -> Style;
     fn graph(&self, idx: usize) -> Style;
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Theme::Monokai(Default::default())
+    }
+}
+
+impl Serialize for Theme {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Theme::Monokai(_) => serializer.serialize_str("monokai"),
+            Theme::Argonaut(_) => serializer.serialize_str("argonaut"),
+            Theme::Terminal(_) => serializer.serialize_str("terminal"),
+            Theme::Nord(_) => serializer.serialize_str("nord"),
+            Theme::Catppuccin(_) => serializer.serialize_str("catppuccin"),
+            Theme::TokyoNight(_) => serializer.serialize_str("tokyo-night"),
+            Theme::Chakra(_) => serializer.serialize_str("chakra"),
+            Theme::Custom(_) => serializer.serialize_str("custom"),
+        }
+    }
 }
 
 pub trait SixColorsTwoRowsStyler {
@@ -346,9 +386,9 @@ impl Styler for Terminal {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
-pub struct Theme {
+pub struct Custom {
     table_header: Style,
     table_headers: Vec<Style>,
     rows: Vec<Style>,
@@ -362,9 +402,9 @@ pub struct Theme {
     chart: Vec<Style>,
 }
 
-impl Theme {
-    pub fn sample() -> Self {
-        Theme {
+impl Default for Custom {
+    fn default() -> Self {
+        Custom {
             table_header: Style::default()
                 .bg(Color::from_u32(0x00000000))
                 .fg(Color::from_u32(0x00ffffff)),
@@ -428,7 +468,7 @@ impl Theme {
     }
 }
 
-impl super::Styler for Theme {
+impl super::Styler for Custom {
     fn table_header(&self) -> Style {
         self.table_header
     }
