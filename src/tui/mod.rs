@@ -1,9 +1,9 @@
-pub mod command_palette;
 pub mod data_frame_table;
 pub mod enumerated_list;
 pub mod error_popup;
 pub mod pickers;
 pub mod plots;
+pub mod popups;
 pub mod schema;
 pub mod search_bar;
 pub mod sheet;

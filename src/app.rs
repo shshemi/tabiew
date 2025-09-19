@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::tui::{
-    command_palette::{CommandPalette, CommandPaletteState},
+    popups::command_palette::{CommandPalette, CommandPaletteState},
     schema::schema::{Schema, SchemaState},
 };
 use crate::{
