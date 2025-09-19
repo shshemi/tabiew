@@ -2,6 +2,7 @@ pub mod config;
 pub mod globals;
 pub mod history;
 pub mod iter_ext;
+pub mod paths;
 pub mod polars_ext;
 pub mod search;
 pub mod sql;
