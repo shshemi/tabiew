@@ -1,6 +1,9 @@
 use std::borrow::Cow;
 
-use crate::{misc::globals::theme, tui::widgets::block::Block};
+use crate::{
+    misc::globals::theme,
+    tui::{Styler, widgets::block::Block},
+};
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},

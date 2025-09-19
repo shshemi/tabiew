@@ -5,22 +5,21 @@ use std::{
     sync::{Mutex, MutexGuard, Once, OnceLock, RwLock, RwLockReadGuard},
 };
 
-use crate::tui::theme::{Monokai, Styler};
+use crate::tui::theme::Theme;
 
 use super::sql::SqlBackend;
 
-static NEW_THEME: RwLock<Lazy<Box<dyn Styler + Send + Sync>>> =
-    RwLock::new(Lazy::new(|| Box::new(Monokai)));
+static THEME: RwLock<Lazy<Theme>> = RwLock::new(Lazy::new(Default::default));
 static SQL_BACKEND: Mutex<Lazy<SqlBackend>> = Mutex::new(Lazy::new(SqlBackend::default));
 static STDIN_CONTENT: OnceLock<Vec<u8>> = OnceLock::new();
 
-pub fn set_theme(theme: Box<dyn Styler + Send + Sync>) {
-    NEW_THEME.write().unwrap().set(theme);
+pub fn set_theme(theme: Theme) {
+    THEME.write().unwrap().set(theme);
 }
 
-pub fn theme() -> impl Deref<Target = Box<dyn Styler + Send + Sync>> {
+pub fn theme() -> impl Deref<Target = Theme> {
     Global {
-        inner: NEW_THEME.read().unwrap(),
+        inner: THEME.read().unwrap(),
     }
 }
 

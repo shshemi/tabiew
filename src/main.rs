@@ -19,9 +19,7 @@ use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 
-use tabiew::tui::theme::{
-    Argonaut, Catppuccin, Chakra, Monokai, Nord, Terminal, Theme, TokyoNight,
-};
+use tabiew::tui::theme::{Custom, Theme};
 use tabiew::tui::{TabContentState, TableType};
 use tabiew::{AppResult, tui};
 
@@ -54,7 +52,7 @@ fn main() {
                 "Theme file already exists at ~/.config/tabiew/theme.toml, remove it first before retrying.",
             )
         } else {
-            let contents = toml::to_string(&Theme::sample()).unwrap_or_graceful_shutdown();
+            let contents = toml::to_string(&Custom::default()).unwrap_or_graceful_shutdown();
             fs::write(&path, contents).unwrap_or_graceful_shutdown();
             println!("Theme generated at ~/.config/tabiew/theme.toml")
         }
@@ -120,19 +118,20 @@ fn main() {
         .unwrap_or(History::in_memory());
 
     set_theme(match args.theme {
-        AppTheme::Monokai => Box::new(Monokai),
-        AppTheme::Argonaut => Box::new(Argonaut),
-        AppTheme::Nord => Box::new(Nord),
-        AppTheme::Catppuccin => Box::new(Catppuccin),
-        AppTheme::TokyoNight => Box::new(TokyoNight),
-        AppTheme::Terminal => Box::new(Terminal),
-        AppTheme::Chakra => Box::new(Chakra),
+        AppTheme::Monokai => Theme::Monokai(Default::default()),
+        AppTheme::Argonaut => Theme::Argonaut(Default::default()),
+        AppTheme::Nord => Theme::Nord(Default::default()),
+        AppTheme::Catppuccin => Theme::Catppuccin(Default::default()),
+        AppTheme::TokyoNight => Theme::TokyoNight(Default::default()),
+        AppTheme::Terminal => Theme::Terminal(Default::default()),
+        AppTheme::Chakra => Theme::Chakra(Default::default()),
         AppTheme::Config => {
-            let theme: Theme = toml::from_str(
-                &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found")).unwrap_or_graceful_shutdown())
-                    .map_err(|_| anyhow!("Create the theme at ~/.config/tabiew/theme.toml first or use --generate-theme to generate one.")).unwrap_or_graceful_shutdown(),
-            ).unwrap_or_graceful_shutdown();
-            Box::new(theme)
+            Theme::Custom(
+                toml::from_str(
+                    &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found")).unwrap_or_graceful_shutdown())
+                        .map_err(|_| anyhow!("No theme found at ~/.config/tabiew/theme.toml. Use --generate-theme to generate one.")).unwrap_or_graceful_shutdown(),
+                ).unwrap_or_graceful_shutdown()
+            )
         }
     });
 

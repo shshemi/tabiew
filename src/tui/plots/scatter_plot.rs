@@ -9,7 +9,11 @@ use ratatui::{
     },
 };
 
-use crate::{AppResult, misc::globals::theme, tui::widgets::block::Block};
+use crate::{
+    AppResult,
+    misc::globals::theme,
+    tui::{Styler, widgets::block::Block},
+};
 
 #[derive(Debug, Default)]
 pub struct ScatterPlot {}

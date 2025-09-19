@@ -8,6 +8,7 @@ use ratatui::{
 use crate::{
     misc::globals::{sql, theme},
     tui::{
+        Styler,
         schema::{
             data_frame_info::{DataFrameInfo, DataFrameInfoState},
             data_frame_names::{DataFrameNames, DataFrameNamesState},

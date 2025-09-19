@@ -7,6 +7,7 @@ use ratatui::{
 use crate::{
     misc::{globals::theme, sql::TableSchema, type_ext::human_readable_size},
     tui::{
+        Styler,
         status_bar::{StatusBar, Tag},
         widgets::block::Block,
     },

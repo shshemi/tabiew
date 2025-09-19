@@ -4,7 +4,10 @@ use ratatui::{
     widgets::{Clear, Paragraph, Widget, Wrap},
 };
 
-use crate::{misc::globals::theme, tui::widgets::block::Block};
+use crate::{
+    misc::globals::theme,
+    tui::{Styler, widgets::block::Block},
+};
 
 #[derive(Debug, Default)]
 pub struct ErrorPopup<'a> {
