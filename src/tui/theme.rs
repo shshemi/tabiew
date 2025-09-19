@@ -31,9 +31,9 @@ pub trait Styler {
     fn graph(&self, idx: usize) -> Style;
 }
 
-impl Default for Theme {
-    fn default() -> Self {
-        Theme::Monokai(Default::default())
+impl Theme {
+    pub const fn default() -> Self {
+        Theme::Monokai(Monokai)
     }
 }
 
@@ -51,6 +51,29 @@ impl Serialize for Theme {
             Theme::TokyoNight(_) => serializer.serialize_str("tokyo-night"),
             Theme::Chakra(_) => serializer.serialize_str("chakra"),
             Theme::Custom(_) => serializer.serialize_str("custom"),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Theme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let theme_str = String::deserialize(deserializer)?;
+        match theme_str.as_str() {
+            "monokai" => Ok(Theme::Monokai(Default::default())),
+            "argonaut" => Ok(Theme::Argonaut(Default::default())),
+            "terminal" => Ok(Theme::Terminal(Default::default())),
+            "nord" => Ok(Theme::Nord(Default::default())),
+            "catppuccin" => Ok(Theme::Catppuccin(Default::default())),
+            "tokyo-night" => Ok(Theme::TokyoNight(Default::default())),
+            "chakra" => Ok(Theme::Chakra(Default::default())),
+            "custom" => Ok(Theme::Custom(Default::default())),
+            _ => Err(serde::de::Error::custom(format!(
+                "Unknown theme: {}",
+                theme_str
+            ))),
         }
     }
 }
