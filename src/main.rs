@@ -13,7 +13,8 @@ use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
-use tabiew::misc::globals::{set_theme, sql};
+use tabiew::misc::config::Config;
+use tabiew::misc::globals::{config, set_theme, sql};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
@@ -38,25 +39,75 @@ fn main() {
         }
     };
 
-    if args.generate_theme {
-        let path = theme_path()
-            .ok_or(anyhow!("Home directory not found"))
-            .unwrap_or_graceful_shutdown();
-        let _ = fs::create_dir_all(
+    for item in args.generate.iter() {
+        let (name, path, contents) = match item {
+            tabiew::args::GenerateItem::Config => (
+                "config",
+                config_path()
+                    .ok_or(anyhow!("Home directory not found"))
+                    .unwrap_or_graceful_shutdown(),
+                toml::to_string(&Config::default()).unwrap_or_graceful_shutdown(),
+            ),
+            tabiew::args::GenerateItem::Theme => (
+                "theme",
+                theme_path()
+                    .ok_or(anyhow!("Home directory not found"))
+                    .unwrap_or_graceful_shutdown(),
+                toml::to_string(&Custom::default()).unwrap_or_graceful_shutdown(),
+            ),
+        };
+        fs::create_dir_all(
             path.parent()
-                .ok_or(anyhow!("Unable to make parent dir"))
+                .ok_or(anyhow!("Unable to make config dir"))
                 .unwrap_or_graceful_shutdown(),
-        );
+        )
+        .unwrap_or_graceful_shutdown();
         if path.exists() {
             println!(
-                "Theme file already exists at ~/.config/tabiew/theme.toml, remove it first before retrying.",
+                "{name} file already exists at {}, remove it first before retrying.",
+                path.to_str()
+                    .ok_or("Invalid path")
+                    .unwrap_or_graceful_shutdown()
             )
         } else {
-            let contents = toml::to_string(&Custom::default()).unwrap_or_graceful_shutdown();
             fs::write(&path, contents).unwrap_or_graceful_shutdown();
-            println!("Theme generated at ~/.config/tabiew/theme.toml")
+            println!(
+                "{name} generated at {}",
+                path.to_str()
+                    .ok_or("Invalid path")
+                    .unwrap_or_graceful_shutdown()
+            )
         }
+    }
+
+    // exit if any request for generation of any file
+    if !args.generate.is_empty() {
         return;
+    }
+    // if args.generate_theme {
+    //     let path = theme_path()
+    //         .ok_or(anyhow!("Home directory not found"))
+    //         .unwrap_or_graceful_shutdown();
+    //     let _ = fs::create_dir_all(
+    //         path.parent()
+    //             .ok_or(anyhow!("Unable to make parent dir"))
+    //             .unwrap_or_graceful_shutdown(),
+    //     );
+    //     if path.exists() {
+    //         println!(
+    //             "Theme file already exists at ~/.config/tabiew/theme.toml, remove it first before retrying.",
+    //         )
+    //     } else {
+    //         let contents = toml::to_string(&Custom::default()).unwrap_or_graceful_shutdown();
+    //         fs::write(&path, contents).unwrap_or_graceful_shutdown();
+    //         println!("Theme generated at ~/.config/tabiew/theme.toml")
+    //     }
+    // }
+
+    if let Some(config_path) = config_path()
+        && let Ok(text) = fs::read_to_string(config_path)
+    {
+        config().load(&text).unwrap_or_graceful_shutdown();
     }
 
     let type_infer = TypeInferer::from_args(&args);
@@ -117,23 +168,26 @@ fn main() {
         .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
 
-    set_theme(match args.theme {
-        AppTheme::Monokai => Theme::Monokai(Default::default()),
-        AppTheme::Argonaut => Theme::Argonaut(Default::default()),
-        AppTheme::Nord => Theme::Nord(Default::default()),
-        AppTheme::Catppuccin => Theme::Catppuccin(Default::default()),
-        AppTheme::TokyoNight => Theme::TokyoNight(Default::default()),
-        AppTheme::Terminal => Theme::Terminal(Default::default()),
-        AppTheme::Chakra => Theme::Chakra(Default::default()),
-        AppTheme::Config => {
-            Theme::Custom(
-                toml::from_str(
-                    &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found")).unwrap_or_graceful_shutdown())
-                        .map_err(|_| anyhow!("No theme found at ~/.config/tabiew/theme.toml. Use --generate-theme to generate one.")).unwrap_or_graceful_shutdown(),
-                ).unwrap_or_graceful_shutdown()
-            )
+    match args.theme {
+        Some(AppTheme::Monokai) => set_theme(Theme::Monokai(Default::default())),
+        Some(AppTheme::Argonaut) => set_theme(Theme::Argonaut(Default::default())),
+        Some(AppTheme::Nord) => set_theme(Theme::Nord(Default::default())),
+        Some(AppTheme::Catppuccin) => set_theme(Theme::Catppuccin(Default::default())),
+        Some(AppTheme::TokyoNight) => set_theme(Theme::TokyoNight(Default::default())),
+        Some(AppTheme::Terminal) => set_theme(Theme::Terminal(Default::default())),
+        Some(AppTheme::Chakra) => set_theme(Theme::Chakra(Default::default())),
+        Some(AppTheme::Config) => {
+            set_theme(
+                Theme::Custom(
+                    toml::from_str(
+                        &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found")).unwrap_or_graceful_shutdown())
+                            .map_err(|_| anyhow!("No theme found at ~/.config/tabiew/theme.toml. Use --generate-theme to generate one.")).unwrap_or_graceful_shutdown(),
+                    ).unwrap_or_graceful_shutdown()
+                )
+            );
         }
-    });
+        _ => {}
+    }
 
     let _ = start_tui(name_dfs, script, history);
     if let Some(history_path) = history_path() {
@@ -220,6 +274,10 @@ fn history_path() -> Option<PathBuf> {
 
 fn theme_path() -> Option<PathBuf> {
     home::home_dir().map(|path| path.join(".config").join("tabiew").join("theme.toml"))
+}
+
+fn config_path() -> Option<PathBuf> {
+    home::home_dir().map(|path| path.join(".config").join("tabiew").join("config.toml"))
 }
 
 fn try_read_path(args: &Args, path: &PathBuf) -> AppResult<Box<[(String, DataFrame)]>> {

@@ -104,16 +104,15 @@ pub struct Args {
     )]
     pub truncate_ragged_lines: bool,
 
-    #[arg(long, help = "Tabiew theme", required = false, value_enum, default_value_t = AppTheme::Monokai)]
-    pub theme: AppTheme,
+    #[arg(long, help = "Tabiew theme", required = false, value_enum)]
+    pub theme: Option<AppTheme>,
 
     #[arg(
         long,
         help = "Generate a sample theme file in $HOME/.config/tabiew",
-        required = false,
-        default_value_t = false
+        required = false
     )]
-    pub generate_theme: bool,
+    pub generate: Vec<GenerateItem>,
 
     #[arg(
         long,
@@ -227,6 +226,12 @@ pub enum AppTheme {
     Chakra,
     Terminal,
     Config,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum GenerateItem {
+    Config,
+    Theme,
 }
 
 impl InferSchema {
