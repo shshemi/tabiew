@@ -15,11 +15,12 @@ use crate::{
     tui::{
         Styler,
         status_bar::{StatusBar, Tag},
-        widgets::block::Block,
+        widgets::{
+            block::Block,
+            input::{Input, InputState},
+        },
     },
 };
-
-use super::widgets::input::{Input, InputState};
 
 pub struct CommandPaletteState {
     input: InputState,
