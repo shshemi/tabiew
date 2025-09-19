@@ -3,6 +3,7 @@ use std::{
     sync::RwLock,
 };
 
+use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
 use crate::{AppResult, tui::theme::Theme};
@@ -24,6 +25,10 @@ impl Config {
         let Config { theme } = toml::from_str(text)?;
         *self.theme_mut() = theme.into_inner().unwrap();
         Ok(())
+    }
+
+    pub fn store(&self) -> AppResult<String> {
+        Ok(toml::to_string(self)?)
     }
 
     pub fn theme(&self) -> impl Deref<Target = Theme> {
