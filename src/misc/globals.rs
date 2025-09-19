@@ -2,25 +2,27 @@ use std::{
     cell::UnsafeCell,
     io::{Cursor, Read},
     ops::{Deref, DerefMut},
-    sync::{Mutex, MutexGuard, Once, OnceLock, RwLock, RwLockReadGuard},
+    sync::{Mutex, MutexGuard, Once, OnceLock, RwLockReadGuard},
 };
 
-use crate::tui::theme::Theme;
+use crate::{misc::config::Config, tui::theme::Theme};
 
 use super::sql::SqlBackend;
 
-static THEME: RwLock<Lazy<Theme>> = RwLock::new(Lazy::new(Default::default));
+static CONFIG: Config = Config::new();
 static SQL_BACKEND: Mutex<Lazy<SqlBackend>> = Mutex::new(Lazy::new(SqlBackend::default));
 static STDIN_CONTENT: OnceLock<Vec<u8>> = OnceLock::new();
 
+pub fn config() -> &'static Config {
+    &CONFIG
+}
+
 pub fn set_theme(theme: Theme) {
-    THEME.write().unwrap().set(theme);
+    *CONFIG.theme_mut() = theme;
 }
 
 pub fn theme() -> impl Deref<Target = Theme> {
-    Global {
-        inner: THEME.read().unwrap(),
-    }
+    CONFIG.theme()
 }
 
 pub fn sql() -> impl DerefMut<Target = SqlBackend> {
@@ -99,10 +101,6 @@ impl<T> Lazy<T> {
         });
         self.val.get_mut().as_mut().unwrap()
     }
-
-    pub fn set(&mut self, val: T) {
-        *self.val.get_mut() = Some(val);
-    }
 }
 
 impl<T> Deref for Lazy<T> {
@@ -171,28 +169,6 @@ mod tests {
 
         lazy.push(4);
         assert_eq!(*lazy, vec![1, 2, 3, 4]);
-    }
-
-    #[test]
-    fn test_set_before_init() {
-        // Test that set works even if initialize hasn't been called
-        static mut INIT_COUNT: usize = 0;
-
-        let mut lazy = Lazy::new(|| unsafe {
-            INIT_COUNT += 1;
-            42
-        });
-
-        // Set value before any access
-        lazy.set(100);
-
-        // First access should use the set value, not call init
-        assert_eq!(*lazy, 100);
-        assert_eq!(unsafe { INIT_COUNT }, 0);
-
-        // Subsequent accesses should also use the set value
-        assert_eq!(*lazy, 100);
-        assert_eq!(unsafe { INIT_COUNT }, 0);
     }
 
     #[test]

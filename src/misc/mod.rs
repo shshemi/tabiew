@@ -1,3 +1,4 @@
+pub mod config;
 pub mod globals;
 pub mod history;
 pub mod iter_ext;
