@@ -10,7 +10,7 @@ use ratatui::{
 
 use crate::{
     misc::{globals::theme, sql, type_ext::human_readable_size},
-    tui::widgets::block::Block,
+    tui::{Styler, widgets::block::Block},
 };
 
 pub struct DataFrameMetaInfo<'a> {

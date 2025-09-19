@@ -4,7 +4,10 @@ use ratatui::{
     widgets::{Clear, List, ListItem, ListState, StatefulWidget, Widget, block::Title},
 };
 
-use crate::{misc::globals::theme, tui::widgets::block::Block};
+use crate::{
+    misc::globals::theme,
+    tui::{Styler, widgets::block::Block},
+};
 
 #[derive(Debug)]
 pub struct ListPickerState {

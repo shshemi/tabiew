@@ -4,7 +4,10 @@ use ratatui::{
     widgets::{Cell, Clear, Row, StatefulWidget, Table, TableState, Widget, block::Title},
 };
 
-use crate::{misc::globals::theme, tui::widgets::block::Block};
+use crate::{
+    misc::globals::theme,
+    tui::{Styler, widgets::block::Block},
+};
 
 #[derive(Debug)]
 pub struct EnumeratedListState {
