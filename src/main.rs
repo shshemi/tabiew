@@ -15,6 +15,7 @@ use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, set_theme, sql};
+use tabiew::misc::paths::{config_path, history_path, theme_path};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
@@ -266,18 +267,6 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
     // Exit the user interface.
     tui.exit()?;
     Ok(())
-}
-
-fn history_path() -> Option<PathBuf> {
-    home::home_dir().map(|path| path.join(".tabiew_history"))
-}
-
-fn theme_path() -> Option<PathBuf> {
-    home::home_dir().map(|path| path.join(".config").join("tabiew").join("theme.toml"))
-}
-
-fn config_path() -> Option<PathBuf> {
-    home::home_dir().map(|path| path.join(".config").join("tabiew").join("config.toml"))
 }
 
 fn try_read_path(args: &Args, path: &PathBuf) -> AppResult<Box<[(String, DataFrame)]>> {
