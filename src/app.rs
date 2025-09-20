@@ -3,10 +3,14 @@ use anyhow::Ok;
 use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout},
+    widgets::StatefulWidget,
 };
 
 use crate::tui::{
-    popups::command_palette::{CommandPalette, CommandPaletteState},
+    popups::{
+        command_palette::{CommandPalette, CommandPaletteState},
+        theme_selector::{ThemeSelector, ThemeSelectorState},
+    },
     schema::schema::{Schema, SchemaState},
 };
 use crate::{
@@ -32,6 +36,7 @@ pub enum Context {
     DataFrameInfo,
     ScatterPlot,
     HistogramPlot,
+    ThemeSelector,
 }
 
 impl Context {
@@ -48,6 +53,7 @@ impl Context {
             Context::DataFrameInfo => Context::Empty.into(),
             Context::ScatterPlot => Context::Empty.into(),
             Context::HistogramPlot => Context::Empty.into(),
+            Context::ThemeSelector => Context::Empty.into(),
         }
     }
 }
@@ -64,6 +70,7 @@ pub struct App {
     content: Content,
     error: Option<String>,
     palette: Option<CommandPaletteState>,
+    theme_selector: Option<ThemeSelectorState>,
     history: History,
     borders: bool,
     running: bool,
@@ -78,6 +85,7 @@ impl App {
             content: Content::Tabulars,
             error: None,
             palette: None,
+            theme_selector: None,
             borders: true,
             running: true,
         }
@@ -105,6 +113,18 @@ impl App {
 
     pub fn palette_mut(&mut self) -> Option<&mut CommandPaletteState> {
         self.palette.as_mut()
+    }
+
+    pub fn theme_selector(&self) -> Option<&ThemeSelectorState> {
+        self.theme_selector.as_ref()
+    }
+
+    pub fn theme_selector_mut(&mut self) -> Option<&mut ThemeSelectorState> {
+        self.theme_selector.as_mut()
+    }
+
+    pub fn take_theme_selector(&mut self) -> Option<ThemeSelectorState> {
+        self.theme_selector.take()
     }
 
     pub fn history_mut(&mut self) -> &mut History {
@@ -161,6 +181,8 @@ impl App {
             Context::Error
         } else if self.palette.is_some() {
             Context::Command
+        } else if self.theme_selector.is_some() {
+            Context::ThemeSelector
         } else if let Content::Schema = self.content {
             Context::Schema
         } else if self.tabs.side_panel().is_some() {
@@ -200,6 +222,10 @@ impl App {
         if let Some(msg) = self.error.as_ref() {
             let error = ErrorPopup::new().with_message(msg.as_str());
             frame.render_widget(error, frame.area());
+        }
+
+        if let Some(ts) = self.theme_selector.as_mut() {
+            ThemeSelector::default().render(frame.area(), frame.buffer_mut(), ts);
         }
 
         if let Some(cmd) = self.palette.as_mut() {

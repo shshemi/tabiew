@@ -29,14 +29,23 @@ use crate::{
 pub struct SearchPickerState {
     input: InputState,
     list: ListState,
+    cached_filter: CachedFilter,
 }
 
 impl SearchPickerState {
-    pub fn input(&mut self) -> &mut InputState {
+    pub fn input(&self) -> &InputState {
+        &self.input
+    }
+
+    pub fn input_mut(&mut self) -> &mut InputState {
         &mut self.input
     }
 
-    pub fn list(&mut self) -> &mut ListState {
+    pub fn list(&self) -> &ListState {
+        &self.list
+    }
+
+    pub fn list_mut(&mut self) -> &mut ListState {
         &mut self.list
     }
 
@@ -47,6 +56,13 @@ impl SearchPickerState {
         }
         self.input = input;
     }
+
+    pub fn selected(&self) -> Option<usize> {
+        self.cached_filter
+            .indices
+            .get(self.list.selected().unwrap_or_default())
+            .copied()
+    }
 }
 
 impl Default for SearchPickerState {
@@ -54,6 +70,7 @@ impl Default for SearchPickerState {
         Self {
             input: Default::default(),
             list: ListState::default().with_selected(Some(0)),
+            cached_filter: Default::default(),
         }
     }
 }
@@ -62,7 +79,6 @@ impl Default for SearchPickerState {
 pub struct SearchPicker<'a> {
     txt_blk: Block<'a>,
     items: Vec<Cow<'a, str>>,
-    cached_filter: CachedFilter,
     input: Input<'a>,
 }
 
@@ -91,7 +107,6 @@ impl<'a> Default for SearchPicker<'a> {
                 ..ROUNDED
             }),
             items: Default::default(),
-            cached_filter: CachedFilter::default(),
             input: Input::default(),
         }
     }
@@ -120,7 +135,8 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
             .block(self.txt_blk)
             .render(input_area, buf, &mut state.input);
         let list = List::new(
-            self.cached_filter
+            state
+                .cached_filter
                 .query(state.input.value(), &self.items)
                 .iter()
                 .copied()

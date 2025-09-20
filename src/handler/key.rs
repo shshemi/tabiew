@@ -807,6 +807,40 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::TableDismissModal),
             );
+        hndl.keybinds(Context::ThemeSelector)
+            .add(
+                Keybind::default()
+                    .char('n')
+                    .ctrl()
+                    .action(AppAction::ThemeSelectorSelectPrev),
+            )
+            .add(
+                Keybind::default()
+                    .char('p')
+                    .ctrl()
+                    .action(AppAction::ThemeSelectorSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::ThemeSelectorSelectPrev),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::ThemeSelectorSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::ThemeSelectorRollback),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::ThemeSelectorCommit),
+            )
+            .fallback(|event| Some(AppAction::ThemeSelectorHandleEvent(event)));
         hndl
     }
 }

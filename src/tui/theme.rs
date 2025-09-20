@@ -1,10 +1,12 @@
+use std::fmt::Display;
+
 use enum_dispatch::enum_dispatch;
 use ratatui::style::{Color, Style, Stylize};
 use serde::{Deserialize, Serialize};
 
 #[allow(clippy::large_enum_variant)]
 #[enum_dispatch(Styler)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Theme {
     Monokai,
     Argonaut,
@@ -16,24 +18,40 @@ pub enum Theme {
     Custom,
 }
 
-#[enum_dispatch]
-pub trait Styler {
-    fn table_header(&self) -> Style;
-    fn row(&self, row: usize) -> Style;
-    fn highlight(&self) -> Style;
-    fn header(&self, col: usize) -> Style;
-    fn tag(&self, col: usize) -> Style;
-    fn block(&self) -> Style;
-    fn block_tag(&self) -> Style;
-    fn text(&self) -> Style;
-    fn subtext(&self) -> Style;
-    fn error(&self) -> Style;
-    fn graph(&self, idx: usize) -> Style;
-}
-
 impl Theme {
     pub const fn default() -> Self {
         Theme::Monokai(Monokai)
+    }
+
+    pub const fn all() -> [Self; 7] {
+        [
+            Theme::Monokai(Monokai),
+            Theme::Argonaut(Argonaut),
+            Theme::Terminal(Terminal),
+            Theme::Nord(Nord),
+            Theme::Catppuccin(Catppuccin),
+            Theme::TokyoNight(TokyoNight),
+            Theme::Chakra(Chakra),
+        ]
+    }
+
+    pub const fn name(&self) -> &'static str {
+        match self {
+            Theme::Monokai(_) => "Monokai",
+            Theme::Argonaut(_) => "Argonaut",
+            Theme::Terminal(_) => "Terminal",
+            Theme::Nord(_) => "Nord",
+            Theme::Catppuccin(_) => "Catppuccin",
+            Theme::TokyoNight(_) => "TokyoNight",
+            Theme::Chakra(_) => "Chakra",
+            Theme::Custom(_) => "Custom",
+        }
+    }
+}
+
+impl Display for Theme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }
 
@@ -76,6 +94,21 @@ impl<'de> Deserialize<'de> for Theme {
             ))),
         }
     }
+}
+
+#[enum_dispatch]
+pub trait Styler {
+    fn table_header(&self) -> Style;
+    fn row(&self, row: usize) -> Style;
+    fn highlight(&self) -> Style;
+    fn header(&self, col: usize) -> Style;
+    fn tag(&self, col: usize) -> Style;
+    fn block(&self) -> Style;
+    fn block_tag(&self) -> Style;
+    fn text(&self) -> Style;
+    fn subtext(&self) -> Style;
+    fn error(&self) -> Style;
+    fn graph(&self, idx: usize) -> Style;
 }
 
 pub trait SixColorsTwoRowsStyler {
@@ -161,25 +194,25 @@ where
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Monokai;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Argonaut;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Terminal;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Nord;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Catppuccin;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct TokyoNight;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Chakra;
 
 impl SixColorsTwoRowsStyler for Monokai {
@@ -409,7 +442,7 @@ impl Styler for Terminal {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[serde(default)]
 pub struct Custom {
     table_header: Style,

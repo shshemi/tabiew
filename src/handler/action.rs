@@ -1,6 +1,7 @@
-use std::ops::Div;
+use std::{fs, ops::Div};
 
 use anyhow::{Ok, anyhow};
+use crossterm::event::KeyEvent;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use rand::Rng;
@@ -9,7 +10,8 @@ use crate::{
     AppResult,
     app::{App, Content},
     misc::{
-        globals::sql,
+        globals::{config, sql},
+        paths::config_path,
         polars_ext::{IntoString, PlotData},
         type_inferer::TypeInferer,
     },
@@ -24,6 +26,7 @@ use crate::{
         schema::data_frame_info::DataFrameInfoState,
         search_bar::SearchBarState,
         tab_content::Modal,
+        theme::Theme,
     },
     writer::{
         Destination, JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet,
@@ -163,6 +166,15 @@ pub enum AppAction {
     HistogramPlot(String, usize),
     HistogramScrollUp,
     HistogramScrollDown,
+
+    PreviewTheme(Theme),
+    StoreConfig,
+
+    ThemeSelectorSelectPrev,
+    ThemeSelectorSelectNext,
+    ThemeSelectorRollback,
+    ThemeSelectorCommit,
+    ThemeSelectorHandleEvent(KeyEvent),
 
     RegisterDataFrame(String),
     Help,
@@ -1101,6 +1113,72 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 && let Modal::HistogramPlot(hist) = tab_content.modal_mut()
             {
                 hist.scroll_down();
+            }
+            Ok(None)
+        }
+        AppAction::PreviewTheme(theme) => {
+            *config().theme_mut() = theme;
+            Ok(None)
+        }
+        AppAction::StoreConfig => {
+            fs::write(
+                config_path().ok_or(anyhow!("Home not found"))?,
+                config().store()?,
+            )?;
+            Ok(None)
+        }
+        AppAction::ThemeSelectorSelectPrev => {
+            if let Some(theme_selector) = app.theme_selector_mut() {
+                theme_selector
+                    .search_picker_mut()
+                    .list_mut()
+                    .select_previous();
+                // if let Some(theme) = theme_selector
+                //     .search_picker()
+                //     .selected()
+                //     .and_then(|i| Theme::all().get(i).cloned())
+                // {
+                //     Ok(Some(AppAction::PreviewTheme(theme)))
+                // } else {
+                //     Ok(None)
+                // }
+            }
+            Ok(None)
+        }
+        AppAction::ThemeSelectorSelectNext => {
+            if let Some(theme_selector) = app.theme_selector_mut() {
+                theme_selector.search_picker_mut().list_mut().select_next();
+                // if let Some(theme) = theme_selector
+                //     .search_picker()
+                //     .selected()
+                //     .and_then(|i| Theme::all().get(i).cloned())
+                // {
+                //     Ok(Some(AppAction::PreviewTheme(theme)))
+                // } else {
+                //     Ok(None)
+                // }
+            }
+            Ok(None)
+        }
+        AppAction::ThemeSelectorRollback => {
+            if let Some(theme_selector) = app.take_theme_selector() {
+                Ok(Some(AppAction::PreviewTheme(
+                    theme_selector.into_rollback_theme(),
+                )))
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::ThemeSelectorCommit => {
+            if let Some(_ts) = app.take_theme_selector() {
+                Ok(Some(AppAction::StoreConfig))
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::ThemeSelectorHandleEvent(event) => {
+            if let Some(theme_selector) = app.theme_selector_mut() {
+                theme_selector.search_picker_mut().input_mut().handle(event);
             }
             Ok(None)
         }
