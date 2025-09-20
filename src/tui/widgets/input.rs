@@ -4,6 +4,7 @@ use crate::{
     misc::globals::theme,
     tui::{Styler, widgets::block::Block},
 };
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
@@ -62,6 +63,24 @@ impl InputState {
 
     pub fn value(&self) -> &str {
         self.input.value()
+    }
+
+    pub fn handle(&mut self, event: KeyEvent) {
+        match event.code {
+            KeyCode::Backspace if event.modifiers == KeyModifiers::CONTROL => {
+                self.delete_prev_word();
+            }
+            KeyCode::Backspace => self.delete_prev(),
+            KeyCode::Left if event.modifiers == KeyModifiers::ALT => self.goto_prev_word(),
+            KeyCode::Left => self.goto_prev(),
+            KeyCode::Right if event.modifiers == KeyModifiers::ALT => self.goto_next_word(),
+            KeyCode::Right => self.goto_next(),
+            KeyCode::Home => self.goto_start(),
+            KeyCode::End => self.goto_end(),
+            KeyCode::Delete => self.delete_next(),
+            KeyCode::Char(c) => self.insert(c),
+            _ => (),
+        }
     }
 }
 
