@@ -175,6 +175,7 @@ pub enum AppAction {
     ThemeSelectorRollback,
     ThemeSelectorCommit,
     ThemeSelectorHandleEvent(KeyEvent),
+    ThemeSelectorShow,
 
     RegisterDataFrame(String),
     Help,
@@ -1170,7 +1171,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ThemeSelectorCommit => {
-            if let Some(_ts) = app.take_theme_selector() {
+            if app.take_theme_selector().is_some() {
                 Ok(Some(AppAction::StoreConfig))
             } else {
                 Ok(None)
@@ -1180,6 +1181,10 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(theme_selector) = app.theme_selector_mut() {
                 theme_selector.search_picker_mut().input_mut().handle(event);
             }
+            Ok(None)
+        }
+        AppAction::ThemeSelectorShow => {
+            app.show_theme_selector();
             Ok(None)
         }
     }
