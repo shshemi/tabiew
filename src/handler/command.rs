@@ -90,7 +90,7 @@ struct Entry {
     parser: ParseFn,
 }
 
-static ENTRIES: [Entry; 21] = [
+static ENTRIES: [Entry; 22] = [
     Entry {
         prefix: Prefix::ShortAndLong("Q", "query"),
         usage: "Q <query>",
@@ -256,6 +256,12 @@ static ENTRIES: [Entry; 21] = [
                 Err(anyhow!("histogram should be supplied with only one column"))
             }
         },
+    },
+    Entry {
+        prefix: Prefix::Long("theme"),
+        usage: "theme",
+        description: "Show theme selector",
+        parser: |_| Ok(AppAction::ThemeSelectorShow),
     },
     export::entry(),
     import::entry(),

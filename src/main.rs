@@ -177,16 +177,7 @@ fn main() {
         Some(AppTheme::TokyoNight) => set_theme(Theme::TokyoNight(Default::default())),
         Some(AppTheme::Terminal) => set_theme(Theme::Terminal(Default::default())),
         Some(AppTheme::Chakra) => set_theme(Theme::Chakra(Default::default())),
-        Some(AppTheme::Config) => {
-            set_theme(
-                Theme::Custom(
-                    toml::from_str(
-                        &fs::read_to_string(theme_path().ok_or(anyhow!("Home directory not found")).unwrap_or_graceful_shutdown())
-                            .map_err(|_| anyhow!("No theme found at ~/.config/tabiew/theme.toml. Use --generate-theme to generate one.")).unwrap_or_graceful_shutdown(),
-                    ).unwrap_or_graceful_shutdown()
-                )
-            );
-        }
+        Some(AppTheme::Config) => set_theme(Theme::Custom(Default::default())),
         _ => {}
     }
 

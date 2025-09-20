@@ -810,13 +810,13 @@ impl Default for KeyHandler {
         hndl.keybinds(Context::ThemeSelector)
             .add(
                 Keybind::default()
-                    .char('n')
+                    .char('p')
                     .ctrl()
                     .action(AppAction::ThemeSelectorSelectPrev),
             )
             .add(
                 Keybind::default()
-                    .char('p')
+                    .char('n')
                     .ctrl()
                     .action(AppAction::ThemeSelectorSelectNext),
             )

@@ -127,6 +127,10 @@ impl App {
         self.theme_selector.take()
     }
 
+    pub fn show_theme_selector(&mut self) {
+        self.theme_selector = Some(Default::default())
+    }
+
     pub fn history_mut(&mut self) -> &mut History {
         &mut self.history
     }
