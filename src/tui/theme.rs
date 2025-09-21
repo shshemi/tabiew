@@ -1,75 +1,141 @@
-use std::fmt::Display;
+use std::{
+    fmt::Debug,
+    sync::{Arc, OnceLock},
+};
 
-use enum_dispatch::enum_dispatch;
 use ratatui::style::{Color, Style, Stylize};
 use serde::{Deserialize, Serialize};
 
-#[allow(clippy::large_enum_variant)]
-#[enum_dispatch(Styler)]
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Theme {
-    Monokai,
-    Argonaut,
-    Terminal,
-    Nord,
-    Catppuccin,
-    TokyoNight,
-    Chakra,
-    Custom,
+use crate::args::AppTheme;
+
+#[derive(Debug, Clone)]
+pub struct Theme {
+    styler: Option<Arc<dyn Styler + Send + Sync>>,
 }
 
 impl Theme {
+    pub fn new<S: Styler + Send + Sync + 'static>(theme: S) -> Self {
+        Theme {
+            styler: Some(Arc::new(theme)),
+        }
+    }
+
+    fn styler(&self) -> Arc<dyn Styler> {
+        self.styler.clone().unwrap_or(Arc::new(Monokai))
+    }
+
+    pub fn all() -> &'static [Theme] {
+        static ALL: OnceLock<Vec<Theme>> = OnceLock::new();
+        ALL.get_or_init(|| {
+            vec![
+                Theme::new(Monokai),
+                Theme::new(Argonaut),
+                Theme::new(Nord),
+                Theme::new(Catppuccin),
+                Theme::new(TokyoNight),
+                Theme::new(Chakra),
+                Theme::new(Terminal),
+                Theme::new(Custom::default()),
+            ]
+        })
+    }
+
     pub const fn default() -> Self {
-        Theme::Monokai(Monokai)
+        Self { styler: None }
     }
+}
 
-    pub const fn all() -> [Self; 7] {
-        [
-            Theme::Monokai(Monokai),
-            Theme::Argonaut(Argonaut),
-            Theme::Terminal(Terminal),
-            Theme::Nord(Nord),
-            Theme::Catppuccin(Catppuccin),
-            Theme::TokyoNight(TokyoNight),
-            Theme::Chakra(Chakra),
-        ]
-    }
-
-    pub const fn name(&self) -> &'static str {
-        match self {
-            Theme::Monokai(_) => "Monokai",
-            Theme::Argonaut(_) => "Argonaut",
-            Theme::Terminal(_) => "Terminal",
-            Theme::Nord(_) => "Nord",
-            Theme::Catppuccin(_) => "Catppuccin",
-            Theme::TokyoNight(_) => "TokyoNight",
-            Theme::Chakra(_) => "Chakra",
-            Theme::Custom(_) => "Custom",
+impl From<AppTheme> for Theme {
+    fn from(value: AppTheme) -> Self {
+        match value {
+            AppTheme::Monokai => Theme::new(Monokai),
+            AppTheme::Argonaut => Theme::new(Argonaut),
+            AppTheme::Nord => Theme::new(Nord),
+            AppTheme::Catppuccin => Theme::new(Catppuccin),
+            AppTheme::TokyoNight => Theme::new(TokyoNight),
+            AppTheme::Terminal => Theme::new(Terminal),
+            AppTheme::Chakra => Theme::new(Chakra),
+            AppTheme::Config => Theme::new(Custom::default()),
         }
     }
 }
 
-impl Display for Theme {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
+impl Styler for Theme {
+    fn table_header(&self) -> Style {
+        self.styler().table_header()
+    }
+
+    fn row(&self, row: usize) -> Style {
+        self.styler().row(row)
+    }
+
+    fn highlight(&self) -> Style {
+        self.styler().highlight()
+    }
+
+    fn header(&self, col: usize) -> Style {
+        self.styler().header(col)
+    }
+
+    fn tag(&self, col: usize) -> Style {
+        self.styler().tag(col)
+    }
+
+    fn block(&self) -> Style {
+        self.styler().block()
+    }
+
+    fn block_tag(&self) -> Style {
+        self.styler().block_tag()
+    }
+
+    fn text(&self) -> Style {
+        self.styler().text()
+    }
+
+    fn subtext(&self) -> Style {
+        self.styler().subtext()
+    }
+
+    fn error(&self) -> Style {
+        self.styler().error()
+    }
+
+    fn graph(&self, idx: usize) -> Style {
+        self.styler().graph(idx)
+    }
+
+    fn id(&self) -> &str {
+        if let Some(inner) = self.styler.as_ref() {
+            inner.id()
+        } else {
+            "monokai"
+        }
+    }
+
+    fn title(&self) -> &str {
+        if let Some(inner) = self.styler.as_ref() {
+            inner.title()
+        } else {
+            "Monokai"
+        }
     }
 }
+
+impl PartialEq for Theme {
+    fn eq(&self, other: &Self) -> bool {
+        self.styler().id() == other.styler().id()
+    }
+}
+
+impl Eq for Theme {}
 
 impl Serialize for Theme {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        match self {
-            Theme::Monokai(_) => serializer.serialize_str("monokai"),
-            Theme::Argonaut(_) => serializer.serialize_str("argonaut"),
-            Theme::Terminal(_) => serializer.serialize_str("terminal"),
-            Theme::Nord(_) => serializer.serialize_str("nord"),
-            Theme::Catppuccin(_) => serializer.serialize_str("catppuccin"),
-            Theme::TokyoNight(_) => serializer.serialize_str("tokyo-night"),
-            Theme::Chakra(_) => serializer.serialize_str("chakra"),
-            Theme::Custom(_) => serializer.serialize_str("custom"),
-        }
+        serializer.serialize_str(self.id())
     }
 }
 
@@ -80,14 +146,14 @@ impl<'de> Deserialize<'de> for Theme {
     {
         let theme_str = String::deserialize(deserializer)?;
         match theme_str.as_str() {
-            "monokai" => Ok(Theme::Monokai(Default::default())),
-            "argonaut" => Ok(Theme::Argonaut(Default::default())),
-            "terminal" => Ok(Theme::Terminal(Default::default())),
-            "nord" => Ok(Theme::Nord(Default::default())),
-            "catppuccin" => Ok(Theme::Catppuccin(Default::default())),
-            "tokyo-night" => Ok(Theme::TokyoNight(Default::default())),
-            "chakra" => Ok(Theme::Chakra(Default::default())),
-            "custom" => Ok(Theme::Custom(Default::default())),
+            "monokai" => Ok(Theme::new(Monokai)),
+            "argonaut" => Ok(Theme::new(Monokai)),
+            "terminal" => Ok(Theme::new(Monokai)),
+            "nord" => Ok(Theme::new(Monokai)),
+            "catppuccin" => Ok(Theme::new(Monokai)),
+            "tokyo-night" => Ok(Theme::new(Monokai)),
+            "chakra" => Ok(Theme::new(Monokai)),
+            "custom" => Ok(Theme::new(Custom::default())),
             _ => Err(serde::de::Error::custom(format!(
                 "Unknown theme: {}",
                 theme_str
@@ -96,8 +162,9 @@ impl<'de> Deserialize<'de> for Theme {
     }
 }
 
-#[enum_dispatch]
-pub trait Styler {
+pub trait Styler: Debug {
+    fn id(&self) -> &str;
+    fn title(&self) -> &str;
     fn table_header(&self) -> Style;
     fn row(&self, row: usize) -> Style;
     fn highlight(&self) -> Style;
@@ -112,6 +179,8 @@ pub trait Styler {
 }
 
 pub trait SixColorsTwoRowsStyler {
+    fn id(&self) -> &str;
+    fn title(&self) -> &str;
     const BACKGROUND: Color;
     const LIGHT_BACKGROUND: Color;
     const FOREGROUND: Color;
@@ -129,7 +198,7 @@ pub trait SixColorsTwoRowsStyler {
 
 impl<T> Styler for T
 where
-    T: SixColorsTwoRowsStyler,
+    T: SixColorsTwoRowsStyler + Debug,
 {
     fn table_header(&self) -> Style {
         Style::default().bg(Self::BACKGROUND)
@@ -192,6 +261,14 @@ where
             .fg(Self::DARK_COLORS[idx % Self::DARK_COLORS.len()])
             .bold()
     }
+
+    fn id(&self) -> &str {
+        self.id()
+    }
+
+    fn title(&self) -> &str {
+        self.title()
+    }
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
@@ -243,6 +320,14 @@ impl SixColorsTwoRowsStyler for Monokai {
     const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d02d00);
+
+    fn id(&self) -> &str {
+        "monokai"
+    }
+
+    fn title(&self) -> &str {
+        "Monokai"
+    }
 }
 
 impl SixColorsTwoRowsStyler for Argonaut {
@@ -273,6 +358,14 @@ impl SixColorsTwoRowsStyler for Argonaut {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00dd0000);
+
+    fn id(&self) -> &str {
+        "argonaut"
+    }
+
+    fn title(&self) -> &str {
+        "Argonaut"
+    }
 }
 
 impl SixColorsTwoRowsStyler for Nord {
@@ -303,6 +396,14 @@ impl SixColorsTwoRowsStyler for Nord {
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DBBB7B);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x002E3440);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BF616A);
+
+    fn id(&self) -> &str {
+        "nord"
+    }
+
+    fn title(&self) -> &str {
+        "Nord"
+    }
 }
 
 impl SixColorsTwoRowsStyler for Catppuccin {
@@ -331,6 +432,14 @@ impl SixColorsTwoRowsStyler for Catppuccin {
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00f9e2af);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x0011111b);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00d36b98);
+
+    fn id(&self) -> &str {
+        "catppuccin"
+    }
+
+    fn title(&self) -> &str {
+        "Catppuccin"
+    }
 }
 
 impl SixColorsTwoRowsStyler for TokyoNight {
@@ -359,6 +468,14 @@ impl SixColorsTwoRowsStyler for TokyoNight {
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ffc777);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x001f2335);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00c53b53);
+
+    fn id(&self) -> &str {
+        "tokyo-night"
+    }
+
+    fn title(&self) -> &str {
+        "Tokyo Night"
+    }
 }
 
 impl SixColorsTwoRowsStyler for Chakra {
@@ -386,6 +503,14 @@ impl SixColorsTwoRowsStyler for Chakra {
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ca8a04);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00fafafa);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00991919);
+
+    fn id(&self) -> &str {
+        "chakra"
+    }
+
+    fn title(&self) -> &str {
+        "Chakra"
+    }
 }
 
 impl Styler for Terminal {
@@ -439,6 +564,14 @@ impl Styler for Terminal {
 
     fn graph(&self, _idx: usize) -> Style {
         Style::default().fg(Color::White)
+    }
+
+    fn id(&self) -> &str {
+        "terminal"
+    }
+
+    fn title(&self) -> &str {
+        "Terminal"
     }
 }
 
@@ -567,5 +700,13 @@ impl super::Styler for Custom {
 
     fn graph(&self, idx: usize) -> Style {
         self.chart[idx % self.chart.len()]
+    }
+
+    fn id(&self) -> &str {
+        "custom"
+    }
+
+    fn title(&self) -> &str {
+        "Custom"
     }
 }

@@ -5,6 +5,7 @@ use ratatui::widgets::StatefulWidget;
 use crate::{
     misc::globals::config,
     tui::{
+        Styler,
         pickers::search_picker::{SearchPicker, SearchPickerState},
         theme::Theme,
     },
@@ -61,7 +62,7 @@ impl StatefulWidget for ThemeSelector {
         state: &mut Self::State,
     ) {
         SearchPicker::default()
-            .items(Theme::all().into_iter().map(|t| t.name()))
+            .items(Theme::all().iter().map(|t| t.title()))
             .render(area, buf, &mut state.search_picker);
         if let Some(theme) = state
             .search_picker
