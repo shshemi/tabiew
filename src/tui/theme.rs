@@ -14,7 +14,7 @@ pub struct Theme {
 }
 
 impl Theme {
-    pub fn new<S: Styler + Send + Sync + 'static>(theme: S) -> Self {
+    fn new<S: Styler + Send + Sync + 'static>(theme: S) -> Self {
         Theme {
             styler: Some(Arc::new(theme)),
         }
