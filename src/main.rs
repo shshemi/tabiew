@@ -8,7 +8,7 @@ use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
-use tabiew::args::{AppTheme, Args};
+use tabiew::args::Args;
 use tabiew::handler::action::execute;
 use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
@@ -20,8 +20,8 @@ use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
+use tabiew::tui::theme::Custom;
 
-use tabiew::tui::theme::{Custom, Theme};
 use tabiew::tui::{TabContentState, TableType};
 use tabiew::{AppResult, tui};
 
@@ -169,16 +169,8 @@ fn main() {
         .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
 
-    match args.theme {
-        Some(AppTheme::Monokai) => set_theme(Theme::Monokai(Default::default())),
-        Some(AppTheme::Argonaut) => set_theme(Theme::Argonaut(Default::default())),
-        Some(AppTheme::Nord) => set_theme(Theme::Nord(Default::default())),
-        Some(AppTheme::Catppuccin) => set_theme(Theme::Catppuccin(Default::default())),
-        Some(AppTheme::TokyoNight) => set_theme(Theme::TokyoNight(Default::default())),
-        Some(AppTheme::Terminal) => set_theme(Theme::Terminal(Default::default())),
-        Some(AppTheme::Chakra) => set_theme(Theme::Chakra(Default::default())),
-        Some(AppTheme::Config) => set_theme(Theme::Custom(Default::default())),
-        _ => {}
+    if let Some(theme) = args.theme {
+        set_theme(theme.into());
     }
 
     let _ = start_tui(name_dfs, script, history);
