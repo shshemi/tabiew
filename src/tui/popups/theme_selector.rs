@@ -3,7 +3,7 @@ use std::ops::Deref;
 use ratatui::widgets::StatefulWidget;
 
 use crate::{
-    misc::globals::config,
+    misc::globals::{config, set_theme},
     tui::{
         Styler,
         pickers::search_picker::{SearchPicker, SearchPickerState},
@@ -69,7 +69,7 @@ impl StatefulWidget for ThemeSelector {
             .selected()
             .and_then(|idx| Theme::all().get(idx).cloned())
         {
-            *config().theme_mut() = theme;
+            set_theme(theme);
         }
     }
 }

@@ -10,7 +10,7 @@ use crate::{
     AppResult,
     app::{App, Content},
     misc::{
-        globals::{config, sql},
+        globals::{config, set_theme, sql},
         paths::config_path,
         polars_ext::{IntoString, PlotData},
         type_inferer::TypeInferer,
@@ -1118,7 +1118,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::PreviewTheme(theme) => {
-            *config().theme_mut() = theme;
+            set_theme(theme);
             Ok(None)
         }
         AppAction::StoreConfig => {
