@@ -101,8 +101,11 @@ clap_mangen = { version = "0.2.29" }
 clap_complete = { version = "4.5.58" }
 
 [profile.release]
-lto = true
-strip = true
 opt-level = 3
+strip = true
+debug-assertions = false
+overflow-checks = false
+incremental = false
 codegen-units = 1
-panic = 'abort'
+lto = "fat"
+panic = "abort"
