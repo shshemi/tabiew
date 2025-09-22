@@ -6,7 +6,7 @@ use crate::{
         globals::theme,
         search::{self, Contain, Skim},
     },
-    tui::{Styler, widgets::block::Block},
+    tui::{themes::styler::Styler, widgets::block::Block},
 };
 
 use super::widgets::input::{Input, InputState};

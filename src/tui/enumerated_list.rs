@@ -6,7 +6,7 @@ use ratatui::{
 
 use crate::{
     misc::globals::theme,
-    tui::{Styler, widgets::block::Block},
+    tui::{themes::styler::Styler, widgets::block::Block},
 };
 
 #[derive(Debug)]

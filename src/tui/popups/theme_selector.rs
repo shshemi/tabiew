@@ -5,9 +5,8 @@ use ratatui::widgets::StatefulWidget;
 use crate::{
     misc::globals::{config, set_theme},
     tui::{
-        Styler,
         pickers::search_picker::{SearchPicker, SearchPickerState},
-        theme::Theme,
+        themes::{styler::Styler, theme::Theme},
     },
 };
 

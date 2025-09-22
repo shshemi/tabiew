@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{BorderType, Borders, Padding, Widget, block::Title},
 };
 
-use crate::{misc::globals::theme, tui::Styler};
+use crate::{misc::globals::theme, tui::themes::styler::Styler};
 
 #[derive(Debug)]
 pub struct Block<'a> {
