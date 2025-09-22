@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use crate::{
     misc::globals::theme,
-    tui::{Styler, widgets::block::Block},
+    tui::{themes::styler::Styler, widgets::block::Block},
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{

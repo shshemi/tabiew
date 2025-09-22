@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::tui::theme::SixColorsTwoRowsStyler;
+use crate::tui::themes::styler::SixColorsTwoRowsStyler;
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Chakra;

@@ -13,8 +13,8 @@ use ratatui::{
 use crate::{
     misc::globals::theme,
     tui::{
-        Styler,
         status_bar::{StatusBar, Tag},
+        themes::styler::Styler,
         widgets::{
             block::Block,
             input::{Input, InputState},

@@ -5,7 +5,7 @@ use std::{
     sync::{Mutex, MutexGuard, Once, OnceLock, RwLockReadGuard},
 };
 
-use crate::{misc::config::Config, tui::theme::Theme};
+use crate::{misc::config::Config, tui::themes::theme::Theme};
 
 use super::sql::SqlBackend;
 

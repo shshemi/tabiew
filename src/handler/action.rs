@@ -26,7 +26,7 @@ use crate::{
         schema::data_frame_info::DataFrameInfoState,
         search_bar::SearchBarState,
         tab_content::Modal,
-        theme::Theme,
+        themes::theme::Theme,
     },
     writer::{
         Destination, JsonFormat, WriteToArrow, WriteToCsv, WriteToFile, WriteToJson, WriteToParquet,

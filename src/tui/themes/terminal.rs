@@ -1,6 +1,6 @@
 use ratatui::style::{Color, Style};
 
-use crate::tui::Styler;
+use crate::tui::themes::styler::Styler;
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Terminal;

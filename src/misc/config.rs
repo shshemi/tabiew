@@ -6,7 +6,7 @@ use std::{
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
-use crate::{AppResult, tui::theme::Theme};
+use crate::{AppResult, tui::themes::theme::Theme};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
