@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use ratatui::style::{Color, Style};
 use serde::{Deserialize, Serialize};
 
-use crate::{AppResult, misc::paths::theme_path, tui::Styler};
+use crate::{AppResult, misc::paths::theme_path, tui::themes::styler::Styler};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[serde(default)]

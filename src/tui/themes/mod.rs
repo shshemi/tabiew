@@ -4,5 +4,7 @@ pub mod chakra;
 pub mod custom;
 pub mod monokai;
 pub mod nord;
+pub mod styler;
 pub mod terminal;
+pub mod theme;
 pub mod tokyo_night;

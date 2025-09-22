@@ -6,7 +6,7 @@ use ratatui::{
     text::{Line, Span},
 };
 
-use crate::{misc::globals::theme, tui::Styler};
+use crate::{misc::globals::theme, tui::themes::styler::Styler};
 
 #[derive(Debug)]
 pub enum StatusBarStyle {

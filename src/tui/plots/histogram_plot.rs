@@ -8,7 +8,7 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
     misc::globals::theme,
-    tui::{Styler, widgets::block::Block},
+    tui::{themes::styler::Styler, widgets::block::Block},
 };
 
 #[derive(Debug, Default)]
