@@ -20,7 +20,7 @@ use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
-use tabiew::tui::theme::Custom;
+use tabiew::tui::themes::custom::Custom;
 
 use tabiew::tui::{TabContentState, TableType};
 use tabiew::{AppResult, tui};
