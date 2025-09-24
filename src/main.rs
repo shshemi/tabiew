@@ -14,14 +14,13 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::Config;
-use tabiew::misc::globals::{config, set_theme, sql, theme};
+use tabiew::misc::globals::{config, set_theme, sql};
 use tabiew::misc::paths::{config_path, history_path, theme_path};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::themes::custom::Custom;
-use tabiew::tui::themes::styler::Styler;
 
 use tabiew::tui::{TabContentState, TableType};
 use tabiew::{AppResult, tui};
