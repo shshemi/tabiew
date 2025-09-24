@@ -153,12 +153,12 @@ impl<'de> Deserialize<'de> for Theme {
         let theme_str = String::deserialize(deserializer)?;
         match theme_str.as_str() {
             "monokai" => Ok(Theme::new(Monokai)),
-            "argonaut" => Ok(Theme::new(Monokai)),
-            "terminal" => Ok(Theme::new(Monokai)),
-            "nord" => Ok(Theme::new(Monokai)),
-            "catppuccin" => Ok(Theme::new(Monokai)),
-            "tokyo-night" => Ok(Theme::new(Monokai)),
-            "chakra" => Ok(Theme::new(Monokai)),
+            "argonaut" => Ok(Theme::new(Argonaut)),
+            "terminal" => Ok(Theme::new(Terminal)),
+            "nord" => Ok(Theme::new(Nord)),
+            "catppuccin" => Ok(Theme::new(Catppuccin)),
+            "tokyo-night" => Ok(Theme::new(TokyoNight)),
+            "chakra" => Ok(Theme::new(Chakra)),
             "custom" => Ok(Theme::new(
                 Custom::read_from_config_dir().unwrap_or_default(),
             )),
