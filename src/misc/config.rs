@@ -23,7 +23,7 @@ impl Config {
 
     pub fn load(&self, text: &str) -> AppResult<()> {
         let Config { theme } = toml::from_str(text)?;
-        *self.theme_mut() = theme.into_inner().unwrap();
+        *self.theme_mut() = theme.into_inner()?;
         Ok(())
     }
 
