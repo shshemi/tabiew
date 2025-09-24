@@ -14,7 +14,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::globals::theme,
+    misc::{globals::theme, type_ext::HasSubsequence},
     tui::{
         status_bar::{StatusBar, Tag},
         themes::styler::Styler,
@@ -168,21 +168,25 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
 #[derive(Debug)]
 struct CachedFilter {
     indices: Vec<usize>,
-    func: fn(&str, &str) -> bool,
+    metric: Metric,
     query_hash: u64,
 }
 
 impl Default for CachedFilter {
     fn default() -> Self {
-        Self {
-            indices: Vec::new(),
-            func: contains,
-            query_hash: 0,
-        }
+        Self::new(Metric::HasSubsequence)
     }
 }
 
 impl CachedFilter {
+    pub fn new(metric: Metric) -> Self {
+        Self {
+            indices: Vec::new(),
+            metric,
+            query_hash: 0,
+        }
+    }
+
     pub fn query<T>(&mut self, query: &str, items: &[T]) -> &[usize]
     where
         T: AsRef<str>,
@@ -193,18 +197,27 @@ impl CachedFilter {
 
         if self.query_hash != query_hash {
             self.indices.clear();
-            self.indices.extend(
-                items
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(idx, item)| (self.func)(query, item.as_ref()).then_some(idx)),
-            );
+            self.indices
+                .extend(items.iter().enumerate().filter_map(|(idx, item)| {
+                    self.metric.validate(item.as_ref(), query).then_some(idx)
+                }));
             self.query_hash = query_hash;
         }
         &self.indices
     }
 }
 
-fn contains(q: &str, i: &str) -> bool {
-    i.contains(q)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Metric {
+    Contains,
+    HasSubsequence,
+}
+
+impl Metric {
+    fn validate(&self, a: &str, b: &str) -> bool {
+        match self {
+            Metric::Contains => a.contains(b),
+            Metric::HasSubsequence => a.has_subsequence(b),
+        }
+    }
 }

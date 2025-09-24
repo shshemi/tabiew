@@ -134,9 +134,9 @@ impl FuzzyCmp for AnyValue<'_> {
     fn fuzzy_cmp(self, other: &str) -> bool {
         match self {
             AnyValue::Null => false,
-            AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other, other.len()),
-            AnyValue::String(val) => val.has_subsequence(other, other.len()),
-            _ => self.into_multi_line().has_subsequence(other, other.len()),
+            AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other),
+            AnyValue::String(val) => val.has_subsequence(other),
+            _ => self.into_multi_line().has_subsequence(other),
         }
     }
 }
