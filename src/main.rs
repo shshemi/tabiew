@@ -14,13 +14,14 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::Config;
-use tabiew::misc::globals::{config, set_theme, sql};
+use tabiew::misc::globals::{config, set_theme, sql, theme};
 use tabiew::misc::paths::{config_path, history_path, theme_path};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::themes::custom::Custom;
+use tabiew::tui::themes::styler::Styler;
 
 use tabiew::tui::{TabContentState, TableType};
 use tabiew::{AppResult, tui};
@@ -40,6 +41,7 @@ fn main() {
         }
     };
 
+    // generate template file if needed
     for item in args.generate.iter() {
         let (name, path, contents) = match item {
             tabiew::args::GenerateItem::Config => (
@@ -81,29 +83,10 @@ fn main() {
         }
     }
 
-    // exit if any request for generation of any file
+    // exit if any template generation
     if !args.generate.is_empty() {
         return;
     }
-    // if args.generate_theme {
-    //     let path = theme_path()
-    //         .ok_or(anyhow!("Home directory not found"))
-    //         .unwrap_or_graceful_shutdown();
-    //     let _ = fs::create_dir_all(
-    //         path.parent()
-    //             .ok_or(anyhow!("Unable to make parent dir"))
-    //             .unwrap_or_graceful_shutdown(),
-    //     );
-    //     if path.exists() {
-    //         println!(
-    //             "Theme file already exists at ~/.config/tabiew/theme.toml, remove it first before retrying.",
-    //         )
-    //     } else {
-    //         let contents = toml::to_string(&Custom::default()).unwrap_or_graceful_shutdown();
-    //         fs::write(&path, contents).unwrap_or_graceful_shutdown();
-    //         println!("Theme generated at ~/.config/tabiew/theme.toml")
-    //     }
-    // }
 
     if let Some(config_path) = config_path()
         && let Ok(text) = fs::read_to_string(config_path)
