@@ -14,12 +14,13 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{globals::theme, type_ext::HasSubsequence},
+    misc::globals::theme,
     tui::{
         status_bar::{StatusBar, Tag},
         themes::styler::Styler,
         widgets::{
             block::Block,
+            highlighted_line::HighlightedLine,
             input::{Input, InputState},
         },
     },
@@ -61,7 +62,7 @@ impl SearchPickerState {
         self.cached_filter
             .indices
             .get(self.list.selected().unwrap_or_default())
-            .copied()
+            .map(|(i, _)| *i)
     }
 }
 
@@ -116,7 +117,7 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
     type State = SearchPickerState;
 
     fn render(
-        mut self,
+        self,
         _: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
@@ -139,9 +140,18 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
                 .cached_filter
                 .query(state.input.value(), &self.items)
                 .iter()
-                .copied()
-                .map(|idx| std::mem::take(&mut self.items[idx]))
-                .map(|item| ListItem::new(item).style(theme().text())),
+                .map(|(idx, hl)| (&self.items[*idx], hl))
+                .map(|(item, hl)| {
+                    //
+                    ListItem::new(
+                        HighlightedLine::default()
+                            .text(item.as_ref())
+                            .highlights(hl.iter().copied())
+                            .text_style(theme().text())
+                            .highlight_style(theme().header(0)),
+                    )
+                    .style(theme().text())
+                }),
         )
         .highlight_style(theme().highlight())
         .block(
@@ -165,29 +175,14 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct CachedFilter {
-    indices: Vec<usize>,
-    metric: Metric,
+    indices: Vec<(usize, Vec<usize>)>,
     query_hash: u64,
 }
 
-impl Default for CachedFilter {
-    fn default() -> Self {
-        Self::new(Metric::HasSubsequence)
-    }
-}
-
 impl CachedFilter {
-    pub fn new(metric: Metric) -> Self {
-        Self {
-            indices: Vec::new(),
-            metric,
-            query_hash: 0,
-        }
-    }
-
-    pub fn query<T>(&mut self, query: &str, items: &[T]) -> &[usize]
+    pub fn query<T>(&mut self, query: &str, items: &[T]) -> &[(usize, Vec<usize>)]
     where
         T: AsRef<str>,
     {
@@ -197,27 +192,30 @@ impl CachedFilter {
 
         if self.query_hash != query_hash {
             self.indices.clear();
-            self.indices
-                .extend(items.iter().enumerate().filter_map(|(idx, item)| {
-                    self.metric.validate(item.as_ref(), query).then_some(idx)
-                }));
+            self.indices.extend(
+                items.iter().enumerate().filter_map(|(idx, item)| {
+                    subsequence_pos(item.as_ref(), query).map(|v| (idx, v))
+                }),
+            );
             self.query_hash = query_hash;
         }
         &self.indices
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Metric {
-    Contains,
-    HasSubsequence,
-}
-
-impl Metric {
-    fn validate(&self, a: &str, b: &str) -> bool {
-        match self {
-            Metric::Contains => a.contains(b),
-            Metric::HasSubsequence => a.has_subsequence(b),
+fn subsequence_pos(larger: &str, other: &str) -> Option<Vec<usize>> {
+    let mut indices = Vec::new();
+    let mut oitr = other.chars();
+    let mut current = oitr.next();
+    for (idx, chr) in larger.char_indices() {
+        if let Some(cur) = current {
+            if chr.eq_ignore_ascii_case(&cur) {
+                indices.push(idx);
+                current = oitr.next();
+            }
+        } else {
+            break;
         }
     }
+    current.is_none().then_some(indices)
 }
