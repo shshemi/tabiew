@@ -1,8 +1,6 @@
 use itertools::Itertools;
 use ratatui::{style::Style, text::Span};
 
-use crate::{misc::globals::theme, tui::themes::styler::Styler};
-
 #[derive(Debug, Default)]
 pub struct HighlightedLine<'a> {
     text: &'a str,
