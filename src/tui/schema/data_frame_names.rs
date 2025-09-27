@@ -71,7 +71,7 @@ where
                     Span::raw(s.into()).style(theme().text()),
                 ])
             }))
-            .row_highlight_style(theme().highlight())
+            .row_highlight_style(theme().row_highlighted())
             .widths([
                 Constraint::Length(num_width as u16 + 1),
                 Constraint::Fill(1),

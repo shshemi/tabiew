@@ -14,7 +14,7 @@ impl Styler for Terminal {
         Style::default().bg(Color::Black).fg(Color::White)
     }
 
-    fn highlight(&self) -> Style {
+    fn row_highlighted(&self) -> Style {
         Style::default().bg(Color::LightYellow).fg(Color::Black)
     }
 
@@ -64,5 +64,9 @@ impl Styler for Terminal {
 
     fn title(&self) -> &str {
         "Terminal"
+    }
+
+    fn text_highlighted(&self) -> Style {
+        Style::default().fg(Color::Yellow)
     }
 }

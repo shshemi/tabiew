@@ -148,12 +148,12 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
                             .text(item.as_ref())
                             .highlights(hl.iter().copied())
                             .text_style(theme().text())
-                            .highlight_style(theme().header(0)),
+                            .highlight_style(theme().text_highlighted()),
                     )
                     .style(theme().text())
                 }),
         )
-        .highlight_style(theme().highlight())
+        .highlight_style(theme().row_highlighted())
         .block(
             Block::default()
                 .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)

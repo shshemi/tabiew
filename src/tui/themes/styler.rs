@@ -6,12 +6,13 @@ pub trait Styler: Debug {
     fn title(&self) -> &str;
     fn table_header(&self) -> Style;
     fn row(&self, row: usize) -> Style;
-    fn highlight(&self) -> Style;
+    fn row_highlighted(&self) -> Style;
     fn header(&self, col: usize) -> Style;
     fn tag(&self, col: usize) -> Style;
     fn block(&self) -> Style;
     fn block_tag(&self) -> Style;
     fn text(&self) -> Style;
+    fn text_highlighted(&self) -> Style;
     fn subtext(&self) -> Style;
     fn error(&self) -> Style;
     fn graph(&self, idx: usize) -> Style;
@@ -55,7 +56,7 @@ where
             .fg(Self::FOREGROUND)
     }
 
-    fn highlight(&self) -> Style {
+    fn row_highlighted(&self) -> Style {
         Style::new()
             .bg(Self::HIGHLIGHT_BACKGROUND)
             .fg(Self::HIGHLIGHT_FOREGROUND)
@@ -81,6 +82,12 @@ where
 
     fn text(&self) -> Style {
         Style::default().bg(Self::BACKGROUND).fg(Self::FOREGROUND)
+    }
+
+    fn text_highlighted(&self) -> Style {
+        Style::default()
+            .bg(Self::BACKGROUND)
+            .fg(Self::HIGHLIGHT_BACKGROUND)
     }
 
     fn subtext(&self) -> Style {

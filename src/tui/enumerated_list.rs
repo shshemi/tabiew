@@ -87,7 +87,7 @@ impl StatefulWidget for EnumeratedList<'_> {
             Table::default()
                 .rows(rows)
                 .style(theme().text())
-                .row_highlight_style(theme().highlight())
+                .row_highlight_style(theme().row_highlighted())
                 .widths([
                     Constraint::Length(num_width + 1),
                     Constraint::Length(text_width),

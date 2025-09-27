@@ -85,7 +85,7 @@ impl<'a> StatefulWidget for ListPicker<'a> {
         StatefulWidget::render(
             List::default()
                 .style(theme().text())
-                .highlight_style(theme().highlight())
+                .highlight_style(theme().row_highlighted())
                 .items(self.items)
                 .block(self.block.into_widget()),
             area,

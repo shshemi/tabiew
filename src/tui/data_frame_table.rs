@@ -341,7 +341,7 @@ impl StatefulWidget for DataFrameTable<'_> {
                         viewport(&full_line, state.offset_x, area.width.into())
                     },
                     if state.offset_y + idx == state.select {
-                        theme().highlight()
+                        theme().row_highlighted()
                     } else {
                         theme().row(state.offset_y + idx)
                     },

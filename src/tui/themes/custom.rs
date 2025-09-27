@@ -12,11 +12,12 @@ pub struct Custom {
     table_header: Style,
     table_headers: Vec<Style>,
     rows: Vec<Style>,
-    highlight: Style,
+    row_highlight: Style,
     table_tags: Vec<Style>,
     block: Style,
     block_tag: Style,
     text: Style,
+    text_highlighted: Style,
     subtext: Style,
     error: Style,
     chart: Vec<Style>,
@@ -55,7 +56,7 @@ impl Default for Custom {
                     .bg(Color::from_u32(0x00101010))
                     .fg(Color::from_u32(0x00ffffff)),
             ],
-            highlight: Style::default()
+            row_highlight: Style::default()
                 .bg(Color::from_u32(0x00ffff00))
                 .fg(Color::from_u32(0x00000000)),
             table_tags: vec![
@@ -92,6 +93,9 @@ impl Default for Custom {
                     .bg(Color::from_u32(0x00000000))
                     .fg(Color::from_u32(0x0000ffff)),
             ],
+            text_highlighted: Style::default()
+                .bg(Color::from_u32(0x00000000))
+                .fg(Color::from_u32(0x00ff00ff)),
         }
     }
 }
@@ -109,8 +113,8 @@ impl Styler for Custom {
         self.rows[idx % self.rows.len()]
     }
 
-    fn highlight(&self) -> Style {
-        self.highlight
+    fn row_highlighted(&self) -> Style {
+        self.row_highlight
     }
 
     fn tag(&self, idx: usize) -> Style {
@@ -147,5 +151,9 @@ impl Styler for Custom {
 
     fn title(&self) -> &str {
         "Custom"
+    }
+
+    fn text_highlighted(&self) -> Style {
+        self.text_highlighted
     }
 }
