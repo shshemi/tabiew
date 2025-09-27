@@ -142,7 +142,6 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
                 .iter()
                 .map(|(idx, hl)| (&self.items[*idx], hl))
                 .map(|(item, hl)| {
-                    //
                     ListItem::new(
                         HighlightedLine::default()
                             .text(item.as_ref())
@@ -168,6 +167,10 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
                 })
                 .into_widget(),
         );
+        *state.list.offset_mut() = state
+            .list()
+            .offset()
+            .min(list.len().saturating_sub(list_area.height as usize));
         if state.list.selected().is_none() && !list.is_empty() {
             state.list.select(Some(0));
         }
@@ -204,18 +207,23 @@ impl CachedFilter {
 }
 
 fn subsequence_pos(larger: &str, other: &str) -> Option<Vec<usize>> {
-    let mut indices = Vec::new();
-    let mut oitr = other.chars();
-    let mut current = oitr.next();
-    for (idx, chr) in larger.char_indices() {
-        if let Some(cur) = current {
-            if chr.eq_ignore_ascii_case(&cur) {
-                indices.push(idx);
-                current = oitr.next();
+    if other.is_empty() {
+        return Some(Vec::new());
+    }
+
+    let mut want_iter = other.chars();
+    let mut want = want_iter.next().unwrap();
+    let mut idxs = Vec::with_capacity(other.chars().count());
+
+    for (char_pos, c) in larger.chars().enumerate() {
+        if c.eq_ignore_ascii_case(&want) {
+            idxs.push(char_pos);
+            if let Some(nxt) = want_iter.next() {
+                want = nxt;
+            } else {
+                return Some(idxs);
             }
-        } else {
-            break;
         }
     }
-    current.is_none().then_some(indices)
+    None
 }
