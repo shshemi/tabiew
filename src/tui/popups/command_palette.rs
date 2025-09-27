@@ -97,7 +97,7 @@ where
                     .into_iter()
                     .map(|item| Line::styled(item.into(), theme().text())),
             )
-            .highlight_style(theme().highlight())
+            .highlight_style(theme().row_highlighted())
             .block(
                 Block::default()
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)

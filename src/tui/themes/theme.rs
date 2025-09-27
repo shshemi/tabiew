@@ -75,8 +75,8 @@ impl Styler for Theme {
         self.styler().row(row)
     }
 
-    fn highlight(&self) -> Style {
-        self.styler().highlight()
+    fn row_highlighted(&self) -> Style {
+        self.styler().row_highlighted()
     }
 
     fn header(&self, col: usize) -> Style {
@@ -125,6 +125,10 @@ impl Styler for Theme {
         } else {
             "Monokai"
         }
+    }
+
+    fn text_highlighted(&self) -> Style {
+        self.styler().text_highlighted()
     }
 }
 
