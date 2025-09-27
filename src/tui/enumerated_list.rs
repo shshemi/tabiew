@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Rect},
-    text::{Span, Text},
+    text::Text,
     widgets::{Cell, Clear, Row, StatefulWidget, Table, TableState, Widget, block::Title},
 };
 
@@ -78,11 +78,9 @@ impl StatefulWidget for EnumeratedList<'_> {
 
         let rows = self.items.into_iter().enumerate().map(|(i, s)| {
             Row::new([
-                Cell::new(
-                    Span::raw(format!(" {:>width$}", i + 1, width = num_width as usize))
-                        .style(theme().subtext()),
-                ),
-                Cell::new(s),
+                Cell::new(format!(" {:>width$}", i + 1, width = num_width as usize))
+                    .style(theme().subtext()),
+                Cell::new(s).style(theme().text()),
             ])
         });
         StatefulWidget::render(
