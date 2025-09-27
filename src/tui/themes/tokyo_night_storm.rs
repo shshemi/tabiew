@@ -1,12 +1,11 @@
-
 use ratatui::style::Color;
 
 use crate::tui::themes::styler::SixColorsTwoRowsStyler;
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
-pub struct TokyonightStorm;
+pub struct TokyoNightStorm;
 
-impl SixColorsTwoRowsStyler for TokyonightStorm {
+impl SixColorsTwoRowsStyler for TokyoNightStorm {
     const BACKGROUND: Color = Color::from_u32(0x0024283b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0044485B);
     const FOREGROUND: Color = Color::from_u32(0x00c0caf5);
@@ -40,6 +39,6 @@ impl SixColorsTwoRowsStyler for TokyonightStorm {
     }
 
     fn title(&self) -> &str {
-        "TokyonightStorm"
+        "TokyoNightStorm"
     }
 }
