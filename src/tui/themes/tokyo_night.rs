@@ -37,6 +37,6 @@ impl SixColorsTwoRowsStyler for TokyoNight {
     }
 
     fn title(&self) -> &str {
-        "Tokyo Night"
+        "TokyoNightSimple"
     }
 }
