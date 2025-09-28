@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlackMetalKhold {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BCBEB3);
-
-    fn id(&self) -> &str {
-        "black_metal_khold_"
-    }
-
-    fn title(&self) -> &str {
-        "BlackMetalKhold"
-    }
 }

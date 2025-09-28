@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Batman {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C4CD00);
-
-    fn id(&self) -> &str {
-        "batman"
-    }
-
-    fn title(&self) -> &str {
-        "Batman"
-    }
 }

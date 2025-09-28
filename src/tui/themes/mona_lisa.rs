@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MonaLisa {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00933E00);
-
-    fn id(&self) -> &str {
-        "mona_lisa"
-    }
-
-    fn title(&self) -> &str {
-        "MonaLisa"
-    }
 }

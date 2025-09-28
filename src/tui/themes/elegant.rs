@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Elegant {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0027);
-
-    fn id(&self) -> &str {
-        "elegant"
-    }
-
-    fn title(&self) -> &str {
-        "Elegant"
-    }
 }

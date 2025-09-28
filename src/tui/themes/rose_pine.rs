@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for RosePine {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C69147);
-
-    fn id(&self) -> &str {
-        "rose_pine"
-    }
-
-    fn title(&self) -> &str {
-        "RosePine"
-    }
 }

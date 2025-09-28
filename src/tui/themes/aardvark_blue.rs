@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AardvarkBlue {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AB8A00);
-
-    fn id(&self) -> &str {
-        "aardvark_blue"
-    }
-
-    fn title(&self) -> &str {
-        "AardvarkBlue"
-    }
 }

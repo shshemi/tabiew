@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for UnderTheSea {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00820000);
-
-    fn id(&self) -> &str {
-        "under_the_sea"
-    }
-
-    fn title(&self) -> &str {
-        "UnderTheSea"
-    }
 }

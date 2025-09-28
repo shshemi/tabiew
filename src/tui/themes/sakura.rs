@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Sakura {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A50040);
-
-    fn id(&self) -> &str {
-        "sakura"
-    }
-
-    fn title(&self) -> &str {
-        "Sakura"
-    }
 }

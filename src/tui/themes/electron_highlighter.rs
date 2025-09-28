@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ElectronHighlighter {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3C5D);
-
-    fn id(&self) -> &str {
-        "electron_highlighter"
-    }
-
-    fn title(&self) -> &str {
-        "ElectronHighlighter"
-    }
 }

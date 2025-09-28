@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Mathias {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC6500);
-
-    fn id(&self) -> &str {
-        "mathias"
-    }
-
-    fn title(&self) -> &str {
-        "Mathias"
-    }
 }

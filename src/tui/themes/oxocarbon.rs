@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Oxocarbon {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF1267);
-
-    fn id(&self) -> &str {
-        "oxocarbon"
-    }
-
-    fn title(&self) -> &str {
-        "Oxocarbon"
-    }
 }

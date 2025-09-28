@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlueBerryPie {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BA8978);
-
-    fn id(&self) -> &str {
-        "blue_berry_pie"
-    }
-
-    fn title(&self) -> &str {
-        "BlueBerryPie"
-    }
 }

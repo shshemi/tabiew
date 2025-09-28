@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for DjangoRebornAgain {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB832);
-
-    fn id(&self) -> &str {
-        "django_reborn_again"
-    }
-
-    fn title(&self) -> &str {
-        "DjangoRebornAgain"
-    }
 }

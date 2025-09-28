@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Darkmatrix {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x004E5000);
-
-    fn id(&self) -> &str {
-        "darkmatrix"
-    }
-
-    fn title(&self) -> &str {
-        "Darkmatrix"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Twilight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0092783C);
-
-    fn id(&self) -> &str {
-        "twilight"
-    }
-
-    fn title(&self) -> &str {
-        "Twilight"
-    }
 }

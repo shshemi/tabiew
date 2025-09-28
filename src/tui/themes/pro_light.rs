@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ProLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BD36B8);
-
-    fn id(&self) -> &str {
-        "pro_light"
-    }
-
-    fn title(&self) -> &str {
-        "ProLight"
-    }
 }

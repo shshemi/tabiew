@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SeaShells {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC7000);
-
-    fn id(&self) -> &str {
-        "sea_shells"
-    }
-
-    fn title(&self) -> &str {
-        "SeaShells"
-    }
 }

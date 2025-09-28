@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Embark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB97A);
-
-    fn id(&self) -> &str {
-        "embark"
-    }
-
-    fn title(&self) -> &str {
-        "Embark"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for HavnSkumring {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C88300);
-
-    fn id(&self) -> &str {
-        "havn_skumring"
-    }
-
-    fn title(&self) -> &str {
-        "HavnSkumring"
-    }
 }

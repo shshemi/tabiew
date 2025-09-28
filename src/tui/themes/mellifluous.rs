@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Mellifluous {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A26363);
-
-    fn id(&self) -> &str {
-        "mellifluous"
-    }
-
-    fn title(&self) -> &str {
-        "Mellifluous"
-    }
 }

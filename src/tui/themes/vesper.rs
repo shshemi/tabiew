@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Vesper {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C57161);
-
-    fn id(&self) -> &str {
-        "vesper"
-    }
-
-    fn title(&self) -> &str {
-        "Vesper"
-    }
 }

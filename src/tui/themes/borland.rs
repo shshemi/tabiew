@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Borland {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3C30);
-
-    fn id(&self) -> &str {
-        "borland"
-    }
-
-    fn title(&self) -> &str {
-        "Borland"
-    }
 }

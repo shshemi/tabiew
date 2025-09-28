@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for DotGov {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C68B04);
-
-    fn id(&self) -> &str {
-        "dot_gov"
-    }
-
-    fn title(&self) -> &str {
-        "DotGov"
-    }
 }

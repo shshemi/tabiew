@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for PoppingAndLocking {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A76900);
-
-    fn id(&self) -> &str {
-        "popping_and_locking"
-    }
-
-    fn title(&self) -> &str {
-        "PoppingAndLocking"
-    }
 }

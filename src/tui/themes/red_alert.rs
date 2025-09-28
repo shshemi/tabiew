@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for RedAlert {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B949A7);
-
-    fn id(&self) -> &str {
-        "red_alert"
-    }
-
-    fn title(&self) -> &str {
-        "RedAlert"
-    }
 }

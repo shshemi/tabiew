@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Miasma {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00997524);
-
-    fn id(&self) -> &str {
-        "miasma"
-    }
-
-    fn title(&self) -> &str {
-        "Miasma"
-    }
 }

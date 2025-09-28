@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AtomOneDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B5904B);
-
-    fn id(&self) -> &str {
-        "atom_one_dark"
-    }
-
-    fn title(&self) -> &str {
-        "AtomOneDark"
-    }
 }

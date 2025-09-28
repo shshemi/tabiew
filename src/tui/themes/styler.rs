@@ -2,8 +2,6 @@ use ratatui::style::{Color, Style, Stylize};
 use std::fmt::Debug;
 
 pub trait Styler: Debug {
-    fn id(&self) -> &str;
-    fn title(&self) -> &str;
     fn table_header(&self) -> Style;
     fn row(&self, row: usize) -> Style;
     fn row_highlighted(&self) -> Style;
@@ -19,8 +17,6 @@ pub trait Styler: Debug {
 }
 
 pub trait SixColorsTwoRowsStyler {
-    fn id(&self) -> &str;
-    fn title(&self) -> &str;
     const BACKGROUND: Color;
     const LIGHT_BACKGROUND: Color;
     const FOREGROUND: Color;
@@ -106,13 +102,5 @@ where
         Style::default()
             .fg(Self::DARK_COLORS[idx % Self::DARK_COLORS.len()])
             .bold()
-    }
-
-    fn id(&self) -> &str {
-        self.id()
-    }
-
-    fn title(&self) -> &str {
-        self.title()
     }
 }

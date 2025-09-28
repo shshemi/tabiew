@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for HipsterGreen {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008F8F00);
-
-    fn id(&self) -> &str {
-        "hipster_green"
-    }
-
-    fn title(&self) -> &str {
-        "HipsterGreen"
-    }
 }

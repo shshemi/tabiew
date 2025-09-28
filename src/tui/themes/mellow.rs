@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Mellow {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C57161);
-
-    fn id(&self) -> &str {
-        "mellow"
-    }
-
-    fn title(&self) -> &str {
-        "Mellow"
-    }
 }

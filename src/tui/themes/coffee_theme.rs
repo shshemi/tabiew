@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for CoffeeTheme {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009A0097);
-
-    fn id(&self) -> &str {
-        "coffee_theme"
-    }
-
-    fn title(&self) -> &str {
-        "CoffeeTheme"
-    }
 }

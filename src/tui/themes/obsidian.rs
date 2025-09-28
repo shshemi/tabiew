@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Obsidian {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE9D00);
-
-    fn id(&self) -> &str {
-        "obsidian"
-    }
-
-    fn title(&self) -> &str {
-        "Obsidian"
-    }
 }

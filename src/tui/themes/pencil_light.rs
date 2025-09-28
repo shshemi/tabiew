@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for PencilLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00930041);
-
-    fn id(&self) -> &str {
-        "pencil_light"
-    }
-
-    fn title(&self) -> &str {
-        "PencilLight"
-    }
 }

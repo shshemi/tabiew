@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Duckbones {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B36500);
-
-    fn id(&self) -> &str {
-        "duckbones"
-    }
-
-    fn title(&self) -> &str {
-        "Duckbones"
-    }
 }

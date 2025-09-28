@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for NocturnalWinter {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF003D);
-
-    fn id(&self) -> &str {
-        "nocturnal_winter"
-    }
-
-    fn title(&self) -> &str {
-        "NocturnalWinter"
-    }
 }

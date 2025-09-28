@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SeafoamPastel {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007D713D);
-
-    fn id(&self) -> &str {
-        "seafoam_pastel"
-    }
-
-    fn title(&self) -> &str {
-        "SeafoamPastel"
-    }
 }

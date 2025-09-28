@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BuiltinLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008B0000);
-
-    fn id(&self) -> &str {
-        "builtin_light"
-    }
-
-    fn title(&self) -> &str {
-        "BuiltinLight"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GruberDarker {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFAB00);
-
-    fn id(&self) -> &str {
-        "gruber_darker"
-    }
-
-    fn title(&self) -> &str {
-        "GruberDarker"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for NightOwl {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BF2320);
-
-    fn id(&self) -> &str {
-        "night_owl"
-    }
-
-    fn title(&self) -> &str {
-        "NightOwl"
-    }
 }

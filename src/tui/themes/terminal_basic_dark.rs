@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for TerminalBasicDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A327AB);
-
-    fn id(&self) -> &str {
-        "terminal_basic_dark"
-    }
-
-    fn title(&self) -> &str {
-        "TerminalBasicDark"
-    }
 }

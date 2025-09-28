@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Earthsong {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C57E00);
-
-    fn id(&self) -> &str {
-        "earthsong"
-    }
-
-    fn title(&self) -> &str {
-        "Earthsong"
-    }
 }

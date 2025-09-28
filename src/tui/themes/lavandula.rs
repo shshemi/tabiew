@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Lavandula {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x004F3F19);
-
-    fn id(&self) -> &str {
-        "lavandula"
-    }
-
-    fn title(&self) -> &str {
-        "Lavandula"
-    }
 }

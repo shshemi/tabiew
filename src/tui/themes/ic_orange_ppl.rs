@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for IcOrangePpl {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC2E00);
-
-    fn id(&self) -> &str {
-        "ic_orange_ppl"
-    }
-
-    fn title(&self) -> &str {
-        "IcOrangePpl"
-    }
 }

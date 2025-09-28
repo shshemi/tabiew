@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Sublette {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFAD58);
-
-    fn id(&self) -> &str {
-        "sublette"
-    }
-
-    fn title(&self) -> &str {
-        "Sublette"
-    }
 }

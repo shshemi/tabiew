@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GithubLightHighContrast {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00700000);
-
-    fn id(&self) -> &str {
-        "git_hub_light_high_contrast"
-    }
-
-    fn title(&self) -> &str {
-        "GithubLightHighContrast"
-    }
 }

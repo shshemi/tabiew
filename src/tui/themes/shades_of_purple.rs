@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ShadesOfPurple {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB700);
-
-    fn id(&self) -> &str {
-        "shades_of_purple"
-    }
-
-    fn title(&self) -> &str {
-        "ShadesOfPurple"
-    }
 }

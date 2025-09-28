@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SolarizedDarcula {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C21810);
-
-    fn id(&self) -> &str {
-        "solarized_darcula"
-    }
-
-    fn title(&self) -> &str {
-        "SolarizedDarcula"
-    }
 }

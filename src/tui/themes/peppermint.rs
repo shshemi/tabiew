@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Peppermint {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B71639);
-
-    fn id(&self) -> &str {
-        "peppermint"
-    }
-
-    fn title(&self) -> &str {
-        "Peppermint"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Vimbones {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0078031C);
-
-    fn id(&self) -> &str {
-        "vimbones"
-    }
-
-    fn title(&self) -> &str {
-        "Vimbones"
-    }
 }

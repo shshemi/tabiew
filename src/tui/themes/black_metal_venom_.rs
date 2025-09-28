@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlackMetalVenom {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C8C7C2);
-
-    fn id(&self) -> &str {
-        "black_metal_venom_"
-    }
-
-    fn title(&self) -> &str {
-        "BlackMetalVenom"
-    }
 }
