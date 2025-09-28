@@ -15,7 +15,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             theme: RwLock::new(Theme::default()),
         }
