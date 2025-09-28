@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MaterialOcean {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9B3B);
-
-    fn id(&self) -> &str {
-        "material_ocean"
-    }
-
-    fn title(&self) -> &str {
-        "MaterialOcean"
-    }
 }

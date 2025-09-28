@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for EspressoLibre {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C0B50A);
-
-    fn id(&self) -> &str {
-        "espresso_libre"
-    }
-
-    fn title(&self) -> &str {
-        "EspressoLibre"
-    }
 }

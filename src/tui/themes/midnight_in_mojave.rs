@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MidnightInMojave {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA600);
-
-    fn id(&self) -> &str {
-        "midnight_in_mojave"
-    }
-
-    fn title(&self) -> &str {
-        "MidnightInMojave"
-    }
 }

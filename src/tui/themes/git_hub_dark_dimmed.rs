@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GithubDarkDimmed {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C44037);
-
-    fn id(&self) -> &str {
-        "git_hub_dark_dimmed"
-    }
-
-    fn title(&self) -> &str {
-        "GithubDarkDimmed"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for FrontEndDelight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA4700);
-
-    fn id(&self) -> &str {
-        "front_end_delight"
-    }
-
-    fn title(&self) -> &str {
-        "FrontEndDelight"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for DimmedMonokai {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00957605);
-
-    fn id(&self) -> &str {
-        "dimmed_monokai"
-    }
-
-    fn title(&self) -> &str {
-        "DimmedMonokai"
-    }
 }

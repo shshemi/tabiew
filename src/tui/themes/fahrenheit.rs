@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Fahrenheit {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE9F45);
-
-    fn id(&self) -> &str {
-        "fahrenheit"
-    }
-
-    fn title(&self) -> &str {
-        "Fahrenheit"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BuiltinSolarizedLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AC0200);
-
-    fn id(&self) -> &str {
-        "builtin_solarized_light"
-    }
-
-    fn title(&self) -> &str {
-        "BuiltinSolarizedLight"
-    }
 }

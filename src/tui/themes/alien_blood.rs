@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AlienBlood {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x004F0000);
-
-    fn id(&self) -> &str {
-        "alien_blood"
-    }
-
-    fn title(&self) -> &str {
-        "AlienBlood"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for TheHulk {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00340044);
-
-    fn id(&self) -> &str {
-        "the_hulk"
-    }
-
-    fn title(&self) -> &str {
-        "TheHulk"
-    }
 }

@@ -30,12 +30,4 @@ impl SixColorsTwoRowsStyler for Chakra {
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ca8a04);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00fafafa);
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00991919);
-
-    fn id(&self) -> &str {
-        "chakra"
-    }
-
-    fn title(&self) -> &str {
-        "Chakra"
-    }
 }

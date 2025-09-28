@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AyuMirage {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CAA04B);
-
-    fn id(&self) -> &str {
-        "ayu_mirage"
-    }
-
-    fn title(&self) -> &str {
-        "AyuMirage"
-    }
 }

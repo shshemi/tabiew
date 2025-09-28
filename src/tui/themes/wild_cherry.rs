@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for WildCherry {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA13F);
-
-    fn id(&self) -> &str {
-        "wild_cherry"
-    }
-
-    fn title(&self) -> &str {
-        "WildCherry"
-    }
 }

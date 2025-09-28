@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Brogrammer {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C80000);
-
-    fn id(&self) -> &str {
-        "brogrammer"
-    }
-
-    fn title(&self) -> &str {
-        "Brogrammer"
-    }
 }

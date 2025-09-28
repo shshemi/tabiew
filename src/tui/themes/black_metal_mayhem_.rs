@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlackMetalMayhem {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C3BCA4);
-
-    fn id(&self) -> &str {
-        "black_metal_mayhem_"
-    }
-
-    fn title(&self) -> &str {
-        "BlackMetalMayhem"
-    }
 }

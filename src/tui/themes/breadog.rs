@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Breadog {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00810000);
-
-    fn id(&self) -> &str {
-        "breadog"
-    }
-
-    fn title(&self) -> &str {
-        "Breadog"
-    }
 }

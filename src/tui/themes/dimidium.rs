@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Dimidium {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AB6C00);
-
-    fn id(&self) -> &str {
-        "dimidium"
-    }
-
-    fn title(&self) -> &str {
-        "Dimidium"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Purplepeter {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF493D);
-
-    fn id(&self) -> &str {
-        "purplepeter"
-    }
-
-    fn title(&self) -> &str {
-        "Purplepeter"
-    }
 }

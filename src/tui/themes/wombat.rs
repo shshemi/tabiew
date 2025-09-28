@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Wombat {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF312A);
-
-    fn id(&self) -> &str {
-        "wombat"
-    }
-
-    fn title(&self) -> &str {
-        "Wombat"
-    }
 }

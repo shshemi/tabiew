@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlueDolphin {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF5258);
-
-    fn id(&self) -> &str {
-        "blue_dolphin"
-    }
-
-    fn title(&self) -> &str {
-        "BlueDolphin"
-    }
 }

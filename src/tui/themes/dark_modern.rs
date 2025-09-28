@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for DarkModern {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C71919);
-
-    fn id(&self) -> &str {
-        "dark_modern"
-    }
-
-    fn title(&self) -> &str {
-        "DarkModern"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for IcebergDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B24848);
-
-    fn id(&self) -> &str {
-        "iceberg_dark"
-    }
-
-    fn title(&self) -> &str {
-        "IcebergDark"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Galizur {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009C7A00);
-
-    fn id(&self) -> &str {
-        "galizur"
-    }
-
-    fn title(&self) -> &str {
-        "Galizur"
-    }
 }

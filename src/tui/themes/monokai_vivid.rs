@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MonokaiVivid {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFC300);
-
-    fn id(&self) -> &str {
-        "monokai_vivid"
-    }
-
-    fn title(&self) -> &str {
-        "MonokaiVivid"
-    }
 }

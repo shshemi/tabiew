@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Chalkboard {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00934342);
-
-    fn id(&self) -> &str {
-        "chalkboard"
-    }
-
-    fn title(&self) -> &str {
-        "Chalkboard"
-    }
 }

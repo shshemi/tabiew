@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Espresso {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF963D);
-
-    fn id(&self) -> &str {
-        "espresso"
-    }
-
-    fn title(&self) -> &str {
-        "Espresso"
-    }
 }

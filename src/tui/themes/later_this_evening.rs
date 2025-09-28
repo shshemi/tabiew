@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for LaterThisEvening {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B5A259);
-
-    fn id(&self) -> &str {
-        "later_this_evening"
-    }
-
-    fn title(&self) -> &str {
-        "LaterThisEvening"
-    }
 }

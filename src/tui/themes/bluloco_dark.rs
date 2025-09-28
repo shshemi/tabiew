@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlulocoDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF633A);
-
-    fn id(&self) -> &str {
-        "bluloco_dark"
-    }
-
-    fn title(&self) -> &str {
-        "BlulocoDark"
-    }
 }

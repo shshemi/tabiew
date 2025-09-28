@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Kibble {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A8B300);
-
-    fn id(&self) -> &str {
-        "kibble"
-    }
-
-    fn title(&self) -> &str {
-        "Kibble"
-    }
 }

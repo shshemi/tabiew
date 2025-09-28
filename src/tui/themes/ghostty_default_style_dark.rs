@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GhosttyDefaultStyleDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C09644);
-
-    fn id(&self) -> &str {
-        "ghostty_default_style_dark"
-    }
-
-    fn title(&self) -> &str {
-        "GhosttyDefaultStyleDark"
-    }
 }

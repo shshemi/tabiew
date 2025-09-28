@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SeoulbonesDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFAF6B);
-
-    fn id(&self) -> &str {
-        "seoulbones_dark"
-    }
-
-    fn title(&self) -> &str {
-        "SeoulbonesDark"
-    }
 }

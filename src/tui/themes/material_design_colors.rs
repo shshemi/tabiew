@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MaterialDesignColors {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CEA002);
-
-    fn id(&self) -> &str {
-        "material_design_colors"
-    }
-
-    fn title(&self) -> &str {
-        "MaterialDesignColors"
-    }
 }

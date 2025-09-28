@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ParaisoDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE9400);
-
-    fn id(&self) -> &str {
-        "paraiso_dark"
-    }
-
-    fn title(&self) -> &str {
-        "ParaisoDark"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Lovelace {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C34F67);
-
-    fn id(&self) -> &str {
-        "lovelace"
-    }
-
-    fn title(&self) -> &str {
-        "Lovelace"
-    }
 }

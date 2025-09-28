@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BananaBlueberry {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3B4F);
-
-    fn id(&self) -> &str {
-        "banana_blueberry"
-    }
-
-    fn title(&self) -> &str {
-        "BananaBlueberry"
-    }
 }

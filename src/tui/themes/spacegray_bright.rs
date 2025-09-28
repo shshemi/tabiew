@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SpacegrayBright {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C69957);
-
-    fn id(&self) -> &str {
-        "spacegray_bright"
-    }
-
-    fn title(&self) -> &str {
-        "SpacegrayBright"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AtelierSulphurpool {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00991900);
-
-    fn id(&self) -> &str {
-        "atelier_sulphurpool"
-    }
-
-    fn title(&self) -> &str {
-        "AtelierSulphurpool"
-    }
 }

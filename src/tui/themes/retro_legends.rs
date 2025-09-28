@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for RetroLegends {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C78F00);
-
-    fn id(&self) -> &str {
-        "retro_legends"
-    }
-
-    fn title(&self) -> &str {
-        "RetroLegends"
-    }
 }

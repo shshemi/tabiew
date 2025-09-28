@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ToyChest {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AB5E00);
-
-    fn id(&self) -> &str {
-        "toy_chest"
-    }
-
-    fn title(&self) -> &str {
-        "ToyChest"
-    }
 }

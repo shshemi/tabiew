@@ -33,12 +33,4 @@ impl SixColorsTwoRowsStyler for TokyoNightDay {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C50035);
-
-    fn id(&self) -> &str {
-        "tokyo_night_day"
-    }
-
-    fn title(&self) -> &str {
-        "TokyoNightDay"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for UltraDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9B3B);
-
-    fn id(&self) -> &str {
-        "ultra_dark"
-    }
-
-    fn title(&self) -> &str {
-        "UltraDark"
-    }
 }

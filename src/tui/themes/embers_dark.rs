@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for EmbersDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00523D27);
-
-    fn id(&self) -> &str {
-        "embers_dark"
-    }
-
-    fn title(&self) -> &str {
-        "EmbersDark"
-    }
 }

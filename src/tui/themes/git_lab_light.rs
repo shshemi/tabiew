@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GitlabLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007F2500);
-
-    fn id(&self) -> &str {
-        "git_lab_light"
-    }
-
-    fn title(&self) -> &str {
-        "GitlabLight"
-    }
 }

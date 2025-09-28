@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Hacktober {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A05919);
-
-    fn id(&self) -> &str {
-        "hacktober"
-    }
-
-    fn title(&self) -> &str {
-        "Hacktober"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for PiattoLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D3F04);
-
-    fn id(&self) -> &str {
-        "piatto_light"
-    }
-
-    fn title(&self) -> &str {
-        "PiattoLight"
-    }
 }

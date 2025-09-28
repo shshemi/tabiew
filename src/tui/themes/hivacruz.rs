@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Hivacruz {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00991900);
-
-    fn id(&self) -> &str {
-        "hivacruz"
-    }
-
-    fn title(&self) -> &str {
-        "Hivacruz"
-    }
 }

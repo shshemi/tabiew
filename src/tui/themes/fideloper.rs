@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Fideloper {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BD887C);
-
-    fn id(&self) -> &str {
-        "fideloper"
-    }
-
-    fn title(&self) -> &str {
-        "Fideloper"
-    }
 }

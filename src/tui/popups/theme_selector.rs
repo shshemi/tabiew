@@ -37,7 +37,7 @@ impl Default for ThemeSelectorState {
         let idx = Theme::all()
             .iter()
             .enumerate()
-            .find_map(|(i, t)| (t == &rollback).then_some(i))
+            .find_map(|(i, t)| (t == &rollback.app_theme()).then_some(i))
             .unwrap_or_default();
         search_picker.list_mut().select(Some(idx));
 
@@ -68,7 +68,7 @@ impl StatefulWidget for ThemeSelector {
             .selected()
             .and_then(|idx| Theme::all().get(idx).cloned())
         {
-            set_theme(theme);
+            set_theme(theme.into());
         }
     }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for OneHalfDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B5904B);
-
-    fn id(&self) -> &str {
-        "one_half_dark"
-    }
-
-    fn title(&self) -> &str {
-        "OneHalfDark"
-    }
 }

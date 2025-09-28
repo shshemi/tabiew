@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for CobaltNextDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF961C);
-
-    fn id(&self) -> &str {
-        "cobalt_next_dark"
-    }
-
-    fn title(&self) -> &str {
-        "CobaltNextDark"
-    }
 }

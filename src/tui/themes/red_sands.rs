@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for RedSands {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0F00);
-
-    fn id(&self) -> &str {
-        "red_sands"
-    }
-
-    fn title(&self) -> &str {
-        "RedSands"
-    }
 }

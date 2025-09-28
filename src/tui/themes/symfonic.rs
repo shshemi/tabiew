@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Symfonic {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF5400);
-
-    fn id(&self) -> &str {
-        "symfonic"
-    }
-
-    fn title(&self) -> &str {
-        "Symfonic"
-    }
 }

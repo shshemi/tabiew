@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Kurokula {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B18900);
-
-    fn id(&self) -> &str {
-        "kurokula"
-    }
-
-    fn title(&self) -> &str {
-        "Kurokula"
-    }
 }

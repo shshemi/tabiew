@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlackMetalNile {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007A6958);
-
-    fn id(&self) -> &str {
-        "black_metal_nile_"
-    }
-
-    fn title(&self) -> &str {
-        "BlackMetalNile"
-    }
 }

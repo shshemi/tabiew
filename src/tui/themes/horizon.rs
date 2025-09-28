@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Horizon {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA8765);
-
-    fn id(&self) -> &str {
-        "horizon"
-    }
-
-    fn title(&self) -> &str {
-        "Horizon"
-    }
 }

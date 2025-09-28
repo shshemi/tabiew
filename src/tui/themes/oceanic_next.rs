@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for OceanicNext {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA9833);
-
-    fn id(&self) -> &str {
-        "oceanic_next"
-    }
-
-    fn title(&self) -> &str {
-        "OceanicNext"
-    }
 }

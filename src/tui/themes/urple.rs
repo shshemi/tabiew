@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Urple {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0080122B);
-
-    fn id(&self) -> &str {
-        "urple"
-    }
-
-    fn title(&self) -> &str {
-        "Urple"
-    }
 }

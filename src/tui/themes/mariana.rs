@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Mariana {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C97E28);
-
-    fn id(&self) -> &str {
-        "mariana"
-    }
-
-    fn title(&self) -> &str {
-        "Mariana"
-    }
 }
