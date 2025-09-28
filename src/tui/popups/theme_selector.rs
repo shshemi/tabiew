@@ -6,7 +6,7 @@ use crate::{
     misc::globals::{config, set_theme},
     tui::{
         pickers::search_picker::{SearchPicker, SearchPickerState},
-        themes::{styler::Styler, theme::Theme},
+        themes::theme::Theme,
     },
 };
 

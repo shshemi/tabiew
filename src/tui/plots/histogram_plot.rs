@@ -6,10 +6,7 @@ use ratatui::{
 };
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
-use crate::{
-    misc::globals::theme,
-    tui::{themes::styler::Styler, widgets::block::Block},
-};
+use crate::{misc::globals::theme, tui::widgets::block::Block};
 
 #[derive(Debug, Default)]
 pub struct HistogramPlot;
