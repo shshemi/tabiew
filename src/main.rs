@@ -14,7 +14,7 @@ use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::Config;
-use tabiew::misc::globals::{config, set_theme, sql};
+use tabiew::misc::globals::{config, sql};
 use tabiew::misc::paths::{config_path, history_path, theme_path};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
@@ -31,7 +31,6 @@ fn main() {
     // Parse CLI
     let args = {
         let args_os = std::env::args_os();
-
         // Show help message if no arguments are given and stdin is not piped
         if args_os.len() == 1 && std::io::stdin().is_terminal() {
             return Args::command().print_help().unwrap_or_graceful_shutdown();
@@ -150,10 +149,6 @@ fn main() {
         .as_ref()
         .map(|path| History::from_file(path.clone()))
         .unwrap_or(History::in_memory());
-
-    if let Some(theme) = args.theme {
-        set_theme(theme.into());
-    }
 
     let _ = start_tui(name_dfs, script, history);
     if let Some(history_path) = history_path() {
