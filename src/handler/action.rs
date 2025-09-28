@@ -1122,10 +1122,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::StoreConfig => {
-            fs::write(
-                config_path().ok_or(anyhow!("Home not found"))?,
-                config().store()?,
-            )?;
+            let config_path = config_path().ok_or(anyhow!("Home not found"))?;
+            fs::create_dir_all(config_path.parent().ok_or(anyhow!("Config parent error"))?)?;
+            fs::write(config_path, config().store()?)?;
             Ok(None)
         }
         AppAction::ThemeSelectorSelectPrev => {
