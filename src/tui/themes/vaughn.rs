@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Vaughn {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C05C93);
-
-    fn id(&self) -> &str {
-        "vaughn"
-    }
-
-    fn title(&self) -> &str {
-        "Vaughn"
-    }
 }

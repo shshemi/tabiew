@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Flat {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B55D00);
-
-    fn id(&self) -> &str {
-        "flat"
-    }
-
-    fn title(&self) -> &str {
-        "Flat"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Deep {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A98D00);
-
-    fn id(&self) -> &str {
-        "deep"
-    }
-
-    fn title(&self) -> &str {
-        "Deep"
-    }
 }

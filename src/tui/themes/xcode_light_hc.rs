@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for XcodeLightHc {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007D0000);
-
-    fn id(&self) -> &str {
-        "xcode_light_hc"
-    }
-
-    fn title(&self) -> &str {
-        "XcodeLightHc"
-    }
 }

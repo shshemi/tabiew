@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Heeler {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF6733);
-
-    fn id(&self) -> &str {
-        "heeler"
-    }
-
-    fn title(&self) -> &str {
-        "Heeler"
-    }
 }

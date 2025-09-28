@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Neopolitan {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0050);
-
-    fn id(&self) -> &str {
-        "neopolitan"
-    }
-
-    fn title(&self) -> &str {
-        "Neopolitan"
-    }
 }

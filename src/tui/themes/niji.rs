@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Niji {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFC700);
-
-    fn id(&self) -> &str {
-        "niji"
-    }
-
-    fn title(&self) -> &str {
-        "Niji"
-    }
 }

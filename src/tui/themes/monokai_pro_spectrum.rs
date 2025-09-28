@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MonokaiProSpectrum {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CD6323);
-
-    fn id(&self) -> &str {
-        "monokai_pro_spectrum"
-    }
-
-    fn title(&self) -> &str {
-        "MonokaiProSpectrum"
-    }
 }

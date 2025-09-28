@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Flatland {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C4BF3D);
-
-    fn id(&self) -> &str {
-        "flatland"
-    }
-
-    fn title(&self) -> &str {
-        "Flatland"
-    }
 }

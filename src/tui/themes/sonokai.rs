@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Sonokai {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC2D4C);
-
-    fn id(&self) -> &str {
-        "sonokai"
-    }
-
-    fn title(&self) -> &str {
-        "Sonokai"
-    }
 }

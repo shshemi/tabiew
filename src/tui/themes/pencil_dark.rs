@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for PencilDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00930041);
-
-    fn id(&self) -> &str {
-        "pencil_dark"
-    }
-
-    fn title(&self) -> &str {
-        "PencilDark"
-    }
 }

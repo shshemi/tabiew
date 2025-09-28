@@ -145,14 +145,6 @@ impl Styler for Custom {
         self.chart[idx % self.chart.len()]
     }
 
-    fn id(&self) -> &str {
-        "custom"
-    }
-
-    fn title(&self) -> &str {
-        "Custom"
-    }
-
     fn text_highlighted(&self) -> Style {
         self.text_highlighted
     }

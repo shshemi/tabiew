@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Darkside {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C2A400);
-
-    fn id(&self) -> &str {
-        "darkside"
-    }
-
-    fn title(&self) -> &str {
-        "Darkside"
-    }
 }

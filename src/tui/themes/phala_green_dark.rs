@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for PhalaGreenDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00920090);
-
-    fn id(&self) -> &str {
-        "phala_green_dark"
-    }
-
-    fn title(&self) -> &str {
-        "PhalaGreenDark"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Seti {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B0961F);
-
-    fn id(&self) -> &str {
-        "seti"
-    }
-
-    fn title(&self) -> &str {
-        "Seti"
-    }
 }

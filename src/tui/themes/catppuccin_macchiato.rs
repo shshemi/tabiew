@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for CatppuccinMacchiato {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C58DB6);
-
-    fn id(&self) -> &str {
-        "catppuccin_macchiato"
-    }
-
-    fn title(&self) -> &str {
-        "CatppuccinMacchiato"
-    }
 }

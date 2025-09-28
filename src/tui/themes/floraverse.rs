@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Floraverse {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D4500);
-
-    fn id(&self) -> &str {
-        "floraverse"
-    }
-
-    fn title(&self) -> &str {
-        "Floraverse"
-    }
 }

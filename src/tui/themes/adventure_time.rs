@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AdventureTime {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B74400);
-
-    fn id(&self) -> &str {
-        "adventure_time"
-    }
-
-    fn title(&self) -> &str {
-        "AdventureTime"
-    }
 }

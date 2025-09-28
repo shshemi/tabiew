@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for NordWave {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BB9B5B);
-
-    fn id(&self) -> &str {
-        "nord_wave"
-    }
-
-    fn title(&self) -> &str {
-        "NordWave"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Jubi {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009F4B68);
-
-    fn id(&self) -> &str {
-        "jubi"
-    }
-
-    fn title(&self) -> &str {
-        "Jubi"
-    }
 }

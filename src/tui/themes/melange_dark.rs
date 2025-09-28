@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MelangeDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B46B2D);
-
-    fn id(&self) -> &str {
-        "melange_dark"
-    }
-
-    fn title(&self) -> &str {
-        "MelangeDark"
-    }
 }

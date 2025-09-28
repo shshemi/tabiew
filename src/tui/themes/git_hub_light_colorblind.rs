@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GithubLightColorblind {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00832900);
-
-    fn id(&self) -> &str {
-        "git_hub_light_colorblind"
-    }
-
-    fn title(&self) -> &str {
-        "GithubLightColorblind"
-    }
 }

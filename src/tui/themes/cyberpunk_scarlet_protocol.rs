@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for CyberpunkScarletProtocol {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0021);
-
-    fn id(&self) -> &str {
-        "cyberpunk_scarlet_protocol"
-    }
-
-    fn title(&self) -> &str {
-        "CyberpunkScarletProtocol"
-    }
 }

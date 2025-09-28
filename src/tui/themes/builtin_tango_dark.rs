@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BuiltinTangoDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009C0000);
-
-    fn id(&self) -> &str {
-        "builtin_tango_dark"
-    }
-
-    fn title(&self) -> &str {
-        "BuiltinTangoDark"
-    }
 }

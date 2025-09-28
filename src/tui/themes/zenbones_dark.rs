@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ZenbonesDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AE3E4C);
-
-    fn id(&self) -> &str {
-        "zenbones_dark"
-    }
-
-    fn title(&self) -> &str {
-        "ZenbonesDark"
-    }
 }

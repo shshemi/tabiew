@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for UltraViolent {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFC700);
-
-    fn id(&self) -> &str {
-        "ultra_violent"
-    }
-
-    fn title(&self) -> &str {
-        "UltraViolent"
-    }
 }

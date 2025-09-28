@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Laser {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF5343);
-
-    fn id(&self) -> &str {
-        "laser"
-    }
-
-    fn title(&self) -> &str {
-        "Laser"
-    }
 }

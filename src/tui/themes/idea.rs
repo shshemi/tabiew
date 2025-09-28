@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Idea {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC2226);
-
-    fn id(&self) -> &str {
-        "idea"
-    }
-
-    fn title(&self) -> &str {
-        "Idea"
-    }
 }

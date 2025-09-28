@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BrightLights {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9221);
-
-    fn id(&self) -> &str {
-        "bright_lights"
-    }
-
-    fn title(&self) -> &str {
-        "BrightLights"
-    }
 }

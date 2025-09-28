@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Nightfox {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AB9044);
-
-    fn id(&self) -> &str {
-        "nightfox"
-    }
-
-    fn title(&self) -> &str {
-        "Nightfox"
-    }
 }

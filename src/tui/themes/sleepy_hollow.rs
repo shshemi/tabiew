@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SleepyHollow {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008A0904);
-
-    fn id(&self) -> &str {
-        "sleepy_hollow"
-    }
-
-    fn title(&self) -> &str {
-        "SleepyHollow"
-    }
 }

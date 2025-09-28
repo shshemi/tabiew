@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ThayerBright {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C90042);
-
-    fn id(&self) -> &str {
-        "thayer_bright"
-    }
-
-    fn title(&self) -> &str {
-        "ThayerBright"
-    }
 }

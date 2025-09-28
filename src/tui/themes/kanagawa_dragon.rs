@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for KanagawaDragon {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0094443E);
-
-    fn id(&self) -> &str {
-        "kanagawa_dragon"
-    }
-
-    fn title(&self) -> &str {
-        "KanagawaDragon"
-    }
 }

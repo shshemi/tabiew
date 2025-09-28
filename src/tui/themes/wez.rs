@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Wez {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D9D25);
-
-    fn id(&self) -> &str {
-        "wez"
-    }
-
-    fn title(&self) -> &str {
-        "Wez"
-    }
 }

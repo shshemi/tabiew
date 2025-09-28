@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for KittyLowContrast {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009E9B00);
-
-    fn id(&self) -> &str {
-        "kitty_low_contrast"
-    }
-
-    fn title(&self) -> &str {
-        "KittyLowContrast"
-    }
 }

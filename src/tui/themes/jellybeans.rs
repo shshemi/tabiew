@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Jellybeans {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF8A4B);
-
-    fn id(&self) -> &str {
-        "jellybeans"
-    }
-
-    fn title(&self) -> &str {
-        "Jellybeans"
-    }
 }

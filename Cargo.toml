@@ -94,6 +94,8 @@ serde = { version = "1.0.225", features = ["derive"] }
 toml = "0.9.6"
 shell-words = "1.1.0"
 tui-scrollview = "0.5.1"
+strum = "0.27"
+strum_macros = "0.27"
 
 [build-dependencies]
 clap = { version = "4.5.47", features = ["derive"] }

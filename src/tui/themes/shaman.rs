@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Shaman {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00820000);
-
-    fn id(&self) -> &str {
-        "shaman"
-    }
-
-    fn title(&self) -> &str {
-        "Shaman"
-    }
 }

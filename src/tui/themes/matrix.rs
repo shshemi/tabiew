@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Matrix {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA700);
-
-    fn id(&self) -> &str {
-        "matrix"
-    }
-
-    fn title(&self) -> &str {
-        "Matrix"
-    }
 }

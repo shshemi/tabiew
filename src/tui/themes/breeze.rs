@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Breeze {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C64400);
-
-    fn id(&self) -> &str {
-        "breeze"
-    }
-
-    fn title(&self) -> &str {
-        "Breeze"
-    }
 }

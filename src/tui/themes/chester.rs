@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Chester {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF980F);
-
-    fn id(&self) -> &str {
-        "chester"
-    }
-
-    fn title(&self) -> &str {
-        "Chester"
-    }
 }

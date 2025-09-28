@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Chalk {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008D1F2A);
-
-    fn id(&self) -> &str {
-        "chalk"
-    }
-
-    fn title(&self) -> &str {
-        "Chalk"
-    }
 }

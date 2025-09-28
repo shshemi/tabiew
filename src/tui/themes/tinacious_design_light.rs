@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for TinaciousDesignLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9C36);
-
-    fn id(&self) -> &str {
-        "tinacious_design_light"
-    }
-
-    fn title(&self) -> &str {
-        "TinaciousDesignLight"
-    }
 }

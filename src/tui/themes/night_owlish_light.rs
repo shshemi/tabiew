@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for NightOwlishLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AA7A00);
-
-    fn id(&self) -> &str {
-        "night_owlish_light"
-    }
-
-    fn title(&self) -> &str {
-        "NightOwlishLight"
-    }
 }

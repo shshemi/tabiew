@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for IcebergLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009C214A);
-
-    fn id(&self) -> &str {
-        "iceberg_light"
-    }
-
-    fn title(&self) -> &str {
-        "IcebergLight"
-    }
 }

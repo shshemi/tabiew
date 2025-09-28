@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for NvimLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x003B2300);
-
-    fn id(&self) -> &str {
-        "nvim_light"
-    }
-
-    fn title(&self) -> &str {
-        "NvimLight"
-    }
 }

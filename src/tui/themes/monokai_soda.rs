@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MonokaiSoda {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA5400);
-
-    fn id(&self) -> &str {
-        "monokai_soda"
-    }
-
-    fn title(&self) -> &str {
-        "MonokaiSoda"
-    }
 }

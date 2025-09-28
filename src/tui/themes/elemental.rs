@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Elemental {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00680000);
-
-    fn id(&self) -> &str {
-        "elemental"
-    }
-
-    fn title(&self) -> &str {
-        "Elemental"
-    }
 }

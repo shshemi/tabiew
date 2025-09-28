@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ChallengerDeep {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF2428);
-
-    fn id(&self) -> &str {
-        "challenger_deep"
-    }
-
-    fn title(&self) -> &str {
-        "ChallengerDeep"
-    }
 }

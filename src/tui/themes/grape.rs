@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Grape {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BD0031);
-
-    fn id(&self) -> &str {
-        "grape"
-    }
-
-    fn title(&self) -> &str {
-        "Grape"
-    }
 }

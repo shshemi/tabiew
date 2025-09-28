@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Zenburn {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C0AF7F);
-
-    fn id(&self) -> &str {
-        "zenburn"
-    }
-
-    fn title(&self) -> &str {
-        "Zenburn"
-    }
 }

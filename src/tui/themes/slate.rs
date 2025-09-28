@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Slate {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B2788F);
-
-    fn id(&self) -> &str {
-        "slate"
-    }
-
-    fn title(&self) -> &str {
-        "Slate"
-    }
 }

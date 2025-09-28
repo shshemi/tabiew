@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Afterglow {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B58537);
-
-    fn id(&self) -> &str {
-        "afterglow"
-    }
-
-    fn title(&self) -> &str {
-        "Afterglow"
-    }
 }

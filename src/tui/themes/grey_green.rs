@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GreyGreen {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF00C0);
-
-    fn id(&self) -> &str {
-        "grey_green"
-    }
-
-    fn title(&self) -> &str {
-        "GreyGreen"
-    }
 }

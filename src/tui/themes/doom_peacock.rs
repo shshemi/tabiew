@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for DoomPeacock {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009B1B00);
-
-    fn id(&self) -> &str {
-        "doom_peacock"
-    }
-
-    fn title(&self) -> &str {
-        "DoomPeacock"
-    }
 }

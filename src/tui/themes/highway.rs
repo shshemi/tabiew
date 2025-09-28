@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Highway {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9B0E);
-
-    fn id(&self) -> &str {
-        "highway"
-    }
-
-    fn title(&self) -> &str {
-        "Highway"
-    }
 }

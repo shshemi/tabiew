@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AppleClassic {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009A0097);
-
-    fn id(&self) -> &str {
-        "apple_classic"
-    }
-
-    fn title(&self) -> &str {
-        "AppleClassic"
-    }
 }

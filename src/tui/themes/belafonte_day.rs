@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BelafonteDay {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BA7519);
-
-    fn id(&self) -> &str {
-        "belafonte_day"
-    }
-
-    fn title(&self) -> &str {
-        "BelafonteDay"
-    }
 }

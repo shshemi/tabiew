@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Desert {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0000);
-
-    fn id(&self) -> &str {
-        "desert"
-    }
-
-    fn title(&self) -> &str {
-        "Desert"
-    }
 }

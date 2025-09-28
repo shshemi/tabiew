@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for FishTank {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE9D2E);
-
-    fn id(&self) -> &str {
-        "fish_tank"
-    }
-
-    fn title(&self) -> &str {
-        "FishTank"
-    }
 }

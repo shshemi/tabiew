@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Aura {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3737);
-
-    fn id(&self) -> &str {
-        "aura"
-    }
-
-    fn title(&self) -> &str {
-        "Aura"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for HavnDaggry {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008E3B00);
-
-    fn id(&self) -> &str {
-        "havn_daggry"
-    }
-
-    fn title(&self) -> &str {
-        "HavnDaggry"
-    }
 }

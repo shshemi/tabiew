@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for FirefoxDev {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B60823);
-
-    fn id(&self) -> &str {
-        "firefox_dev"
-    }
-
-    fn title(&self) -> &str {
-        "FirefoxDev"
-    }
 }

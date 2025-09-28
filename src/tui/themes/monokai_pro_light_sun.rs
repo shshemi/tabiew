@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for MonokaiProLightSun {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A42700);
-
-    fn id(&self) -> &str {
-        "monokai_pro_light_sun"
-    }
-
-    fn title(&self) -> &str {
-        "MonokaiProLightSun"
-    }
 }

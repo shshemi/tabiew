@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Arthur {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B87E2B);
-
-    fn id(&self) -> &str {
-        "arthur"
-    }
-
-    fn title(&self) -> &str {
-        "Arthur"
-    }
 }

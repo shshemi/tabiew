@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for JackieBrown {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BF2704);
-
-    fn id(&self) -> &str {
-        "jackie_brown"
-    }
-
-    fn title(&self) -> &str {
-        "JackieBrown"
-    }
 }

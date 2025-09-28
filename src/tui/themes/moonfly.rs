@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Moonfly {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF2424);
-
-    fn id(&self) -> &str {
-        "moonfly"
-    }
-
-    fn title(&self) -> &str {
-        "Moonfly"
-    }
 }

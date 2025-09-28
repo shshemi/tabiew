@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AdwaitaDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C59200);
-
-    fn id(&self) -> &str {
-        "adwaita_dark"
-    }
-
-    fn title(&self) -> &str {
-        "AdwaitaDark"
-    }
 }

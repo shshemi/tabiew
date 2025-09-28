@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for GruvboxMaterial {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE6D3E);
-
-    fn id(&self) -> &str {
-        "gruvbox_material"
-    }
-
-    fn title(&self) -> &str {
-        "GruvboxMaterial"
-    }
 }

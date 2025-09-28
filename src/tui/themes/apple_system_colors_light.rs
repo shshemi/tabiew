@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AppleSystemColorsLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D7C00);
-
-    fn id(&self) -> &str {
-        "apple_system_colors_light"
-    }
-
-    fn title(&self) -> &str {
-        "AppleSystemColorsLight"
-    }
 }

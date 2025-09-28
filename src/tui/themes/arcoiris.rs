@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Arcoiris {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9626);
-
-    fn id(&self) -> &str {
-        "arcoiris"
-    }
-
-    fn title(&self) -> &str {
-        "Arcoiris"
-    }
 }

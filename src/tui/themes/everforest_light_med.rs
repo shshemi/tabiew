@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for EverforestLightMed {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B64E50);
-
-    fn id(&self) -> &str {
-        "everforest_light_med"
-    }
-
-    fn title(&self) -> &str {
-        "EverforestLightMed"
-    }
 }

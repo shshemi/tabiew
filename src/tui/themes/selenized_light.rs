@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SelenizedLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A20000);
-
-    fn id(&self) -> &str {
-        "selenized_light"
-    }
-
-    fn title(&self) -> &str {
-        "SelenizedLight"
-    }
 }

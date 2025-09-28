@@ -58,14 +58,6 @@ impl Styler for Terminal {
         Style::default().fg(Color::White)
     }
 
-    fn id(&self) -> &str {
-        "terminal"
-    }
-
-    fn title(&self) -> &str {
-        "Terminal"
-    }
-
     fn text_highlighted(&self) -> Style {
         Style::default().fg(Color::Yellow)
     }

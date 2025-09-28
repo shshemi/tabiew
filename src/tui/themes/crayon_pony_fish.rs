@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for CrayonPonyFish {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B87836);
-
-    fn id(&self) -> &str {
-        "crayon_pony_fish"
-    }
-
-    fn title(&self) -> &str {
-        "CrayonPonyFish"
-    }
 }

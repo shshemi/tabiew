@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for IrBlack {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFCE87);
-
-    fn id(&self) -> &str {
-        "ir_black"
-    }
-
-    fn title(&self) -> &str {
-        "IrBlack"
-    }
 }

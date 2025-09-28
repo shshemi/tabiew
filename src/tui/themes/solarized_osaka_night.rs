@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SolarizedOsakaNight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C7465E);
-
-    fn id(&self) -> &str {
-        "solarized_osaka_night"
-    }
-
-    fn title(&self) -> &str {
-        "SolarizedOsakaNight"
-    }
 }

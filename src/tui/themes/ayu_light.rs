@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for AyuLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0303);
-
-    fn id(&self) -> &str {
-        "ayu_light"
-    }
-
-    fn title(&self) -> &str {
-        "AyuLight"
-    }
 }

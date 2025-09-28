@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Srcery {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CB8800);
-
-    fn id(&self) -> &str {
-        "srcery"
-    }
-
-    fn title(&self) -> &str {
-        "Srcery"
-    }
 }

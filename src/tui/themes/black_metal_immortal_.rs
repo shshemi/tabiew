@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for BlackMetalImmortal {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007A7A7A);
-
-    fn id(&self) -> &str {
-        "black_metal_immortal_"
-    }
-
-    fn title(&self) -> &str {
-        "BlackMetalImmortal"
-    }
 }

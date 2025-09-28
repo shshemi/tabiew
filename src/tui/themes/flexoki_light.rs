@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for FlexokiLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007F0000);
-
-    fn id(&self) -> &str {
-        "flexoki_light"
-    }
-
-    fn title(&self) -> &str {
-        "FlexokiLight"
-    }
 }

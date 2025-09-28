@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Github {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C8BE97);
-
-    fn id(&self) -> &str {
-        "git_hub"
-    }
-
-    fn title(&self) -> &str {
-        "Github"
-    }
 }

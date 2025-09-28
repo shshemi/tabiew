@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Spiderman {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B60000);
-
-    fn id(&self) -> &str {
-        "spiderman"
-    }
-
-    fn title(&self) -> &str {
-        "Spiderman"
-    }
 }

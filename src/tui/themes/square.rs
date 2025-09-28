@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Square {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BCBB8E);
-
-    fn id(&self) -> &str {
-        "square"
-    }
-
-    fn title(&self) -> &str {
-        "Square"
-    }
 }

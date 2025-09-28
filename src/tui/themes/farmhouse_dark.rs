@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for FarmhouseDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00984300);
-
-    fn id(&self) -> &str {
-        "farmhouse_dark"
-    }
-
-    fn title(&self) -> &str {
-        "FarmhouseDark"
-    }
 }

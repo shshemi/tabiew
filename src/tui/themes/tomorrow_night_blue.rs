@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for TomorrowNightBlue {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF6D74);
-
-    fn id(&self) -> &str {
-        "tomorrow_night_blue"
-    }
-
-    fn title(&self) -> &str {
-        "TomorrowNightBlue"
-    }
 }

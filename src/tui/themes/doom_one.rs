@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for DoomOne {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3C3B);
-
-    fn id(&self) -> &str {
-        "doom_one"
-    }
-
-    fn title(&self) -> &str {
-        "DoomOne"
-    }
 }

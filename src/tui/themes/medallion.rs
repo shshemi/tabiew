@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Medallion {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A38D00);
-
-    fn id(&self) -> &str {
-        "medallion"
-    }
-
-    fn title(&self) -> &str {
-        "Medallion"
-    }
 }

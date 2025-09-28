@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for CutiePro {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C55639);
-
-    fn id(&self) -> &str {
-        "cutie_pro"
-    }
-
-    fn title(&self) -> &str {
-        "CutiePro"
-    }
 }

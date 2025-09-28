@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Dayfox {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007C2400);
-
-    fn id(&self) -> &str {
-        "dayfox"
-    }
-
-    fn title(&self) -> &str {
-        "Dayfox"
-    }
 }

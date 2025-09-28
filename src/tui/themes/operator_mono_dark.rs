@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for OperatorMonoDark {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A4A667);
-
-    fn id(&self) -> &str {
-        "operator_mono_dark"
-    }
-
-    fn title(&self) -> &str {
-        "OperatorMonoDark"
-    }
 }

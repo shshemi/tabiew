@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for ForestBlue {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C8515E);
-
-    fn id(&self) -> &str {
-        "forest_blue"
-    }
-
-    fn title(&self) -> &str {
-        "ForestBlue"
-    }
 }

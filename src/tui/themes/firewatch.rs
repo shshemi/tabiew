@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Firewatch {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AF8533);
-
-    fn id(&self) -> &str {
-        "firewatch"
-    }
-
-    fn title(&self) -> &str {
-        "Firewatch"
-    }
 }

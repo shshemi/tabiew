@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Fairyfloss {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF88A1);
-
-    fn id(&self) -> &str {
-        "fairyfloss"
-    }
-
-    fn title(&self) -> &str {
-        "Fairyfloss"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Kanagawabones {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B59253);
-
-    fn id(&self) -> &str {
-        "kanagawabones"
-    }
-
-    fn title(&self) -> &str {
-        "Kanagawabones"
-    }
 }

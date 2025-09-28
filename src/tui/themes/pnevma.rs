@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Pnevma {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A77F57);
-
-    fn id(&self) -> &str {
-        "pnevma"
-    }
-
-    fn title(&self) -> &str {
-        "Pnevma"
-    }
 }

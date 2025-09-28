@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Wryan {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x005C1635);
-
-    fn id(&self) -> &str {
-        "wryan"
-    }
-
-    fn title(&self) -> &str {
-        "Wryan"
-    }
 }

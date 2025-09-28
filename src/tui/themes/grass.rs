@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Grass {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B78000);
-
-    fn id(&self) -> &str {
-        "grass"
-    }
-
-    fn title(&self) -> &str {
-        "Grass"
-    }
 }

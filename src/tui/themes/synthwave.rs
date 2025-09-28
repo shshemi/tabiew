@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Synthwave {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CDC804);
-
-    fn id(&self) -> &str {
-        "synthwave"
-    }
-
-    fn title(&self) -> &str {
-        "Synthwave"
-    }
 }

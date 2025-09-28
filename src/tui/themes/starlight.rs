@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Starlight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C6002A);
-
-    fn id(&self) -> &str {
-        "starlight"
-    }
-
-    fn title(&self) -> &str {
-        "Starlight"
-    }
 }

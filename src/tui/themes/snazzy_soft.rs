@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for SnazzySoft {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF2C27);
-
-    fn id(&self) -> &str {
-        "snazzy_soft"
-    }
-
-    fn title(&self) -> &str {
-        "SnazzySoft"
-    }
 }

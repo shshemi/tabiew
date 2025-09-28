@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Sundried {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0077160D);
-
-    fn id(&self) -> &str {
-        "sundried"
-    }
-
-    fn title(&self) -> &str {
-        "Sundried"
-    }
 }

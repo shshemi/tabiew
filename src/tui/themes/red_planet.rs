@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for RedPlanet {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B88F3A);
-
-    fn id(&self) -> &str {
-        "red_planet"
-    }
-
-    fn title(&self) -> &str {
-        "RedPlanet"
-    }
 }

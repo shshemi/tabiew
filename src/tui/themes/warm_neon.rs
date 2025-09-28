@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for WarmNeon {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C900CB);
-
-    fn id(&self) -> &str {
-        "warm_neon"
-    }
-
-    fn title(&self) -> &str {
-        "WarmNeon"
-    }
 }

@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Glacier {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CB6405);
-
-    fn id(&self) -> &str {
-        "glacier"
-    }
-
-    fn title(&self) -> &str {
-        "Glacier"
-    }
 }

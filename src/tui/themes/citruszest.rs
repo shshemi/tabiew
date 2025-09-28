@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Citruszest {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA400);
-
-    fn id(&self) -> &str {
-        "citruszest"
-    }
-
-    fn title(&self) -> &str {
-        "Citruszest"
-    }
 }

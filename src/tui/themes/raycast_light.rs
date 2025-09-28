@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for RaycastLight {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C87300);
-
-    fn id(&self) -> &str {
-        "raycast_light"
-    }
-
-    fn title(&self) -> &str {
-        "RaycastLight"
-    }
 }

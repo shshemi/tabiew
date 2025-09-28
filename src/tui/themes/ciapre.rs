@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Ciapre {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009C5B0F);
-
-    fn id(&self) -> &str {
-        "ciapre"
-    }
-
-    fn title(&self) -> &str {
-        "Ciapre"
-    }
 }

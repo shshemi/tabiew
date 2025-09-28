@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Cyberdyne {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF5343);
-
-    fn id(&self) -> &str {
-        "cyberdyne"
-    }
-
-    fn title(&self) -> &str {
-        "Cyberdyne"
-    }
 }

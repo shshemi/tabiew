@@ -34,12 +34,4 @@ impl SixColorsTwoRowsStyler for Retro {
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00007100);
-
-    fn id(&self) -> &str {
-        "retro"
-    }
-
-    fn title(&self) -> &str {
-        "Retro"
-    }
 }
