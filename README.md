@@ -13,6 +13,7 @@ Tabiew is a lightweight TUI application that allows users to view and query tabu
 - 📝 Scripting support
 - 🗂️ Multi-table functionality
 - 📈 Plotting
+- 🎨 Access to 400+ beautiful themes
 
 ## Wiki
 
@@ -152,6 +153,11 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
+
+## Acknowledgments
+
+This application uses themes from the [Ghostty terminal](https://ghostty.org/).
+
 
 ## License
 
