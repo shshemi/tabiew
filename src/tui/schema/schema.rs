@@ -12,7 +12,6 @@ use crate::{
             data_frame_info::{DataFrameInfo, DataFrameInfoState},
             data_frame_names::{DataFrameNames, DataFrameNamesState},
         },
-        themes::styler::Styler,
         widgets::block::Block,
     },
 };

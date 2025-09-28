@@ -14,7 +14,6 @@ use crate::{
     misc::globals::theme,
     tui::{
         status_bar::{StatusBar, Tag},
-        themes::styler::Styler,
         widgets::{
             block::Block,
             input::{Input, InputState},

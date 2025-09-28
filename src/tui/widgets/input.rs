@@ -1,9 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{
-    misc::globals::theme,
-    tui::{themes::styler::Styler, widgets::block::Block},
-};
+use crate::{misc::globals::theme, tui::widgets::block::Block};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,

@@ -1,9 +1,9 @@
 use std::{
     fmt::Debug,
+    ops::Deref,
     sync::{Arc, OnceLock},
 };
 
-use ratatui::style::Style;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -150,20 +150,10 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Theme {
-    styler: Option<Arc<dyn Styler + Send + Sync>>,
+    styler: Arc<dyn Styler + Send + Sync>,
 }
 
 impl Theme {
-    fn new<S: Styler + Send + Sync + 'static>(theme: S) -> Self {
-        Theme {
-            styler: Some(Arc::new(theme)),
-        }
-    }
-
-    fn styler(&self) -> Arc<dyn Styler> {
-        self.styler.clone().unwrap_or(Arc::new(Monokai))
-    }
-
     pub fn all() -> &'static [Theme] {
         static ALL: OnceLock<Vec<Theme>> = OnceLock::new();
         ALL.get_or_init(|| {
@@ -581,8 +571,20 @@ impl Theme {
         })
     }
 
-    pub const fn default() -> Self {
-        Self { styler: None }
+    fn new<S: Styler + Send + Sync + 'static>(theme: S) -> Self {
+        Theme {
+            styler: Arc::new(theme),
+        }
+    }
+
+    fn styler(&self) -> Arc<dyn Styler + Send + Sync> {
+        self.styler.clone()
+    }
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self::new(Monokai)
     }
 }
 
@@ -1001,69 +1003,69 @@ impl From<AppTheme> for Theme {
     }
 }
 
-impl Styler for Theme {
-    fn table_header(&self) -> Style {
-        self.styler().table_header()
-    }
+// impl Styler for Theme {
+//     fn table_header(&self) -> Style {
+//         self.styler().table_header()
+//     }
 
-    fn row(&self, row: usize) -> Style {
-        self.styler().row(row)
-    }
+//     fn row(&self, row: usize) -> Style {
+//         self.styler().row(row)
+//     }
 
-    fn row_highlighted(&self) -> Style {
-        self.styler().row_highlighted()
-    }
+//     fn row_highlighted(&self) -> Style {
+//         self.styler().row_highlighted()
+//     }
 
-    fn header(&self, col: usize) -> Style {
-        self.styler().header(col)
-    }
+//     fn header(&self, col: usize) -> Style {
+//         self.styler().header(col)
+//     }
 
-    fn tag(&self, col: usize) -> Style {
-        self.styler().tag(col)
-    }
+//     fn tag(&self, col: usize) -> Style {
+//         self.styler().tag(col)
+//     }
 
-    fn block(&self) -> Style {
-        self.styler().block()
-    }
+//     fn block(&self) -> Style {
+//         self.styler().block()
+//     }
 
-    fn block_tag(&self) -> Style {
-        self.styler().block_tag()
-    }
+//     fn block_tag(&self) -> Style {
+//         self.styler().block_tag()
+//     }
 
-    fn text(&self) -> Style {
-        self.styler().text()
-    }
+//     fn text(&self) -> Style {
+//         self.styler().text()
+//     }
 
-    fn subtext(&self) -> Style {
-        self.styler().subtext()
-    }
+//     fn subtext(&self) -> Style {
+//         self.styler().subtext()
+//     }
 
-    fn error(&self) -> Style {
-        self.styler().error()
-    }
+//     fn error(&self) -> Style {
+//         self.styler().error()
+//     }
 
-    fn graph(&self, idx: usize) -> Style {
-        self.styler().graph(idx)
-    }
+//     fn graph(&self, idx: usize) -> Style {
+//         self.styler().graph(idx)
+//     }
 
-    fn id(&self) -> &str {
-        if let Some(inner) = self.styler.as_ref() {
-            inner.id()
-        } else {
-            "monokai"
-        }
-    }
+//     fn id(&self) -> &str {
+//         self.styler.id()
+//     }
 
-    fn title(&self) -> &str {
-        if let Some(inner) = self.styler.as_ref() {
-            inner.title()
-        } else {
-            "Monokai"
-        }
-    }
+//     fn title(&self) -> &str {
+//         self.styler.title()
+//     }
 
-    fn text_highlighted(&self) -> Style {
-        self.styler().text_highlighted()
+//     fn text_highlighted(&self) -> Style {
+//         self.styler().text_highlighted()
+//     }
+// }
+
+impl Deref for Theme {
+    type Target = Arc<dyn Styler + Send + Sync>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.styler
     }
 }
 

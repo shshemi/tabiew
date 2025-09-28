@@ -8,7 +8,6 @@ use crate::{
     misc::{globals::theme, sql::TableSchema, type_ext::human_readable_size},
     tui::{
         status_bar::{StatusBar, Tag},
-        themes::styler::Styler,
         widgets::block::Block,
     },
 };

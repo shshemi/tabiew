@@ -9,20 +9,21 @@ use crate::{misc::config::Config, tui::themes::theme::Theme};
 
 use super::sql::SqlBackend;
 
-static CONFIG: Config = Config::new();
+// static CONFIG: Config = Config::new();
 static SQL_BACKEND: Mutex<Lazy<SqlBackend>> = Mutex::new(Lazy::new(SqlBackend::default));
 static STDIN_CONTENT: OnceLock<Vec<u8>> = OnceLock::new();
 
 pub fn config() -> &'static Config {
-    &CONFIG
+    static CONFIG: OnceLock<Config> = OnceLock::new();
+    CONFIG.get_or_init(Config::new)
 }
 
 pub fn set_theme(theme: Theme) {
-    *CONFIG.theme_mut() = theme;
+    *config().theme_mut() = theme;
 }
 
 pub fn theme() -> impl Deref<Target = Theme> {
-    CONFIG.theme()
+    config().theme()
 }
 
 pub fn sql() -> impl DerefMut<Target = SqlBackend> {
