@@ -11,9 +11,21 @@ use ratatui::{
 #[derive(Debug, Default)]
 pub struct InputState {
     input: tui_input::Input,
+    input_type: InputType,
+    max_len: Option<usize>,
 }
 
 impl InputState {
+    pub fn max_len(self, max_len: impl Into<Option<usize>>) -> Self {
+        InputState {
+            max_len: max_len.into(),
+            ..self
+        }
+    }
+    pub fn input_type(self, input_type: InputType) -> Self {
+        InputState { input_type, ..self }
+    }
+
     pub fn delete_prev(&mut self) {
         self.input.handle(tui_input::InputRequest::DeletePrevChar);
     }
@@ -39,7 +51,13 @@ impl InputState {
     }
 
     pub fn insert(&mut self, c: char) {
-        self.input.handle(tui_input::InputRequest::InsertChar(c));
+        if let Some(max_len) = self.max_len {
+            if self.value().chars().count() < max_len {
+                self.input.handle(tui_input::InputRequest::InsertChar(c));
+            }
+        } else {
+            self.input.handle(tui_input::InputRequest::InsertChar(c));
+        }
     }
 
     pub fn goto_next_word(&mut self) {
@@ -75,7 +93,12 @@ impl InputState {
             KeyCode::Home => self.goto_start(),
             KeyCode::End => self.goto_end(),
             KeyCode::Delete => self.delete_next(),
-            KeyCode::Char(c) => self.insert(c),
+            KeyCode::Char(c) => match self.input_type {
+                InputType::Any => self.insert(c),
+                InputType::Numeric if c.is_numeric() => self.insert(c),
+                InputType::Alphabetic if c.is_alphabetic() => self.insert(c),
+                _ => (),
+            },
             _ => (),
         }
     }
@@ -186,4 +209,12 @@ impl StatefulWidget for Input<'_> {
             }
         }
     }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub enum InputType {
+    #[default]
+    Any,
+    Numeric,
+    Alphabetic,
 }
