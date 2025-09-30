@@ -182,6 +182,12 @@ impl Default for KeyHandler {
 
         // ----- table keybindings
         hndl.keybinds(Context::Table)
+            // F1
+            .add(
+                Keybind::default()
+                    .code(KeyCode::F(1))
+                    .action(AppAction::ShowHelp),
+            )
             // Q
             .add(Keybind::default().char('Q').action(AppAction::Quit))
             // q
@@ -841,6 +847,20 @@ impl Default for KeyHandler {
                     .action(AppAction::ThemeSelectorCommit),
             )
             .fallback(|event| Some(AppAction::ThemeSelectorHandleEvent(event)));
+
+        // ---- help modal keybindings
+        hndl.keybinds(Context::HelpModal)
+            .add(
+                Keybind::default()
+                    .char('q')
+                    .action(AppAction::TableDismissModal),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::TableDismissModal),
+            );
+
         hndl
     }
 }
