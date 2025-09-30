@@ -57,6 +57,14 @@ pub struct Args {
     pub infer_datetimes: bool,
 
     #[arg(
+        short = 't',
+        long,
+        help = "Treat input as tab-separated values (TSV). Shortcut for --separator $'\\t'",
+        default_value_t = false
+    )]
+    pub tsv: bool,
+
+    #[arg(
         long,
         help = "Character used as the field separator or delimiter while loading DSV files.",
         required = false,

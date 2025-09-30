@@ -75,7 +75,13 @@ pub trait BuildReader {
 impl BuildReader for Args {
     fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>> {
         match self.format {
-            Some(Format::Dsv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
+            Some(Format::Dsv) => {
+                let mut reader = CsvToDataFrame::from_args(self);
+                if self.tsv {
+                    reader.separator_char = '\t';
+                }
+                Ok(Box::new(reader))
+            }
             Some(Format::Parquet) => Ok(Box::new(ParquetToDataFrame)),
             Some(Format::Json) => Ok(Box::new(JsonToDataFrame::from_args(self))),
             Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
@@ -98,7 +104,13 @@ impl BuildReader for Args {
                 Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
                     Ok(Box::new(ExcelToDataFarmes::from_args(self)))
                 }
-                _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
+                _ => {
+                    let mut reader = CsvToDataFrame::from_args(self);
+                    if self.tsv {
+                        reader.separator_char = '\t';
+                    }
+                    Ok(Box::new(reader))
+                }
             },
         }
     }
@@ -287,5 +299,82 @@ impl ReadToDataFrames for ArrowIpcToDataFrame {
             Source::Stdin => IpcReader::new(stdin()).set_rechunk(true).finish()?,
         };
         Ok([(input.table_name(), df)].into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::args::{Args, Format, InferSchema};
+
+    fn default_test_args() -> Args {
+        Args {
+            files: vec![],
+            multiparts: vec![],
+            script: None,
+            format: None,
+            sqlite_key: None,
+            no_header: false,
+            ignore_errors: false,
+            infer_schema: InferSchema::Safe,
+            infer_datetimes: false,
+            tsv: false,
+            separator: ',',
+            quote_char: '"',
+            widths: String::default(),
+            separator_length: 1,
+            no_flexible_width: false,
+            truncate_ragged_lines: false,
+            generate: vec![],
+            infer_types: "int float".parse().unwrap(),
+            no_type_inference: false,
+        }
+    }
+
+    #[test]
+    fn test_tsv_flag_sets_tab_separator() {
+        let mut args = default_test_args();
+        args.tsv = true;
+
+        let reader = args.build_reader("test.csv").unwrap();
+        let csv_reader = reader.as_ref() as *const dyn ReadToDataFrames as *const CsvToDataFrame;
+        unsafe {
+            assert_eq!((*csv_reader).separator_char, '\t');
+        }
+    }
+
+    #[test]
+    fn test_tsv_flag_with_dsv_format() {
+        let mut args = default_test_args();
+        args.tsv = true;
+        args.format = Some(Format::Dsv);
+
+        let reader = args.build_reader("test.csv").unwrap();
+        let csv_reader = reader.as_ref() as *const dyn ReadToDataFrames as *const CsvToDataFrame;
+        unsafe {
+            assert_eq!((*csv_reader).separator_char, '\t');
+        }
+    }
+
+    #[test]
+    fn test_no_tsv_flag_keeps_comma_separator() {
+        let args = default_test_args();
+
+        let reader = args.build_reader("test.csv").unwrap();
+        let csv_reader = reader.as_ref() as *const dyn ReadToDataFrames as *const CsvToDataFrame;
+        unsafe {
+            assert_eq!((*csv_reader).separator_char, ',');
+        }
+    }
+
+    #[test]
+    fn test_tsv_extension_detection() {
+        let args = default_test_args();
+
+        let reader = args.build_reader("test.tsv").unwrap();
+        let csv_reader = reader.as_ref() as *const dyn ReadToDataFrames as *const CsvToDataFrame;
+        unsafe {
+            assert_eq!((*csv_reader).separator_char, '\t');
+        }
     }
 }
