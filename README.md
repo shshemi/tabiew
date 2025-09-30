@@ -82,6 +82,11 @@ tw <path_to_csv(s)>
 
 To open TSV file(s), use:
 ```bash
+tw --tsv <path_to_tsv(s)>
+```
+
+Alternatively, you can manually specify the separator and header options:
+```bash
 tw <path_to_tsv(s)> --separator $'\t' --no-header
 ```
 
