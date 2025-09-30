@@ -99,6 +99,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 
 |Key Combination|Functionality|
 |-|-|
+| `F1`| Show help with all keyboard shortcuts|
 | `Enter`| Open sheet|
 | `h j k l` or `← ↓ ↑ →`| Navigation |
 | `b` / `w` | Previous / next column|
@@ -125,7 +126,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 |`q` or `quit` |`q`| Return to table from sheet view otherwise quit|
 |`schema`| `schema`| Show loaded data frame(s) alongside their path(s)|
 |`reset`| `reset`| Reset the table to the original data frame|
-|`help`| `help`| Show help menu|
+|`help`| `help`| Show command reference in a new tab|
 
 
 ## Themes
