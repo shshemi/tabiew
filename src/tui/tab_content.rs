@@ -1,11 +1,12 @@
 use polars::frame::DataFrame;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Margin, Rect},
-    widgets::StatefulWidget,
+    widgets::{StatefulWidget, Widget},
 };
 
 use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
+    popups::help_modal::HelpModal,
     search_bar::{SearchBar, SearchBarState},
     sheet::{Sheet, SheetState},
 };
@@ -31,6 +32,7 @@ pub enum Modal {
     DataFrameInfo(DataFrameInfoState),
     ScatterPlot(ScatterPlotState),
     HistogramPlot(HistogramPlotState),
+    HelpModal,
     #[default]
     None,
 }
@@ -136,6 +138,7 @@ impl TabContentState {
             Modal::None => (),
             Modal::ScatterPlot(_) => (),
             Modal::HistogramPlot(_) => (),
+            Modal::HelpModal => (),
         }
     }
 
@@ -257,6 +260,14 @@ impl StatefulWidget for TabContent {
                     // .flex(Flex::Center)
                     .areas(area);
                 HistogramPlot.render(area, buf, state);
+            }
+            Modal::HelpModal => {
+                let [area] = Layout::horizontal([Constraint::Length(90)])
+                    .flex(Flex::Center)
+                    .areas(area);
+                let [_, area] = Layout::vertical([Constraint::Length(2), Constraint::Length(50)])
+                    .areas(area);
+                HelpModal::new().render(area, buf);
             }
             Modal::None => (),
         }
