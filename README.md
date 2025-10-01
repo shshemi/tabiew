@@ -77,20 +77,45 @@ cp ./target/release/tw <system_or_local_bin_path>
 
 Start Tabiew with `tw`
 ```bash
-tw <path_to_csv(s)>
+tw <path_to_file(s)>
 ```
 
-To open TSV file(s), use:
+Tabiew automatically detects the file format based on the file extension. Supported formats include:
+- **CSV** (`.csv`) - Comma-separated values
+- **TSV** (`.tsv`) - Tab-separated values
+- **Parquet** (`.parquet`, `.pqt`)
+- **JSON** (`.json`)
+- **JSONL** (`.jsonl`) - JSON Lines
+- **Arrow** (`.arrow`)
+- **FWF** (`.fwf`) - Fixed-width format
+- **SQLite** (`.db`, `.sqlite`)
+- **Excel** (`.xls`, `.xlsx`, `.xlsm`, `.xlsb`)
+
+Examples:
+
+Open various files (format automatically detected):
 ```bash
-tw <path_to_tsv(s)> --separator $'\t' --no-header
+tw data.csv
+tw data.tsv
+tw data.arrow
 ```
 
-To open parquet file(s), use:
+Open CSV files with custom delimiter (pipe-separated):
 ```bash
-tw <path_to_parquet(s)> -f parquet
+tw data.csv --separator '|'
 ```
 
-To open a URL, use curl to pipe the output directly to Tabiew:
+Open CSV files with custom delimiter and no header row (semicolon-separated):
+```bash
+tw data.csv --separator ';' --no-header
+```
+
+Override format detection:
+```bash
+tw data.txt -f parquet
+```
+
+Open a URL using curl:
 ```bash
 curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 ```
