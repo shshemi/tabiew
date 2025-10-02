@@ -179,6 +179,7 @@ pub enum AppAction {
 
     RegisterDataFrame(String),
     Help,
+    ShowHelp,
     Quit,
 }
 
@@ -713,6 +714,12 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                     app.tabs_mut().len().saturating_sub(1),
                 )))
             }
+        }
+        AppAction::ShowHelp => {
+            if let Some(tab) = app.tabs_mut().selected_mut() {
+                *tab.modal_mut() = Modal::HelpModal;
+            }
+            Ok(None)
         }
         AppAction::Quit => {
             app.quit();
