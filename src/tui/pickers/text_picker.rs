@@ -27,6 +27,7 @@ impl TextPickerState {
 #[derive(Debug, Default)]
 pub struct TextPicker<'a> {
     block: Block<'a>,
+    hint: &'a str,
 }
 
 impl<'a> TextPicker<'a> {
@@ -37,6 +38,11 @@ impl<'a> TextPicker<'a> {
 
     pub fn bottom<T: Into<Line<'a>>>(mut self, bottom: T) -> Self {
         self.block = self.block.bottom(bottom);
+        self
+    }
+
+    pub fn hint(mut self, hint: &'a str) -> Self {
+        self.hint = hint;
         self
     }
 }
@@ -58,7 +64,7 @@ impl StatefulWidget for TextPicker<'_> {
         Widget::render(Clear, area, buf);
 
         StatefulWidget::render(
-            Input::default().block(self.block),
+            Input::default().block(self.block).hint(self.hint),
             area,
             buf,
             &mut state.input,
