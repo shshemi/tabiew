@@ -95,9 +95,7 @@ Examples:
 
 Open various files (format automatically detected):
 ```bash
-tw data.csv
-tw data.tsv
-tw data.arrow
+tw data.csv data.tsv data.arrow
 ```
 
 Open CSV files with custom delimiter (pipe-separated):
