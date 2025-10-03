@@ -1,30 +1,51 @@
 #[derive(Debug)]
 pub struct JaggedVec<T> {
     data: Vec<T>,
-    splits: Vec<usize>,
+    splt: Vec<usize>,
 }
 
 impl<T> JaggedVec<T> {
     pub fn new() -> Self {
         Self {
             data: Vec::new(),
-            splits: Vec::new(),
+            splt: Vec::new(),
         }
     }
 
     pub fn push(&mut self, v: impl IntoIterator<Item = T>) {
-        self.splits.push(self.data.len());
+        self.splt.push(self.data.len());
         self.data.extend(v);
     }
 
     pub fn get(&self, idx: usize) -> Option<&[T]> {
-        let start = self.splits.get(idx).copied()?;
+        let start = self.splt.get(idx).copied()?;
         let end = self
-            .splits
+            .splt
             .get(idx.saturating_add(1))
             .copied()
             .unwrap_or(self.data.len());
         Some(&self.data[start..end])
+    }
+
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter {
+            nidx: 0,
+            jvec: self,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Iter<'a, T> {
+    nidx: usize,
+    jvec: &'a JaggedVec<T>,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a [T];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.jvec.get(self.nidx).inspect(|_| self.nidx += 1)
     }
 }
 
@@ -42,7 +63,7 @@ mod tests {
     fn test_new_creates_empty_jagged_vec() {
         let jv: JaggedVec<i32> = JaggedVec::new();
         assert_eq!(jv.data.len(), 0);
-        assert_eq!(jv.splits.len(), 0);
+        assert_eq!(jv.splt.len(), 0);
     }
 
     #[test]
@@ -192,7 +213,7 @@ mod tests {
         jv.push(vec![3, 4, 5]); // split at 2
         jv.push(vec![6]); // split at 5
 
-        assert_eq!(jv.splits, vec![0, 2, 5]);
+        assert_eq!(jv.splt, vec![0, 2, 5]);
     }
 
     #[test]
@@ -222,7 +243,7 @@ mod tests {
             jv.push(vec![i]);
         }
 
-        assert_eq!(jv.splits.len(), 1000);
+        assert_eq!(jv.splt.len(), 1000);
         assert_eq!(jv.get(999), Some(&[999][..]));
     }
 
@@ -257,5 +278,102 @@ mod tests {
             jv.get(0),
             Some(&[Point { x: 1, y: 2 }, Point { x: 3, y: 4 }][..])
         );
+    }
+    #[test]
+    fn test_iter_on_empty_jagged_vec() {
+        let jv: JaggedVec<i32> = JaggedVec::new();
+        let mut iter = jv.iter();
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_single_vec() {
+        let mut jv = JaggedVec::new();
+        jv.push(vec![1, 2, 3]);
+        let mut iter = jv.iter();
+        assert_eq!(iter.next(), Some(&[1, 2, 3][..]));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_multiple_vecs() {
+        let mut jv = JaggedVec::new();
+        jv.push(vec![1, 2]);
+        jv.push(vec![3, 4, 5]);
+        jv.push(vec![6]);
+
+        let mut iter = jv.iter();
+        assert_eq!(iter.next(), Some(&[1, 2][..]));
+        assert_eq!(iter.next(), Some(&[3, 4, 5][..]));
+        assert_eq!(iter.next(), Some(&[6][..]));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_returns_none_after_exhaustion() {
+        let mut jv = JaggedVec::new();
+        jv.push(vec![1]);
+
+        let mut iter = jv.iter();
+        iter.next();
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_with_empty_slices() {
+        let mut jv = JaggedVec::new();
+        jv.push(Vec::<i32>::new());
+        jv.push(vec![1]);
+        jv.push(Vec::<i32>::new());
+
+        let mut iter = jv.iter();
+        assert_eq!(iter.next(), Some(&[][..]));
+        assert_eq!(iter.next(), Some(&[1][..]));
+        assert_eq!(iter.next(), Some(&[][..]));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_for_loop() {
+        let mut jv = JaggedVec::new();
+        jv.push(vec![1, 2]);
+        jv.push(vec![3, 4]);
+
+        let mut result = Vec::new();
+        for slice in jv.iter() {
+            result.extend_from_slice(slice);
+        }
+
+        assert_eq!(result, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_multiple_iterators_independent() {
+        let mut jv = JaggedVec::new();
+        jv.push(vec![1]);
+        jv.push(vec![2]);
+
+        let mut iter1 = jv.iter();
+        let mut iter2 = jv.iter();
+
+        assert_eq!(iter1.next(), Some(&[1][..]));
+        assert_eq!(iter2.next(), Some(&[1][..]));
+        assert_eq!(iter1.next(), Some(&[2][..]));
+        assert_eq!(iter2.next(), Some(&[2][..]));
+    }
+
+    #[test]
+    fn test_iter_nidx_increments_only_on_some() {
+        let mut jv = JaggedVec::new();
+        jv.push(vec![1]);
+
+        let mut iter = jv.iter();
+        iter.next(); // Returns Some, nidx should be 1
+        iter.next(); // Returns None, nidx should stay 1
+        iter.next(); // Returns None, nidx should stay 1
+
+        // If nidx incorrectly incremented, this would fail
+        assert_eq!(iter.nidx, 1);
     }
 }
