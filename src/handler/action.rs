@@ -11,6 +11,7 @@ use crate::{
     app::{App, Content},
     misc::{
         globals::{config, set_theme, sql},
+        jagged_vec::JaggedVec,
         paths::config_path,
         polars_ext::{IntoString, PlotData},
         type_inferer::TypeInferer,
@@ -1073,12 +1074,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(tab_content) = app.tabs_mut().selected_mut() {
                 let df = tab_content.table().data_frame();
                 if group_by.is_empty() {
-                    let data = df.scatter_plot_data(&x_lab, &y_lab)?;
+                    let mut data = JaggedVec::new();
+                    data.push(df.scatter_plot_data(&x_lab, &y_lab)?);
                     *tab_content.modal_mut() =
-                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, vec![data])?)
+                        Modal::ScatterPlot(ScatterPlotState::new(x_lab, y_lab, data)?)
                 } else {
                     let mut groups = Vec::new();
-                    let mut data = Vec::new();
+                    let mut data = JaggedVec::new();
                     for df in df.partition_by(&group_by, true)? {
                         let name = group_by
                             .iter()

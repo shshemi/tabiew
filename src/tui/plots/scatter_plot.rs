@@ -9,14 +9,18 @@ use ratatui::{
     },
 };
 
-use crate::{AppResult, misc::globals::theme, tui::widgets::block::Block};
+use crate::{
+    AppResult,
+    misc::{globals::theme, jagged_vec::JaggedVec},
+    tui::widgets::block::Block,
+};
 
 #[derive(Debug, Default)]
 pub struct ScatterPlot {}
 
 #[derive(Debug)]
 pub struct ScatterPlotState {
-    data: Vec<Vec<(f64, f64)>>,
+    data: JaggedVec<(f64, f64)>,
     x_bounds: [f64; 2],
     y_bounds: [f64; 2],
     x_label: String,
@@ -25,7 +29,7 @@ pub struct ScatterPlotState {
 }
 
 impl ScatterPlotState {
-    pub fn new(x_label: String, y_label: String, data: Vec<Vec<(f64, f64)>>) -> AppResult<Self> {
+    pub fn new(x_label: String, y_label: String, data: JaggedVec<(f64, f64)>) -> AppResult<Self> {
         let [x_bounds, y_bounds] = data
             .iter()
             .flat_map(|v| v.iter())
