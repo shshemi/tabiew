@@ -131,6 +131,10 @@ pub struct Args {
 #[derive(Debug, Clone, ValueEnum)]
 pub enum Format {
     Dsv,
+    #[value(alias = "csv")]
+    Csv,
+    #[value(alias = "tsv")]
+    Tsv,
     Parquet,
     Jsonl,
     Json,
@@ -234,5 +238,49 @@ impl InferSchema {
             InferSchema::Fast => Some(NonZero::new(128).unwrap()),
             InferSchema::Safe => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::reader::BuildReader;
+
+    #[test]
+    fn test_format_csv_alias() {
+        let args = Args::try_parse_from(["tabiew", "--format", "csv", "test.txt"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        assert!(matches!(args.format, Some(Format::Csv)));
+    }
+
+    #[test]
+    fn test_format_dsv() {
+        let args = Args::try_parse_from(["tabiew", "--format", "dsv", "test.txt"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        assert!(matches!(args.format, Some(Format::Dsv)));
+    }
+
+    #[test]
+    fn test_format_tsv_alias() {
+        let args = Args::try_parse_from(["tabiew", "--format", "tsv", "test.txt"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        assert!(matches!(args.format, Some(Format::Tsv)));
+    }
+
+    #[test]
+    fn test_csv_alias_builds_csv_reader() {
+        let args = Args::try_parse_from(["tabiew", "--format", "csv", "test.csv"]).unwrap();
+        let reader = args.build_reader("test.csv");
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_tsv_alias_builds_tsv_reader() {
+        let args = Args::try_parse_from(["tabiew", "--format", "tsv", "test.tsv"]).unwrap();
+        let reader = args.build_reader("test.tsv");
+        assert!(reader.is_ok());
     }
 }
