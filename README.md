@@ -113,7 +113,7 @@ Override format detection:
 tw data.txt -f parquet
 ```
 
-Delimiter-separated formats (CSV, TSV):
+Delimiter-separated formats (CSV, TSV, etc):
 ```bash
 # Explicitly use CSV format (comma by default, but can use custom delimiter)
 tw data.txt -f csv
