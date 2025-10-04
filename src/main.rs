@@ -212,7 +212,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
                             Ok(Some(next_action)) => action = next_action,
                             Ok(_) => break,
                             Err(err) => {
-                                app.error(err);
+                                app.show_error(err);
                                 break;
                             }
                         }

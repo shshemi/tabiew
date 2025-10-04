@@ -151,7 +151,7 @@ impl App {
             .map(|mut palette| palette.input().value().to_owned())
     }
 
-    pub fn error(&mut self, error: impl ToString) {
+    pub fn show_error(&mut self, error: impl ToString) {
         self.error = Some(error.to_string());
     }
 
