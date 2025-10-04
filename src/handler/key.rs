@@ -849,7 +849,7 @@ impl Default for KeyHandler {
             .fallback(|event| Some(AppAction::ThemeSelectorHandleEvent(event)));
 
         // ---- help modal keybindings
-        hndl.keybinds(Context::HelpModal)
+        hndl.keybinds(Context::Help)
             .add(
                 Keybind::default()
                     .char('q')

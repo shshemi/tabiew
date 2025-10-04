@@ -37,7 +37,7 @@ pub enum Context {
     ScatterPlot,
     HistogramPlot,
     ThemeSelector,
-    HelpModal,
+    Help,
 }
 
 impl Context {
@@ -55,7 +55,7 @@ impl Context {
             Context::ScatterPlot => Context::Empty.into(),
             Context::HistogramPlot => Context::Empty.into(),
             Context::ThemeSelector => Context::Empty.into(),
-            Context::HelpModal => Context::Empty.into(),
+            Context::Help => Context::Empty.into(),
         }
     }
 }
@@ -201,7 +201,7 @@ impl App {
                 Modal::DataFrameInfo(_) => Context::DataFrameInfo,
                 Modal::ScatterPlot(_) => Context::ScatterPlot,
                 Modal::HistogramPlot(_) => Context::HistogramPlot,
-                Modal::Help => Context::HelpModal,
+                Modal::Help => Context::Help,
             }
         } else {
             Context::Empty
