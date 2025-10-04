@@ -32,7 +32,7 @@ pub enum Modal {
     DataFrameInfo(DataFrameInfoState),
     ScatterPlot(ScatterPlotState),
     HistogramPlot(HistogramPlotState),
-    HelpModal,
+    Help,
     #[default]
     None,
 }
@@ -138,7 +138,7 @@ impl TabContentState {
             Modal::None => (),
             Modal::ScatterPlot(_) => (),
             Modal::HistogramPlot(_) => (),
-            Modal::HelpModal => (),
+            Modal::Help => (),
         }
     }
 
@@ -261,12 +261,12 @@ impl StatefulWidget for TabContent {
                     .areas(area);
                 HistogramPlot.render(area, buf, state);
             }
-            Modal::HelpModal => {
+            Modal::Help => {
                 let [area] = Layout::horizontal([Constraint::Length(90)])
                     .flex(Flex::Center)
                     .areas(area);
-                let [_, area] = Layout::vertical([Constraint::Length(2), Constraint::Length(50)])
-                    .areas(area);
+                let [_, area] =
+                    Layout::vertical([Constraint::Length(2), Constraint::Length(50)]).areas(area);
                 HelpModal::new().render(area, buf);
             }
             Modal::None => (),

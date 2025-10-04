@@ -718,7 +718,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::ShowHelp => {
             if let Some(tab) = app.tabs_mut().selected_mut() {
-                *tab.modal_mut() = Modal::HelpModal;
+                *tab.modal_mut() = Modal::Help;
             }
             Ok(None)
         }
