@@ -8,7 +8,7 @@ Tabiew is a lightweight TUI application that allows users to view and query tabu
 
 - ⌨️ Vim-style keybindings
 - 🛠️ SQL support
-- 📊 Support for CSV, TSV, DSV, Parquet, JSON, JSONL, Arrow, FWF, Sqlite, and Excel
+- 📊 Support for CSV, TSV, other DSV, Parquet, JSON, JSONL, Arrow, FWF, Sqlite, and Excel
 - 🔍 Fuzzy search
 - 📝 Scripting support
 - 🗂️ Multi-table functionality
@@ -113,7 +113,7 @@ Override format detection:
 tw data.txt -f parquet
 ```
 
-Delimiter-separated formats (CSV, TSV, DSV):
+Delimiter-separated formats (CSV, TSV):
 ```bash
 # Explicitly use CSV format (comma by default, but can use custom delimiter)
 tw data.txt -f csv
