@@ -201,7 +201,7 @@ impl App {
                 Modal::DataFrameInfo(_) => Context::DataFrameInfo,
                 Modal::ScatterPlot(_) => Context::ScatterPlot,
                 Modal::HistogramPlot(_) => Context::HistogramPlot,
-                Modal::HelpModal => Context::HelpModal,
+                Modal::Help => Context::HelpModal,
             }
         } else {
             Context::Empty
