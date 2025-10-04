@@ -159,11 +159,11 @@ impl App {
         self.error = None;
     }
 
-    pub fn switch_schema(&mut self) {
+    pub fn show_schema(&mut self) {
         self.content = Content::Schema;
     }
 
-    pub fn switch_tabular(&mut self) {
+    pub fn show_tabular(&mut self) {
         self.content = Content::Tabulars;
     }
 

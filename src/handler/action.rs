@@ -196,11 +196,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::SwitchToSchema => {
-            app.switch_schema();
+            app.show_schema();
             Ok(None)
         }
         AppAction::SwitchToTabulars => {
-            app.switch_tabular();
+            app.show_tabular();
             Ok(None)
         }
         AppAction::DismissErrorAndShowPalette => {
@@ -394,7 +394,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::TabSelect(idx) => {
             let idx = idx.min(app.tabs_mut().len().saturating_sub(1));
             app.tabs_mut().select(idx);
-            app.switch_tabular();
+            app.show_tabular();
             Ok(None)
         }
         AppAction::TabRemove(idx) => {
