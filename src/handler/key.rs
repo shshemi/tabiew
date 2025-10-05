@@ -637,37 +637,6 @@ impl Default for KeyHandler {
 
         // ---- search keybindings
         hndl.keybinds(Context::Search)
-            // left right home end backspace delete
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Left)
-                    .action(AppAction::SearchGotoPrev),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Right)
-                    .action(AppAction::SearchGotoNext),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Home)
-                    .action(AppAction::SearchGotoStart),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::End)
-                    .action(AppAction::SearchGotoEnd),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Backspace)
-                    .action(AppAction::SearchDeletePrev),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Delete)
-                    .action(AppAction::SearchDeleteNext),
-            )
             // enter esc
             .add(
                 Keybind::default()
@@ -679,53 +648,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::SearchRollback),
             )
-            // alt-(w/e/left/right)
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Left)
-                    .alt()
-                    .shift()
-                    .action(AppAction::SearchGotoPrevWord),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Right)
-                    .alt()
-                    .shift()
-                    .action(AppAction::SearchGotoNextWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('w')
-                    .alt()
-                    .action(AppAction::SearchGotoPrevWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('e')
-                    .alt()
-                    .action(AppAction::SearchGotoNextWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('d')
-                    .alt()
-                    .action(AppAction::SearchDeletePrevWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('f')
-                    .alt()
-                    .action(AppAction::SearchDeleteNextWord),
-            )
-            // insert characters
-            .fallback(|event| {
-                if let KeyCode::Char(c) = event.code {
-                    Some(AppAction::SearchInsert(c))
-                } else {
-                    None
-                }
-            });
+            .fallback(|event| Some(AppAction::SearchHandleKeyEvent(event)));
 
         // ---- data frame info keybindings
         hndl.keybinds(Context::DataFrameInfo)
