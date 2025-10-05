@@ -846,7 +846,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Enter)
                     .action(AppAction::ThemeSelectorCommit),
             )
-            .fallback(|event| Some(AppAction::ThemeSelectorHandleEvent(event)));
+            .fallback(|event| Some(AppAction::ThemeSelectorHandleKeyEvent(event)));
 
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
