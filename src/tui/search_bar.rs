@@ -1,3 +1,4 @@
+use crossterm::event::KeyEvent;
 use polars::frame::DataFrame;
 use ratatui::widgets::StatefulWidget;
 
@@ -61,53 +62,9 @@ impl SearchBarState {
         &self.search
     }
 
-    pub fn insert(&mut self, c: char) {
-        self.input.insert(c);
+    pub fn handle_key(&mut self, event: KeyEvent) {
+        self.input.handle(event);
         self.update_search();
-    }
-
-    pub fn delete_prev(&mut self) {
-        self.input.delete_prev();
-        self.update_search();
-    }
-
-    pub fn delete_next(&mut self) {
-        self.input.delete_next();
-        self.update_search();
-    }
-
-    pub fn delete_prev_word(&mut self) {
-        self.input.delete_prev_word();
-        self.update_search();
-    }
-
-    pub fn delete_next_word(&mut self) {
-        self.input.delete_next_word();
-        self.update_search();
-    }
-
-    pub fn goto_prev(&mut self) {
-        self.input.goto_prev();
-    }
-
-    pub fn goto_next(&mut self) {
-        self.input.goto_next();
-    }
-
-    pub fn goto_prev_word(&mut self) {
-        self.input.goto_prev_word();
-    }
-
-    pub fn goto_next_word(&mut self) {
-        self.input.goto_next_word();
-    }
-
-    pub fn goto_start(&mut self) {
-        self.input.goto_start();
-    }
-
-    pub fn goto_end(&mut self) {
-        self.input.goto_end();
     }
 
     pub fn into_rollback_df(self) -> DataFrame {
