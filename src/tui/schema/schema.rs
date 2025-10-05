@@ -27,7 +27,7 @@ impl SchemaState {
         self.names.table_mut().select(Some(idx));
         *self
             .data_frame_info
-            .field_info_mut()
+            .field_mut()
             .table_state_mut()
             .offset_mut() = 0;
     }
@@ -75,7 +75,7 @@ impl StatefulWidget for Schema {
         // 1: Table names
         // 2,3: Info
         //   2: Meta info
-        //   3: Field info
+        //   3: Fields info
 
         if sql().schema().is_empty() {
             let pg = Paragraph::new(
