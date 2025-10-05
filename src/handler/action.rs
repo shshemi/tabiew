@@ -93,17 +93,8 @@ pub enum AppAction {
 
     SearchFuzzyShow,
     SearchExactShow,
-    SearchGotoNext,
-    SearchGotoPrev,
-    SearchGotoNextWord,
-    SearchGotoPrevWord,
-    SearchGotoStart,
-    SearchGotoEnd,
-    SearchDeleteNext,
-    SearchDeletePrev,
-    SearchDeleteNextWord,
-    SearchDeletePrevWord,
-    SearchInsert(char),
+    SearchHandleKeyEvent(KeyEvent),
+
     SearchRollback,
     SearchCommit,
 
@@ -522,70 +513,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
-        // Replace all search edits with handle key
-        AppAction::SearchGotoNext => {
+        AppAction::SearchHandleKeyEvent(event) => {
             if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.goto_next();
-            }
-            Ok(None)
-        }
-        AppAction::SearchGotoPrev => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.goto_prev();
-            }
-            Ok(None)
-        }
-        AppAction::SearchGotoNextWord => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.goto_next_word();
-            }
-            Ok(None)
-        }
-        AppAction::SearchGotoPrevWord => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.goto_prev_word();
-            }
-            Ok(None)
-        }
-        AppAction::SearchGotoStart => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.goto_start();
-            }
-            Ok(None)
-        }
-        AppAction::SearchGotoEnd => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.goto_end();
-            }
-            Ok(None)
-        }
-        AppAction::SearchDeleteNext => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.delete_next();
-            }
-            Ok(None)
-        }
-        AppAction::SearchDeletePrev => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.delete_prev();
-            }
-            Ok(None)
-        }
-        AppAction::SearchDeleteNextWord => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.delete_next_word();
-            }
-            Ok(None)
-        }
-        AppAction::SearchDeletePrevWord => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.delete_prev_word();
-            }
-            Ok(None)
-        }
-        AppAction::SearchInsert(c) => {
-            if let Some(Modal::SearchBar(sb)) = app.modal_mut() {
-                sb.insert(c);
+                sb.handle_key(event);
             }
             Ok(None)
         }
