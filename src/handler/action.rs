@@ -113,7 +113,6 @@ pub enum AppAction {
     TabPrev,
     TabNext,
     TabRemoveOrQuit,
-    TabRename(usize, String),
     TabShowPanel,
     TabHidePanel,
     TabPanelPrev,
@@ -378,9 +377,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::TabRemove(idx) => {
             app.tab_mut_unchecked().remove(idx);
             Ok(Some(AppAction::TabSelect(idx)))
-        }
-        AppAction::TabRename(_idx, _new_name) => {
-            todo!()
         }
         AppAction::TabPrev => {
             if let Some(tab) = app.tab() {
@@ -927,7 +923,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 Ok(None)
             }
         }
-        // TODO: take data frame with name
         AppAction::RegisterDataFrame(name) => {
             if sql().schema().iter().map(|(name, _)| name).contains(&name) {
                 Err(anyhow!("Data frame with name '{}' already exists.", &name))
