@@ -17,11 +17,11 @@ pub struct DataFrameInfoState {
 }
 
 impl DataFrameInfoState {
-    pub fn field_info_mut(&mut self) -> &mut DataFrameFieldInfoState {
+    pub fn field_mut(&mut self) -> &mut DataFrameFieldInfoState {
         &mut self.field_info
     }
 
-    pub fn field_info(&self) -> &DataFrameFieldInfoState {
+    pub fn field(&self) -> &DataFrameFieldInfoState {
         &self.field_info
     }
 }
