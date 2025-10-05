@@ -22,7 +22,7 @@ use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::themes::custom::Custom;
 
-use tabiew::tui::{TabContentState, TableType};
+use tabiew::tui::{PaneState, TableType};
 use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
@@ -159,7 +159,7 @@ fn main() {
 fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(name, df)| TabContentState::new(df, TableType::Name(name)))
+        .map(|(name, df)| PaneState::new(df, TableType::Name(name)))
         .collect();
     let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
