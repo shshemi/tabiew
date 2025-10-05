@@ -40,11 +40,11 @@ impl SchemaState {
         &mut self.names
     }
 
-    pub fn data_frame_info(&self) -> &DataFrameInfoState {
+    pub fn info(&self) -> &DataFrameInfoState {
         &self.data_frame_info
     }
 
-    pub fn data_frame_info_mut(&mut self) -> &mut DataFrameInfoState {
+    pub fn info_mut(&mut self) -> &mut DataFrameInfoState {
         &mut self.data_frame_info
     }
 }
@@ -73,8 +73,9 @@ impl StatefulWidget for Schema {
         // |----------------------------|
         //
         // 1: Table names
-        // 2: Table info
-        // 3: Fields info
+        // 2,3: Info
+        //   2: Meta info
+        //   3: Field info
 
         if sql().schema().is_empty() {
             let pg = Paragraph::new(
