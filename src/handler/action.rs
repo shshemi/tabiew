@@ -368,8 +368,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
         AppAction::TabSelect(idx) => {
-            // app.tab_mut_unchecked()
-            //     .select(idx.min(app.tab_unchecked().len().saturating_sub(1)));
             app.tab_mut_unchecked().select(idx);
             app.show_tabular();
             Ok(None)
