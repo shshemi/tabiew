@@ -25,6 +25,14 @@ impl DataFrameFieldInfoState {
     pub fn table_state_mut(&mut self) -> &mut TableState {
         &mut self.table_state
     }
+
+    pub fn scroll_up(&mut self) {
+        *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(1)
+    }
+
+    pub fn scroll_down(&mut self) {
+        *self.table_state.offset_mut() = self.table_state.offset().saturating_add(1)
+    }
 }
 
 pub struct DataFrameFieldInfo<'a> {

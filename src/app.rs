@@ -1,5 +1,6 @@
 use anyhow::Ok;
 
+use polars::frame::DataFrame;
 use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout},
@@ -7,6 +8,9 @@ use ratatui::{
 };
 
 use crate::tui::{
+    TabContentState,
+    data_frame_table::DataFrameTableState,
+    enumerated_list::EnumeratedListState,
     popups::{
         command_palette::{CommandPalette, CommandPaletteState},
         theme_selector::{ThemeSelector, ThemeSelectorState},
@@ -61,15 +65,15 @@ impl Context {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Content {
+pub enum Overlay {
     Schema,
-    Tabulars,
+    None,
 }
 
 pub struct App {
     tabs: TabState,
     schema: SchemaState,
-    content: Content,
+    overlay: Overlay,
     error: Option<String>,
     palette: Option<CommandPaletteState>,
     theme_selector: Option<ThemeSelectorState>,
@@ -84,7 +88,7 @@ impl App {
             tabs,
             history,
             schema: SchemaState::default(),
-            content: Content::Tabulars,
+            overlay: Overlay::None,
             error: None,
             palette: None,
             theme_selector: None,
@@ -97,20 +101,60 @@ impl App {
         self.running
     }
 
-    pub fn tabs(&self) -> &TabState {
-        &self.tabs
+    pub fn schema(&self) -> Option<&SchemaState> {
+        (self.overlay == Overlay::Schema).then_some(&self.schema)
     }
 
-    pub fn tabs_mut(&mut self) -> &mut TabState {
-        &mut self.tabs
+    pub fn schema_mut(&mut self) -> Option<&mut SchemaState> {
+        (self.overlay == Overlay::Schema).then_some(&mut self.schema)
     }
 
-    pub fn schema(&self) -> &SchemaState {
-        &self.schema
+    pub fn tab(&self) -> Option<&TabState> {
+        (self.overlay == Overlay::None).then_some(&self.tabs)
     }
 
-    pub fn schema_mut(&mut self) -> &mut SchemaState {
-        &mut self.schema
+    pub fn tab_mut(&mut self) -> Option<&mut TabState> {
+        (self.overlay == Overlay::None).then_some(&mut self.tabs)
+    }
+
+    pub fn side_panel(&self) -> Option<&EnumeratedListState> {
+        self.tab().and_then(|t| t.side_panel())
+    }
+
+    pub fn side_panel_mut(&mut self) -> Option<&mut EnumeratedListState> {
+        self.tab_mut().and_then(|t| t.side_panel_mut())
+    }
+
+    pub fn content(&self) -> Option<&TabContentState> {
+        self.tab().and_then(|t| t.selected())
+    }
+
+    pub fn content_mut(&mut self) -> Option<&mut TabContentState> {
+        self.tab_mut().and_then(|t| t.selected_mut())
+    }
+
+    pub fn modal(&self) -> Option<&Modal> {
+        self.content().map(|c| c.modal())
+    }
+
+    pub fn modal_mut(&mut self) -> Option<&mut Modal> {
+        self.content_mut().map(|c| c.modal_mut())
+    }
+
+    pub fn table(&self) -> Option<&DataFrameTableState> {
+        self.content().map(|c| c.table())
+    }
+
+    pub fn table_mut(&mut self) -> Option<&mut DataFrameTableState> {
+        self.content_mut().map(|c| c.table_mut())
+    }
+
+    pub fn data_frame(&self) -> Option<&DataFrame> {
+        self.table().map(|t| t.data_frame())
+    }
+
+    pub fn data_frame_mut(&mut self) -> Option<&mut DataFrame> {
+        self.table_mut().map(|t| t.data_frame_mut())
     }
 
     pub fn palette_mut(&mut self) -> Option<&mut CommandPaletteState> {
@@ -137,8 +181,8 @@ impl App {
         &mut self.history
     }
 
-    pub fn content(&self) -> &Content {
-        &self.content
+    pub fn overlay(&self) -> &Overlay {
+        &self.overlay
     }
 
     pub fn show_palette(&mut self, cmd: impl ToString) {
@@ -160,15 +204,23 @@ impl App {
     }
 
     pub fn show_schema(&mut self) {
-        self.content = Content::Schema;
+        self.overlay = Overlay::Schema;
     }
 
     pub fn show_tabular(&mut self) {
-        self.content = Content::Tabulars;
+        self.overlay = Overlay::None;
     }
 
     pub fn toggle_borders(&mut self) {
         self.borders = !self.borders;
+    }
+
+    pub fn tab_unchecked(&self) -> &TabState {
+        &self.tabs
+    }
+
+    pub fn tab_mut_unchecked(&mut self) -> &mut TabState {
+        &mut self.tabs
     }
 
     pub fn tick(&mut self) -> AppResult<()> {
@@ -189,7 +241,7 @@ impl App {
             Context::Command
         } else if self.theme_selector.is_some() {
             Context::ThemeSelector
-        } else if let Content::Schema = self.content {
+        } else if let Overlay::Schema = self.overlay {
             Context::Schema
         } else if self.tabs.side_panel().is_some() {
             Context::TabSidePanel
@@ -211,11 +263,11 @@ impl App {
     pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
         // Draw table / item
         let state = self.context();
-        match &mut self.content {
-            Content::Schema => {
+        match &mut self.overlay {
+            Overlay::Schema => {
                 frame.render_stateful_widget(Schema::default(), frame.area(), &mut self.schema);
             }
-            Content::Tabulars => {
+            Overlay::None => {
                 frame.render_stateful_widget(
                     Tab::new()
                         .with_borders(self.borders)
