@@ -400,16 +400,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(tab) = app.tab_mut() {
                 if tab.len() == 1 {
                     app.quit();
-                    Ok(None)
                 } else {
-                    // TODO: This is a useless! read idx then write the same thing!?
-                    let idx = tab.idx();
-                    tab.remove(idx);
-                    Ok(Some(AppAction::TabSelect(idx)))
+                    tab.remove(tab.idx());
                 }
-            } else {
-                Ok(None)
             }
+            Ok(None)
         }
         AppAction::ExportDsv {
             destination,
