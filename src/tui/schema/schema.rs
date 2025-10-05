@@ -27,7 +27,7 @@ impl SchemaState {
         self.names.table_mut().select(Some(idx));
         *self
             .data_frame_info
-            .field_mut()
+            .fields_mut()
             .table_state_mut()
             .offset_mut() = 0;
     }
