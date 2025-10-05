@@ -173,7 +173,7 @@ pub enum AppAction {
     ThemeSelectorSelectNext,
     ThemeSelectorRollback,
     ThemeSelectorCommit,
-    ThemeSelectorHandleEvent(KeyEvent),
+    ThemeSelectorHandleKeyEvent(KeyEvent),
     ThemeSelectorShow,
 
     RegisterDataFrame(String),
@@ -1043,7 +1043,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 Ok(None)
             }
         }
-        AppAction::ThemeSelectorHandleEvent(event) => {
+        AppAction::ThemeSelectorHandleKeyEvent(event) => {
             if let Some(theme_selector) = app.theme_selector_mut() {
                 theme_selector.search_picker_mut().input_mut().handle(event);
             }
