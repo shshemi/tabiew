@@ -752,13 +752,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SchemaFieldsScrollUp => {
             if let Some(schema) = app.schema_mut() {
-                schema.data_frame_info_mut().field_info_mut().scroll_up();
+                schema.info_mut().field_info_mut().scroll_up();
             }
             Ok(None)
         }
         AppAction::SchemaFieldsScrollDown => {
             if let Some(schema) = app.schema_mut() {
-                schema.data_frame_info_mut().field_info_mut().scroll_down();
+                schema.info_mut().field_info_mut().scroll_down();
             }
             Ok(None)
         }
