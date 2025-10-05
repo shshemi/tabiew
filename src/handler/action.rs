@@ -752,13 +752,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SchemaFieldsScrollUp => {
             if let Some(schema) = app.schema_mut() {
-                schema.info_mut().field_mut().scroll_up();
+                schema.info_mut().fields_mut().scroll_up();
             }
             Ok(None)
         }
         AppAction::SchemaFieldsScrollDown => {
             if let Some(schema) = app.schema_mut() {
-                schema.info_mut().field_mut().scroll_down();
+                schema.info_mut().fields_mut().scroll_down();
             }
             Ok(None)
         }
@@ -863,13 +863,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::DataFrameInfoScrollUp => {
             if let Some(Modal::DataFrameInfo(info)) = app.modal_mut() {
-                info.field_mut().scroll_up();
+                info.fields_mut().scroll_up();
             }
             Ok(None)
         }
         AppAction::DataFrameInfoScrollDown => {
             if let Some(Modal::DataFrameInfo(info)) = app.modal_mut() {
-                info.field_mut().scroll_down();
+                info.fields_mut().scroll_down();
             }
             Ok(None)
         }
