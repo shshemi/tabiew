@@ -85,6 +85,7 @@ pub enum AppAction {
     PaletteGotoPrev,
     PaletteGotoPrevWord,
     PaletteGotoStart,
+    PalleteHandleKeyEvent(KeyEvent),
     PaletteInsert(char),
     PaletteInsertSelectedOrCommit,
     PaletteSelectNext,
@@ -964,6 +965,12 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::ThemeSelectorShow => {
             app.show_theme_selector();
+            Ok(None)
+        }
+        AppAction::PalleteHandleKeyEvent(key_event) => {
+            if let Some(palette) = app.palette_mut() {
+                palette.input().handle(key_event);
+            }
             Ok(None)
         }
     }

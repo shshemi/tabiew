@@ -464,73 +464,6 @@ impl Default for KeyHandler {
         hndl.keybinds(Context::Command)
             .add(
                 Keybind::default()
-                    .code(KeyCode::Left)
-                    .action(AppAction::PaletteGotoPrev),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Right)
-                    .action(AppAction::PaletteGotoNext),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Home)
-                    .action(AppAction::PaletteGotoStart),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::End)
-                    .action(AppAction::PaletteGotoEnd),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Backspace)
-                    .action(AppAction::PaletteDeletePrev),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Delete)
-                    .action(AppAction::PaletteDeleteNext),
-            )
-            .add(
-                Keybind::default()
-                    .char('w')
-                    .alt()
-                    .action(AppAction::PaletteGotoPrevWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('e')
-                    .alt()
-                    .action(AppAction::PaletteGotoNextWord),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Left)
-                    .alt()
-                    .shift()
-                    .action(AppAction::PaletteGotoPrevWord),
-            )
-            .add(
-                Keybind::default()
-                    .code(KeyCode::Delete)
-                    .action(AppAction::PaletteGotoNextWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('d')
-                    .alt()
-                    .action(AppAction::PaletteDeletePrevWord),
-            )
-            .add(
-                Keybind::default()
-                    .char('f')
-                    .alt()
-                    .action(AppAction::PaletteDeleteNextWord),
-            )
-            // change selection
-            .add(
-                Keybind::default()
                     .code(KeyCode::Up)
                     .action(AppAction::PaletteSelectPrevious),
             )
@@ -562,14 +495,7 @@ impl Default for KeyHandler {
                     .code(KeyCode::Esc)
                     .action(AppAction::PaletteDeselectOrDismiss),
             )
-            // insert characters
-            .fallback(|event| {
-                if let KeyCode::Char(c) = event.code {
-                    Some(AppAction::PaletteInsert(c))
-                } else {
-                    None
-                }
-            });
+            .fallback(|event| Some(AppAction::PalleteHandleKeyEvent(event)));
 
         // ---- sheet keybindings
         hndl.keybinds(Context::Sheet)

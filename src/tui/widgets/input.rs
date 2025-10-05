@@ -82,13 +82,13 @@ impl InputState {
 
     pub fn handle(&mut self, event: KeyEvent) {
         match event.code {
-            KeyCode::Backspace if event.modifiers == KeyModifiers::CONTROL => {
+            KeyCode::Backspace if event.modifiers == KeyModifiers::ALT => {
                 self.delete_prev_word();
             }
             KeyCode::Backspace => self.delete_prev(),
-            KeyCode::Left if event.modifiers == KeyModifiers::ALT => self.goto_prev_word(),
+            KeyCode::Char('w') if event.modifiers == KeyModifiers::ALT => self.goto_prev_word(),
+            KeyCode::Char('e') if event.modifiers == KeyModifiers::ALT => self.goto_next_word(),
             KeyCode::Left => self.goto_prev(),
-            KeyCode::Right if event.modifiers == KeyModifiers::ALT => self.goto_next_word(),
             KeyCode::Right => self.goto_next(),
             KeyCode::Home => self.goto_start(),
             KeyCode::End => self.goto_end(),
