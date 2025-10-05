@@ -21,7 +21,7 @@ use crate::{
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
     },
     tui::{
-        TabContentState, TableType,
+        PaneState, TableType,
         data_frame_table::DataFrameTableState,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
         search_bar::SearchBarState,
@@ -198,25 +198,25 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableDismissModal => {
-            if let Some(tab) = app.content_mut() {
+            if let Some(tab) = app.pane_mut() {
                 tab.modal_take();
             }
             Ok(None)
         }
         AppAction::SheetShow => {
-            if let Some(tab) = app.content_mut() {
+            if let Some(tab) = app.pane_mut() {
                 tab.show_sheet()
             }
             Ok(None)
         }
         AppAction::SearchFuzzyShow => {
-            if let Some(tab) = app.content_mut() {
+            if let Some(tab) = app.pane_mut() {
                 tab.show_fuzzy_search();
             }
             Ok(None)
         }
         AppAction::SearchExactShow => {
-            if let Some(tab) = app.content_mut() {
+            if let Some(tab) = app.pane_mut() {
                 tab.show_exact_search();
             }
             Ok(None)
@@ -224,7 +224,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::GotoLine(line) => {
             match app.context() {
                 crate::app::Context::Table => {
-                    if let Some(tabular) = app.content_mut() {
+                    if let Some(tabular) = app.pane_mut() {
                         tabular.table_mut().select(line)
                     }
                 }
@@ -311,21 +311,21 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::TableQuery(query) => {
             let df = sql().execute(
                 &query,
-                app.content()
-                    .map(TabContentState::table)
+                app.pane()
+                    .map(PaneState::table)
                     .map(DataFrameTableState::data_frame)
                     .cloned(),
             )?;
             Ok(Some(AppAction::TableSetDataFrame(df)))
         }
         AppAction::TableSetDataFrame(df) => {
-            if let Some(tab) = app.content_mut() {
+            if let Some(tab) = app.pane_mut() {
                 tab.table_mut().set_data_frame(df.clone());
             }
             Ok(None)
         }
         AppAction::TableReset => {
-            let query = match app.content().map(|ts| ts.table_type()) {
+            let query = match app.pane().map(|ts| ts.table_type()) {
                 Some(TableType::Name(name)) => Some(format!("SELECT * FROM '{name}'")),
                 Some(TableType::Query(query)) => Some(query.to_owned()),
                 Some(_) => None,
@@ -349,11 +349,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if sql().schema().iter().any(|(name, _)| name == &query) {
                 let df = sql().execute(&format!("SELECT * FROM '{query}'"), None)?;
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(query)));
+                    .add(PaneState::new(df, TableType::Name(query)));
             } else {
                 let df = sql().execute(&query, app.data_frame().cloned())?;
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Query(query)));
+                    .add(PaneState::new(df, TableType::Query(query)));
             }
 
             Ok(Some(AppAction::TabSelect(usize::MAX)))
@@ -448,7 +448,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(name)));
+                    .add(PaneState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -457,7 +457,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(name)));
+                    .add(PaneState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -471,7 +471,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(name)));
+                    .add(PaneState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -480,7 +480,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(name)));
+                    .add(PaneState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -489,7 +489,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(name)));
+                    .add(PaneState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -509,7 +509,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(TabContentState::new(df, TableType::Name(name)));
+                    .add(PaneState::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -520,7 +520,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::SearchCommit => {
-            if let Some(tab) = app.content_mut()
+            if let Some(tab) = app.pane_mut()
                 && let Some(df) = tab
                     .modal_take()
                     .into_search_bar()
@@ -531,7 +531,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::SearchRollback => {
-            if let Some(tab) = app.content_mut()
+            if let Some(tab) = app.pane_mut()
                 && let Some(df) = tab
                     .modal_take()
                     .into_search_bar()
@@ -553,15 +553,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(idx) = idx {
                 Ok(Some(AppAction::TabSelect(idx)))
             } else {
-                app.tab_mut_unchecked().add(TabContentState::new(
-                    commands_help_data_frame(),
-                    TableType::Help,
-                ));
+                app.tab_mut_unchecked()
+                    .add(PaneState::new(commands_help_data_frame(), TableType::Help));
                 Ok(Some(AppAction::TabSelect(usize::MAX)))
             }
         }
         AppAction::ShowHelp => {
-            if let Some(tab) = app.content_mut() {
+            if let Some(tab) = app.pane_mut() {
                 tab.show_help();
             }
             Ok(None)
@@ -876,13 +874,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::DataFrameInfoShow => {
-            if let Some(content) = app.content_mut() {
+            if let Some(content) = app.pane_mut() {
                 content.show_data_frame_info();
             }
             Ok(None)
         }
         AppAction::ScatterPlot(x_lab, y_lab, group_by) => {
-            if let Some(tab_content) = app.content_mut() {
+            if let Some(tab_content) = app.pane_mut() {
                 let df = tab_content.table().data_frame();
                 if group_by.is_empty() {
                     let mut data = JaggedVec::new();
@@ -912,7 +910,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::HistogramPlot(group_by, buckets) => {
-            if let Some(tab_content) = app.content_mut() {
+            if let Some(tab_content) = app.pane_mut() {
                 let df = tab_content.table().data_frame();
                 tab_content.show_histogram_plot(HistogramPlotState::new(
                     df.histogram_plot_data(&group_by, buckets)?,

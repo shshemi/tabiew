@@ -15,7 +15,7 @@ pub mod themes;
 mod utils;
 pub mod widgets;
 
-pub use tab_content::{TabContentState, TableType};
+pub use tab_content::{PaneState, TableType};
 pub use terminal::Terminal;
 
 // pub mod themes {

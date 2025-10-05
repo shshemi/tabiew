@@ -8,7 +8,7 @@ use ratatui::{
 };
 
 use crate::tui::{
-    TabContentState,
+    PaneState,
     data_frame_table::DataFrameTableState,
     enumerated_list::EnumeratedListState,
     popups::{
@@ -125,28 +125,28 @@ impl App {
         self.tab_mut().and_then(|t| t.side_panel_mut())
     }
 
-    pub fn content(&self) -> Option<&TabContentState> {
+    pub fn pane(&self) -> Option<&PaneState> {
         self.tab().and_then(|t| t.selected())
     }
 
-    pub fn content_mut(&mut self) -> Option<&mut TabContentState> {
+    pub fn pane_mut(&mut self) -> Option<&mut PaneState> {
         self.tab_mut().and_then(|t| t.selected_mut())
     }
 
     pub fn modal(&self) -> Option<&Modal> {
-        self.content().map(|c| c.modal())
+        self.pane().map(|c| c.modal())
     }
 
     pub fn modal_mut(&mut self) -> Option<&mut Modal> {
-        self.content_mut().map(|c| c.modal_mut())
+        self.pane_mut().map(|c| c.modal_mut())
     }
 
     pub fn table(&self) -> Option<&DataFrameTableState> {
-        self.content().map(|c| c.table())
+        self.pane().map(|c| c.table())
     }
 
     pub fn table_mut(&mut self) -> Option<&mut DataFrameTableState> {
-        self.content_mut().map(|c| c.table_mut())
+        self.pane_mut().map(|c| c.table_mut())
     }
 
     pub fn data_frame(&self) -> Option<&DataFrame> {

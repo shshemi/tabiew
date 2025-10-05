@@ -6,18 +6,18 @@ use crate::tui::widgets::block::Block;
 use super::{
     enumerated_list::{EnumeratedList, EnumeratedListState},
     status_bar::{StatusBar, Tag},
-    tab_content::{TabContent, TabContentState},
+    tab_content::{Pane, PaneState},
 };
 
 #[derive(Debug)]
 pub struct TabState {
-    tabulars: Vec<TabContentState>,
+    tabulars: Vec<PaneState>,
     side_panel: Option<EnumeratedListState>,
     idx: usize,
 }
 
 impl TabState {
-    pub fn add(&mut self, tabular: TabContentState) {
+    pub fn add(&mut self, tabular: PaneState) {
         self.tabulars.push(tabular);
     }
 
@@ -33,11 +33,11 @@ impl TabState {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&TabContentState> {
+    pub fn selected(&self) -> Option<&PaneState> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut TabContentState> {
+    pub fn selected_mut(&mut self) -> Option<&mut PaneState> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -51,11 +51,11 @@ impl TabState {
         self.idx = idx;
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &TabContentState> {
+    pub fn iter(&self) -> impl Iterator<Item = &PaneState> {
         self.tabulars.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabContentState> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut PaneState> {
         self.tabulars.iter_mut()
     }
 
@@ -76,8 +76,8 @@ impl TabState {
     }
 }
 
-impl FromIterator<TabContentState> for TabState {
-    fn from_iter<T: IntoIterator<Item = TabContentState>>(iter: T) -> Self {
+impl FromIterator<PaneState> for TabState {
+    fn from_iter<T: IntoIterator<Item = PaneState>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
@@ -195,7 +195,7 @@ impl StatefulWidget for Tab {
 
         // render tabular
         if let Some(tabular) = state.tabulars.get_mut(tabular_idx) {
-            TabContent::default().render(area, buf, tabular);
+            Pane.render(area, buf, tabular);
         }
 
         // render tabs
