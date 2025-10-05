@@ -166,6 +166,22 @@ impl TabContentState {
         self.modal = Modal::SearchBar(SearchBarState::exact(self.table.data_frame().clone()));
     }
 
+    pub fn show_data_frame_info(&mut self) {
+        self.modal = Modal::DataFrameInfo(Default::default())
+    }
+
+    pub fn show_scatter_plot(&mut self, scatter: ScatterPlotState) {
+        self.modal = Modal::ScatterPlot(scatter)
+    }
+
+    pub fn show_histogram_plot(&mut self, hist: HistogramPlotState) {
+        self.modal = Modal::HistogramPlot(hist)
+    }
+
+    pub fn show_help(&mut self) {
+        self.modal = Modal::Help
+    }
+
     pub fn modal(&self) -> &Modal {
         &self.modal
     }
