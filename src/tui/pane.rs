@@ -21,6 +21,7 @@ use crate::{
             histogram_plot::{HistogramPlot, HistogramPlotState},
             scatter_plot::{ScatterPlot, ScatterPlotState},
         },
+        popups::inline_query::{InlineQuery, InlineQueryState, InlineQueryType},
         schema::data_frame_info::{DataFrameInfo, DataFrameInfoState},
     },
 };
@@ -32,64 +33,13 @@ pub enum Modal {
     DataFrameInfo(DataFrameInfoState),
     ScatterPlot(ScatterPlotState),
     HistogramPlot(HistogramPlotState),
+    InlineQuery(InlineQueryState),
     Help,
     #[default]
     None,
 }
 
-impl Modal {
-    pub fn sheet(&self) -> Option<&SheetState> {
-        if let Modal::Sheet(sheet) = self {
-            Some(sheet)
-        } else {
-            None
-        }
-    }
-
-    pub fn sheet_mut(&mut self) -> Option<&mut SheetState> {
-        if let Modal::Sheet(sheet) = self {
-            Some(sheet)
-        } else {
-            None
-        }
-    }
-
-    pub fn into_sheet(self) -> Option<SheetState> {
-        if let Modal::Sheet(sheet) = self {
-            Some(sheet)
-        } else {
-            None
-        }
-    }
-
-    pub fn search_bar(&self) -> Option<&SearchBarState> {
-        if let Modal::SearchBar(search_bar) = self {
-            Some(search_bar)
-        } else {
-            None
-        }
-    }
-
-    pub fn search_bar_mut(&mut self) -> Option<&mut SearchBarState> {
-        if let Modal::SearchBar(search_bar) = self {
-            Some(search_bar)
-        } else {
-            None
-        }
-    }
-
-    pub fn into_search_bar(self) -> Option<SearchBarState> {
-        if let Modal::SearchBar(search_bar) = self {
-            Some(search_bar)
-        } else {
-            None
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
-        matches!(self, Modal::None)
-    }
-}
+impl Modal {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TableType {
@@ -138,6 +88,7 @@ impl PaneState {
             Modal::None => (),
             Modal::ScatterPlot(_) => (),
             Modal::HistogramPlot(_) => (),
+            Modal::InlineQuery(_) => (),
             Modal::Help => (),
         }
     }
@@ -176,6 +127,10 @@ impl PaneState {
 
     pub fn show_histogram_plot(&mut self, hist: HistogramPlotState) {
         self.modal = Modal::HistogramPlot(hist)
+    }
+
+    pub fn show_inline_query(&mut self, query_type: InlineQueryType) {
+        self.modal = Modal::InlineQuery(InlineQueryState::new(query_type));
     }
 
     pub fn show_help(&mut self) {
@@ -276,6 +231,9 @@ impl StatefulWidget for Pane {
                     // .flex(Flex::Center)
                     .areas(area);
                 HistogramPlot.render(area, buf, state);
+            }
+            Modal::InlineQuery(state) => {
+                InlineQuery::default().render(area, buf, state);
             }
             Modal::Help => {
                 let [area] = Layout::horizontal([Constraint::Length(90)])

@@ -5,8 +5,8 @@ use crate::tui::widgets::block::Block;
 
 use super::{
     enumerated_list::{EnumeratedList, EnumeratedListState},
+    pane::{Pane, PaneState},
     status_bar::{StatusBar, Tag},
-    tab_content::{Pane, PaneState},
 };
 
 #[derive(Debug)]
@@ -86,12 +86,12 @@ impl FromIterator<PaneState> for TabState {
     }
 }
 
-pub struct Tab {
+pub struct Tabs {
     selection: bool,
     borders: bool,
 }
 
-impl Tab {
+impl Tabs {
     pub fn new() -> Self {
         Self {
             selection: false,
@@ -110,13 +110,13 @@ impl Tab {
     }
 }
 
-impl Default for Tab {
+impl Default for Tabs {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl StatefulWidget for Tab {
+impl StatefulWidget for Tabs {
     type State = TabState;
 
     fn render(
