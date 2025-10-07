@@ -1,3 +1,4 @@
+use crossterm::event::KeyEvent;
 use ratatui::widgets::StatefulWidget;
 
 use crate::tui::pickers::text_picker::{TextPicker, TextPickerState};
@@ -15,12 +16,26 @@ impl InlineQueryState {
             query_type,
         }
     }
+
+    pub fn handle(&mut self, event: KeyEvent) {
+        self.text_picker.input_mut().handle(event);
+    }
+
+    pub fn value(&self) -> &str {
+        self.text_picker.input().value()
+    }
+
+    pub fn query_type(&self) -> &InlineQueryType {
+        &self.query_type
+    }
 }
 
 #[derive(Debug, Default)]
-pub struct InlineQuery {}
+pub struct InlineQuery<'a> {
+    hint: &'a str,
+}
 
-impl StatefulWidget for InlineQuery {
+impl<'a> StatefulWidget for InlineQuery<'a> {
     type State = InlineQueryState;
 
     fn render(
@@ -34,12 +49,12 @@ impl StatefulWidget for InlineQuery {
                 InlineQueryType::Filter => "Filter",
                 InlineQueryType::Order => "Order",
             })
-            .hint("housing > 900")
+            .hint(self.hint)
             .render(area, buf, &mut state.text_picker);
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum InlineQueryType {
     Filter,
     Order,
