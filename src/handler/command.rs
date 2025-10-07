@@ -3,7 +3,10 @@ use itertools::Itertools;
 use polars::{df, frame::DataFrame};
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::{AppResult, handler::action::AppAction, misc::type_inferer::TypeInferer};
+use crate::{
+    AppResult, handler::action::AppAction, misc::type_inferer::TypeInferer,
+    tui::popups::inline_query::InlineQueryType,
+};
 
 pub fn parse_into_action(cmd: impl AsRef<str>) -> AppResult<AppAction> {
     let (s1, s2) = cmd.as_ref().split_once(' ').unwrap_or((cmd.as_ref(), ""));
@@ -159,13 +162,25 @@ static ENTRIES: [Entry; 22] = [
         prefix: Prefix::ShortAndLong("F", "filter"),
         usage: "filter <condition(s)>",
         description: "Filter the data frame, keeping rows were the condition(s) match",
-        parser: |query| Ok(AppAction::TableFilter(query.to_owned())),
+        parser: |query| {
+            if query.is_empty() {
+                Ok(AppAction::InlineQueryShow(InlineQueryType::Filter))
+            } else {
+                Ok(AppAction::TableFilter(query.to_owned()))
+            }
+        },
     },
     Entry {
         prefix: Prefix::ShortAndLong("O", "order"),
         usage: "order <column(s)_and_order(s)>",
         description: "Sort the data frame by column(s)",
-        parser: |query| Ok(AppAction::TableOrder(query.to_owned())),
+        parser: |query| {
+            if query.is_empty() {
+                Ok(AppAction::InlineQueryShow(InlineQueryType::Order))
+            } else {
+                Ok(AppAction::TableOrder(query.to_owned()))
+            }
+        },
     },
     Entry {
         prefix: Prefix::Long("schema"),

@@ -23,9 +23,9 @@ use crate::{
     tui::{
         PaneState, TableType,
         data_frame_table::DataFrameTableState,
+        pane::Modal,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
-        search_bar::SearchBarState,
-        tab_content::Modal,
+        popups::inline_query::InlineQueryType,
         themes::theme::Theme,
     },
     writer::{
@@ -74,6 +74,10 @@ pub enum AppAction {
     ImportJson(Source, JsonFormat),
     ImportParquet(Source),
     ImportSqlite(Source),
+    InlineQueryShow(InlineQueryType),
+    InlineQueryDismiss,
+    InlineQueryCommit,
+    InlineQueryHandleKeyEvent(KeyEvent),
     PaletteDeleteNext,
     PaletteDeleteNextWord,
     PaletteDeletePrev,
@@ -184,9 +188,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TableDismissModal => {
-            if let Some(tab) = app.pane_mut() {
-                tab.modal_take();
-            }
+            app.modal_take();
             Ok(None)
         }
         AppAction::SheetShow => {
@@ -507,10 +509,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SearchCommit => {
             if let Some(tab) = app.pane_mut()
-                && let Some(df) = tab
-                    .modal_take()
-                    .into_search_bar()
-                    .and_then(|sb| sb.search().latest())
+                && let Modal::SearchBar(sb) = tab.modal_take()
+                && let Some(df) = sb.search().latest()
             {
                 tab.table_mut().set_data_frame(df);
             }
@@ -518,12 +518,9 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::SearchRollback => {
             if let Some(tab) = app.pane_mut()
-                && let Some(df) = tab
-                    .modal_take()
-                    .into_search_bar()
-                    .map(SearchBarState::into_rollback_df)
+                && let Modal::SearchBar(sb) = tab.modal_take()
             {
-                tab.table_mut().set_data_frame(df);
+                tab.table_mut().set_data_frame(sb.into_rollback_df());
             }
             Ok(None)
         }
@@ -951,7 +948,10 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
         }
         AppAction::ThemeSelectorCommit => {
-            if app.take_theme_selector().is_some() {
+            if let Some(theme_selector) = app.theme_selector_mut()
+                && theme_selector.search_picker().selected().is_some()
+            {
+                app.take_theme_selector();
                 Ok(Some(AppAction::StoreConfig))
             } else {
                 Ok(None)
@@ -970,6 +970,36 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::PalleteHandleKeyEvent(key_event) => {
             if let Some(palette) = app.palette_mut() {
                 palette.input().handle(key_event);
+            }
+            Ok(None)
+        }
+        AppAction::InlineQueryShow(query_type) => {
+            if let Some(pane) = app.pane_mut() {
+                pane.show_inline_query(query_type);
+            }
+            Ok(None)
+        }
+        AppAction::InlineQueryDismiss => {
+            app.modal_take();
+            Ok(None)
+        }
+        AppAction::InlineQueryCommit => {
+            if let Some(Modal::InlineQuery(inline_query)) = app.modal_take() {
+                match inline_query.query_type() {
+                    InlineQueryType::Filter => Ok(Some(AppAction::TableFilter(
+                        inline_query.value().to_owned(),
+                    ))),
+                    InlineQueryType::Order => Ok(Some(AppAction::TableFilter(
+                        inline_query.value().to_owned(),
+                    ))),
+                }
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::InlineQueryHandleKeyEvent(event) => {
+            if let Some(Modal::InlineQuery(inline_query)) = app.modal_mut() {
+                inline_query.handle(event);
             }
             Ok(None)
         }

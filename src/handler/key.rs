@@ -697,6 +697,20 @@ impl Default for KeyHandler {
             )
             .fallback(|event| Some(AppAction::ThemeSelectorHandleKeyEvent(event)));
 
+        // ---- inline query keybindings
+        hndl.keybinds(Context::InlineQuery)
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::InlineQueryCommit),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::InlineQueryDismiss),
+            )
+            .fallback(|event| Some(AppAction::InlineQueryHandleKeyEvent(event)));
+
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
             .add(

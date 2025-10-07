@@ -22,8 +22,8 @@ use crate::{
     misc::history::History,
     tui::{
         error_popup::ErrorPopup,
-        tab::{Tab, TabState},
-        tab_content::Modal,
+        pane::Modal,
+        tabs::{TabState, Tabs},
     },
 };
 
@@ -42,6 +42,7 @@ pub enum Context {
     HistogramPlot,
     ThemeSelector,
     Help,
+    InlineQuery,
 }
 
 impl Context {
@@ -59,6 +60,7 @@ impl Context {
             Context::ScatterPlot => Context::Empty.into(),
             Context::HistogramPlot => Context::Empty.into(),
             Context::ThemeSelector => Context::Empty.into(),
+            Context::InlineQuery => Context::Empty.into(),
             Context::Help => Context::Empty.into(),
         }
     }
@@ -139,6 +141,10 @@ impl App {
 
     pub fn modal_mut(&mut self) -> Option<&mut Modal> {
         self.pane_mut().map(|c| c.modal_mut())
+    }
+
+    pub fn modal_take(&mut self) -> Option<Modal> {
+        self.pane_mut().map(|c| c.modal_take())
     }
 
     pub fn table(&self) -> Option<&DataFrameTableState> {
@@ -254,6 +260,7 @@ impl App {
                 Modal::ScatterPlot(_) => Context::ScatterPlot,
                 Modal::HistogramPlot(_) => Context::HistogramPlot,
                 Modal::Help => Context::Help,
+                Modal::InlineQuery(_) => Context::InlineQuery,
             }
         } else {
             Context::Empty
@@ -269,7 +276,7 @@ impl App {
             }
             Overlay::None => {
                 frame.render_stateful_widget(
-                    Tab::new()
+                    Tabs::new()
                         .with_borders(self.borders)
                         .selection(matches!(state, Context::Table)),
                     frame.area(),
