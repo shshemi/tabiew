@@ -23,7 +23,7 @@ use crate::{
     tui::{
         error_popup::ErrorPopup,
         pane::Modal,
-        tabs::{TabState, Tabs},
+        tabs::{Tabs, TabsState},
     },
 };
 
@@ -66,34 +66,30 @@ impl Context {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default)]
 pub enum Overlay {
-    Schema,
+    Schema(SchemaState),
+    Error(String),
+    Palette(CommandPaletteState),
+    ThemeSelector(ThemeSelectorState),
+    #[default]
     None,
 }
 
 pub struct App {
-    tabs: TabState,
-    schema: SchemaState,
+    tabs: TabsState,
     overlay: Overlay,
-    error: Option<String>,
-    palette: Option<CommandPaletteState>,
-    theme_selector: Option<ThemeSelectorState>,
     history: History,
     borders: bool,
     running: bool,
 }
 
 impl App {
-    pub fn new(tabs: TabState, history: History) -> Self {
+    pub fn new(tabs: TabsState, history: History) -> Self {
         Self {
             tabs,
             history,
-            schema: SchemaState::default(),
             overlay: Overlay::None,
-            error: None,
-            palette: None,
-            theme_selector: None,
             borders: true,
             running: true,
         }
@@ -104,35 +100,43 @@ impl App {
     }
 
     pub fn schema(&self) -> Option<&SchemaState> {
-        (self.overlay == Overlay::Schema).then_some(&self.schema)
+        if let Overlay::Schema(schema) = self.overlay() {
+            Some(schema)
+        } else {
+            None
+        }
     }
 
     pub fn schema_mut(&mut self) -> Option<&mut SchemaState> {
-        (self.overlay == Overlay::Schema).then_some(&mut self.schema)
+        if let Overlay::Schema(schema) = self.overlay_mut() {
+            Some(schema)
+        } else {
+            None
+        }
     }
 
-    pub fn tab(&self) -> Option<&TabState> {
-        (self.overlay == Overlay::None).then_some(&self.tabs)
+    pub fn tabs(&self) -> Option<&TabsState> {
+        matches!(self.overlay(), Overlay::None).then_some(&self.tabs)
     }
 
-    pub fn tab_mut(&mut self) -> Option<&mut TabState> {
-        (self.overlay == Overlay::None).then_some(&mut self.tabs)
+    pub fn tabs_mut(&mut self) -> Option<&mut TabsState> {
+        matches!(self.overlay(), Overlay::None).then_some(&mut self.tabs)
     }
 
     pub fn side_panel(&self) -> Option<&EnumeratedListState> {
-        self.tab().and_then(|t| t.side_panel())
+        self.tabs().and_then(|t| t.side_panel())
     }
 
     pub fn side_panel_mut(&mut self) -> Option<&mut EnumeratedListState> {
-        self.tab_mut().and_then(|t| t.side_panel_mut())
+        self.tabs_mut().and_then(|t| t.side_panel_mut())
     }
 
     pub fn pane(&self) -> Option<&PaneState> {
-        self.tab().and_then(|t| t.selected())
+        self.tabs().and_then(|t| t.selected())
     }
 
     pub fn pane_mut(&mut self) -> Option<&mut PaneState> {
-        self.tab_mut().and_then(|t| t.selected_mut())
+        self.tabs_mut().and_then(|t| t.selected_mut())
     }
 
     pub fn modal(&self) -> Option<&Modal> {
@@ -164,23 +168,41 @@ impl App {
     }
 
     pub fn palette_mut(&mut self) -> Option<&mut CommandPaletteState> {
-        self.palette.as_mut()
+        if let Overlay::Palette(palette) = &mut self.overlay {
+            Some(palette)
+        } else {
+            None
+        }
     }
 
     pub fn theme_selector(&self) -> Option<&ThemeSelectorState> {
-        self.theme_selector.as_ref()
+        if let Overlay::ThemeSelector(theme_selector) = &self.overlay {
+            Some(theme_selector)
+        } else {
+            None
+        }
     }
 
     pub fn theme_selector_mut(&mut self) -> Option<&mut ThemeSelectorState> {
-        self.theme_selector.as_mut()
+        if let Overlay::ThemeSelector(theme_selector) = &mut self.overlay {
+            Some(theme_selector)
+        } else {
+            None
+        }
     }
 
     pub fn take_theme_selector(&mut self) -> Option<ThemeSelectorState> {
-        self.theme_selector.take()
+        if matches!(&self.overlay, Overlay::ThemeSelector(_))
+            && let Overlay::ThemeSelector(theme_selector) = std::mem::take(&mut self.overlay)
+        {
+            Some(theme_selector)
+        } else {
+            None
+        }
     }
 
     pub fn show_theme_selector(&mut self) {
-        self.theme_selector = Some(Default::default())
+        self.overlay = Overlay::ThemeSelector(Default::default())
     }
 
     pub fn history_mut(&mut self) -> &mut History {
@@ -191,26 +213,36 @@ impl App {
         &self.overlay
     }
 
-    pub fn show_palette(&mut self, cmd: impl ToString) {
-        self.palette = Some(CommandPaletteState::new(cmd.to_string()));
+    pub fn overlay_mut(&mut self) -> &mut Overlay {
+        &mut self.overlay
     }
 
-    pub fn hide_palette(&mut self) -> Option<String> {
-        self.palette
-            .take()
-            .map(|mut palette| palette.input().value().to_owned())
+    pub fn show_palette(&mut self, cmd: impl ToString) {
+        self.overlay = Overlay::Palette(CommandPaletteState::new(cmd.to_string()));
+    }
+
+    pub fn take_palette(&mut self) -> Option<CommandPaletteState> {
+        if matches!(&self.overlay, Overlay::Palette(_))
+            && let Overlay::Palette(palette) = std::mem::take(&mut self.overlay)
+        {
+            Some(palette)
+        } else {
+            None
+        }
     }
 
     pub fn show_error(&mut self, error: impl ToString) {
-        self.error = Some(error.to_string());
+        self.overlay = Overlay::Error(error.to_string());
     }
 
     pub fn dismiss_error(&mut self) {
-        self.error = None;
+        if matches!(&self.overlay, Overlay::Error(_)) {
+            self.overlay = Overlay::None;
+        }
     }
 
     pub fn show_schema(&mut self) {
-        self.overlay = Overlay::Schema;
+        self.overlay = Overlay::Schema(SchemaState::default());
     }
 
     pub fn show_tabular(&mut self) {
@@ -221,11 +253,11 @@ impl App {
         self.borders = !self.borders;
     }
 
-    pub fn tab_unchecked(&self) -> &TabState {
+    pub fn tab_unchecked(&self) -> &TabsState {
         &self.tabs
     }
 
-    pub fn tab_mut_unchecked(&mut self) -> &mut TabState {
+    pub fn tab_mut_unchecked(&mut self) -> &mut TabsState {
         &mut self.tabs
     }
 
@@ -241,74 +273,68 @@ impl App {
     }
 
     pub fn context(&self) -> Context {
-        if self.error.is_some() {
-            Context::Error
-        } else if self.palette.is_some() {
-            Context::Command
-        } else if self.theme_selector.is_some() {
-            Context::ThemeSelector
-        } else if let Overlay::Schema = self.overlay {
-            Context::Schema
-        } else if self.tabs.side_panel().is_some() {
-            Context::TabSidePanel
-        } else if let Some(tabular) = self.tabs.selected() {
-            match tabular.modal() {
-                Modal::SearchBar(_) => Context::Search,
-                Modal::Sheet(_) => Context::Sheet,
-                Modal::None => Context::Table,
-                Modal::DataFrameInfo(_) => Context::DataFrameInfo,
-                Modal::ScatterPlot(_) => Context::ScatterPlot,
-                Modal::HistogramPlot(_) => Context::HistogramPlot,
-                Modal::Help => Context::Help,
-                Modal::InlineQuery(_) => Context::InlineQuery,
-            }
-        } else {
-            Context::Empty
+        match self.overlay {
+            Overlay::Schema(_) => Context::Schema,
+            Overlay::Error(_) => Context::Error,
+            Overlay::Palette(_) => Context::Command,
+            Overlay::ThemeSelector(_) => Context::ThemeSelector,
+            Overlay::None => match self.modal() {
+                Some(Modal::None) => {
+                    //
+                    if self.tab_unchecked().side_panel().is_some() {
+                        Context::TabSidePanel
+                    } else {
+                        Context::Table
+                    }
+                }
+                Some(Modal::SearchBar(_)) => Context::Search,
+                Some(Modal::Sheet(_)) => Context::Sheet,
+                Some(Modal::DataFrameInfo(_)) => Context::DataFrameInfo,
+                Some(Modal::ScatterPlot(_)) => Context::ScatterPlot,
+                Some(Modal::HistogramPlot(_)) => Context::HistogramPlot,
+                Some(Modal::InlineQuery(_)) => Context::InlineQuery,
+                Some(Modal::Help) => Context::Help,
+                None => Context::Empty,
+            },
         }
     }
 
     pub fn draw(&mut self, frame: &mut Frame) -> AppResult<()> {
-        // Draw table / item
-        let state = self.context();
+        frame.render_stateful_widget(
+            Tabs::new()
+                .with_borders(self.borders)
+                .selection(matches!(self.context(), Context::Table)),
+            frame.area(),
+            &mut self.tabs,
+        );
         match &mut self.overlay {
-            Overlay::Schema => {
-                frame.render_stateful_widget(Schema::default(), frame.area(), &mut self.schema);
+            Overlay::Error(msg) => {
+                let error = ErrorPopup::new().with_message(msg.as_str());
+                frame.render_widget(error, frame.area());
             }
-            Overlay::None => {
+            Overlay::Palette(cmd) => {
+                let upmid = {
+                    let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
+                        .flex(Flex::Center)
+                        .areas(frame.area());
+                    let [_, mid_hor] =
+                        Layout::vertical([Constraint::Length(3), Constraint::Length(15)])
+                            .areas(mid_ver);
+                    mid_hor
+                };
                 frame.render_stateful_widget(
-                    Tabs::new()
-                        .with_borders(self.borders)
-                        .selection(matches!(state, Context::Table)),
-                    frame.area(),
-                    &mut self.tabs,
+                    CommandPalette::new(self.history.iter().take(100)),
+                    upmid,
+                    cmd,
                 );
             }
-        }
-
-        if let Some(msg) = self.error.as_ref() {
-            let error = ErrorPopup::new().with_message(msg.as_str());
-            frame.render_widget(error, frame.area());
-        }
-
-        if let Some(ts) = self.theme_selector.as_mut() {
-            ThemeSelector::default().render(frame.area(), frame.buffer_mut(), ts);
-        }
-
-        if let Some(cmd) = self.palette.as_mut() {
-            let upmid = {
-                let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
-                    .flex(Flex::Center)
-                    .areas(frame.area());
-                let [_, mid_hor] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Length(15)])
-                        .areas(mid_ver);
-                mid_hor
-            };
-            frame.render_stateful_widget(
-                CommandPalette::new(self.history.iter().take(100)),
-                upmid,
-                cmd,
-            );
+            Overlay::ThemeSelector(state) => {
+                ThemeSelector::default().render(frame.area(), frame.buffer_mut(), state);
+            }
+            Overlay::Schema(state) => {
+                frame.render_stateful_widget(Schema::default(), frame.area(), state);
+            }
+            Overlay::None => {}
         }
 
         Ok(())
