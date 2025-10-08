@@ -70,7 +70,7 @@ impl Context {
 pub enum Overlay {
     Schema(SchemaState),
     Error(String),
-    Palette(CommandPaletteState),
+    CommandPalette(CommandPaletteState),
     ThemeSelector(ThemeSelectorState),
     #[default]
     None,
@@ -168,7 +168,7 @@ impl App {
     }
 
     pub fn palette_mut(&mut self) -> Option<&mut CommandPaletteState> {
-        if let Overlay::Palette(palette) = &mut self.overlay {
+        if let Overlay::CommandPalette(palette) = &mut self.overlay {
             Some(palette)
         } else {
             None
@@ -218,12 +218,12 @@ impl App {
     }
 
     pub fn show_palette(&mut self, cmd: impl ToString) {
-        self.overlay = Overlay::Palette(CommandPaletteState::new(cmd.to_string()));
+        self.overlay = Overlay::CommandPalette(CommandPaletteState::new(cmd.to_string()));
     }
 
     pub fn take_palette(&mut self) -> Option<CommandPaletteState> {
-        if matches!(&self.overlay, Overlay::Palette(_))
-            && let Overlay::Palette(palette) = std::mem::take(&mut self.overlay)
+        if matches!(&self.overlay, Overlay::CommandPalette(_))
+            && let Overlay::CommandPalette(palette) = std::mem::take(&mut self.overlay)
         {
             Some(palette)
         } else {
@@ -276,7 +276,7 @@ impl App {
         match self.overlay {
             Overlay::Schema(_) => Context::Schema,
             Overlay::Error(_) => Context::Error,
-            Overlay::Palette(_) => Context::Command,
+            Overlay::CommandPalette(_) => Context::Command,
             Overlay::ThemeSelector(_) => Context::ThemeSelector,
             Overlay::None => match self.modal() {
                 Some(Modal::None) => {
@@ -312,7 +312,7 @@ impl App {
                 let error = ErrorPopup::new().with_message(msg.as_str());
                 frame.render_widget(error, frame.area());
             }
-            Overlay::Palette(cmd) => {
+            Overlay::CommandPalette(cmd) => {
                 let upmid = {
                     let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
                         .flex(Flex::Center)
