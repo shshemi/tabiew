@@ -2,7 +2,7 @@ use std::ops::Div;
 
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{Clear, Paragraph, StatefulWidget, Widget, Wrap},
 };
 
 use crate::{
@@ -76,6 +76,8 @@ impl StatefulWidget for Schema {
         // 2,3: Info
         //   2: Meta info
         //   3: Fields info
+
+        Widget::render(Clear, area, buf);
 
         if sql().schema().is_empty() {
             let pg = Paragraph::new(
