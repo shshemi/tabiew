@@ -21,6 +21,7 @@ use crate::{
     },
 };
 
+#[derive(Debug, Default)]
 pub struct CommandPaletteState {
     input: InputState,
     list: ListState,

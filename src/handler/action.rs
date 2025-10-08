@@ -356,21 +356,21 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(Some(AppAction::TabSelect(idx)))
         }
         AppAction::TabPrev => {
-            if let Some(tab) = app.tab() {
+            if let Some(tab) = app.tabs() {
                 Ok(Some(AppAction::TabSelect(tab.idx().saturating_sub(1))))
             } else {
                 Ok(None)
             }
         }
         AppAction::TabNext => {
-            if let Some(tab) = app.tab() {
+            if let Some(tab) = app.tabs() {
                 Ok(Some(AppAction::TabSelect(tab.idx().saturating_add(1))))
             } else {
                 Ok(None)
             }
         }
         AppAction::TabRemoveOrQuit => {
-            if let Some(tab) = app.tab_mut() {
+            if let Some(tab) = app.tabs_mut() {
                 if tab.len() == 1 {
                     app.quit();
                 } else {
@@ -672,7 +672,10 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                     palette.list().select(None);
                 }
                 Ok(None)
-            } else if let Some(cmd) = app.hide_palette() {
+            } else if let Some(cmd) = app
+                .take_palette()
+                .map(|mut cp| cp.input().value().to_owned())
+            {
                 if cmd.is_empty() {
                     Ok(Some(AppAction::PaletteDeselectOrDismiss))
                 } else {
@@ -692,7 +695,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 if palette.list().selected().is_some() {
                     palette.list().select(None);
                 } else {
-                    app.hide_palette();
+                    app.take_palette();
                 }
             }
             Ok(None)
@@ -798,13 +801,13 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             Ok(None)
         }
         AppAction::TabShowPanel => {
-            if let Some(tabs) = app.tab_mut() {
+            if let Some(tabs) = app.tabs_mut() {
                 tabs.show_side_panel();
             }
             Ok(None)
         }
         AppAction::TabHidePanel => {
-            if let Some(tabs) = app.tab_mut() {
+            if let Some(tabs) = app.tabs_mut() {
                 tabs.take_side_panel();
             }
             Ok(None)
@@ -823,7 +826,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::TabPanelSelect => {
             if let Some(idx) = app
-                .tab_mut()
+                .tabs_mut()
                 .and_then(|tab| tab.take_side_panel())
                 .and_then(|panel| panel.list().selected())
             {

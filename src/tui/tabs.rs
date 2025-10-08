@@ -10,13 +10,13 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct TabState {
+pub struct TabsState {
     tabulars: Vec<PaneState>,
     side_panel: Option<EnumeratedListState>,
     idx: usize,
 }
 
-impl TabState {
+impl TabsState {
     pub fn add(&mut self, tabular: PaneState) {
         self.tabulars.push(tabular);
     }
@@ -76,7 +76,7 @@ impl TabState {
     }
 }
 
-impl FromIterator<PaneState> for TabState {
+impl FromIterator<PaneState> for TabsState {
     fn from_iter<T: IntoIterator<Item = PaneState>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
@@ -117,7 +117,7 @@ impl Default for Tabs {
 }
 
 impl StatefulWidget for Tabs {
-    type State = TabState;
+    type State = TabsState;
 
     fn render(
         self,
