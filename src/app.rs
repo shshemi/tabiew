@@ -4,7 +4,7 @@ use polars::frame::DataFrame;
 use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout},
-    widgets::StatefulWidget,
+    widgets::{StatefulWidget, Widget},
 };
 
 use crate::tui::{
@@ -13,6 +13,7 @@ use crate::tui::{
     enumerated_list::EnumeratedListState,
     popups::{
         command_palette::{CommandPalette, CommandPaletteState},
+        help_modal::HelpModal,
         theme_selector::{ThemeSelector, ThemeSelectorState},
     },
     schema::schema::{Schema, SchemaState},
@@ -72,6 +73,7 @@ pub enum Overlay {
     Error(String),
     CommandPalette(CommandPaletteState),
     ThemeSelector(ThemeSelectorState),
+    Help,
     #[default]
     None,
 }
@@ -261,6 +263,16 @@ impl App {
         &mut self.tabs
     }
 
+    pub fn show_help(&mut self) {
+        self.overlay = Overlay::Help
+    }
+
+    pub fn take_help(&mut self) {
+        if matches!(self.overlay, Overlay::Help) {
+            self.overlay = Overlay::None;
+        }
+    }
+
     pub fn tick(&mut self) -> AppResult<()> {
         for tab in self.tabs.iter_mut() {
             tab.tick();
@@ -278,9 +290,9 @@ impl App {
             Overlay::Error(_) => Context::Error,
             Overlay::CommandPalette(_) => Context::Command,
             Overlay::ThemeSelector(_) => Context::ThemeSelector,
+            Overlay::Help => Context::Help,
             Overlay::None => match self.modal() {
                 Some(Modal::None) => {
-                    //
                     if self.tab_unchecked().side_panel().is_some() {
                         Context::TabSidePanel
                     } else {
@@ -293,7 +305,6 @@ impl App {
                 Some(Modal::ScatterPlot(_)) => Context::ScatterPlot,
                 Some(Modal::HistogramPlot(_)) => Context::HistogramPlot,
                 Some(Modal::InlineQuery(_)) => Context::InlineQuery,
-                Some(Modal::Help) => Context::Help,
                 None => Context::Empty,
             },
         }
@@ -333,6 +344,15 @@ impl App {
             }
             Overlay::Schema(state) => {
                 frame.render_stateful_widget(Schema::default(), frame.area(), state);
+            }
+            Overlay::Help => {
+                //
+                let [area] = Layout::horizontal([Constraint::Length(90)])
+                    .flex(Flex::Center)
+                    .areas(frame.area());
+                let [_, area] =
+                    Layout::vertical([Constraint::Length(2), Constraint::Length(50)]).areas(area);
+                Widget::render(HelpModal::new(), area, frame.buffer_mut());
             }
             Overlay::None => {}
         }
