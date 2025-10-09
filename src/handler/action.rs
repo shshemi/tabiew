@@ -114,7 +114,8 @@ pub enum AppAction {
     SheetScrollDown,
     SheetScrollUp,
     SheetShow,
-    ShowHelp,
+    HelpShow,
+    HelpDismiss,
     StoreConfig,
     SwitchToSchema,
     SwitchToTabulars,
@@ -129,7 +130,6 @@ pub enum AppAction {
     TabRemoveOrQuit,
     TabSelect(usize),
     TabShowPanel,
-    TableDismissModal,
     TableFilter(String),
     TableGoDown(usize),
     TableGoDownFullPage,
@@ -187,8 +187,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             app.show_palette("");
             Ok(None)
         }
-        AppAction::TableDismissModal => {
-            app.modal_take();
+        AppAction::HelpDismiss => {
+            app.take_help();
             Ok(None)
         }
         AppAction::SheetShow => {
@@ -541,10 +541,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 Ok(Some(AppAction::TabSelect(usize::MAX)))
             }
         }
-        AppAction::ShowHelp => {
-            if let Some(tab) = app.pane_mut() {
-                tab.show_help();
-            }
+        AppAction::HelpShow => {
+            app.show_help();
             Ok(None)
         }
         AppAction::Quit => {
