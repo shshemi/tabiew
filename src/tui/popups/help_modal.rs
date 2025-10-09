@@ -7,7 +7,10 @@ use ratatui::{
 
 use crate::{
     misc::globals::theme,
-    tui::{status_bar::{StatusBar, Tag}, widgets::block::Block},
+    tui::{
+        status_bar::{StatusBar, Tag},
+        widgets::block::Block,
+    },
 };
 
 #[derive(Debug, Default)]
@@ -25,9 +28,10 @@ impl Widget for HelpModal {
 
         let mut lines = vec![
             Line::raw(""),
-            Line::from(vec![
-                Span::styled("Tabiew Keyboard Shortcuts", theme().header(0)),
-            ]),
+            Line::from(vec![Span::styled(
+                "Tabiew Keyboard Shortcuts",
+                theme().header(0),
+            )]),
             Line::raw(""),
         ];
 
@@ -150,7 +154,10 @@ impl Widget for HelpModal {
         lines.push(Line::raw(""));
 
         // Common Commands
-        lines.push(Line::styled("Common Commands (after pressing :)", theme().header(1)));
+        lines.push(Line::styled(
+            "Common Commands (after pressing :)",
+            theme().header(1),
+        ));
         lines.push(Line::from(vec![
             Span::styled("  Q", theme().text().bold()),
             Span::raw(" or "),
@@ -199,7 +206,7 @@ impl Widget for HelpModal {
                         StatusBar::new()
                             .mono_color()
                             .centered()
-                            .tag(Tag::new(" Close ", " ESC | q "))
+                            .tag(Tag::new(" Close ", " ESC | q ")),
                     )
                     .title_alignment(Alignment::Center)
                     .into_widget(),

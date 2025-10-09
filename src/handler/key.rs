@@ -186,7 +186,7 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::F(1))
-                    .action(AppAction::ShowHelp),
+                    .action(AppAction::HelpShow),
             )
             // Q
             .add(Keybind::default().char('Q').action(AppAction::Quit))
@@ -500,15 +500,11 @@ impl Default for KeyHandler {
         // ---- sheet keybindings
         hndl.keybinds(Context::Sheet)
             // q and esc
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TableDismissModal),
-            )
+            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TableDismissModal),
+                    .action(AppAction::HelpDismiss),
             )
             // shift up down j k
             .add(
@@ -602,29 +598,21 @@ impl Default for KeyHandler {
                     .action(AppAction::DataFrameInfoScrollDown),
             )
             // q esc
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TableDismissModal),
-            )
+            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TableDismissModal),
+                    .action(AppAction::HelpDismiss),
             );
 
         // ---- scatter plot keybindings
         hndl.keybinds(Context::ScatterPlot)
             // q esc
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TableDismissModal),
-            )
+            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TableDismissModal),
+                    .action(AppAction::HelpDismiss),
             );
 
         // ---- histogram plot keybindings
@@ -652,15 +640,11 @@ impl Default for KeyHandler {
                     .action(AppAction::HistogramScrollDown),
             )
             // q esc
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TableDismissModal),
-            )
+            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TableDismissModal),
+                    .action(AppAction::HelpDismiss),
             );
         hndl.keybinds(Context::ThemeSelector)
             .add(
@@ -713,15 +697,11 @@ impl Default for KeyHandler {
 
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
-            .add(
-                Keybind::default()
-                    .char('q')
-                    .action(AppAction::TableDismissModal),
-            )
+            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::TableDismissModal),
+                    .action(AppAction::HelpDismiss),
             );
 
         hndl

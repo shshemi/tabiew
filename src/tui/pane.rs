@@ -1,12 +1,11 @@
 use polars::frame::DataFrame;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Margin, Rect},
-    widgets::{StatefulWidget, Widget},
+    widgets::StatefulWidget,
 };
 
 use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
-    popups::help_modal::HelpModal,
     search_bar::{SearchBar, SearchBarState},
     sheet::{Sheet, SheetState},
 };
@@ -34,7 +33,6 @@ pub enum Modal {
     ScatterPlot(ScatterPlotState),
     HistogramPlot(HistogramPlotState),
     InlineQuery(InlineQueryState),
-    Help,
     #[default]
     None,
 }
@@ -89,7 +87,6 @@ impl PaneState {
             Modal::ScatterPlot(_) => (),
             Modal::HistogramPlot(_) => (),
             Modal::InlineQuery(_) => (),
-            Modal::Help => (),
         }
     }
 
@@ -131,10 +128,6 @@ impl PaneState {
 
     pub fn show_inline_query(&mut self, query_type: InlineQueryType) {
         self.modal = Modal::InlineQuery(InlineQueryState::new(query_type));
-    }
-
-    pub fn show_help(&mut self) {
-        self.modal = Modal::Help
     }
 
     pub fn modal(&self) -> &Modal {
@@ -234,14 +227,6 @@ impl StatefulWidget for Pane {
             }
             Modal::InlineQuery(state) => {
                 InlineQuery::default().render(area, buf, state);
-            }
-            Modal::Help => {
-                let [area] = Layout::horizontal([Constraint::Length(90)])
-                    .flex(Flex::Center)
-                    .areas(area);
-                let [_, area] =
-                    Layout::vertical([Constraint::Length(2), Constraint::Length(50)]).areas(area);
-                HelpModal::new().render(area, buf);
             }
             Modal::None => (),
         }
