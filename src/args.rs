@@ -131,9 +131,7 @@ pub struct Args {
 #[derive(Debug, Clone, ValueEnum)]
 pub enum Format {
     Dsv,
-    #[value(alias = "csv")]
     Csv,
-    #[value(alias = "tsv")]
     Tsv,
     Parquet,
     Jsonl,
@@ -240,4 +238,3 @@ impl InferSchema {
         }
     }
 }
-
