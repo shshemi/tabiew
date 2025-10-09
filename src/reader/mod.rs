@@ -75,7 +75,12 @@ pub trait BuildReader {
 impl BuildReader for Args {
     fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>> {
         match self.format {
-            Some(Format::Dsv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
+            Some(Format::Dsv) | Some(Format::Csv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
+            Some(Format::Tsv) => {
+                let mut reader = CsvToDataFrame::from_args(self);
+                reader.separator_char = '\t';
+                Ok(Box::new(reader))
+            }
             Some(Format::Parquet) => Ok(Box::new(ParquetToDataFrame)),
             Some(Format::Json) => Ok(Box::new(JsonToDataFrame::from_args(self))),
             Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
@@ -289,3 +294,4 @@ impl ReadToDataFrames for ArrowIpcToDataFrame {
         Ok([(input.table_name(), df)].into())
     }
 }
+
