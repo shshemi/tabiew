@@ -16,14 +16,22 @@ pub struct InputState {
 }
 
 impl InputState {
-    pub fn max_len(self, max_len: impl Into<Option<usize>>) -> Self {
+    pub fn with_max_len(self, max_len: impl Into<Option<usize>>) -> Self {
         InputState {
             max_len: max_len.into(),
             ..self
         }
     }
-    pub fn input_type(self, input_type: InputType) -> Self {
+
+    pub fn with_input_type(self, input_type: InputType) -> Self {
         InputState { input_type, ..self }
+    }
+
+    pub fn with_value(self, value: String) -> Self {
+        Self {
+            input: self.input.with_value(value),
+            ..self
+        }
     }
 
     pub fn delete_prev(&mut self) {
