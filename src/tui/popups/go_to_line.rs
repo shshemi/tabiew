@@ -55,7 +55,7 @@ impl StatefulWidget for GoToLine {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        let [_, area] = Layout::horizontal([Constraint::Length(1), Constraint::Length(32)])
+        let [area, _] = Layout::horizontal([Constraint::Length(32), Constraint::Length(1)])
             .flex(Flex::End)
             .areas(buf.area);
         let [_, area] =
@@ -63,7 +63,7 @@ impl StatefulWidget for GoToLine {
         Clear.render(area, buf);
 
         Input::default()
-            .block(Block::default().title("Go to line"))
+            .block(Block::default().title("Go to Line"))
             .render(area, buf, &mut state.input);
     }
 }
