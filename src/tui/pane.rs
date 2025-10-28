@@ -20,7 +20,10 @@ use crate::{
             histogram_plot::{HistogramPlot, HistogramPlotState},
             scatter_plot::{ScatterPlot, ScatterPlotState},
         },
-        popups::inline_query::{InlineQuery, InlineQueryState, InlineQueryType},
+        popups::{
+            go_to_line::{GoToLine, GoToLineState},
+            inline_query::{InlineQuery, InlineQueryState, InlineQueryType},
+        },
         schema::data_frame_info::{DataFrameInfo, DataFrameInfoState},
     },
 };
@@ -33,6 +36,7 @@ pub enum Modal {
     ScatterPlot(ScatterPlotState),
     HistogramPlot(HistogramPlotState),
     InlineQuery(InlineQueryState),
+    GoToLine(GoToLineState),
     #[default]
     None,
 }
@@ -87,6 +91,7 @@ impl PaneState {
             Modal::ScatterPlot(_) => (),
             Modal::HistogramPlot(_) => (),
             Modal::InlineQuery(_) => (),
+            Modal::GoToLine(_) => (),
         }
     }
 
@@ -130,6 +135,14 @@ impl PaneState {
         self.modal = Modal::InlineQuery(InlineQueryState::new(query_type));
     }
 
+    pub fn show_go_to_line(&mut self) {
+        self.modal = Modal::GoToLine(GoToLineState::new(self.table.selected()))
+    }
+
+    pub fn show_go_to_line_with_value(&mut self, value: usize) {
+        self.modal = Modal::GoToLine(GoToLineState::new(self.table.selected()).with_value(value))
+    }
+
     pub fn modal(&self) -> &Modal {
         &self.modal
     }
@@ -158,6 +171,9 @@ impl StatefulWidget for Pane {
             }
             _ => (Rect::default(), area),
         };
+        if let Modal::GoToLine(gtl) = &state.modal {
+            state.table.select(gtl.value().saturating_sub(1));
+        }
         DataFrameTable::new().render(table_area, buf, &mut state.table);
 
         match &mut state.modal {
@@ -227,6 +243,9 @@ impl StatefulWidget for Pane {
             }
             Modal::InlineQuery(state) => {
                 InlineQuery::default().render(area, buf, state);
+            }
+            Modal::GoToLine(state) => {
+                GoToLine::default().render(area, buf, state);
             }
             Modal::None => (),
         }

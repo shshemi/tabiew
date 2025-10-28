@@ -44,6 +44,7 @@ pub enum Context {
     ThemeSelector,
     Help,
     InlineQuery,
+    GoToLine,
 }
 
 impl Context {
@@ -63,6 +64,7 @@ impl Context {
             Context::ThemeSelector => Context::Empty.into(),
             Context::InlineQuery => Context::Empty.into(),
             Context::Help => Context::Empty.into(),
+            Context::GoToLine => Context::Empty.into(),
         }
     }
 }
@@ -305,6 +307,7 @@ impl App {
                 Some(Modal::ScatterPlot(_)) => Context::ScatterPlot,
                 Some(Modal::HistogramPlot(_)) => Context::HistogramPlot,
                 Some(Modal::InlineQuery(_)) => Context::InlineQuery,
+                Some(Modal::GoToLine(_)) => Context::GoToLine,
                 None => Context::Empty,
             },
         }

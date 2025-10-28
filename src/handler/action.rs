@@ -53,6 +53,11 @@ pub enum AppAction {
     ExportJson(Destination, JsonFormat),
     ExportParquet(Destination),
     GotoLine(usize),
+    GoToLineShow,
+    GoToLineShowWithValue(usize),
+    GoToLineRollback,
+    GoToLineCommit,
+    GoToLineHandleKeyEvent(KeyEvent),
     Help,
     HistogramPlot(String, usize),
     HistogramScrollDown,
@@ -1001,6 +1006,36 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::InlineQueryHandleKeyEvent(event) => {
             if let Some(Modal::InlineQuery(inline_query)) = app.modal_mut() {
                 inline_query.handle(event);
+            }
+            Ok(None)
+        }
+        AppAction::GoToLineShow => {
+            if let Some(pane) = app.pane_mut() {
+                pane.show_go_to_line();
+            }
+            Ok(None)
+        }
+        AppAction::GoToLineShowWithValue(value) => {
+            if let Some(pane) = app.pane_mut() {
+                pane.show_go_to_line_with_value(value);
+            }
+            Ok(None)
+        }
+        AppAction::GoToLineRollback => {
+            if let Some(Modal::GoToLine(gtl)) = app.modal_take()
+                && let Some(pane) = app.pane_mut()
+            {
+                pane.table_mut().select(gtl.rollback());
+            }
+            Ok(None)
+        }
+        AppAction::GoToLineCommit => {
+            app.modal_take();
+            Ok(None)
+        }
+        AppAction::GoToLineHandleKeyEvent(event) => {
+            if let Some(Modal::GoToLine(go_to_line)) = app.modal_mut() {
+                go_to_line.handle(event);
             }
             Ok(None)
         }
