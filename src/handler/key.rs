@@ -159,15 +159,15 @@ impl Default for KeyHandler {
                     .action(AppAction::PaletteShow(String::default())),
             )
             .fallback(|event| match event.code {
-                KeyCode::Char('1') => Some(AppAction::PaletteShow("goto 1".to_owned())),
-                KeyCode::Char('2') => Some(AppAction::PaletteShow("goto 2".to_owned())),
-                KeyCode::Char('3') => Some(AppAction::PaletteShow("goto 3".to_owned())),
-                KeyCode::Char('4') => Some(AppAction::PaletteShow("goto 4".to_owned())),
-                KeyCode::Char('5') => Some(AppAction::PaletteShow("goto 5".to_owned())),
-                KeyCode::Char('6') => Some(AppAction::PaletteShow("goto 6".to_owned())),
-                KeyCode::Char('7') => Some(AppAction::PaletteShow("goto 7".to_owned())),
-                KeyCode::Char('8') => Some(AppAction::PaletteShow("goto 8".to_owned())),
-                KeyCode::Char('9') => Some(AppAction::PaletteShow("goto 9".to_owned())),
+                KeyCode::Char('1') => Some(AppAction::GoToLineShowWithValue(1)),
+                KeyCode::Char('2') => Some(AppAction::GoToLineShowWithValue(2)),
+                KeyCode::Char('3') => Some(AppAction::GoToLineShowWithValue(3)),
+                KeyCode::Char('4') => Some(AppAction::GoToLineShowWithValue(4)),
+                KeyCode::Char('5') => Some(AppAction::GoToLineShowWithValue(5)),
+                KeyCode::Char('6') => Some(AppAction::GoToLineShowWithValue(6)),
+                KeyCode::Char('7') => Some(AppAction::GoToLineShowWithValue(7)),
+                KeyCode::Char('8') => Some(AppAction::GoToLineShowWithValue(8)),
+                KeyCode::Char('9') => Some(AppAction::GoToLineShowWithValue(9)),
                 _ => None,
             });
 
@@ -694,6 +694,19 @@ impl Default for KeyHandler {
                     .action(AppAction::InlineQueryDismiss),
             )
             .fallback(|event| Some(AppAction::InlineQueryHandleKeyEvent(event)));
+
+        hndl.keybinds(Context::GoToLine)
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::GoToLineCommit),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::GoToLineRollback),
+            )
+            .fallback(|event| Some(AppAction::GoToLineHandleKeyEvent(event)));
 
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
