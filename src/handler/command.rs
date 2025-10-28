@@ -111,9 +111,13 @@ static ENTRIES: [Entry; 22] = [
         usage: "goto <line_index>",
         description: "Jumps to the specified line",
         parser: |line| {
-            Ok(AppAction::GotoLine(
-                line.parse::<usize>()?.saturating_sub(1),
-            ))
+            if line.is_empty() {
+                Ok(AppAction::GoToLineShow)
+            } else {
+                Ok(AppAction::GotoLine(
+                    line.parse::<usize>()?.saturating_sub(1),
+                ))
+            }
         },
     },
     Entry {
