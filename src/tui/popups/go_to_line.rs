@@ -26,7 +26,7 @@ impl GoToLineState {
     pub fn with_value(self, value: usize) -> Self {
         Self {
             rollback: self.rollback,
-            input: InputState::default().with_value(value.to_string()),
+            input: self.input.with_value(value.to_string()),
         }
     }
 
