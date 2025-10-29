@@ -6,7 +6,7 @@ use ratatui::{
 
 use crate::tui::widgets::{
     block::Block,
-    input::{Input, InputState},
+    input::{Input, InputState, InputType},
 };
 
 #[derive(Debug, Default)]
@@ -15,6 +15,24 @@ pub struct TextPickerState {
 }
 
 impl TextPickerState {
+    pub fn with_max_len(self, max_len: usize) -> Self {
+        Self {
+            input: self.input.with_max_len(max_len),
+        }
+    }
+
+    pub fn with_value(self, value: String) -> Self {
+        Self {
+            input: self.input.with_value(value),
+        }
+    }
+
+    pub fn with_input_type(self, input_type: InputType) -> Self {
+        Self {
+            input: self.input.with_input_type(input_type),
+        }
+    }
+
     pub fn input(&self) -> &InputState {
         &self.input
     }
