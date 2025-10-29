@@ -708,6 +708,41 @@ impl Default for KeyHandler {
             )
             .fallback(|event| Some(AppAction::GoToLineHandleKeyEvent(event)));
 
+        hndl.keybinds(Context::ExportDataFrame)
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::ExportDataFrameNextStep),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::ExportDataFrameDismiss),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::ExportDataFrameSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::ExportDataFrameSelectPrev),
+            )
+            .add(
+                Keybind::default()
+                    .char('n')
+                    .ctrl()
+                    .action(AppAction::ExportDataFrameSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .char('p')
+                    .ctrl()
+                    .action(AppAction::ExportDataFrameSelectPrev),
+            )
+            .fallback(|event| Some(AppAction::ExportDataFrameHandleKeyEvent(event)));
+
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
             .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
