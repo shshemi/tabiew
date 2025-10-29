@@ -21,6 +21,7 @@ use crate::{
             scatter_plot::{ScatterPlot, ScatterPlotState},
         },
         popups::{
+            export_data_frame::{ExportDataFrame, ExportDataFrameState},
             go_to_line::{GoToLine, GoToLineState},
             inline_query::{InlineQuery, InlineQueryState, InlineQueryType},
         },
@@ -37,6 +38,7 @@ pub enum Modal {
     HistogramPlot(HistogramPlotState),
     InlineQuery(InlineQueryState),
     GoToLine(GoToLineState),
+    ExportDataFrame(ExportDataFrameState),
     #[default]
     None,
 }
@@ -92,6 +94,7 @@ impl PaneState {
             Modal::HistogramPlot(_) => (),
             Modal::InlineQuery(_) => (),
             Modal::GoToLine(_) => (),
+            Modal::ExportDataFrame(_) => (),
         }
     }
 
@@ -141,6 +144,10 @@ impl PaneState {
 
     pub fn show_go_to_line_with_value(&mut self, value: usize) {
         self.modal = Modal::GoToLine(GoToLineState::new(self.table.selected()).with_value(value))
+    }
+
+    pub fn show_export_data_frame(&mut self) {
+        self.modal = Modal::ExportDataFrame(Default::default())
     }
 
     pub fn modal(&self) -> &Modal {
@@ -246,6 +253,9 @@ impl StatefulWidget for Pane {
             }
             Modal::GoToLine(state) => {
                 GoToLine::default().render(area, buf, state);
+            }
+            Modal::ExportDataFrame(state) => {
+                ExportDataFrame::default().render(area, buf, state);
             }
             Modal::None => (),
         }

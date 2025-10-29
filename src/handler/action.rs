@@ -25,7 +25,7 @@ use crate::{
         data_frame_table::DataFrameTableState,
         pane::Modal,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
-        popups::inline_query::InlineQueryType,
+        popups::{export_data_frame::Format, inline_query::InlineQueryType},
         themes::theme::Theme,
     },
     writer::{
@@ -43,6 +43,12 @@ pub enum AppAction {
     DataFrameInfoShow,
     DismissError,
     DismissErrorAndShowPalette,
+    ExportDataFrameShow,
+    ExportDataFrameSelectNext,
+    ExportDataFrameSelectPrev,
+    ExportDataFrameDismiss,
+    ExportDataFrameNextStep,
+    ExportDataFrameHandleKeyEvent(KeyEvent),
     ExportArrow(Destination),
     ExportDsv {
         destination: Destination,
@@ -1036,6 +1042,74 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::GoToLineHandleKeyEvent(event) => {
             if let Some(Modal::GoToLine(go_to_line)) = app.modal_mut() {
                 go_to_line.handle(event);
+            }
+            Ok(None)
+        }
+        AppAction::ExportDataFrameShow => {
+            if let Some(pane) = app.pane_mut() {
+                pane.show_export_data_frame();
+            }
+            Ok(None)
+        }
+        AppAction::ExportDataFrameDismiss => {
+            if let Some(pane) = app.pane_mut() {
+                pane.modal_take();
+            }
+            Ok(None)
+        }
+        AppAction::ExportDataFrameSelectNext => {
+            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut() {
+                edf.select_next();
+            }
+            Ok(None)
+        }
+        AppAction::ExportDataFrameSelectPrev => {
+            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut() {
+                edf.select_previous();
+            }
+            Ok(None)
+        }
+        AppAction::ExportDataFrameNextStep => {
+            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut()
+                && edf.next_step()
+            {
+                let fmt = edf.format().ok_or(anyhow!("Invalid format"))?;
+                let path = edf.path().ok_or(anyhow!("Invalid path"))?;
+                let separator = edf.separator().ok_or(anyhow!("Invalid path"))?;
+                let quote = edf.quote().ok_or(anyhow!("Invalid path"))?;
+
+                app.modal_take();
+                match fmt {
+                    Format::Csv => Ok(Some(AppAction::ExportDsv {
+                        destination: Destination::File(path),
+                        separator,
+                        quote,
+                        header: true,
+                    })),
+                    Format::Tsv => Ok(Some(AppAction::ExportDsv {
+                        destination: Destination::File(path),
+                        separator: '\t',
+                        quote: '"',
+                        header: false,
+                    })),
+                    Format::Parquet => Ok(Some(AppAction::ExportParquet(Destination::File(path)))),
+                    Format::Json => Ok(Some(AppAction::ExportJson(
+                        Destination::File(path),
+                        JsonFormat::Json,
+                    ))),
+                    Format::JsonL => Ok(Some(AppAction::ExportJson(
+                        Destination::File(path),
+                        JsonFormat::JsonLine,
+                    ))),
+                    Format::Arrow => Ok(Some(AppAction::ExportArrow(Destination::File(path)))),
+                }
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::ExportDataFrameHandleKeyEvent(event) => {
+            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut() {
+                edf.handle(event);
             }
             Ok(None)
         }

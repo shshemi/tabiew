@@ -299,35 +299,39 @@ mod export {
             usage: "export <format> <path>",
             description: "Export the data frame to a format specified file",
             parser: |query| {
-                let (fmt, path_str) = query
-                    .split_once(' ')
-                    .ok_or(anyhow!("Export should provide format and path"))?;
-                match fmt {
-                    "csv" => Ok(AppAction::ExportDsv {
-                        destination: path_str.into(),
-                        separator: ',',
-                        quote: '"',
-                        header: true,
-                    }),
+                if query.is_empty() {
+                    Ok(AppAction::ExportDataFrameShow)
+                } else {
+                    let (fmt, path_str) = query
+                        .split_once(' ')
+                        .ok_or(anyhow!("Export should provide format and path"))?;
+                    match fmt {
+                        "csv" => Ok(AppAction::ExportDsv {
+                            destination: path_str.into(),
+                            separator: ',',
+                            quote: '"',
+                            header: true,
+                        }),
 
-                    "tsv" => Ok(AppAction::ExportDsv {
-                        destination: path_str.into(),
-                        separator: '\t',
-                        quote: '"',
-                        header: true,
-                    }),
+                        "tsv" => Ok(AppAction::ExportDsv {
+                            destination: path_str.into(),
+                            separator: '\t',
+                            quote: '"',
+                            header: true,
+                        }),
 
-                    "parquet" => Ok(AppAction::ExportParquet(path_str.into())),
+                        "parquet" => Ok(AppAction::ExportParquet(path_str.into())),
 
-                    "json" => Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json)),
+                        "json" => Ok(AppAction::ExportJson(path_str.into(), JsonFormat::Json)),
 
-                    "jsonl" => Ok(AppAction::ExportJson(path_str.into(), JsonFormat::JsonLine)),
+                        "jsonl" => Ok(AppAction::ExportJson(path_str.into(), JsonFormat::JsonLine)),
 
-                    "arrow" => Ok(AppAction::ExportArrow(path_str.into())),
+                        "arrow" => Ok(AppAction::ExportArrow(path_str.into())),
 
-                    _ => Err(anyhow!(
-                        "Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow"
-                    )),
+                        _ => Err(anyhow!(
+                            "Unsupported format. Supported ones: csv, tsv, parquet, json, jsonl, and arrow"
+                        )),
+                    }
                 }
             },
         }
