@@ -409,7 +409,7 @@ impl Default for InnerState {
 }
 
 #[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
-pub enum Destination {
+enum Destination {
     File,
     Clipboard,
 }
@@ -425,7 +425,7 @@ impl Destination {
 }
 
 #[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
-pub enum Format {
+enum Format {
     Csv,
     Tsv,
     Parquet,
