@@ -38,7 +38,7 @@ pub enum Modal {
     HistogramPlot(HistogramPlotState),
     InlineQuery(InlineQueryState),
     GoToLine(GoToLineState),
-    ExportDataFrame(ExportWizardState),
+    ExportWizard(ExportWizardState),
     #[default]
     None,
 }
@@ -94,7 +94,7 @@ impl PaneState {
             Modal::HistogramPlot(_) => (),
             Modal::InlineQuery(_) => (),
             Modal::GoToLine(_) => (),
-            Modal::ExportDataFrame(_) => (),
+            Modal::ExportWizard(_) => (),
         }
     }
 
@@ -147,7 +147,7 @@ impl PaneState {
     }
 
     pub fn show_export_data_frame(&mut self) {
-        self.modal = Modal::ExportDataFrame(Default::default())
+        self.modal = Modal::ExportWizard(Default::default())
     }
 
     pub fn modal(&self) -> &Modal {
@@ -254,7 +254,7 @@ impl StatefulWidget for Pane {
             Modal::GoToLine(state) => {
                 GoToLine::default().render(area, buf, state);
             }
-            Modal::ExportDataFrame(state) => {
+            Modal::ExportWizard(state) => {
                 ExportWizard::default().render(area, buf, state);
             }
             Modal::None => (),

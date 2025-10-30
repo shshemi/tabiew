@@ -310,7 +310,7 @@ impl App {
                 Some(Modal::HistogramPlot(_)) => Context::HistogramPlot,
                 Some(Modal::InlineQuery(_)) => Context::InlineQuery,
                 Some(Modal::GoToLine(_)) => Context::GoToLine,
-                Some(Modal::ExportDataFrame(_)) => Context::ExportWizard,
+                Some(Modal::ExportWizard(_)) => Context::ExportWizard,
                 None => Context::Empty,
             },
         }

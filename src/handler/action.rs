@@ -1,6 +1,6 @@
 use std::{fs, ops::Div};
 
-use anyhow::{Ok, anyhow};
+use anyhow::anyhow;
 use crossterm::event::KeyEvent;
 use itertools::Itertools;
 use polars::frame::DataFrame;
@@ -25,7 +25,7 @@ use crate::{
         data_frame_table::DataFrameTableState,
         pane::Modal,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
-        popups::{export_wizard::Format, inline_query::InlineQueryType},
+        popups::{export_wizard::InnerState, inline_query::InlineQueryType},
         themes::theme::Theme,
     },
     writer::{
@@ -44,11 +44,11 @@ pub enum AppAction {
     DismissError,
     DismissErrorAndShowPalette,
     ExportDataFrameShow,
-    ExportDataFrameSelectNext,
-    ExportDataFrameSelectPrev,
-    ExportDataFrameDismiss,
-    ExportDataFrameNextStep,
-    ExportDataFrameHandleKeyEvent(KeyEvent),
+    ExportWizardSelectNext,
+    ExportWizardSelectPrev,
+    ExportWizardDismiss,
+    ExportWizardNextStep,
+    ExportWizardHandleKeyEvent(KeyEvent),
     ExportArrow(Destination),
     ExportDsv {
         destination: Destination,
@@ -1051,65 +1051,91 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::ExportDataFrameDismiss => {
+        AppAction::ExportWizardDismiss => {
             if let Some(pane) = app.pane_mut() {
                 pane.modal_take();
             }
             Ok(None)
         }
-        AppAction::ExportDataFrameSelectNext => {
-            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut() {
-                edf.select_next();
+        AppAction::ExportWizardSelectNext => {
+            if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
+                wizard.select_next();
             }
             Ok(None)
         }
-        AppAction::ExportDataFrameSelectPrev => {
-            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut() {
-                edf.select_previous();
+        AppAction::ExportWizardSelectPrev => {
+            if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
+                wizard.select_previous();
             }
             Ok(None)
         }
-        AppAction::ExportDataFrameNextStep => {
-            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut()
-                && edf.next_step()
-            {
-                let fmt = edf.format().ok_or(anyhow!("Invalid format"))?;
-                let path = edf.path().ok_or(anyhow!("Invalid path"))?;
-                let separator = edf.separator().ok_or(anyhow!("Invalid path"))?;
-                let quote = edf.quote().ok_or(anyhow!("Invalid path"))?;
-
-                app.modal_take();
-                match fmt {
-                    Format::Csv => Ok(Some(AppAction::ExportDsv {
-                        destination: Destination::File(path),
-                        separator,
-                        quote,
-                        header: true,
-                    })),
-                    Format::Tsv => Ok(Some(AppAction::ExportDsv {
-                        destination: Destination::File(path),
+        AppAction::ExportWizardNextStep => {
+            if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
+                let next = match wizard.next_step() {
+                    InnerState::CsvExportFile { sep, quote, path } => {
+                        Ok(Some(AppAction::ExportDsv {
+                            destination: Destination::File(path.clone()),
+                            separator: *sep,
+                            quote: *quote,
+                            header: true,
+                        }))
+                    }
+                    InnerState::CsvExportClipboard { sep, quote } => {
+                        Ok(Some(AppAction::ExportDsv {
+                            destination: Destination::Clipboard,
+                            separator: *sep,
+                            quote: *quote,
+                            header: true,
+                        }))
+                    }
+                    InnerState::TsvExportFile { path } => Ok(Some(AppAction::ExportDsv {
+                        destination: Destination::File(path.clone()),
                         separator: '\t',
                         quote: '"',
                         header: false,
                     })),
-                    Format::Parquet => Ok(Some(AppAction::ExportParquet(Destination::File(path)))),
-                    Format::Json => Ok(Some(AppAction::ExportJson(
-                        Destination::File(path),
+                    InnerState::TsvExportClipbaord => Ok(Some(AppAction::ExportDsv {
+                        destination: Destination::Clipboard,
+                        separator: '\t',
+                        quote: '"',
+                        header: false,
+                    })),
+                    InnerState::ParquetExportFile { path } => Ok(Some(AppAction::ExportParquet(
+                        Destination::File(path.clone()),
+                    ))),
+                    InnerState::JsonExportFile { path } => Ok(Some(AppAction::ExportJson(
+                        Destination::File(path.clone()),
                         JsonFormat::Json,
                     ))),
-                    Format::JsonL => Ok(Some(AppAction::ExportJson(
-                        Destination::File(path),
+                    InnerState::JsonExportClipboard => Ok(Some(AppAction::ExportJson(
+                        Destination::Clipboard,
+                        JsonFormat::Json,
+                    ))),
+                    InnerState::JsonLExportFile { path } => Ok(Some(AppAction::ExportJson(
+                        Destination::File(path.clone()),
                         JsonFormat::JsonLine,
                     ))),
-                    Format::Arrow => Ok(Some(AppAction::ExportArrow(Destination::File(path)))),
+                    InnerState::JsonLExportClipboard => Ok(Some(AppAction::ExportJson(
+                        Destination::Clipboard,
+                        JsonFormat::JsonLine,
+                    ))),
+                    InnerState::ArrowExportFile { path } => Ok(Some(AppAction::ExportArrow(
+                        Destination::File(path.clone()),
+                    ))),
+
+                    _ => Ok(None),
+                };
+                if next.is_ok() && next.as_ref().unwrap().is_some() {
+                    app.modal_take();
                 }
+                next
             } else {
                 Ok(None)
             }
         }
-        AppAction::ExportDataFrameHandleKeyEvent(event) => {
-            if let Some(Modal::ExportDataFrame(edf)) = app.modal_mut() {
-                edf.handle(event);
+        AppAction::ExportWizardHandleKeyEvent(event) => {
+            if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
+                wizard.handle(event);
             }
             Ok(None)
         }
