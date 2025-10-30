@@ -25,7 +25,7 @@ use crate::{
         data_frame_table::DataFrameTableState,
         pane::Modal,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
-        popups::{export_data_frame::Format, inline_query::InlineQueryType},
+        popups::{export_wizard::Format, inline_query::InlineQueryType},
         themes::theme::Theme,
     },
     writer::{
