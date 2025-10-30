@@ -712,36 +712,36 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
-                    .action(AppAction::ExportDataFrameNextStep),
+                    .action(AppAction::ExportWizardNextStep),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::ExportDataFrameDismiss),
+                    .action(AppAction::ExportWizardDismiss),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Up)
-                    .action(AppAction::ExportDataFrameSelectNext),
+                    .action(AppAction::ExportWizardSelectPrev),
             )
             .add(
                 Keybind::default()
                     .code(KeyCode::Down)
-                    .action(AppAction::ExportDataFrameSelectPrev),
+                    .action(AppAction::ExportWizardSelectNext),
             )
             .add(
                 Keybind::default()
                     .char('n')
                     .ctrl()
-                    .action(AppAction::ExportDataFrameSelectNext),
+                    .action(AppAction::ExportWizardSelectNext),
             )
             .add(
                 Keybind::default()
                     .char('p')
                     .ctrl()
-                    .action(AppAction::ExportDataFrameSelectPrev),
+                    .action(AppAction::ExportWizardSelectPrev),
             )
-            .fallback(|event| Some(AppAction::ExportDataFrameHandleKeyEvent(event)));
+            .fallback(|event| Some(AppAction::ExportWizardHandleKeyEvent(event)));
 
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
