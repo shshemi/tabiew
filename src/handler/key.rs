@@ -708,7 +708,7 @@ impl Default for KeyHandler {
             )
             .fallback(|event| Some(AppAction::GoToLineHandleKeyEvent(event)));
 
-        hndl.keybinds(Context::ExportDataFrame)
+        hndl.keybinds(Context::ExportWizard)
             .add(
                 Keybind::default()
                     .code(KeyCode::Enter)
