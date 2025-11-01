@@ -7,15 +7,15 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::pickers::list_picker::{ListPicker, ListPickerState};
 
 #[derive(Debug, Default)]
-pub struct OutputTargetState {
+pub struct OutputTargetPickerState {
     list_picker: ListPickerState,
 }
 
 #[derive(Debug, Default)]
-pub struct OutputTarget {}
+pub struct OutputTargetPicker {}
 
-impl StatefulWidget for OutputTarget {
-    type State = OutputTargetState;
+impl StatefulWidget for OutputTargetPicker {
+    type State = OutputTargetPickerState;
 
     fn render(
         self,
