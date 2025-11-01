@@ -11,6 +11,12 @@ pub struct OutputTargetPickerState {
     list_picker: ListPickerState,
 }
 
+impl OutputTargetPickerState {
+    pub fn selected(&self) -> Option<Target> {
+        self.list_picker.list().selected().and_then(Target::new)
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct OutputTargetPicker {}
 
@@ -34,4 +40,14 @@ impl StatefulWidget for OutputTargetPicker {
 pub enum Target {
     File,
     Clipboard,
+}
+
+impl Target {
+    pub fn new(idx: usize) -> Option<Target> {
+        match idx {
+            0 => Some(Target::File),
+            1 => Some(Target::Clipboard),
+            _ => None,
+        }
+    }
 }
