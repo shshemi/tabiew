@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     text::Line,
@@ -45,7 +47,7 @@ impl TextPickerState {
 #[derive(Debug, Default)]
 pub struct TextPicker<'a> {
     block: Block<'a>,
-    hint: &'a str,
+    hint: Cow<'a, str>,
 }
 
 impl<'a> TextPicker<'a> {
@@ -59,8 +61,8 @@ impl<'a> TextPicker<'a> {
         self
     }
 
-    pub fn hint(mut self, hint: &'a str) -> Self {
-        self.hint = hint;
+    pub fn hint<T: Into<Cow<'a, str>>>(mut self, hint: T) -> Self {
+        self.hint = hint.into();
         self
     }
 }
