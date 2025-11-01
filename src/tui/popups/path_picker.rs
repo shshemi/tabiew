@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, path::PathBuf};
 
 use ratatui::widgets::StatefulWidget;
 
@@ -7,6 +7,12 @@ use crate::tui::pickers::text_picker::{TextPicker, TextPickerState};
 #[derive(Debug, Default)]
 pub struct PathPickerState {
     text_picker: TextPickerState,
+}
+
+impl PathPickerState {
+    pub fn path(&self) -> PathBuf {
+        self.text_picker.input().value().into()
+    }
 }
 
 #[derive(Debug, Default)]
