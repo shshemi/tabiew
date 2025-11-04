@@ -1,5 +1,6 @@
 use std::{borrow::Cow, path::PathBuf};
 
+use crossterm::event::KeyEvent;
 use ratatui::widgets::StatefulWidget;
 
 use crate::tui::pickers::text_picker::{TextPicker, TextPickerState};
@@ -12,6 +13,10 @@ pub struct PathPickerState {
 impl PathPickerState {
     pub fn path(&self) -> PathBuf {
         self.text_picker.input().value().into()
+    }
+
+    pub fn handle(&mut self, event: KeyEvent) {
+        self.text_picker.input_mut().handle(event);
     }
 }
 
