@@ -1,232 +1,110 @@
-use std::{borrow::Cow, path::PathBuf};
+use std::borrow::Cow;
 
 use crossterm::event::KeyEvent;
 use ratatui::widgets::StatefulWidget;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::pickers::{
-    list_picker::{ListPicker, ListPickerState},
-    search_picker::{SearchPicker, SearchPickerState},
-    text_picker::{TextPicker, TextPickerState},
+use crate::tui::{
+    pickers::search_picker::{SearchPicker, SearchPickerState},
+    popups::exporters::{
+        arrow_exporter::{self, ArrowExporter, ArrowExporterState},
+        csv_exporter::{self, CsvExporter, CsvExporterState},
+        json_exporter::{self, JsonExporter, JsonExporterState},
+        jsonl_exporter::{self, JsonLExporter, JsonLExporterState},
+        parquet_exporter::{self, ParquetExporter, ParquetExporterState},
+        tsv_exporter::{self, TsvExporter, TsvExporterState},
+    },
 };
 
 #[derive(Debug, Default)]
 pub struct ExportWizardState {
-    state: InnerState,
+    state: State,
 }
 
 impl ExportWizardState {
-    pub fn next_step(&mut self) -> &InnerState {
+    pub fn step(&mut self) -> &State {
         self.state = match std::mem::take(&mut self.state) {
-            InnerState::None { picker } => {
-                match picker.list().selected().and_then(OutputFormat::new) {
-                    Some(OutputFormat::Csv) => InnerState::CsvSeparator {
-                        picker: TextPickerState::default()
-                            .with_max_len(1)
-                            .with_value(",".to_owned()),
-                    },
-                    Some(OutputFormat::Tsv) => InnerState::TsvOutputTarget {
-                        picker: Default::default(),
-                    },
-                    Some(OutputFormat::Parquet) => InnerState::ParquetPath {
-                        picker: Default::default(),
-                    },
-                    Some(OutputFormat::Json) => InnerState::JsonOutputTarget {
-                        picker: Default::default(),
-                    },
-                    Some(OutputFormat::JsonL) => InnerState::JsonLOutputTarget {
-                        picker: Default::default(),
-                    },
-                    Some(OutputFormat::Arrow) => InnerState::ArrowPath {
-                        picker: Default::default(),
-                    },
-                    None => InnerState::None { picker },
-                }
-            }
-            InnerState::CsvSeparator { picker } => {
-                if let Some(sep) = picker.input().value().chars().next() {
-                    InnerState::CsvQuote {
-                        sep,
-                        picker: TextPickerState::default()
-                            .with_max_len(1)
-                            .with_value("\"".to_owned()),
-                    }
-                } else {
-                    InnerState::CsvSeparator { picker }
-                }
-            }
-            InnerState::CsvQuote { picker, sep } => {
-                if let Some(quote) = picker.input().value().chars().next() {
-                    InnerState::CsvOutputTarget {
-                        sep,
-                        quote,
-                        picker: Default::default(),
-                    }
-                } else {
-                    InnerState::CsvSeparator { picker }
-                }
-            }
-            InnerState::CsvOutputTarget { picker, sep, quote } => {
-                match picker.list().selected().and_then(OutputTarget::new) {
-                    Some(OutputTarget::File) => InnerState::CsvPath {
-                        picker: Default::default(),
-                        sep,
-                        quote,
-                    },
-                    Some(OutputTarget::Clipboard) => InnerState::CsvExportClipboard { sep, quote },
-                    None => InnerState::CsvOutputTarget { picker, sep, quote },
-                }
-            }
-            InnerState::CsvPath { picker, sep, quote } => InnerState::CsvExportFile {
-                sep,
-                quote,
-                path: picker.input().value().into(),
+            State::SelectFormat(picker) => match picker.selected().and_then(Format::new) {
+                Some(Format::Csv) => State::Csv(Default::default()),
+                Some(Format::Tsv) => State::Tsv(Default::default()),
+                Some(Format::Json) => State::Json(Default::default()),
+                Some(Format::JsonL) => State::JsonL(Default::default()),
+                Some(Format::Parquet) => State::Parquet(Default::default()),
+                Some(Format::Arrow) => State::Arrow(Default::default()),
+                None => State::SelectFormat(picker),
             },
-            InnerState::CsvExportFile { sep, quote, path } => {
-                InnerState::CsvExportFile { sep, quote, path }
+            State::Csv(mut state) => {
+                state.step();
+                State::Csv(state)
             }
-            InnerState::CsvExportClipboard { sep, quote } => {
-                InnerState::CsvExportClipboard { sep, quote }
+            State::Tsv(mut state) => {
+                state.step();
+                State::Tsv(state)
             }
-            InnerState::TsvOutputTarget { picker } => {
-                match picker.list().selected().and_then(OutputTarget::new) {
-                    Some(OutputTarget::File) => InnerState::TsvPath {
-                        picker: Default::default(),
-                    },
-                    Some(OutputTarget::Clipboard) => InnerState::TsvExportClipbaord,
-                    None => InnerState::TsvOutputTarget { picker },
-                }
+            State::Json(mut state) => {
+                state.step();
+                State::Json(state)
             }
-            InnerState::TsvPath { picker } => InnerState::TsvExportFile {
-                path: picker.input().value().into(),
-            },
-            InnerState::TsvExportFile { path } => InnerState::TsvExportFile { path },
-            InnerState::TsvExportClipbaord => InnerState::TsvExportClipbaord,
-            InnerState::ParquetPath { picker } => InnerState::ParquetExportFile {
-                path: picker.input().value().into(),
-            },
-            InnerState::ParquetExportFile { path } => InnerState::ParquetExportFile { path },
-            InnerState::JsonOutputTarget { picker } => {
-                match picker.list().selected().and_then(OutputTarget::new) {
-                    Some(OutputTarget::File) => InnerState::JsonPath {
-                        picker: Default::default(),
-                    },
-                    Some(OutputTarget::Clipboard) => InnerState::JsonExportClipboard,
-                    None => InnerState::JsonOutputTarget { picker },
-                }
+            State::JsonL(mut state) => {
+                state.step();
+                State::JsonL(state)
             }
-            InnerState::JsonPath { picker } => InnerState::JsonExportFile {
-                path: picker.input().value().into(),
-            },
-            InnerState::JsonExportFile { path } => InnerState::JsonLExportFile { path },
-            InnerState::JsonExportClipboard => InnerState::JsonExportClipboard,
-            InnerState::JsonLOutputTarget { picker } => {
-                match picker.list().selected().and_then(OutputTarget::new) {
-                    Some(OutputTarget::File) => InnerState::JsonLPath {
-                        picker: Default::default(),
-                    },
-                    Some(OutputTarget::Clipboard) => InnerState::JsonLExportClipboard,
-                    None => InnerState::JsonOutputTarget { picker },
-                }
+            State::Parquet(mut state) => {
+                state.step();
+                State::Parquet(state)
             }
-            InnerState::JsonLPath { picker } => InnerState::JsonLExportFile {
-                path: picker.input().value().into(),
-            },
-            InnerState::JsonLExportFile { path } => InnerState::JsonLExportFile { path },
-            InnerState::JsonLExportClipboard => InnerState::JsonLExportClipboard,
-            InnerState::ArrowPath { picker } => InnerState::ArrowExportFile {
-                path: picker.input().value().into(),
-            },
-            InnerState::ArrowExportFile { path } => InnerState::ArrowExportFile { path },
+            State::Arrow(mut state) => {
+                state.step();
+                State::Arrow(state)
+            }
         };
         &self.state
     }
 
     pub fn select_previous(&mut self) {
         match &mut self.state {
-            InnerState::None { picker } => {
-                picker.list_mut().select_previous();
-            }
-            InnerState::CsvOutputTarget {
-                picker,
-                sep: _,
-                quote: _,
-            } => {
-                picker.list_mut().select_previous();
-            }
-            InnerState::TsvOutputTarget { picker } => {
-                picker.list_mut().select_previous();
-            }
-            InnerState::JsonOutputTarget { picker } => {
-                picker.list_mut().select_previous();
-            }
-            InnerState::JsonLOutputTarget { picker } => {
-                picker.list_mut().select_previous();
-            }
+            State::SelectFormat(picker) => picker.list_mut().select_previous(),
+            State::Csv(state) => state.select_previous(),
+            State::Tsv(state) => state.select_previous(),
+            State::Json(state) => state.select_previous(),
+            State::JsonL(state) => state.select_previous(),
             _ => (),
         };
     }
 
     pub fn select_next(&mut self) {
         match &mut self.state {
-            InnerState::None { picker } => {
-                picker.list_mut().select_next();
-            }
-            InnerState::CsvOutputTarget {
-                picker,
-                sep: _,
-                quote: _,
-            } => {
-                picker.list_mut().select_next();
-            }
-            InnerState::TsvOutputTarget { picker } => {
-                picker.list_mut().select_next();
-            }
-            InnerState::JsonOutputTarget { picker } => {
-                picker.list_mut().select_next();
-            }
-            InnerState::JsonLOutputTarget { picker } => {
-                picker.list_mut().select_next();
-            }
+            State::SelectFormat(picker) => picker.list_mut().select_next(),
+            State::Csv(state) => state.select_next(),
+            State::Tsv(state) => state.select_next(),
+            State::Json(state) => state.select_next(),
+            State::JsonL(state) => state.select_next(),
             _ => (),
         };
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
         match &mut self.state {
-            InnerState::None { picker } => {
-                picker.input_mut().handle(event);
+            State::SelectFormat(pickers) => pickers.input_mut().handle(event),
+            State::Csv(state) => {
+                state.handle(event);
             }
-            InnerState::CsvSeparator { picker } => {
-                picker.input_mut().handle(event);
+            State::Tsv(state) => {
+                state.handle(event);
             }
-            InnerState::CsvQuote { picker, sep: _ } => {
-                picker.input_mut().handle(event);
+            State::Json(state) => {
+                state.handle(event);
             }
-            InnerState::CsvPath {
-                picker,
-                sep: _,
-                quote: _,
-            } => {
-                picker.input_mut().handle(event);
+            State::JsonL(state) => {
+                state.handle(event);
             }
-            InnerState::TsvPath { picker } => {
-                picker.input_mut().handle(event);
+            State::Parquet(state) => {
+                state.handle(event);
             }
-            InnerState::ParquetPath { picker } => {
-                picker.input_mut().handle(event);
+            State::Arrow(state) => {
+                state.handle(event);
             }
-            InnerState::JsonPath { picker } => {
-                picker.input_mut().handle(event);
-            }
-            InnerState::JsonLPath { picker } => {
-                picker.input_mut().handle(event);
-            }
-            InnerState::ArrowPath { picker } => {
-                picker.input_mut().handle(event);
-            }
-            _ => (),
         }
     }
 }
@@ -244,190 +122,64 @@ impl StatefulWidget for ExportWizard {
         state: &mut Self::State,
     ) {
         match &mut state.state {
-            InnerState::None { picker } => {
+            State::SelectFormat(state) => {
                 SearchPicker::default()
                     .title("Format")
-                    .items(OutputFormat::iter().map(|f| Cow::Borrowed(f.into())))
-                    .render(area, buf, picker);
+                    .items(Format::iter().map(|fmt| Cow::Borrowed(fmt.into())))
+                    .render(area, buf, state);
             }
-            InnerState::CsvSeparator { picker } => {
-                TextPicker::default()
-                    .title("Separator")
-                    .render(area, buf, picker);
+            State::Csv(state) => {
+                CsvExporter::default().render(area, buf, state);
             }
-            InnerState::CsvQuote { picker, sep: _ } => {
-                TextPicker::default()
-                    .title("Quote")
-                    .render(area, buf, picker);
+            State::Tsv(state) => {
+                TsvExporter::default().render(area, buf, state);
             }
-            InnerState::CsvOutputTarget {
-                picker,
-                sep: _,
-                quote: _,
-            } => {
-                ListPicker::default()
-                    .title("Output Target")
-                    .items(OutputTarget::iter().map(|d| Cow::Borrowed(d.into())))
-                    .render(area, buf, picker);
+            State::Json(state) => {
+                JsonExporter::default().render(area, buf, state);
             }
-            InnerState::CsvPath {
-                picker,
-                sep: _,
-                quote: _,
-            } => {
-                TextPicker::default()
-                    .title("File Path")
-                    .render(area, buf, picker);
+            State::JsonL(state) => {
+                JsonLExporter::default().render(area, buf, state);
             }
-            InnerState::TsvOutputTarget { picker } => {
-                ListPicker::default()
-                    .title("Ouput Target")
-                    .items(OutputTarget::iter().map(|d| Cow::Borrowed(d.into())))
-                    .render(area, buf, picker);
+            State::Parquet(state) => {
+                ParquetExporter::default().render(area, buf, state);
             }
-            InnerState::TsvPath { picker } => {
-                TextPicker::default()
-                    .title("File Path")
-                    .render(area, buf, picker);
+            State::Arrow(state) => {
+                ArrowExporter::default().render(area, buf, state);
             }
-            InnerState::ParquetPath { picker } => {
-                TextPicker::default()
-                    .title("File Path")
-                    .render(area, buf, picker);
-            }
-            InnerState::JsonOutputTarget { picker } => {
-                ListPicker::default()
-                    .title("Output Target")
-                    .items(OutputTarget::iter().map(|d| Cow::Borrowed(d.into())))
-                    .render(area, buf, picker);
-            }
-            InnerState::JsonPath { picker } => {
-                TextPicker::default()
-                    .title("File Path")
-                    .render(area, buf, picker);
-            }
-            InnerState::JsonLOutputTarget { picker } => {
-                ListPicker::default()
-                    .title("Output Target")
-                    .items(OutputTarget::iter().map(|d| Cow::Borrowed(d.into())))
-                    .render(area, buf, picker);
-            }
-            InnerState::JsonLPath { picker } => {
-                TextPicker::default()
-                    .title("File Path")
-                    .render(area, buf, picker);
-            }
-            InnerState::ArrowPath { picker } => {
-                TextPicker::default()
-                    .title("File Path")
-                    .render(area, buf, picker);
-            }
-            _ => (),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum InnerState {
-    None {
-        picker: SearchPickerState,
-    },
-    CsvSeparator {
-        picker: TextPickerState,
-    },
-    CsvQuote {
-        picker: TextPickerState,
-        sep: char,
-    },
-    CsvOutputTarget {
-        picker: ListPickerState,
-        sep: char,
-        quote: char,
-    },
-    CsvPath {
-        picker: TextPickerState,
-        sep: char,
-        quote: char,
-    },
-    CsvExportFile {
-        sep: char,
-        quote: char,
-        path: PathBuf,
-    },
-    CsvExportClipboard {
-        sep: char,
-        quote: char,
-    },
-    TsvOutputTarget {
-        picker: ListPickerState,
-    },
-    TsvPath {
-        picker: TextPickerState,
-    },
-    TsvExportFile {
-        path: PathBuf,
-    },
-    TsvExportClipbaord,
-    ParquetPath {
-        picker: TextPickerState,
-    },
-    ParquetExportFile {
-        path: PathBuf,
-    },
-    JsonOutputTarget {
-        picker: ListPickerState,
-    },
-    JsonPath {
-        picker: TextPickerState,
-    },
-    JsonExportFile {
-        path: PathBuf,
-    },
-    JsonExportClipboard,
-    JsonLOutputTarget {
-        picker: ListPickerState,
-    },
-    JsonLPath {
-        picker: TextPickerState,
-    },
-    JsonLExportFile {
-        path: PathBuf,
-    },
-    JsonLExportClipboard,
-    ArrowPath {
-        picker: TextPickerState,
-    },
-    ArrowExportFile {
-        path: PathBuf,
-    },
+pub enum State {
+    SelectFormat(SearchPickerState),
+    Csv(CsvExporterState),
+    Tsv(TsvExporterState),
+    Json(JsonExporterState),
+    JsonL(JsonLExporterState),
+    Parquet(ParquetExporterState),
+    Arrow(ArrowExporterState),
 }
 
-impl Default for InnerState {
+impl Default for State {
     fn default() -> Self {
-        InnerState::None {
-            picker: Default::default(),
-        }
+        State::SelectFormat(SearchPickerState::default())
     }
 }
 
-#[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
-enum OutputTarget {
-    File,
-    Clipboard,
-}
-
-impl OutputTarget {
-    fn new(idx: usize) -> Option<Self> {
-        match idx {
-            0 => Some(Self::File),
-            1 => Some(Self::Clipboard),
-            _ => None,
-        }
-    }
+#[derive(Debug)]
+pub enum Export<'a> {
+    SelectFormat(&'a SearchPickerState),
+    Csv(&'a csv_exporter::State),
+    Tsv(&'a tsv_exporter::State),
+    Json(&'a json_exporter::State),
+    JsonL(&'a jsonl_exporter::State),
+    Parquet(&'a parquet_exporter::State),
+    Arrow(&'a arrow_exporter::State),
 }
 
 #[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
-enum OutputFormat {
+enum Format {
     Csv,
     Tsv,
     Parquet,
@@ -436,7 +188,7 @@ enum OutputFormat {
     Arrow,
 }
 
-impl OutputFormat {
+impl Format {
     fn new(idx: usize) -> Option<Self> {
         match idx {
             0 => Some(Self::Csv),
