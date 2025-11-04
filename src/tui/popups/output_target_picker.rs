@@ -15,6 +15,14 @@ impl OutputTargetPickerState {
     pub fn selected(&self) -> Option<Target> {
         self.list_picker.list().selected().and_then(Target::new)
     }
+
+    pub fn select_next(&mut self) {
+        self.list_picker.list_mut().select_next();
+    }
+
+    pub fn select_previous(&mut self) {
+        self.list_picker.list_mut().select_previous();
+    }
 }
 
 #[derive(Debug, Default)]
