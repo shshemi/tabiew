@@ -15,13 +15,10 @@ use ratatui::{
 
 use crate::{
     misc::globals::theme,
-    tui::{
-        status_bar::{StatusBar, Tag},
-        widgets::{
-            block::Block,
-            highlighted_line::HighlightedLine,
-            input::{Input, InputState},
-        },
+    tui::widgets::{
+        block::Block,
+        highlighted_line::HighlightedLine,
+        input::{Input, InputState},
     },
 };
 
