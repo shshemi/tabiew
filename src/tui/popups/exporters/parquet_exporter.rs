@@ -40,9 +40,8 @@ impl ParquetExporterState {
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
-        match &mut self.inner {
-            State::PickOutputPath { picker } => picker.handle(event),
-            _ => (),
+        if let State::PickOutputPath { picker } = &mut self.inner {
+            picker.handle(event)
         }
     }
 }
