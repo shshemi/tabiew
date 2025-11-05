@@ -26,13 +26,10 @@ pub struct ArrowExporterState {
 
 impl ArrowExporterState {
     pub fn step(&mut self) -> &State {
-        match &mut self.inner {
-            State::PickOutputPath { picker } => {
-                self.inner = State::ExportToFile {
-                    path: picker.path(),
-                };
-            }
-            _ => (),
+        if let State::PickOutputPath { picker } = &mut self.inner {
+            self.inner = State::ExportToFile {
+                path: picker.path(),
+            };
         };
         &self.inner
     }
@@ -42,9 +39,8 @@ impl ArrowExporterState {
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
-        match &mut self.inner {
-            State::PickOutputPath { picker } => picker.handle(event),
-            _ => (),
+        if let State::PickOutputPath { picker } = &mut self.inner {
+            picker.handle(event)
         }
     }
 }
