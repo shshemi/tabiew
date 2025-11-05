@@ -70,13 +70,14 @@ impl<'a> StatefulWidget for ListPicker<'a> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        let width = (self.width + 2).clamp(80, 80);
+        let width = 80;
+        let height = self.items.len().saturating_add(2).min(15) as u16;
 
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
             .areas(buf.area);
         let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(15)]).areas(area);
+            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
         Clear.render(area, buf);
 
         StatefulWidget::render(
