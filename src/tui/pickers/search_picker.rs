@@ -121,11 +121,14 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        let [area] = Layout::horizontal([Constraint::Length(80)])
+        let width = 80;
+        let height = self.items.len().saturating_add(4).min(15) as u16;
+
+        let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
             .areas(buf.area);
         let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(15)]).areas(area);
+            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
 
         Clear.render(area, buf);
         let [input_area, list_area] =
@@ -155,15 +158,6 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
         .block(
             Block::default()
                 .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
-                .bottom(if state.list.selected().is_some() {
-                    StatusBar::new()
-                        .mono_color()
-                        .centered()
-                        .tag(Tag::new(" Insert ", " Enter "))
-                        .tag(Tag::new(" Cancel ", " Esc "))
-                } else {
-                    StatusBar::new()
-                })
                 .into_widget(),
         );
         *state.list.offset_mut() = state
