@@ -500,11 +500,11 @@ impl Default for KeyHandler {
         // ---- sheet keybindings
         hndl.keybinds(Context::Sheet)
             // q and esc
-            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
+            .add(Keybind::default().char('q').action(AppAction::DismissModal))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::HelpDismiss),
+                    .action(AppAction::DismissModal),
             )
             // shift up down j k
             .add(
@@ -598,21 +598,21 @@ impl Default for KeyHandler {
                     .action(AppAction::DataFrameInfoScrollDown),
             )
             // q esc
-            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
+            .add(Keybind::default().char('q').action(AppAction::DismissModal))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::HelpDismiss),
+                    .action(AppAction::DismissModal),
             );
 
         // ---- scatter plot keybindings
         hndl.keybinds(Context::ScatterPlot)
             // q esc
-            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
+            .add(Keybind::default().char('q').action(AppAction::DismissModal))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::HelpDismiss),
+                    .action(AppAction::DismissModal),
             );
 
         // ---- histogram plot keybindings
@@ -640,11 +640,11 @@ impl Default for KeyHandler {
                     .action(AppAction::HistogramScrollDown),
             )
             // q esc
-            .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
+            .add(Keybind::default().char('q').action(AppAction::DismissModal))
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::HelpDismiss),
+                    .action(AppAction::DismissModal),
             );
         hndl.keybinds(Context::ThemeSelector)
             .add(
@@ -691,7 +691,7 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::InlineQueryDismiss),
+                    .action(AppAction::DismissModal),
             )
             .fallback(|event| Some(AppAction::InlineQueryHandleKeyEvent(event)));
 
@@ -717,7 +717,7 @@ impl Default for KeyHandler {
             .add(
                 Keybind::default()
                     .code(KeyCode::Esc)
-                    .action(AppAction::ExportWizardDismiss),
+                    .action(AppAction::DismissModal),
             )
             .add(
                 Keybind::default()
