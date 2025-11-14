@@ -47,13 +47,13 @@ pub enum AppAction {
     NoAction,
     DataFrameInfoScrollDown,
     DataFrameInfoScrollUp,
-    DataFrameInfoShow,
+   DataFrameInfoShow,
     DismissError,
     DismissErrorAndShowPalette,
     ExportDataFrameShow,
     ExportWizardSelectNext,
     ExportWizardSelectPrev,
-    ExportWizardDismiss,
+    DismissModal,
     ExportWizardNextStep,
     ExportWizardHandleKeyEvent(KeyEvent),
     ExportArrow(Destination),
@@ -93,7 +93,6 @@ pub enum AppAction {
     ImportParquet(Source),
     ImportSqlite(Source),
     InlineQueryShow(InlineQueryType),
-    InlineQueryDismiss,
     InlineQueryCommit,
     InlineQueryHandleKeyEvent(KeyEvent),
     PaletteDeleteNext,
@@ -998,10 +997,6 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::InlineQueryDismiss => {
-            app.modal_take();
-            Ok(None)
-        }
         AppAction::InlineQueryCommit => {
             if let Some(Modal::InlineQuery(inline_query)) = app.modal_take() {
                 match inline_query.query_type() {
@@ -1058,10 +1053,8 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             }
             Ok(None)
         }
-        AppAction::ExportWizardDismiss => {
-            if let Some(pane) = app.pane_mut() {
-                pane.modal_take();
-            }
+        AppAction::DismissModal => {
+            app.modal_take();
             Ok(None)
         }
         AppAction::ExportWizardSelectNext => {
