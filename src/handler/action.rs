@@ -47,7 +47,7 @@ pub enum AppAction {
     NoAction,
     DataFrameInfoScrollDown,
     DataFrameInfoScrollUp,
-   DataFrameInfoShow,
+    DataFrameInfoShow,
     DismissError,
     DismissErrorAndShowPalette,
     ExportDataFrameShow,
