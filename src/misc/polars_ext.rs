@@ -267,13 +267,17 @@ fn continues_histogram(counts: DataFrame, buckets: usize) -> AppResult<Vec<(Stri
             bucks[idx.min(buckets.saturating_sub(1))] += c;
             bucks
         });
+    let label_len = format!("{max:.2}").len();
     Ok(counts
         .into_iter()
         .enumerate()
         .map(|(idx, r)| {
             let start = (idx as f64) * width + min;
             let end = (idx.add(1) as f64) * width + min;
-            (format!("{start:.2} - {end:.2}"), r as u64)
+            (
+                format!(" {start:>w$.2} - {end:>w$.2}", w = label_len),
+                r as u64,
+            )
         })
         .collect())
 }
