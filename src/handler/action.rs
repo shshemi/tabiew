@@ -31,6 +31,7 @@ use crate::{
                 arrow_exporter, csv_exporter, json_exporter, jsonl_exporter, parquet_exporter,
                 tsv_exporter,
             },
+            histogram_wizard::HistogramWizardState,
             inline_query::InlineQueryType,
         },
         themes::theme::Theme,
@@ -49,13 +50,18 @@ pub enum AppAction {
     DataFrameInfoScrollUp,
     DataFrameInfoShow,
     DismissError,
+    DismissModal,
     DismissErrorAndShowPalette,
     ExportDataFrameShow,
     ExportWizardSelectNext,
     ExportWizardSelectPrev,
-    DismissModal,
     ExportWizardNextStep,
     ExportWizardHandleKeyEvent(KeyEvent),
+    HistogramWizardShow,
+    HistogramWizardSelectNext,
+    HistogramWizardSelectPrev,
+    HistogramWizardNextStep,
+    HistogramWizardHandleKeyEvent(KeyEvent),
     ExportArrow(Destination),
     ExportDsv {
         destination: Destination,
@@ -1160,6 +1166,45 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::ExportWizardHandleKeyEvent(event) => {
             if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
                 wizard.handle(event);
+            }
+            Ok(None)
+        }
+        AppAction::HistogramWizardShow => {
+            if let Some(pane) = app.pane_mut() {
+                pane.show_histogram_wizard();
+            }
+            Ok(None)
+        }
+        AppAction::HistogramWizardSelectNext => {
+            if let Some(Modal::HistogramWizard(wizard)) = app.modal_mut() {
+                wizard.select_next();
+            }
+            Ok(None)
+        }
+        AppAction::HistogramWizardSelectPrev => {
+            if let Some(Modal::HistogramWizard(wizard)) = app.modal_mut() {
+                wizard.select_previous();
+            }
+            Ok(None)
+        }
+        AppAction::HistogramWizardNextStep => {
+            if let Some(Modal::HistogramWizard(wizard)) = app.modal_mut() {
+                wizard.step();
+                let next = if let HistogramWizardState::Show { column, buckets } = wizard {
+                    let next = AppAction::HistogramPlot(column.to_owned(), *buckets);
+                    app.modal_take();
+                    Some(next)
+                } else {
+                    None
+                };
+                Ok(next)
+            } else {
+                Ok(None)
+            }
+        }
+        AppAction::HistogramWizardHandleKeyEvent(key_event) => {
+            if let Some(Modal::HistogramWizard(wizard)) = app.modal_mut() {
+                wizard.handle(key_event);
             }
             Ok(None)
         }
