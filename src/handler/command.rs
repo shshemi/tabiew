@@ -260,7 +260,9 @@ static ENTRIES: [Entry; 22] = [
         parser: |col| {
             //
             let args = shell_words::split(col)?;
-            if args.len() == 1 {
+            if col.is_empty() {
+                Ok(AppAction::HistogramWizardShow)
+            } else if args.len() == 1 {
                 Ok(AppAction::HistogramPlot(
                     args.into_iter().next().unwrap(),
                     38,

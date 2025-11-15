@@ -46,6 +46,7 @@ pub enum Context {
     InlineQuery,
     GoToLine,
     ExportWizard,
+    HistogramWizard,
 }
 
 impl Context {
@@ -67,6 +68,7 @@ impl Context {
             Context::Help => Context::Empty.into(),
             Context::GoToLine => Context::Empty.into(),
             Context::ExportWizard => Context::Empty.into(),
+            Context::HistogramWizard => Context::Empty.into(),
         }
     }
 }
@@ -311,6 +313,7 @@ impl App {
                 Some(Modal::InlineQuery(_)) => Context::InlineQuery,
                 Some(Modal::GoToLine(_)) => Context::GoToLine,
                 Some(Modal::ExportWizard(_)) => Context::ExportWizard,
+                Some(Modal::HistogramWizard(_)) => Context::HistogramWizard,
                 None => Context::Empty,
             },
         }

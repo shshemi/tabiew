@@ -23,6 +23,7 @@ use crate::{
         popups::{
             export_wizard::{ExportWizard, ExportWizardState},
             go_to_line::{GoToLine, GoToLineState},
+            histogram_wizard::{HistogramWizard, HistogramWizardState},
             inline_query::{InlineQuery, InlineQueryState, InlineQueryType},
         },
         schema::data_frame_info::{DataFrameInfo, DataFrameInfoState},
@@ -39,6 +40,7 @@ pub enum Modal {
     InlineQuery(InlineQueryState),
     GoToLine(GoToLineState),
     ExportWizard(ExportWizardState),
+    HistogramWizard(HistogramWizardState),
     #[default]
     None,
 }
@@ -95,6 +97,7 @@ impl PaneState {
             Modal::InlineQuery(_) => (),
             Modal::GoToLine(_) => (),
             Modal::ExportWizard(_) => (),
+            Modal::HistogramWizard(_) => (),
         }
     }
 
@@ -148,6 +151,10 @@ impl PaneState {
 
     pub fn show_export_data_frame(&mut self) {
         self.modal = Modal::ExportWizard(Default::default())
+    }
+
+    pub fn show_histogram_wizard(&mut self) {
+        self.modal = Modal::HistogramWizard(HistogramWizardState::new(self.table.data_frame()))
     }
 
     pub fn modal(&self) -> &Modal {
@@ -243,9 +250,8 @@ impl StatefulWidget for Pane {
                 let [area] = Layout::horizontal([Constraint::Length(122)])
                     .flex(Flex::Center)
                     .areas(area);
-                let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(40)])
-                    // .flex(Flex::Center)
-                    .areas(area);
+                let [_, area] =
+                    Layout::vertical([Constraint::Length(3), Constraint::Length(40)]).areas(area);
                 HistogramPlot.render(area, buf, state);
             }
             Modal::InlineQuery(state) => {
@@ -256,6 +262,9 @@ impl StatefulWidget for Pane {
             }
             Modal::ExportWizard(state) => {
                 ExportWizard::default().render(area, buf, state);
+            }
+            Modal::HistogramWizard(state) => {
+                HistogramWizard::default().render(area, buf, state);
             }
             Modal::None => (),
         }
