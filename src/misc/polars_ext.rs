@@ -253,31 +253,27 @@ fn discrete_histogram(counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
         .collect_vec())
 }
 
-fn continues_histogram(counts: DataFrame, count: usize) -> AppResult<Vec<(String, u64)>> {
+fn continues_histogram(counts: DataFrame, buckets: usize) -> AppResult<Vec<(String, u64)>> {
     let casted = counts[0].cast(&DataType::Float64)?;
-    let val_col = casted.f64()?;
-    let min = val_col.min().ok_or(anyhow!("No value found"))?;
-    let max = val_col.max().ok_or(anyhow!("No value found"))?;
-    let width = (max - min) / (count as f64);
-    let counts = val_col
+    let arr = casted.f64()?;
+    let (min, max) = arr.min_max().ok_or(anyhow!("No value found"))?;
+    let width = (max - min) / (buckets as f64);
+    let counts = arr
         .iter()
         .flatten()
         .zip(counts[1].as_materialized_series().u32()?.iter().flatten())
-        .fold(vec![0; count], |mut counts, (x, c)| {
-            let idx = ((x - min) / width).floor() as usize;
-            counts.get_mut(idx).map(|count| {
-                *count += c;
-                idx
-            });
-            counts
+        .fold(vec![0; buckets], |mut bucks, (v, c)| {
+            let idx = ((v - min) / width) as usize;
+            bucks[idx.min(buckets.saturating_sub(1))] += c;
+            bucks
         });
     Ok(counts
         .into_iter()
         .enumerate()
         .map(|(idx, r)| {
-            let start = (idx as f64) * width;
-            let end = (idx.add(1) as f64) * width;
-            (format!("{start} - {end}"), r as u64)
+            let start = (idx as f64) * width + min;
+            let end = (idx.add(1) as f64) * width + min;
+            (format!("{start:.2} - {end:.2}"), r as u64)
         })
         .collect())
 }
