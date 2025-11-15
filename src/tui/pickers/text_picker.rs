@@ -42,6 +42,10 @@ impl TextPickerState {
     pub fn input_mut(&mut self) -> &mut InputState {
         &mut self.input
     }
+
+    pub fn value(&self) -> &str {
+        self.input.value()
+    }
 }
 
 #[derive(Debug, Default)]
