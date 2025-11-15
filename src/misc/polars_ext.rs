@@ -262,10 +262,10 @@ fn continues_histogram(counts: DataFrame, buckets: usize) -> AppResult<Vec<(Stri
         .iter()
         .flatten()
         .zip(counts[1].as_materialized_series().u32()?.iter().flatten())
-        .fold(vec![0; buckets], |mut bucks, (v, c)| {
-            let idx = ((v - min) / width) as usize;
-            bucks[idx.min(buckets.saturating_sub(1))] += c;
-            bucks
+        .fold(vec![0; buckets], |mut buckets, (v, c)| {
+            let idx = (((v - min) / width) as usize).min(buckets.len().saturating_sub(1));
+            buckets[idx] += c;
+            buckets
         });
     let label_len = format!("{max:.2}").len();
     Ok(counts
