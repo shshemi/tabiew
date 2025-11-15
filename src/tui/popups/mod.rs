@@ -3,6 +3,7 @@ pub mod export_wizard;
 pub mod exporters;
 pub mod go_to_line;
 pub mod help_modal;
+pub mod histogram_wizard;
 pub mod inline_query;
 pub mod output_target_picker;
 pub mod path_picker;

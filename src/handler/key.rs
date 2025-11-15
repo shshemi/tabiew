@@ -743,6 +743,41 @@ impl Default for KeyHandler {
             )
             .fallback(|event| Some(AppAction::ExportWizardHandleKeyEvent(event)));
 
+        hndl.keybinds(Context::HistogramWizard)
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Enter)
+                    .action(AppAction::HistogramWizardNextStep),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Esc)
+                    .action(AppAction::DismissModal),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Up)
+                    .action(AppAction::HistogramWizardSelectPrev),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Down)
+                    .action(AppAction::HistogramWizardSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .char('n')
+                    .ctrl()
+                    .action(AppAction::HistogramWizardSelectNext),
+            )
+            .add(
+                Keybind::default()
+                    .char('p')
+                    .ctrl()
+                    .action(AppAction::HistogramWizardSelectPrev),
+            )
+            .fallback(|event| Some(AppAction::HistogramWizardHandleKeyEvent(event)));
+
         // ---- help modal keybindings
         hndl.keybinds(Context::Help)
             .add(Keybind::default().char('q').action(AppAction::HelpDismiss))
