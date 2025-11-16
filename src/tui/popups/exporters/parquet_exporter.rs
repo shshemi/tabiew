@@ -6,12 +6,12 @@ use ratatui::widgets::StatefulWidget;
 use crate::tui::popups::path_picker::{PathPicker, PathPickerState};
 
 #[derive(Debug)]
-pub enum State {
+pub enum ParquetExporterState {
     PickOutputPath { picker: PathPickerState },
     ExportToFile { path: PathBuf },
 }
 
-impl Default for State {
+impl Default for ParquetExporterState {
     fn default() -> Self {
         Self::PickOutputPath {
             picker: Default::default(),
@@ -19,28 +19,25 @@ impl Default for State {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct ParquetExporterState {
-    inner: State,
-}
+// #[derive(Debug, Default)]
+// pub struct ParquetExporterState {
+//     inner: State,
+// }
 
 impl ParquetExporterState {
-    pub fn step(&mut self) -> &State {
-        self.inner = match std::mem::take(&mut self.inner) {
-            State::PickOutputPath { picker } => State::ExportToFile {
+    pub fn step(&mut self) {
+        *self = match std::mem::take(self) {
+            ParquetExporterState::PickOutputPath { picker } => ParquetExporterState::ExportToFile {
                 path: picker.path(),
             },
-            State::ExportToFile { path } => State::ExportToFile { path },
+            ParquetExporterState::ExportToFile { path } => {
+                ParquetExporterState::ExportToFile { path }
+            }
         };
-        &self.inner
-    }
-
-    pub fn inner(&self) -> &State {
-        &self.inner
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
-        if let State::PickOutputPath { picker } = &mut self.inner {
+        if let ParquetExporterState::PickOutputPath { picker } = self {
             picker.handle(event)
         }
     }
@@ -58,9 +55,11 @@ impl StatefulWidget for ParquetExporter {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        match &mut state.inner {
-            State::PickOutputPath { picker } => PathPicker::default().render(area, buf, picker),
-            State::ExportToFile { path: _ } => (),
+        match state {
+            ParquetExporterState::PickOutputPath { picker } => {
+                PathPicker::default().render(area, buf, picker)
+            }
+            ParquetExporterState::ExportToFile { path: _ } => (),
         }
     }
 }
