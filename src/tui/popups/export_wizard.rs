@@ -8,103 +8,98 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::{SearchPicker, SearchPickerState},
     popups::exporters::{
-        arrow_exporter::{self, ArrowExporter, ArrowExporterState},
-        csv_exporter::{self, CsvExporter, CsvExporterState},
-        json_exporter::{self, JsonExporter, JsonExporterState},
-        jsonl_exporter::{self, JsonLExporter, JsonLExporterState},
-        parquet_exporter::{self, ParquetExporter, ParquetExporterState},
-        tsv_exporter::{self, TsvExporter, TsvExporterState},
+        arrow_exporter::{ArrowExporter, ArrowExporterState},
+        csv_exporter::{CsvExporter, CsvExporterState},
+        json_exporter::{JsonExporter, JsonExporterState},
+        jsonl_exporter::{JsonLExporter, JsonLExporterState},
+        parquet_exporter::{ParquetExporter, ParquetExporterState},
+        tsv_exporter::{TsvExporter, TsvExporterState},
     },
 };
 
-#[derive(Debug, Default)]
-pub struct ExportWizardState {
-    state: State,
+#[derive(Debug)]
+pub enum ExportWizardState {
+    SelectFormat(SearchPickerState),
+    Csv(CsvExporterState),
+    Tsv(TsvExporterState),
+    Json(JsonExporterState),
+    JsonL(JsonLExporterState),
+    Parquet(ParquetExporterState),
+    Arrow(ArrowExporterState),
 }
 
 impl ExportWizardState {
-    pub fn step(&mut self) -> &State {
-        self.state = match std::mem::take(&mut self.state) {
-            State::SelectFormat(picker) => match picker.selected().and_then(Format::new) {
-                Some(Format::Csv) => State::Csv(Default::default()),
-                Some(Format::Tsv) => State::Tsv(Default::default()),
-                Some(Format::Json) => State::Json(Default::default()),
-                Some(Format::JsonL) => State::JsonL(Default::default()),
-                Some(Format::Parquet) => State::Parquet(Default::default()),
-                Some(Format::Arrow) => State::Arrow(Default::default()),
-                None => State::SelectFormat(picker),
-            },
-            State::Csv(mut state) => {
-                state.step();
-                State::Csv(state)
+    pub fn step(&mut self) {
+        *self = match std::mem::take(self) {
+            ExportWizardState::SelectFormat(picker) => {
+                match picker.selected().and_then(Format::new) {
+                    Some(Format::Csv) => ExportWizardState::Csv(Default::default()),
+                    Some(Format::Tsv) => ExportWizardState::Tsv(Default::default()),
+                    Some(Format::Json) => ExportWizardState::Json(Default::default()),
+                    Some(Format::JsonL) => ExportWizardState::JsonL(Default::default()),
+                    Some(Format::Parquet) => ExportWizardState::Parquet(Default::default()),
+                    Some(Format::Arrow) => ExportWizardState::Arrow(Default::default()),
+                    None => ExportWizardState::SelectFormat(picker),
+                }
             }
-            State::Tsv(mut state) => {
+            ExportWizardState::Csv(mut state) => {
                 state.step();
-                State::Tsv(state)
+                ExportWizardState::Csv(state)
             }
-            State::Json(mut state) => {
+            ExportWizardState::Tsv(mut state) => {
                 state.step();
-                State::Json(state)
+                ExportWizardState::Tsv(state)
             }
-            State::JsonL(mut state) => {
+            ExportWizardState::Json(mut state) => {
                 state.step();
-                State::JsonL(state)
+                ExportWizardState::Json(state)
             }
-            State::Parquet(mut state) => {
+            ExportWizardState::JsonL(mut state) => {
                 state.step();
-                State::Parquet(state)
+                ExportWizardState::JsonL(state)
             }
-            State::Arrow(mut state) => {
+            ExportWizardState::Parquet(mut state) => {
                 state.step();
-                State::Arrow(state)
+                ExportWizardState::Parquet(state)
+            }
+            ExportWizardState::Arrow(mut state) => {
+                state.step();
+                ExportWizardState::Arrow(state)
             }
         };
-        &self.state
     }
 
     pub fn select_previous(&mut self) {
-        match &mut self.state {
-            State::SelectFormat(picker) => picker.list_mut().select_previous(),
-            State::Csv(state) => state.select_previous(),
-            State::Tsv(state) => state.select_previous(),
-            State::Json(state) => state.select_previous(),
-            State::JsonL(state) => state.select_previous(),
+        match self {
+            ExportWizardState::SelectFormat(picker) => picker.list_mut().select_previous(),
+            ExportWizardState::Csv(state) => state.select_previous(),
+            ExportWizardState::Tsv(state) => state.select_previous(),
+            ExportWizardState::Json(state) => state.select_previous(),
+            ExportWizardState::JsonL(state) => state.select_previous(),
             _ => (),
         };
     }
 
     pub fn select_next(&mut self) {
-        match &mut self.state {
-            State::SelectFormat(picker) => picker.list_mut().select_next(),
-            State::Csv(state) => state.select_next(),
-            State::Tsv(state) => state.select_next(),
-            State::Json(state) => state.select_next(),
-            State::JsonL(state) => state.select_next(),
+        match self {
+            ExportWizardState::SelectFormat(picker) => picker.list_mut().select_next(),
+            ExportWizardState::Csv(state) => state.select_next(),
+            ExportWizardState::Tsv(state) => state.select_next(),
+            ExportWizardState::Json(state) => state.select_next(),
+            ExportWizardState::JsonL(state) => state.select_next(),
             _ => (),
         };
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
-        match &mut self.state {
-            State::SelectFormat(pickers) => pickers.input_mut().handle(event),
-            State::Csv(state) => {
-                state.handle(event);
-            }
-            State::Tsv(state) => {
-                state.handle(event);
-            }
-            State::Json(state) => {
-                state.handle(event);
-            }
-            State::JsonL(state) => {
-                state.handle(event);
-            }
-            State::Parquet(state) => {
-                state.handle(event);
-            }
-            State::Arrow(state) => {
-                state.handle(event);
-            }
+        match self {
+            ExportWizardState::SelectFormat(pickers) => pickers.input_mut().handle(event),
+            ExportWizardState::Csv(state) => state.handle(event),
+            ExportWizardState::Tsv(state) => state.handle(event),
+            ExportWizardState::Json(state) => state.handle(event),
+            ExportWizardState::JsonL(state) => state.handle(event),
+            ExportWizardState::Parquet(state) => state.handle(event),
+            ExportWizardState::Arrow(state) => state.handle(event),
         }
     }
 }
@@ -121,61 +116,50 @@ impl StatefulWidget for ExportWizard {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        match &mut state.state {
-            State::SelectFormat(state) => {
+        match state {
+            ExportWizardState::SelectFormat(state) => {
                 SearchPicker::default()
                     .title("Format")
                     .items(Format::iter().map(|fmt| Cow::Borrowed(fmt.into())))
                     .render(area, buf, state);
             }
-            State::Csv(state) => {
+            ExportWizardState::Csv(state) => {
                 CsvExporter::default().render(area, buf, state);
             }
-            State::Tsv(state) => {
+            ExportWizardState::Tsv(state) => {
                 TsvExporter::default().render(area, buf, state);
             }
-            State::Json(state) => {
+            ExportWizardState::Json(state) => {
                 JsonExporter::default().render(area, buf, state);
             }
-            State::JsonL(state) => {
+            ExportWizardState::JsonL(state) => {
                 JsonLExporter::default().render(area, buf, state);
             }
-            State::Parquet(state) => {
+            ExportWizardState::Parquet(state) => {
                 ParquetExporter::default().render(area, buf, state);
             }
-            State::Arrow(state) => {
+            ExportWizardState::Arrow(state) => {
                 ArrowExporter::default().render(area, buf, state);
             }
         }
     }
 }
 
-#[derive(Debug)]
-pub enum State {
-    SelectFormat(SearchPickerState),
-    Csv(CsvExporterState),
-    Tsv(TsvExporterState),
-    Json(JsonExporterState),
-    JsonL(JsonLExporterState),
-    Parquet(ParquetExporterState),
-    Arrow(ArrowExporterState),
-}
+// #[derive(Debug)]
+// pub enum State {
+//     SelectFormat(SearchPickerState),
+//     Csv(CsvExporterState),
+//     Tsv(TsvExporterState),
+//     Json(JsonExporterState),
+//     JsonL(JsonLExporterState),
+//     Parquet(ParquetExporterState),
+//     Arrow(ArrowExporterState),
+// }
 
-impl Default for State {
+impl Default for ExportWizardState {
     fn default() -> Self {
-        State::SelectFormat(SearchPickerState::default())
+        ExportWizardState::SelectFormat(SearchPickerState::default())
     }
-}
-
-#[derive(Debug)]
-pub enum Export<'a> {
-    SelectFormat(&'a SearchPickerState),
-    Csv(&'a csv_exporter::State),
-    Tsv(&'a tsv_exporter::State),
-    Json(&'a json_exporter::State),
-    JsonL(&'a jsonl_exporter::State),
-    Parquet(&'a parquet_exporter::State),
-    Arrow(&'a arrow_exporter::State),
 }
 
 #[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
