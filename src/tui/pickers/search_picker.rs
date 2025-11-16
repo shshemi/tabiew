@@ -118,22 +118,6 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        let width = 80;
-        let height = self.items.len().saturating_add(4).min(15) as u16;
-
-        let [area] = Layout::horizontal([Constraint::Length(width)])
-            .flex(Flex::Center)
-            .areas(buf.area);
-        let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
-
-        Clear.render(area, buf);
-        let [input_area, list_area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-
-        self.input
-            .block(self.txt_blk)
-            .render(input_area, buf, &mut state.input);
         let list = List::new(
             state
                 .cached_filter
@@ -157,6 +141,24 @@ impl<'a> StatefulWidget for SearchPicker<'a> {
                 .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
                 .into_widget(),
         );
+
+        let width = 80;
+        let height = list.len().saturating_add(4).min(15) as u16;
+
+        let [area] = Layout::horizontal([Constraint::Length(width)])
+            .flex(Flex::Center)
+            .areas(buf.area);
+        let [_, area] =
+            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
+
+        Clear.render(area, buf);
+        let [input_area, list_area] =
+            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
+
+        self.input
+            .block(self.txt_blk)
+            .render(input_area, buf, &mut state.input);
+
         *state.list.offset_mut() = state
             .list()
             .offset()
