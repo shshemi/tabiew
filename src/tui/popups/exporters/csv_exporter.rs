@@ -12,7 +12,7 @@ use crate::tui::{
 };
 
 #[derive(Debug)]
-pub enum State {
+pub enum CsvExporterState {
     PickSeparator {
         picker: TextPickerState,
     },
@@ -41,7 +41,7 @@ pub enum State {
     },
 }
 
-impl Default for State {
+impl Default for CsvExporterState {
     fn default() -> Self {
         Self::PickSeparator {
             picker: TextPickerState::default()
@@ -51,91 +51,86 @@ impl Default for State {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct CsvExporterState {
-    inner: State,
-}
+// #[derive(Debug, Default)]
+// pub struct CsvExporterState {
+//     inner: State,
+// }
 
 impl CsvExporterState {
-    pub fn step(&mut self) -> &State {
-        self.inner = match std::mem::take(&mut self.inner) {
-            State::PickSeparator { picker } => {
+    pub fn step(&mut self) {
+        *self = match std::mem::take(self) {
+            CsvExporterState::PickSeparator { picker } => {
                 if let Some(separator) = picker.input().value().chars().next() {
-                    State::PickQuoteChar {
+                    CsvExporterState::PickQuoteChar {
                         separator,
                         picker: TextPickerState::default()
                             .with_max_len(1)
                             .with_value("\"".to_owned()),
                     }
                 } else {
-                    State::PickSeparator { picker }
+                    CsvExporterState::PickSeparator { picker }
                 }
             }
-            State::PickQuoteChar { separator, picker } => {
+            CsvExporterState::PickQuoteChar { separator, picker } => {
                 if let Some(quote) = picker.input().value().chars().next() {
-                    State::PickOutputTarget {
+                    CsvExporterState::PickOutputTarget {
                         separator,
                         quote,
                         picker: OutputTargetPickerState::default(),
                     }
                 } else {
-                    State::PickQuoteChar { separator, picker }
+                    CsvExporterState::PickQuoteChar { separator, picker }
                 }
             }
-            State::PickOutputTarget {
+            CsvExporterState::PickOutputTarget {
                 separator,
                 quote,
                 picker,
             } => match picker.selected() {
-                Some(Target::File) => State::PickOutputPath {
+                Some(Target::File) => CsvExporterState::PickOutputPath {
                     separator,
                     quote,
                     picker: Default::default(),
                 },
-                Some(Target::Clipboard) => State::ExportToClipboard { separator, quote },
-                None => State::PickOutputTarget {
+                Some(Target::Clipboard) => CsvExporterState::ExportToClipboard { separator, quote },
+                None => CsvExporterState::PickOutputTarget {
                     separator,
                     quote,
                     picker,
                 },
             },
-            State::PickOutputPath {
+            CsvExporterState::PickOutputPath {
                 separator,
                 quote,
                 picker,
-            } => State::ExportToFile {
+            } => CsvExporterState::ExportToFile {
                 separator,
                 quote,
                 path: picker.path(),
             },
-            State::ExportToClipboard { separator, quote } => {
-                State::ExportToClipboard { separator, quote }
+            CsvExporterState::ExportToClipboard { separator, quote } => {
+                CsvExporterState::ExportToClipboard { separator, quote }
             }
-            State::ExportToFile {
+            CsvExporterState::ExportToFile {
                 separator,
                 quote,
                 path,
-            } => State::ExportToFile {
+            } => CsvExporterState::ExportToFile {
                 separator,
                 quote,
                 path,
             },
         };
-        &self.inner
-    }
-
-    pub fn inner(&self) -> &State {
-        &self.inner
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
-        match &mut self.inner {
-            State::PickSeparator { picker } => picker.input_mut().handle(event),
-            State::PickQuoteChar {
+        match self {
+            CsvExporterState::PickSeparator { picker } => picker.input_mut().handle(event),
+            CsvExporterState::PickQuoteChar {
                 separator: _,
                 picker,
             } => picker.input_mut().handle(event),
-            State::PickOutputPath {
+            CsvExporterState::PickOutputPath {
                 separator: _,
                 quote: _,
                 picker,
@@ -145,22 +140,22 @@ impl CsvExporterState {
     }
 
     pub fn select_previous(&mut self) {
-        if let State::PickOutputTarget {
+        if let CsvExporterState::PickOutputTarget {
             separator: _,
             quote: _,
             picker,
-        } = &mut self.inner
+        } = self
         {
             picker.select_previous();
         }
     }
 
     pub fn select_next(&mut self) {
-        if let State::PickOutputTarget {
+        if let CsvExporterState::PickOutputTarget {
             separator: _,
             quote: _,
             picker,
-        } = &mut self.inner
+        } = self
         {
             picker.select_next();
         }
@@ -179,32 +174,32 @@ impl StatefulWidget for CsvExporter {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        match &mut state.inner {
-            State::PickSeparator { picker } => TextPicker::default()
+        match state {
+            CsvExporterState::PickSeparator { picker } => TextPicker::default()
                 .title("Separator")
                 .render(area, buf, picker),
-            State::PickQuoteChar {
+            CsvExporterState::PickQuoteChar {
                 separator: _,
                 picker,
             } => TextPicker::default()
                 .title("Quote")
                 .render(area, buf, picker),
-            State::PickOutputTarget {
+            CsvExporterState::PickOutputTarget {
                 separator: _,
                 quote: _,
                 picker,
             } => OutputTargetPicker::default().render(area, buf, picker),
-            State::PickOutputPath {
+            CsvExporterState::PickOutputPath {
                 separator: _,
                 quote: _,
                 picker,
             } => PathPicker::default().render(area, buf, picker),
-            State::ExportToFile {
+            CsvExporterState::ExportToFile {
                 separator: _,
                 quote: _,
                 path: _,
             } => (),
-            State::ExportToClipboard {
+            CsvExporterState::ExportToClipboard {
                 separator: _,
                 quote: _,
             } => (),
