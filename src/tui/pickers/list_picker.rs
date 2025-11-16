@@ -71,7 +71,7 @@ impl<'a> StatefulWidget for ListPicker<'a> {
         state: &mut Self::State,
     ) {
         let width = 80;
-        let height = self.items.len().saturating_add(2).min(15) as u16;
+        let height = self.items.len().saturating_add(2).min(25) as u16;
 
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
