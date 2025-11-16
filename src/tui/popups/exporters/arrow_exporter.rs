@@ -6,12 +6,12 @@ use ratatui::widgets::StatefulWidget;
 use crate::tui::popups::path_picker::{PathPicker, PathPickerState};
 
 #[derive(Debug)]
-pub enum State {
+pub enum ArrowExporterState {
     PickOutputPath { picker: PathPickerState },
     ExportToFile { path: PathBuf },
 }
 
-impl Default for State {
+impl Default for ArrowExporterState {
     fn default() -> Self {
         Self::PickOutputPath {
             picker: Default::default(),
@@ -19,27 +19,17 @@ impl Default for State {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct ArrowExporterState {
-    inner: State,
-}
-
 impl ArrowExporterState {
-    pub fn step(&mut self) -> &State {
-        if let State::PickOutputPath { picker } = &mut self.inner {
-            self.inner = State::ExportToFile {
+    pub fn step(&mut self) {
+        if let ArrowExporterState::PickOutputPath { picker } = self {
+            *self = ArrowExporterState::ExportToFile {
                 path: picker.path(),
             };
         };
-        &self.inner
-    }
-
-    pub fn inner(&self) -> &State {
-        &self.inner
     }
 
     pub fn handle(&mut self, event: KeyEvent) {
-        if let State::PickOutputPath { picker } = &mut self.inner {
+        if let ArrowExporterState::PickOutputPath { picker } = self {
             picker.handle(event)
         }
     }
@@ -57,9 +47,11 @@ impl StatefulWidget for ArrowExporter {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        match &mut state.inner {
-            State::PickOutputPath { picker } => PathPicker::default().render(area, buf, picker),
-            State::ExportToFile { path: _ } => (),
+        match state {
+            ArrowExporterState::PickOutputPath { picker } => {
+                PathPicker::default().render(area, buf, picker)
+            }
+            ArrowExporterState::ExportToFile { path: _ } => (),
         }
     }
 }
