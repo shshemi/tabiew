@@ -26,10 +26,11 @@ use crate::{
         pane::Modal,
         plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
         popups::{
-            export_wizard::State,
+            export_wizard::ExportWizardState,
             exporters::{
-                arrow_exporter, csv_exporter, json_exporter, jsonl_exporter, parquet_exporter,
-                tsv_exporter,
+                arrow_exporter::ArrowExporterState, csv_exporter::CsvExporterState,
+                json_exporter::JsonExporterState, jsonl_exporter::JsonLExporterState,
+                parquet_exporter::ParquetExporterState, tsv_exporter::TsvExporterState,
             },
             histogram_wizard::HistogramWizardState,
             inline_query::InlineQueryType,
@@ -1077,88 +1078,70 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         }
         AppAction::ExportWizardNextStep => {
             if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
-                let next = match wizard.step() {
-                    State::Csv(state) => match state.inner() {
-                        csv_exporter::State::ExportToFile {
-                            separator,
-                            quote,
-                            path,
-                        } => Ok(Some(AppAction::ExportDsv {
+                wizard.step();
+                let next = match wizard {
+                    ExportWizardState::Csv(CsvExporterState::ExportToFile {
+                        separator,
+                        quote,
+                        path,
+                    }) => Some(AppAction::ExportDsv {
+                        destination: Destination::File(path.clone()),
+                        separator: *separator,
+                        quote: *quote,
+                        header: true,
+                    }),
+                    ExportWizardState::Csv(CsvExporterState::ExportToClipboard {
+                        separator,
+                        quote,
+                    }) => Some(AppAction::ExportDsv {
+                        destination: Destination::Clipboard,
+                        separator: *separator,
+                        quote: *quote,
+                        header: true,
+                    }),
+                    ExportWizardState::Tsv(TsvExporterState::ExportToFile { path }) => {
+                        Some(AppAction::ExportDsv {
                             destination: Destination::File(path.clone()),
-                            separator: *separator,
-                            quote: *quote,
-                            header: true,
-                        })),
-                        csv_exporter::State::ExportToClipboard { separator, quote } => {
-                            Ok(Some(AppAction::ExportDsv {
-                                destination: Destination::Clipboard,
-                                separator: *separator,
-                                quote: *quote,
-                                header: true,
-                            }))
-                        }
-                        _ => Ok(None),
-                    },
-                    State::Tsv(state) => match state.inner() {
-                        tsv_exporter::State::ExportToFile { path } => {
-                            Ok(Some(AppAction::ExportDsv {
-                                destination: Destination::File(path.clone()),
-                                separator: '\t',
-                                quote: '"',
-                                header: false,
-                            }))
-                        }
-                        tsv_exporter::State::ExportToClipboard => Ok(Some(AppAction::ExportDsv {
+                            separator: '\t',
+                            quote: '"',
+                            header: false,
+                        })
+                    }
+                    ExportWizardState::Tsv(TsvExporterState::ExportToClipboard) => {
+                        Some(AppAction::ExportDsv {
                             destination: Destination::Clipboard,
                             separator: '\t',
                             quote: '"',
                             header: false,
-                        })),
-                        _ => Ok(None),
-                    },
-                    State::Json(state) => match state.inner() {
-                        json_exporter::State::ExportToFile { path } => {
-                            Ok(Some(AppAction::ExportJson(
-                                Destination::File(path.clone()),
-                                JsonFormat::Json,
-                            )))
-                        }
-                        json_exporter::State::ExportToClipboard => Ok(Some(AppAction::ExportJson(
-                            Destination::Clipboard,
-                            JsonFormat::Json,
-                        ))),
-                        _ => Ok(None),
-                    },
-                    State::JsonL(state) => match state.inner() {
-                        jsonl_exporter::State::ExportToFile { path } => {
-                            Ok(Some(AppAction::ExportJson(
-                                Destination::File(path.clone()),
-                                JsonFormat::JsonLine,
-                            )))
-                        }
-                        jsonl_exporter::State::ExportToClipboard => Ok(Some(
-                            AppAction::ExportJson(Destination::Clipboard, JsonFormat::JsonLine),
-                        )),
-                        _ => Ok(None),
-                    },
-                    State::Parquet(state) => match state.inner() {
-                        parquet_exporter::State::ExportToFile { path } => Ok(Some(
-                            AppAction::ExportParquet(Destination::File(path.clone())),
-                        )),
-                        _ => Ok(None),
-                    },
-                    State::Arrow(state) => match state.inner() {
-                        arrow_exporter::State::ExportToFile { path } => Ok(Some(
-                            AppAction::ExportArrow(Destination::File(path.clone())),
-                        )),
-                        _ => Ok(None),
-                    },
-                    _ => Ok(None),
+                        })
+                    }
+                    ExportWizardState::Json(JsonExporterState::ExportToFile { path }) => Some(
+                        AppAction::ExportJson(Destination::File(path.clone()), JsonFormat::Json),
+                    ),
+                    ExportWizardState::Json(JsonExporterState::ExportToClipboard) => Some(
+                        AppAction::ExportJson(Destination::Clipboard, JsonFormat::Json),
+                    ),
+                    ExportWizardState::JsonL(JsonLExporterState::ExportToFile { path }) => {
+                        Some(AppAction::ExportJson(
+                            Destination::File(path.clone()),
+                            JsonFormat::JsonLine,
+                        ))
+                    }
+                    ExportWizardState::JsonL(JsonLExporterState::ExportToClipboard) => Some(
+                        AppAction::ExportJson(Destination::Clipboard, JsonFormat::JsonLine),
+                    ),
+                    ExportWizardState::Parquet(ParquetExporterState::ExportToFile { path }) => {
+                        Some(AppAction::ExportParquet(Destination::File(path.clone())))
+                    }
+                    ExportWizardState::Arrow(ArrowExporterState::ExportToFile { path }) => {
+                        Some(AppAction::ExportArrow(Destination::File(path.clone())))
+                    }
+                    _ => None,
                 };
-                if next.is_ok() && next.as_ref().unwrap().is_some() {
+                if next.is_some() {
                     app.modal_take();
                 }
-                next
+                Ok(next)
             } else {
                 Ok(None)
             }
