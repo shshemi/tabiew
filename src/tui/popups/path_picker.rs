@@ -1,11 +1,12 @@
 use std::{borrow::Cow, path::PathBuf};
 
 use crossterm::event::KeyEvent;
+use home::home_dir;
 use ratatui::widgets::StatefulWidget;
 
 use crate::tui::pickers::text_picker::{TextPicker, TextPickerState};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PathPickerState {
     text_picker: TextPickerState,
 }
@@ -17,6 +18,20 @@ impl PathPickerState {
 
     pub fn handle(&mut self, event: KeyEvent) {
         self.text_picker.input_mut().handle(event);
+    }
+}
+
+impl Default for PathPickerState {
+    fn default() -> Self {
+        Self {
+            text_picker: TextPickerState::default().with_value(
+                std::env::current_dir()
+                    .ok()
+                    .or(home_dir())
+                    .and_then(|p| p.into_os_string().into_string().ok())
+                    .unwrap_or_default(),
+            ),
+        }
     }
 }
 
