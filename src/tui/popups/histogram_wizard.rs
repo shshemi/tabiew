@@ -7,8 +7,8 @@ use ratatui::widgets::StatefulWidget;
 
 use crate::tui::{
     pickers::{
-        search_picker::{SearchPicker, SearchPickerState},
-        text_picker::{TextPicker, TextPickerState},
+        search_picker::{SearchPicker, SearchPicker},
+        text_picker::{TextPicker, TextPicker},
     },
     widgets::input::InputType,
 };
@@ -17,11 +17,11 @@ use crate::tui::{
 pub enum HistogramWizardState {
     ColumnSelect {
         columns: Vec<String>,
-        picker: SearchPickerState,
+        picker: SearchPicker,
     },
     BucketCount {
         column: String,
-        picker: TextPickerState,
+        picker: TextPicker,
     },
     Show {
         column: String,
@@ -70,7 +70,7 @@ impl HistogramWizardState {
                     .unwrap_or("Default".to_owned());
                 HistogramWizardState::BucketCount {
                     column,
-                    picker: TextPickerState::default()
+                    picker: TextPicker::default()
                         .with_value("38".to_owned())
                         .with_input_type(InputType::Numeric),
                 }

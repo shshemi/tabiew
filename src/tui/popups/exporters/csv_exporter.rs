@@ -4,7 +4,7 @@ use crossterm::event::KeyEvent;
 use ratatui::widgets::StatefulWidget;
 
 use crate::tui::{
-    pickers::text_picker::{TextPicker, TextPickerState},
+    pickers::text_picker::{TextPicker, TextPicker},
     popups::{
         output_target_picker::{OutputTargetPicker, OutputTargetPickerState, Target},
         path_picker::{PathPicker, PathPickerState},
@@ -14,11 +14,11 @@ use crate::tui::{
 #[derive(Debug)]
 pub enum CsvExporterState {
     PickSeparator {
-        picker: TextPickerState,
+        picker: TextPicker,
     },
     PickQuoteChar {
         separator: char,
-        picker: TextPickerState,
+        picker: TextPicker,
     },
     PickOutputTarget {
         separator: char,
@@ -44,7 +44,7 @@ pub enum CsvExporterState {
 impl Default for CsvExporterState {
     fn default() -> Self {
         Self::PickSeparator {
-            picker: TextPickerState::default()
+            picker: TextPicker::default()
                 .with_max_len(1)
                 .with_value(",".to_owned()),
         }
@@ -63,7 +63,7 @@ impl CsvExporterState {
                 if let Some(separator) = picker.input().value().chars().next() {
                     CsvExporterState::PickQuoteChar {
                         separator,
-                        picker: TextPickerState::default()
+                        picker: TextPicker::default()
                             .with_max_len(1)
                             .with_value("\"".to_owned()),
                     }
