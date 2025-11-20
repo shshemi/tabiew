@@ -18,23 +18,23 @@ use crate::{
     tui::widgets::{
         block::Block,
         highlighted_line::HighlightedLine,
-        input::{Input, InputState},
+        input::{Input, Input},
     },
 };
 
 #[derive(Debug)]
 pub struct SearchPickerState {
-    input: InputState,
+    input: Input,
     list: ListState,
     cached_filter: CachedFilter,
 }
 
 impl SearchPickerState {
-    pub fn input(&self) -> &InputState {
+    pub fn input(&self) -> &Input {
         &self.input
     }
 
-    pub fn input_mut(&mut self) -> &mut InputState {
+    pub fn input_mut(&mut self) -> &mut Input {
         &mut self.input
     }
 
@@ -47,7 +47,7 @@ impl SearchPickerState {
     }
 
     pub fn set_input(&mut self, text: String) {
-        let mut input = InputState::default();
+        let mut input = Input::default();
         for c in text.chars() {
             input.insert(c);
         }
