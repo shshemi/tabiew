@@ -1,3 +1,4 @@
+pub mod component;
 pub mod data_frame_table;
 pub mod enumerated_list;
 pub mod error_popup;
