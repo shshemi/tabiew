@@ -16,20 +16,20 @@ use crate::{
         status_bar::{StatusBar, Tag},
         widgets::{
             block::Block,
-            input::{Input, InputState},
+            input::{Input, Input},
         },
     },
 };
 
 #[derive(Debug, Default)]
 pub struct CommandPaletteState {
-    input: InputState,
+    input: Input,
     list: ListState,
 }
 
 impl CommandPaletteState {
     pub fn new(cmd: String) -> Self {
-        let mut input = InputState::default();
+        let mut input = Input::default();
         for c in cmd.chars() {
             input.insert(c);
         }
@@ -39,7 +39,7 @@ impl CommandPaletteState {
         }
     }
 
-    pub fn input(&mut self) -> &mut InputState {
+    pub fn input(&mut self) -> &mut Input {
         &mut self.input
     }
 
@@ -48,7 +48,7 @@ impl CommandPaletteState {
     }
 
     pub fn set_input(&mut self, text: String) {
-        let mut input = InputState::default();
+        let mut input = Input::default();
         for c in text.chars() {
             input.insert(c);
         }

@@ -6,19 +6,19 @@ use ratatui::{
 
 use crate::tui::widgets::{
     block::Block,
-    input::{Input, InputState, InputType},
+    input::{Input, Input, InputType},
 };
 
 #[derive(Debug)]
 pub struct GoToLineState {
     rollback: usize,
-    input: InputState,
+    input: Input,
 }
 
 impl GoToLineState {
     pub fn new(rollback: usize) -> Self {
         Self {
-            input: InputState::default().with_input_type(InputType::Numeric),
+            input: Input::default().with_input_type(InputType::Numeric),
             rollback,
         }
     }

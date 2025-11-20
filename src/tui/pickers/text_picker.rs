@@ -8,12 +8,12 @@ use ratatui::{
 
 use crate::tui::widgets::{
     block::Block,
-    input::{Input, InputState, InputType},
+    input::{Input, Input, InputType},
 };
 
 #[derive(Debug, Default)]
 pub struct TextPickerState {
-    input: InputState,
+    input: Input,
 }
 
 impl TextPickerState {
@@ -35,11 +35,11 @@ impl TextPickerState {
         }
     }
 
-    pub fn input(&self) -> &InputState {
+    pub fn input(&self) -> &Input {
         &self.input
     }
 
-    pub fn input_mut(&mut self) -> &mut InputState {
+    pub fn input_mut(&mut self) -> &mut Input {
         &mut self.input
     }
 
