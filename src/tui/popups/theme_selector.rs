@@ -5,14 +5,14 @@ use ratatui::widgets::StatefulWidget;
 use crate::{
     misc::globals::{config, set_theme},
     tui::{
-        pickers::search_picker::{SearchPicker, SearchPickerState},
+        pickers::search_picker::{SearchPicker, SearchPicker},
         themes::theme::Theme,
     },
 };
 
 #[derive(Debug)]
 pub struct ThemeSelectorState {
-    search_picker: SearchPickerState,
+    search_picker: SearchPicker,
     rollback: Theme,
 }
 
@@ -21,18 +21,18 @@ impl ThemeSelectorState {
         self.rollback
     }
 
-    pub fn search_picker(&self) -> &SearchPickerState {
+    pub fn search_picker(&self) -> &SearchPicker {
         &self.search_picker
     }
 
-    pub fn search_picker_mut(&mut self) -> &mut SearchPickerState {
+    pub fn search_picker_mut(&mut self) -> &mut SearchPicker {
         &mut self.search_picker
     }
 }
 
 impl Default for ThemeSelectorState {
     fn default() -> Self {
-        let mut search_picker = SearchPickerState::default();
+        let mut search_picker = SearchPicker::default();
         let rollback = config().theme().deref().clone();
         let idx = Theme::all()
             .iter()

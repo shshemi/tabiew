@@ -1,18 +1,18 @@
 use crossterm::event::KeyEvent;
 use ratatui::widgets::StatefulWidget;
 
-use crate::tui::pickers::text_picker::{TextPicker, TextPickerState};
+use crate::tui::pickers::text_picker::{TextPicker, TextPicker};
 
 #[derive(Debug)]
 pub struct InlineQueryState {
-    text_picker: TextPickerState,
+    text_picker: TextPicker,
     query_type: InlineQueryType,
 }
 
 impl InlineQueryState {
     pub fn new(query_type: InlineQueryType) -> Self {
         Self {
-            text_picker: TextPickerState::default(),
+            text_picker: TextPicker::default(),
             query_type,
         }
     }

@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::tui::{
-    pickers::search_picker::{SearchPicker, SearchPickerState},
+    pickers::search_picker::{SearchPicker, SearchPicker},
     popups::exporters::{
         arrow_exporter::{ArrowExporter, ArrowExporterState},
         csv_exporter::{CsvExporter, CsvExporterState},
@@ -19,7 +19,7 @@ use crate::tui::{
 
 #[derive(Debug)]
 pub enum ExportWizardState {
-    SelectFormat(SearchPickerState),
+    SelectFormat(SearchPicker),
     Csv(CsvExporterState),
     Tsv(TsvExporterState),
     Json(JsonExporterState),
@@ -158,7 +158,7 @@ impl StatefulWidget for ExportWizard {
 
 impl Default for ExportWizardState {
     fn default() -> Self {
-        ExportWizardState::SelectFormat(SearchPickerState::default())
+        ExportWizardState::SelectFormat(SearchPicker::default())
     }
 }
 

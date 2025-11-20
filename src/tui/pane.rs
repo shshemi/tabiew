@@ -6,7 +6,7 @@ use ratatui::{
 
 use super::{
     data_frame_table::{DataFrameTable, DataFrameTableState},
-    search_bar::{SearchBar, SearchBarState},
+    search_bar::SearchBar,
     sheet::{Sheet, SheetState},
 };
 use crate::{
@@ -33,7 +33,7 @@ use crate::{
 #[derive(Debug, Default)]
 pub enum Modal {
     Sheet(SheetState),
-    SearchBar(SearchBarState),
+    SearchBar(SearchBar),
     DataFrameInfo(DataFrameInfoState),
     ScatterPlot(ScatterPlotState),
     HistogramPlot(HistogramPlotState),
@@ -44,8 +44,6 @@ pub enum Modal {
     #[default]
     None,
 }
-
-impl Modal {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TableType {
@@ -85,7 +83,7 @@ impl PaneState {
     pub fn tick(&mut self) {
         match &mut self.modal {
             Modal::SearchBar(search_bar) => {
-                if let Some(df) = search_bar.search().latest() {
+                if let Some(df) = search_bar.searcher().latest() {
                     self.table.set_data_frame(df);
                 }
             }
@@ -118,11 +116,11 @@ impl PaneState {
     }
 
     pub fn show_fuzzy_search(&mut self) {
-        self.modal = Modal::SearchBar(SearchBarState::fuzzy(self.table.data_frame().clone()));
+        self.modal = Modal::SearchBar(SearchBar::fuzzy(self.table.data_frame().clone()));
     }
 
     pub fn show_exact_search(&mut self) {
-        self.modal = Modal::SearchBar(SearchBarState::exact(self.table.data_frame().clone()));
+        self.modal = Modal::SearchBar(SearchBar::exact(self.table.data_frame().clone()));
     }
 
     pub fn show_data_frame_info(&mut self) {

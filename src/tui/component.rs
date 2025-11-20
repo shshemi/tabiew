@@ -17,7 +17,9 @@ impl FocusState {
 
 pub trait Component {
     fn render(&mut self, area: Rect, buf: &mut Buffer, focus_state: FocusState);
-    fn update(&mut self, action: &AppAction);
-    fn handle(&mut self, event: KeyEvent) -> bool;
-    fn tick(&mut self);
+    fn update(&mut self, _action: &AppAction) {}
+    fn handle(&mut self, _event: KeyEvent) -> bool {
+        false
+    }
+    fn tick(&mut self) {}
 }

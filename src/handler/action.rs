@@ -534,7 +534,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::SearchCommit => {
             if let Some(tab) = app.pane_mut()
                 && let Modal::SearchBar(sb) = tab.modal_take()
-                && let Some(df) = sb.search().latest()
+                && let Some(df) = sb.searcher().latest()
             {
                 tab.table_mut().set_data_frame(df);
             }

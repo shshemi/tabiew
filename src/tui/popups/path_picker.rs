@@ -4,11 +4,11 @@ use crossterm::event::KeyEvent;
 use home::home_dir;
 use ratatui::widgets::StatefulWidget;
 
-use crate::tui::pickers::text_picker::{TextPicker, TextPickerState};
+use crate::tui::pickers::text_picker::{TextPicker, TextPicker};
 
 #[derive(Debug)]
 pub struct PathPickerState {
-    text_picker: TextPickerState,
+    text_picker: TextPicker,
 }
 
 impl PathPickerState {
@@ -24,7 +24,7 @@ impl PathPickerState {
 impl Default for PathPickerState {
     fn default() -> Self {
         Self {
-            text_picker: TextPickerState::default().with_value(
+            text_picker: TextPicker::default().with_value(
                 std::env::current_dir()
                     .ok()
                     .or(home_dir())
