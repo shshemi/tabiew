@@ -3,7 +3,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
     style::Modifier,
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Paragraph, Widget},
 };
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -20,7 +20,6 @@ pub struct Input {
     input_type: InputType,
     max_len: Option<usize>,
     hint: String,
-    bordered: bool,
 }
 
 impl Input {
@@ -107,16 +106,6 @@ impl Component for Input {
         // styles
         let style = theme().text();
         let hint_style = theme().subtext();
-
-        // draw block and update area
-        let area = if self.bordered {
-            let block = Block::bordered().border_type(ratatui::widgets::BorderType::Rounded);
-            let new_area = block.inner(area);
-            block.render(area, buf);
-            new_area
-        } else {
-            area
-        };
 
         if self.input.value().is_empty() {
             // draw hint
