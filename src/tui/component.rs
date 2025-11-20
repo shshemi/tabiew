@@ -1,4 +1,5 @@
-use ratatui::{buffer::Buffer, crossterm::event::Event, layout::Rect};
+use crossterm::event::KeyEvent;
+use ratatui::{buffer::Buffer, layout::Rect};
 
 use crate::handler::action::AppAction;
 
@@ -17,6 +18,6 @@ impl FocusState {
 pub trait Component {
     fn render(&mut self, area: Rect, buf: &mut Buffer, focus_state: FocusState);
     fn update(&mut self, action: &AppAction);
-    fn handle(&mut self, event: Event);
+    fn handle(&mut self, event: KeyEvent) -> bool;
     fn tick(&mut self);
 }
