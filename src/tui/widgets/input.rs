@@ -1,30 +1,38 @@
-use std::borrow::Cow;
-
-use crate::{misc::globals::theme, tui::widgets::block::Block};
+use crate::{misc::globals::theme, tui::component::Component};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
-    style::{Modifier, Style},
-    widgets::{Paragraph, StatefulWidget, Widget},
+    style::Modifier,
+    widgets::{Block, Paragraph, Widget},
 };
 
+#[derive(Debug, Default, Clone, Copy)]
+pub enum InputType {
+    #[default]
+    Any,
+    Numeric,
+    Alphabetic,
+}
+
 #[derive(Debug, Default)]
-pub struct InputState {
+pub struct Input {
     input: tui_input::Input,
     input_type: InputType,
     max_len: Option<usize>,
+    hint: String,
+    bordered: bool,
 }
 
-impl InputState {
+impl Input {
     pub fn with_max_len(self, max_len: impl Into<Option<usize>>) -> Self {
-        InputState {
+        Input {
             max_len: max_len.into(),
             ..self
         }
     }
 
     pub fn with_input_type(self, input_type: InputType) -> Self {
-        InputState { input_type, ..self }
+        Input { input_type, ..self }
     }
 
     pub fn with_value(self, value: String) -> Self {
@@ -87,90 +95,22 @@ impl InputState {
     pub fn value(&self) -> &str {
         self.input.value()
     }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        match event.code {
-            KeyCode::Backspace if event.modifiers == KeyModifiers::ALT => {
-                self.delete_prev_word();
-            }
-            KeyCode::Backspace => self.delete_prev(),
-            KeyCode::Char('w') if event.modifiers == KeyModifiers::ALT => self.goto_prev_word(),
-            KeyCode::Char('e') if event.modifiers == KeyModifiers::ALT => self.goto_next_word(),
-            KeyCode::Left => self.goto_prev(),
-            KeyCode::Right => self.goto_next(),
-            KeyCode::Home => self.goto_start(),
-            KeyCode::End => self.goto_end(),
-            KeyCode::Delete => self.delete_next(),
-            KeyCode::Char(c) => match self.input_type {
-                InputType::Any => self.insert(c),
-                InputType::Numeric if c.is_numeric() => self.insert(c),
-                InputType::Alphabetic if c.is_alphabetic() => self.insert(c),
-                _ => (),
-            },
-            _ => (),
-        }
-    }
 }
 
-#[derive(Debug)]
-pub struct Input<'a> {
-    block: Option<Block<'a>>,
-    hint: Cow<'a, str>,
-    style: Style,
-    hint_style: Style,
-    selection: bool,
-}
-
-impl<'a> Input<'a> {
-    pub fn block(mut self, block: Block<'a>) -> Self {
-        self.block = Some(block);
-        self
-    }
-
-    pub fn hint(mut self, hint: impl Into<Cow<'a, str>>) -> Self {
-        self.hint = hint.into();
-        self
-    }
-
-    pub fn hint_style(mut self, style: impl Into<Style>) -> Self {
-        self.hint_style = style.into();
-        self
-    }
-
-    pub fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
-    pub fn with_show_cursor(mut self, selection: bool) -> Self {
-        self.selection = selection;
-        self
-    }
-}
-
-impl<'a> Default for Input<'a> {
-    fn default() -> Self {
-        Self {
-            block: None,
-            hint: Default::default(),
-            style: theme().text(),
-            hint_style: theme().subtext(),
-            selection: true,
-        }
-    }
-}
-
-impl StatefulWidget for Input<'_> {
-    type State = InputState;
-
+impl Component for Input {
     fn render(
-        self,
-        area: ratatui::prelude::Rect,
+        &mut self,
+        area: Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
+        // styles
+        let style = theme().text();
+        let hint_style = theme().subtext();
+
         // draw block and update area
-        let area = if let Some(block) = self.block {
+        let area = if self.bordered {
+            let block = Block::bordered().border_type(ratatui::widgets::BorderType::Rounded);
             let new_area = block.inner(area);
             block.render(area, buf);
             new_area
@@ -178,13 +118,13 @@ impl StatefulWidget for Input<'_> {
             area
         };
 
-        if state.input.value().is_empty() {
+        if self.input.value().is_empty() {
             // draw hint
-            Paragraph::new(self.hint)
-                .style(self.hint_style)
+            Paragraph::new(self.hint.as_str())
+                .style(hint_style)
                 .render(area, buf);
             // draw cursor
-            if self.selection {
+            if focus_state.is_focused() {
                 buf.set_style(
                     Rect {
                         x: area.x,
@@ -192,37 +132,178 @@ impl StatefulWidget for Input<'_> {
                         width: 1,
                         height: 1,
                     },
-                    self.style.add_modifier(Modifier::REVERSED),
+                    style.add_modifier(Modifier::REVERSED),
                 );
             }
         } else {
             // draw text
-            let scroll = state
+            let scroll = self
                 .input
                 .visual_scroll(area.width.saturating_sub(1).into());
-            Paragraph::new(state.input.value().chars().skip(scroll).collect::<String>())
-                .style(self.style)
+            Paragraph::new(self.input.value().chars().skip(scroll).collect::<String>())
+                .style(style)
                 .render(area, buf);
             // draw cursor
-            if self.selection {
+            if focus_state.is_focused() {
                 buf.set_style(
                     Rect {
-                        x: area.x + state.input.visual_cursor().saturating_sub(scroll) as u16,
+                        x: area.x + self.input.visual_cursor().saturating_sub(scroll) as u16,
                         y: area.y,
                         width: 1,
                         height: 1,
                     },
-                    self.style.add_modifier(Modifier::REVERSED),
+                    style.add_modifier(Modifier::REVERSED),
                 );
             }
         }
     }
+
+    fn update(&mut self, _: &crate::handler::action::AppAction) {}
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        match event.code {
+            KeyCode::Backspace if event.modifiers == KeyModifiers::ALT => {
+                self.delete_prev_word();
+                true
+            }
+            KeyCode::Backspace => {
+                self.delete_prev();
+                true
+            }
+            KeyCode::Char('w') if event.modifiers == KeyModifiers::ALT => {
+                self.goto_prev_word();
+                true
+            }
+            KeyCode::Char('e') if event.modifiers == KeyModifiers::ALT => {
+                self.goto_next_word();
+                true
+            }
+            KeyCode::Left => {
+                self.goto_prev();
+                true
+            }
+            KeyCode::Right => {
+                self.goto_next();
+                true
+            }
+            KeyCode::Home => {
+                self.goto_start();
+                true
+            }
+            KeyCode::End => {
+                self.goto_end();
+                true
+            }
+            KeyCode::Delete => {
+                self.delete_next();
+                true
+            }
+            KeyCode::Char(c) => match self.input_type {
+                InputType::Any => {
+                    self.insert(c);
+                    true
+                }
+                InputType::Numeric if c.is_numeric() => {
+                    self.insert(c);
+                    true
+                }
+                InputType::Alphabetic if c.is_alphabetic() => {
+                    self.insert(c);
+                    true
+                }
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    fn tick(&mut self) {}
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub enum InputType {
-    #[default]
-    Any,
-    Numeric,
-    Alphabetic,
-}
+// #[derive(Debug)]
+// pub struct Input<'a> {
+//     block: Option<Block<'a>>,
+//     hint: Cow<'a, str>,
+//     selection: bool,
+// }
+
+// impl<'a> Input<'a> {
+//     pub fn block(mut self, block: Block<'a>) -> Self {
+//         self.block = Some(block);
+//         self
+//     }
+
+//     pub fn hint(mut self, hint: impl Into<Cow<'a, str>>) -> Self {
+//         self.hint = hint.into();
+//         self
+//     }
+// }
+
+// impl<'a> Default for Input<'a> {
+//     fn default() -> Self {
+//         Self {
+//             block: None,
+//             hint: Default::default(),
+//             selection: true,
+//         }
+//     }
+// }
+
+// impl StatefulWidget for Input<'_> {
+//     type State = InputState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         // draw block and update area
+//         let area = if let Some(block) = self.block {
+//             let new_area = block.inner(area);
+//             block.render(area, buf);
+//             new_area
+//         } else {
+//             area
+//         };
+
+//         if state.input.value().is_empty() {
+//             // draw hint
+//             Paragraph::new(self.hint)
+//                 .style(self.hint_style)
+//                 .render(area, buf);
+//             // draw cursor
+//             if self.selection {
+//                 buf.set_style(
+//                     Rect {
+//                         x: area.x,
+//                         y: area.y,
+//                         width: 1,
+//                         height: 1,
+//                     },
+//                     self.style.add_modifier(Modifier::REVERSED),
+//                 );
+//             }
+//         } else {
+//             // draw text
+//             let scroll = state
+//                 .input
+//                 .visual_scroll(area.width.saturating_sub(1).into());
+//             Paragraph::new(state.input.value().chars().skip(scroll).collect::<String>())
+//                 .style(self.style)
+//                 .render(area, buf);
+//             // draw cursor
+//             if self.selection {
+//                 buf.set_style(
+//                     Rect {
+//                         x: area.x + state.input.visual_cursor().saturating_sub(scroll) as u16,
+//                         y: area.y,
+//                         width: 1,
+//                         height: 1,
+//                     },
+//                     self.style.add_modifier(Modifier::REVERSED),
+//                 );
+//             }
+//         }
+//     }
+// }
