@@ -1,22 +1,24 @@
 use std::path::PathBuf;
 
 use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
 
-use crate::tui::popups::{
-    output_target_picker::{OutputTargetPicker, OutputTargetPickerState, Target},
-    path_picker::{PathPicker, PathPickerState},
+use crate::tui::{
+    component::Component,
+    popups::{
+        output_target_picker::{OutputTargetPicker, Target},
+        path_picker::PathPicker,
+    },
 };
 
 #[derive(Debug)]
-pub enum TsvExporterState {
-    PickOutputTarget { picker: OutputTargetPickerState },
-    PickOutputPath { picker: PathPickerState },
+pub enum TsvExporter {
+    PickOutputTarget { picker: OutputTargetPicker },
+    PickOutputPath { picker: PathPicker },
     ExportToFile { path: PathBuf },
     ExportToClipboard,
 }
 
-impl Default for TsvExporterState {
+impl Default for TsvExporter {
     fn default() -> Self {
         Self::PickOutputTarget {
             picker: Default::default(),
@@ -24,66 +26,74 @@ impl Default for TsvExporterState {
     }
 }
 
-impl TsvExporterState {
+impl TsvExporter {
     pub fn step(&mut self) {
         *self = match std::mem::take(self) {
-            TsvExporterState::PickOutputTarget { picker } => match picker.selected() {
-                Some(Target::File) => TsvExporterState::PickOutputPath {
+            TsvExporter::PickOutputTarget { picker } => match picker.selected() {
+                Some(Target::File) => TsvExporter::PickOutputPath {
                     picker: Default::default(),
                 },
-                Some(Target::Clipboard) => TsvExporterState::ExportToClipboard,
-                None => TsvExporterState::PickOutputTarget { picker },
+                Some(Target::Clipboard) => TsvExporter::ExportToClipboard,
+                None => TsvExporter::PickOutputTarget { picker },
             },
-            TsvExporterState::PickOutputPath { picker } => TsvExporterState::ExportToFile {
+            TsvExporter::PickOutputPath { picker } => TsvExporter::ExportToFile {
                 path: picker.path(),
             },
-            TsvExporterState::ExportToFile { path } => TsvExporterState::ExportToFile { path },
-            TsvExporterState::ExportToClipboard => TsvExporterState::ExportToClipboard,
+            TsvExporter::ExportToFile { path } => TsvExporter::ExportToFile { path },
+            TsvExporter::ExportToClipboard => TsvExporter::ExportToClipboard,
         };
     }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        if let TsvExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
-        }
-    }
-
-    pub fn select_next(&mut self) {
-        match self {
-            TsvExporterState::PickOutputTarget { picker } => picker.select_next(),
-            _ => todo!(),
-        }
-    }
-
-    pub fn select_previous(&mut self) {
-        match self {
-            TsvExporterState::PickOutputTarget { picker } => picker.select_previous(),
-            _ => todo!(),
-        }
-    }
 }
 
-#[derive(Debug, Default)]
-pub struct TsvExporter {}
-
-impl StatefulWidget for TsvExporter {
-    type State = TsvExporterState;
-
+impl Component for TsvExporter {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
-        match state {
-            TsvExporterState::PickOutputTarget { picker } => {
-                OutputTargetPicker::default().render(area, buf, picker)
+        match self {
+            TsvExporter::PickOutputTarget { picker } => {
+                picker.render(area, buf, focus_state);
             }
-            TsvExporterState::PickOutputPath { picker } => {
-                PathPicker::default().render(area, buf, picker)
+            TsvExporter::PickOutputPath { picker } => {
+                picker.render(area, buf, focus_state);
             }
-            TsvExporterState::ExportToFile { path: _ } => (),
-            TsvExporterState::ExportToClipboard => (),
+            TsvExporter::ExportToFile { path: _ } => (),
+            TsvExporter::ExportToClipboard => (),
+        }
+    }
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        if let TsvExporter::PickOutputPath { picker } = self {
+            picker.handle(event)
+        } else {
+            false
         }
     }
 }
+
+// #[derive(Debug, Default)]
+// pub struct TsvExporter {}
+
+// impl StatefulWidget for TsvExporter {
+//     type State = TsvExporterState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         match state {
+//             TsvExporterState::PickOutputTarget { picker } => {
+//                 OutputTargetPicker::default().render(area, buf, picker)
+//             }
+//             TsvExporterState::PickOutputPath { picker } => {
+//                 PathPicker::default().render(area, buf, picker)
+//             }
+//             TsvExporterState::ExportToFile { path: _ } => (),
+//             TsvExporterState::ExportToClipboard => (),
+//         }
+//     }
+// }
