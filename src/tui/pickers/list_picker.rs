@@ -10,13 +10,13 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct ListPickerState {
+pub struct ListPicker {
     title: String,
     list: ListState,
     items: Vec<String>,
 }
 
-impl ListPickerState {
+impl ListPicker {
     pub fn new(items: Vec<String>) -> Self {
         Self {
             list: ListState::default().with_selected(0.into()),
@@ -34,7 +34,7 @@ impl ListPickerState {
     }
 }
 
-impl Component for ListPickerState {
+impl Component for ListPicker {
     fn render(
         &mut self,
         _area: ratatui::prelude::Rect,
