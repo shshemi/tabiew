@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     fmt::Debug,
     hash::{DefaultHasher, Hash, Hasher},
 };
@@ -10,7 +9,7 @@ use ratatui::{
         border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
-    widgets::{Borders, Clear, List, ListItem, ListState, StatefulWidget, Widget, block::Title},
+    widgets::{Borders, Clear, List, ListItem, ListState, StatefulWidget, Widget},
 };
 
 use crate::{
@@ -69,12 +68,18 @@ impl SearchPicker {
             .get(self.list.selected().unwrap_or_default())
             .map(|(i, _)| *i)
     }
+
+    pub fn selected_item(&self) -> Option<&str> {
+        self.selected()
+            .and_then(|i| self.items.get(i))
+            .map(|s| s.as_str())
+    }
 }
 
 impl Component for SearchPicker {
     fn render(
         &mut self,
-        area: ratatui::prelude::Rect,
+        _area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
@@ -134,6 +139,20 @@ impl Component for SearchPicker {
             self.list.select(Some(0));
         }
         StatefulWidget::render(list, list_area, buf, &mut self.list);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match event.code {
+            crossterm::event::KeyCode::Up => {
+                self.list.select_previous();
+                true
+            }
+            crossterm::event::KeyCode::Down => {
+                self.list.select_next();
+                true
+            }
+            _ => self.input.handle(event),
+        }
     }
 }
 
