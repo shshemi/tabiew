@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use ratatui::{
     layout::{Constraint, Layout},
     symbols::{
@@ -13,11 +11,9 @@ use ratatui::{
 use crate::{
     misc::globals::theme,
     tui::{
+        component::Component,
         status_bar::{StatusBar, Tag},
-        widgets::{
-            block::Block,
-            input::{Input, Input},
-        },
+        widgets::{block::Block, input::Input},
     },
 };
 
@@ -25,10 +21,11 @@ use crate::{
 pub struct CommandPaletteState {
     input: Input,
     list: ListState,
+    items: Vec<String>,
 }
 
 impl CommandPaletteState {
-    pub fn new(cmd: String) -> Self {
+    pub fn new(cmd: String, items: Vec<String>) -> Self {
         let mut input = Input::default();
         for c in cmd.chars() {
             input.insert(c);
@@ -36,6 +33,7 @@ impl CommandPaletteState {
         Self {
             input,
             list: ListState::default(),
+            items,
         }
     }
 
@@ -56,52 +54,39 @@ impl CommandPaletteState {
     }
 }
 
-pub struct CommandPalette<Iter> {
-    items: Iter,
-}
-
-impl<Iter> CommandPalette<Iter> {
-    pub fn new(items: Iter) -> Self {
-        Self { items }
-    }
-}
-
-impl<'a, Iter> StatefulWidget for CommandPalette<Iter>
-where
-    Iter: IntoIterator,
-    Iter::Item: Into<Cow<'a, str>>,
-{
-    type State = CommandPaletteState;
-
+impl Component for CommandPaletteState {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
         Clear.render(area, buf);
         let [input_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-        Input::default()
-            .with_show_cursor(state.list.selected().is_none())
-            .hint("Execute a command")
-            .block(Block::default().border_set(Set {
+        let input_area = {
+            let block = Block::default().border_set(Set {
                 bottom_left: VERTICAL_RIGHT,
                 bottom_right: VERTICAL_LEFT,
                 ..ROUNDED
-            }))
-            .render(input_area, buf, &mut state.input);
+            });
+            let inner = block.inner(input_area);
+            block.render(list_area, buf);
+            inner
+        };
+        self.input.render(input_area, buf, focus_state);
+
         StatefulWidget::render(
             List::new(
                 self.items
-                    .into_iter()
-                    .map(|item| Line::styled(item.into(), theme().text())),
+                    .iter()
+                    .map(|item| Line::styled(item.as_str(), theme().text())),
             )
             .highlight_style(theme().row_highlighted())
             .block(
                 Block::default()
                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
-                    .bottom(if state.list.selected().is_some() {
+                    .bottom(if self.list.selected().is_some() {
                         StatusBar::new()
                             .mono_color()
                             .centered()
@@ -114,7 +99,72 @@ where
             ),
             list_area,
             buf,
-            &mut state.list,
+            &mut self.list,
         );
     }
 }
+
+// pub struct CommandPalette<Iter> {
+//     items: Iter,
+// }
+
+// impl<Iter> CommandPalette<Iter> {
+//     pub fn new(items: Iter) -> Self {
+//         Self { items }
+//     }
+// }
+
+// impl<'a, Iter> StatefulWidget for CommandPalette<Iter>
+// where
+//     Iter: IntoIterator,
+//     Iter::Item: Into<Cow<'a, str>>,
+// {
+//     type State = CommandPaletteState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         Clear.render(area, buf);
+//         let [input_area, list_area] =
+//             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
+//         let input_area = {
+//             let block = Block::default().border_set(Set {
+//                 bottom_left: VERTICAL_RIGHT,
+//                 bottom_right: VERTICAL_LEFT,
+//                 ..ROUNDED
+//             });
+//             let inner = block.inner(list_area);
+//             block.render(list_area, buf);
+//             inner
+//         };
+//         self.input.render();
+//         StatefulWidget::render(
+//             List::new(
+//                 self.items
+//                     .into_iter()
+//                     .map(|item| Line::styled(item.into(), theme().text())),
+//             )
+//             .highlight_style(theme().row_highlighted())
+//             .block(
+//                 Block::default()
+//                     .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
+//                     .bottom(if state.list.selected().is_some() {
+//                         StatusBar::new()
+//                             .mono_color()
+//                             .centered()
+//                             .tag(Tag::new(" Insert ", " Enter "))
+//                             .tag(Tag::new(" Cancel ", " Esc "))
+//                     } else {
+//                         StatusBar::new()
+//                     })
+//                     .into_widget(),
+//             ),
+//             list_area,
+//             buf,
+//             &mut state.list,
+//         );
+//     }
+// }
