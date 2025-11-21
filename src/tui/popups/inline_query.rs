@@ -1,24 +1,25 @@
 use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
 
-use crate::tui::pickers::text_picker::{TextPicker, TextPicker};
+use crate::tui::{component::Component, pickers::text_picker::TextPicker};
 
 #[derive(Debug)]
-pub struct InlineQueryState {
+pub struct InlineQuery {
     text_picker: TextPicker,
     query_type: InlineQueryType,
 }
 
-impl InlineQueryState {
+impl InlineQuery {
     pub fn new(query_type: InlineQueryType) -> Self {
         Self {
-            text_picker: TextPicker::default(),
+            text_picker: TextPicker::default().with_title(
+                match query_type {
+                    InlineQueryType::Filter => "Filter",
+                    InlineQueryType::Order => "Order",
+                }
+                .to_owned(),
+            ),
             query_type,
         }
-    }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        self.text_picker.input_mut().handle(event);
     }
 
     pub fn value(&self) -> &str {
@@ -30,29 +31,43 @@ impl InlineQueryState {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct InlineQuery<'a> {
-    hint: &'a str,
-}
-
-impl<'a> StatefulWidget for InlineQuery<'a> {
-    type State = InlineQueryState;
-
+impl Component for InlineQuery {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
-        TextPicker::default()
-            .title(match state.query_type {
-                InlineQueryType::Filter => "Filter",
-                InlineQueryType::Order => "Order",
-            })
-            .hint(self.hint)
-            .render(area, buf, &mut state.text_picker);
+        self.text_picker.render(area, buf, focus_state);
+    }
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        self.text_picker.handle(event)
     }
 }
+
+// #[derive(Debug, Default)]
+// pub struct InlineQuery<'a> {
+//     hint: &'a str,
+// }
+
+// impl<'a> StatefulWidget for InlineQuery<'a> {
+//     type State = InlineQueryState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         TextPicker::default()
+//             .title(match state.query_type {
+//                 InlineQueryType::Filter => "Filter",
+//                 InlineQueryType::Order => "Order",
+//             })
+//             .hint(self.hint)
+//             .render(area, buf, &mut state.text_picker);
+//     }
+// }
 
 #[derive(Debug, Clone, Copy)]
 pub enum InlineQueryType {
