@@ -1,17 +1,19 @@
 use std::path::PathBuf;
 
 use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
 
-use crate::tui::popups::{
-    output_target_picker::{OutputTargetPicker, OutputTargetPickerState, Target},
-    path_picker::{PathPicker, PathPickerState},
+use crate::tui::{
+    component::Component,
+    popups::{
+        output_target_picker::{OutputTargetPicker, Target},
+        path_picker::PathPicker,
+    },
 };
 
 #[derive(Debug)]
 pub enum JsonLExporterState {
-    PickOutputTarget { picker: OutputTargetPickerState },
-    PickOutputPath { picker: PathPickerState },
+    PickOutputTarget { picker: OutputTargetPicker },
+    PickOutputPath { picker: PathPicker },
     ExportToFile { path: PathBuf },
     ExportToClipboard,
 }
@@ -34,12 +36,6 @@ impl JsonLExporterState {
         };
     }
 
-    pub fn handle(&mut self, event: KeyEvent) {
-        if let JsonLExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
-        }
-    }
-
     pub fn select_next(&mut self) {
         if let JsonLExporterState::PickOutputTarget { picker } = self {
             picker.select_next()
@@ -53,6 +49,34 @@ impl JsonLExporterState {
     }
 }
 
+impl Component for JsonLExporterState {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        focus_state: crate::tui::component::FocusState,
+    ) {
+        match self {
+            JsonLExporterState::PickOutputTarget { picker } => {
+                picker.render(area, buf, focus_state);
+            }
+            JsonLExporterState::PickOutputPath { picker } => {
+                picker.render(area, buf, focus_state);
+            }
+            JsonLExporterState::ExportToFile { path: _ } => (),
+            JsonLExporterState::ExportToClipboard => (),
+        }
+    }
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        if let JsonLExporterState::PickOutputPath { picker } = self {
+            picker.handle(event)
+        } else {
+            false
+        }
+    }
+}
+
 impl Default for JsonLExporterState {
     fn default() -> Self {
         JsonLExporterState::PickOutputTarget {
@@ -61,27 +85,27 @@ impl Default for JsonLExporterState {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct JsonLExporter {}
+// #[derive(Debug, Default)]
+// pub struct JsonLExporter {}
 
-impl StatefulWidget for JsonLExporter {
-    type State = JsonLExporterState;
+// impl StatefulWidget for JsonLExporter {
+//     type State = JsonLExporterState;
 
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        match state {
-            JsonLExporterState::PickOutputTarget { picker } => {
-                OutputTargetPicker::default().render(area, buf, picker)
-            }
-            JsonLExporterState::PickOutputPath { picker } => {
-                PathPicker::default().render(area, buf, picker)
-            }
-            JsonLExporterState::ExportToFile { path: _ } => (),
-            JsonLExporterState::ExportToClipboard => (),
-        }
-    }
-}
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         match state {
+//             JsonLExporterState::PickOutputTarget { picker } => {
+//                 OutputTargetPicker::default().render(area, buf, picker)
+//             }
+//             JsonLExporterState::PickOutputPath { picker } => {
+//                 PathPicker::default().render(area, buf, picker)
+//             }
+//             JsonLExporterState::ExportToFile { path: _ } => (),
+//             JsonLExporterState::ExportToClipboard => (),
+//         }
+//     }
+// }
