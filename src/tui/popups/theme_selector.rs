@@ -1,24 +1,29 @@
 use std::ops::Deref;
 
-use ratatui::widgets::StatefulWidget;
-
 use crate::{
-    misc::globals::{config, set_theme},
+    misc::globals::config,
     tui::{
-        pickers::search_picker::{SearchPicker, SearchPicker},
-        themes::theme::Theme,
+        component::Component,
+        pickers::search_picker::SearchPicker,
+        themes::theme::{AppTheme, Theme},
     },
 };
 
 #[derive(Debug)]
-pub struct ThemeSelectorState {
+pub struct ThemeSelector {
     search_picker: SearchPicker,
     rollback: Theme,
 }
 
-impl ThemeSelectorState {
+impl ThemeSelector {
     pub fn into_rollback_theme(self) -> Theme {
         self.rollback
+    }
+
+    pub fn selected(&self) -> Option<AppTheme> {
+        self.search_picker
+            .selected()
+            .and_then(|idx| Theme::all().get(idx).cloned())
     }
 
     pub fn search_picker(&self) -> &SearchPicker {
@@ -30,9 +35,25 @@ impl ThemeSelectorState {
     }
 }
 
-impl Default for ThemeSelectorState {
+impl Component for ThemeSelector {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        focus_state: crate::tui::component::FocusState,
+    ) {
+        self.search_picker.render(area, buf, focus_state);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.search_picker.handle(event)
+    }
+}
+
+impl Default for ThemeSelector {
     fn default() -> Self {
-        let mut search_picker = SearchPicker::default();
+        let mut search_picker =
+            SearchPicker::new(Theme::all().iter().map(|t| t.title().to_owned()).collect());
         let rollback = config().theme().deref().clone();
         let idx = Theme::all()
             .iter()
@@ -48,27 +69,24 @@ impl Default for ThemeSelectorState {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct ThemeSelector {}
+// #[derive(Debug, Default)]
+// pub struct ThemeSelector {}
 
-impl StatefulWidget for ThemeSelector {
-    type State = ThemeSelectorState;
+// impl StatefulWidget for ThemeSelector {
+//     type State = ThemeSelectorState;
 
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        SearchPicker::default()
-            .items(Theme::all().iter().map(|t| t.title()))
-            .render(area, buf, &mut state.search_picker);
-        if let Some(theme) = state
-            .search_picker
-            .selected()
-            .and_then(|idx| Theme::all().get(idx).cloned())
-        {
-            set_theme(theme.into());
-        }
-    }
-}
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         if let Some(theme) = state
+//             .search_picker
+//             .selected()
+//             .and_then(|idx| Theme::all().get(idx).cloned())
+//         {
+//             set_theme(theme.into());
+//         }
+//     }
+// }
