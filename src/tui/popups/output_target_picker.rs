@@ -1,17 +1,14 @@
-use std::borrow::Cow;
-
-use ratatui::widgets::StatefulWidget;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::pickers::list_picker::{ListPicker, ListPickerState};
+use crate::tui::{component::Component, pickers::list_picker::ListPicker};
 
-#[derive(Debug, Default)]
-pub struct OutputTargetPickerState {
-    list_picker: ListPickerState,
+#[derive(Debug)]
+pub struct OutputTargetPicker {
+    list_picker: ListPicker,
 }
 
-impl OutputTargetPickerState {
+impl OutputTargetPicker {
     pub fn selected(&self) -> Option<Target> {
         self.list_picker.list().selected().and_then(Target::new)
     }
@@ -25,24 +22,53 @@ impl OutputTargetPickerState {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct OutputTargetPicker {}
-
-impl StatefulWidget for OutputTargetPicker {
-    type State = OutputTargetPickerState;
-
+impl Component for OutputTargetPicker {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
-        ListPicker::default()
-            .title("Output Target")
-            .items(Target::iter().map(Into::into).map(Cow::Borrowed))
-            .render(area, buf, &mut state.list_picker)
+        self.list_picker.render(area, buf, focus_state);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.list_picker.handle(event)
     }
 }
+
+impl Default for OutputTargetPicker {
+    fn default() -> Self {
+        OutputTargetPicker {
+            list_picker: ListPicker::new(
+                Target::iter()
+                    .map(Into::<&str>::into)
+                    .map(str::to_string)
+                    .to_owned()
+                    .collect(),
+            ),
+        }
+    }
+}
+
+// #[derive(Debug, Default)]
+// pub struct OutputTargetPicker {}
+
+// impl StatefulWidget for OutputTargetPicker {
+//     type State = OutputTargetPickerState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         ListPicker::default()
+//             .title("Output Target")
+//             .items(Target::iter().map(Into::into).map(Cow::Borrowed))
+//             .render(area, buf, &mut state.list_picker)
+//     }
+// }
 
 #[derive(Debug, IntoStaticStr, EnumIter)]
 pub enum Target {
