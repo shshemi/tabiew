@@ -1,17 +1,19 @@
 use std::path::PathBuf;
 
 use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
 
-use crate::tui::popups::{
-    output_target_picker::{OutputTargetPicker, OutputTargetPickerState, Target},
-    path_picker::{PathPicker, PathPickerState},
+use crate::tui::{
+    component::Component,
+    popups::{
+        output_target_picker::{OutputTargetPicker, Target},
+        path_picker::PathPicker,
+    },
 };
 
 #[derive(Debug)]
 pub enum JsonExporterState {
-    PickOutputTarget { picker: OutputTargetPickerState },
-    PickOutputPath { picker: PathPickerState },
+    PickOutputTarget { picker: OutputTargetPicker },
+    PickOutputPath { picker: PathPicker },
     ExportToFile { path: PathBuf },
     ExportToClipboard,
 }
@@ -46,49 +48,57 @@ impl JsonExporterState {
             JsonExporterState::ExportToClipboard => JsonExporterState::ExportToClipboard,
         };
     }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        if let JsonExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
-        }
-    }
-
-    pub fn select_next(&mut self) {
-        match self {
-            JsonExporterState::PickOutputTarget { picker } => picker.select_next(),
-            _ => todo!(),
-        }
-    }
-
-    pub fn select_previous(&mut self) {
-        match self {
-            JsonExporterState::PickOutputTarget { picker } => picker.select_previous(),
-            _ => todo!(),
-        }
-    }
 }
 
-#[derive(Debug, Default)]
-pub struct JsonExporter {}
-
-impl StatefulWidget for JsonExporter {
-    type State = JsonExporterState;
-
+impl Component for JsonExporterState {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
-        match state {
+        match self {
             JsonExporterState::PickOutputTarget { picker } => {
-                OutputTargetPicker::default().render(area, buf, picker)
+                picker.render(area, buf, focus_state);
             }
             JsonExporterState::PickOutputPath { picker } => {
-                PathPicker::default().render(area, buf, picker)
+                picker.render(area, buf, focus_state);
             }
             JsonExporterState::ExportToFile { path: _ } => (),
             JsonExporterState::ExportToClipboard => (),
         }
     }
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        if let JsonExporterState::PickOutputPath { picker } = self {
+            picker.handle(event)
+        } else {
+            false
+        }
+    }
 }
+
+// #[derive(Debug, Default)]
+// pub struct JsonExporter {}
+
+// impl StatefulWidget for JsonExporter {
+//     type State = JsonExporterState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         match state {
+//             JsonExporterState::PickOutputTarget { picker } => {
+//                 OutputTargetPicker::default().render(area, buf, picker)
+//             }
+//             JsonExporterState::PickOutputPath { picker } => {
+//                 PathPicker::default().render(area, buf, picker)
+//             }
+//             JsonExporterState::ExportToFile { path: _ } => (),
+//             JsonExporterState::ExportToClipboard => (),
+//         }
+//     }
+// }
