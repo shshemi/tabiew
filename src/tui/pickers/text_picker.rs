@@ -39,6 +39,10 @@ impl TextPicker {
         }
     }
 
+    pub fn with_title(self, title: String) -> Self {
+        Self { title, ..self }
+    }
+
     pub fn input(&self) -> &Input {
         &self.input
     }
