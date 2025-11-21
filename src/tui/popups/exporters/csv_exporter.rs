@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
 
 use crate::tui::{
-    pickers::text_picker::{TextPicker, TextPicker},
+    component::Component,
+    pickers::text_picker::TextPicker,
     popups::{
-        output_target_picker::{OutputTargetPicker, OutputTargetPickerState, Target},
-        path_picker::{PathPicker, PathPickerState},
+        output_target_picker::{OutputTargetPicker, Target},
+        path_picker::PathPicker,
     },
 };
 
@@ -23,12 +23,12 @@ pub enum CsvExporterState {
     PickOutputTarget {
         separator: char,
         quote: char,
-        picker: OutputTargetPickerState,
+        picker: OutputTargetPicker,
     },
     PickOutputPath {
         separator: char,
         quote: char,
-        picker: PathPickerState,
+        picker: PathPicker,
     },
     ExportToFile {
         separator: char,
@@ -76,7 +76,7 @@ impl CsvExporterState {
                     CsvExporterState::PickOutputTarget {
                         separator,
                         quote,
-                        picker: OutputTargetPickerState::default(),
+                        picker: OutputTargetPicker::default(),
                     }
                 } else {
                     CsvExporterState::PickQuoteChar { separator, picker }
@@ -123,22 +123,6 @@ impl CsvExporterState {
         };
     }
 
-    pub fn handle(&mut self, event: KeyEvent) {
-        match self {
-            CsvExporterState::PickSeparator { picker } => picker.input_mut().handle(event),
-            CsvExporterState::PickQuoteChar {
-                separator: _,
-                picker,
-            } => picker.input_mut().handle(event),
-            CsvExporterState::PickOutputPath {
-                separator: _,
-                quote: _,
-                picker,
-            } => picker.handle(event),
-            _ => (),
-        }
-    }
-
     pub fn select_previous(&mut self) {
         if let CsvExporterState::PickOutputTarget {
             separator: _,
@@ -162,38 +146,29 @@ impl CsvExporterState {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct CsvExporter {}
-
-impl StatefulWidget for CsvExporter {
-    type State = CsvExporterState;
-
+impl Component for CsvExporterState {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
-        match state {
-            CsvExporterState::PickSeparator { picker } => TextPicker::default()
-                .title("Separator")
-                .render(area, buf, picker),
+        match self {
+            CsvExporterState::PickSeparator { picker } => picker.render(area, buf, focus_state),
             CsvExporterState::PickQuoteChar {
                 separator: _,
                 picker,
-            } => TextPicker::default()
-                .title("Quote")
-                .render(area, buf, picker),
+            } => picker.render(area, buf, focus_state),
             CsvExporterState::PickOutputTarget {
                 separator: _,
                 quote: _,
                 picker,
-            } => OutputTargetPicker::default().render(area, buf, picker),
+            } => picker.render(area, buf, focus_state),
             CsvExporterState::PickOutputPath {
                 separator: _,
                 quote: _,
                 picker,
-            } => PathPicker::default().render(area, buf, picker),
+            } => picker.render(area, buf, focus_state),
             CsvExporterState::ExportToFile {
                 separator: _,
                 quote: _,
@@ -205,4 +180,65 @@ impl StatefulWidget for CsvExporter {
             } => (),
         }
     }
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        match self {
+            CsvExporterState::PickSeparator { picker } => picker.input_mut().handle(event),
+            CsvExporterState::PickQuoteChar {
+                separator: _,
+                picker,
+            } => picker.input_mut().handle(event),
+            CsvExporterState::PickOutputPath {
+                separator: _,
+                quote: _,
+                picker,
+            } => picker.handle(event),
+            _ => false,
+        }
+    }
 }
+
+// #[derive(Debug, Default)]
+// pub struct CsvExporter {}
+
+// impl StatefulWidget for CsvExporter {
+//     type State = CsvExporterState;
+
+//     fn render(
+//         self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         match state {
+//             CsvExporterState::PickSeparator { picker } => TextPicker::default()
+//                 .title("Separator")
+//                 .render(area, buf, picker),
+//             CsvExporterState::PickQuoteChar {
+//                 separator: _,
+//                 picker,
+//             } => TextPicker::default()
+//                 .title("Quote")
+//                 .render(area, buf, picker),
+//             CsvExporterState::PickOutputTarget {
+//                 separator: _,
+//                 quote: _,
+//                 picker,
+//             } => OutputTargetPicker::default().render(area, buf, picker),
+//             CsvExporterState::PickOutputPath {
+//                 separator: _,
+//                 quote: _,
+//                 picker,
+//             } => PathPicker::default().render(area, buf, picker),
+//             CsvExporterState::ExportToFile {
+//                 separator: _,
+//                 quote: _,
+//                 path: _,
+//             } => (),
+//             CsvExporterState::ExportToClipboard {
+//                 separator: _,
+//                 quote: _,
+//             } => (),
+//         }
+//     }
+// }
