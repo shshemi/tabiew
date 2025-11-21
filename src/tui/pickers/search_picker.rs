@@ -63,9 +63,9 @@ impl SearchPicker {
     }
 
     pub fn selected(&self) -> Option<usize> {
-        self.cached_filter
-            .indices
-            .get(self.list.selected().unwrap_or_default())
+        self.list
+            .selected()
+            .and_then(|idx| self.cached_filter.indices.get(idx))
             .map(|(i, _)| *i)
     }
 
