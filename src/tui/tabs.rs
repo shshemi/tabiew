@@ -1,23 +1,23 @@
 use itertools::Itertools;
 use ratatui::widgets::{Borders, StatefulWidget, TableState, Widget};
 
-use crate::tui::widgets::block::Block;
+use crate::tui::{component::Component, widgets::block::Block};
 
 use super::{
     enumerated_list::{EnumeratedList, EnumeratedListState},
-    pane::{Pane, PaneState},
+    pane::Pane,
     status_bar::{StatusBar, Tag},
 };
 
 #[derive(Debug)]
 pub struct TabsState {
-    tabulars: Vec<PaneState>,
+    tabulars: Vec<Pane>,
     side_panel: Option<EnumeratedListState>,
     idx: usize,
 }
 
 impl TabsState {
-    pub fn add(&mut self, tabular: PaneState) {
+    pub fn add(&mut self, tabular: Pane) {
         self.tabulars.push(tabular);
     }
 
@@ -33,11 +33,11 @@ impl TabsState {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&PaneState> {
+    pub fn selected(&self) -> Option<&Pane> {
         self.tabulars.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut PaneState> {
+    pub fn selected_mut(&mut self) -> Option<&mut Pane> {
         self.tabulars.get_mut(self.idx)
     }
 
@@ -51,11 +51,11 @@ impl TabsState {
         self.idx = idx;
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PaneState> {
+    pub fn iter(&self) -> impl Iterator<Item = &Pane> {
         self.tabulars.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut PaneState> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Pane> {
         self.tabulars.iter_mut()
     }
 
@@ -76,8 +76,8 @@ impl TabsState {
     }
 }
 
-impl FromIterator<PaneState> for TabsState {
-    fn from_iter<T: IntoIterator<Item = PaneState>>(iter: T) -> Self {
+impl FromIterator<Pane> for TabsState {
+    fn from_iter<T: IntoIterator<Item = Pane>>(iter: T) -> Self {
         Self {
             tabulars: iter.into_iter().collect(),
             idx: 0,
@@ -194,8 +194,9 @@ impl StatefulWidget for Tabs {
         };
 
         // render tabular
-        if let Some(tabular) = state.tabulars.get_mut(tabular_idx) {
-            Pane.render(area, buf, tabular);
+        if let Some(pane) = state.tabulars.get_mut(tabular_idx) {
+            // Pane.render(area, buf, tabular);
+            pane.render(area, buf, focus_state);
         }
 
         // render tabs
