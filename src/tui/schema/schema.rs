@@ -15,12 +15,12 @@ use crate::{
 };
 
 #[derive(Debug, Default)]
-pub struct SchemaState {
+pub struct Schema {
     names: DataFrameNames,
     infos: Vec<DataFrameInfo>,
 }
 
-impl SchemaState {
+impl Schema {
     fn selected_info_mut(&mut self) -> Option<&mut DataFrameInfo> {
         self.names
             .selected()
@@ -28,7 +28,7 @@ impl SchemaState {
     }
 }
 
-impl Component for SchemaState {
+impl Component for Schema {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
