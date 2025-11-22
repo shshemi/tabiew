@@ -18,13 +18,13 @@ use crate::{
 };
 
 #[derive(Debug, Default)]
-pub struct CommandPaletteState {
+pub struct CommandPalette {
     input: Input,
     list: ListState,
     items: Vec<String>,
 }
 
-impl CommandPaletteState {
+impl CommandPalette {
     pub fn new(cmd: String, items: Vec<String>) -> Self {
         let mut input = Input::default();
         for c in cmd.chars() {
@@ -54,7 +54,7 @@ impl CommandPaletteState {
     }
 }
 
-impl Component for CommandPaletteState {
+impl Component for CommandPalette {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
