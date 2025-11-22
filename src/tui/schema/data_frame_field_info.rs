@@ -50,7 +50,7 @@ impl Component for DataFrameFieldInfo {
         &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        focus_state: crate::tui::component::FocusState,
+        _focus_state: crate::tui::component::FocusState,
     ) {
         *self.table_state.offset_mut() = self.table_state.offset().min(
             self.table_schema
