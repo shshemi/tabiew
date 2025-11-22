@@ -3,6 +3,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
+use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     symbols::{
@@ -142,17 +143,18 @@ impl Component for SearchPicker {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        match event.code {
-            crossterm::event::KeyCode::Up => {
-                self.list.select_previous();
-                true
+        self.input.handle(event)
+            || match event.code {
+                KeyCode::Up => {
+                    self.list.select_previous();
+                    true
+                }
+                KeyCode::Down => {
+                    self.list.select_next();
+                    true
+                }
+                _ => false,
             }
-            crossterm::event::KeyCode::Down => {
-                self.list.select_next();
-                true
-            }
-            _ => self.input.handle(event),
-        }
     }
 }
 
