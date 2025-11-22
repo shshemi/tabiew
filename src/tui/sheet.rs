@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::Alignment,
     text::Line,
-    widgets::{Clear, Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
@@ -59,7 +59,7 @@ impl Component for Sheet {
         &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        focus_state: super::component::FocusState,
+        _focus_state: super::component::FocusState,
     ) {
         Clear.render(area, buf);
 
