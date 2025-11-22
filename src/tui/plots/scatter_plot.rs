@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use itertools::Itertools;
 use ratatui::{
-    layout::{Alignment, Constraint, Flex, Layout, Margin},
+    layout::{Alignment, Constraint, Margin},
     symbols::Marker,
     text::Span,
     widgets::{Axis, Chart, Clear, Dataset, GraphType, LegendPosition, Padding, Widget},
