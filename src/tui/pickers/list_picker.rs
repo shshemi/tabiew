@@ -65,11 +65,11 @@ impl Component for ListPicker {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match event.code {
-            KeyCode::Up => {
+            KeyCode::Up | KeyCode::Char('k') => {
                 self.list.select_previous();
                 true
             }
-            KeyCode::Down => {
+            KeyCode::Down | KeyCode::Char('j') => {
                 self.list.select_next();
                 true
             }
