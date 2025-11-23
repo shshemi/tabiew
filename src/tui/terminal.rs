@@ -1,6 +1,8 @@
 use crate::AppResult;
 use crate::app::App;
 use crate::handler::event::EventHandler;
+use crate::tui::component::Component;
+use crate::tui::component::FocusState;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
 use std::io;
@@ -50,7 +52,9 @@ impl<B: Backend> Terminal<B> {
     /// [`rendering`]: crate::ui::render
     pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
         self.terminal.draw(|frame| {
-            let _ = app.draw(frame);
+            let area = frame.area();
+            let buf = frame.buffer_mut();
+            app.render(area, buf, FocusState::Focused);
         })?;
         Ok(())
     }
