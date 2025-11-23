@@ -1,7 +1,7 @@
 use crossterm::event::KeyEvent;
 use ratatui::{buffer::Buffer, layout::Rect};
 
-use crate::handler::action::AppAction;
+pub enum AppAction {}
 
 #[derive(Debug, Clone, Copy)]
 pub enum FocusState {
