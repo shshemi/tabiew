@@ -71,7 +71,7 @@ impl Component for TextPicker {
         Widget::render(Clear, area, buf);
 
         let area = {
-            let block = Block::default();
+            let block = Block::default().title(self.title.as_str());
             let inner = block.inner(area);
             block.render(area, buf);
             inner

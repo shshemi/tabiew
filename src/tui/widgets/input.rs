@@ -147,8 +147,6 @@ impl Component for Input {
         }
     }
 
-    fn update(&mut self, _: &crate::handler::action::AppAction) {}
-
     fn handle(&mut self, event: KeyEvent) -> bool {
         match event.code {
             KeyCode::Backspace if event.modifiers == KeyModifiers::ALT => {

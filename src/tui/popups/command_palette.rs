@@ -102,6 +102,9 @@ impl Component for CommandPalette {
             &mut self.list,
         );
     }
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.input.handle(event)
+    }
 }
 
 // pub struct CommandPalette<Iter> {

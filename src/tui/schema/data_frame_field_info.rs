@@ -1,4 +1,4 @@
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Text,
@@ -115,6 +115,14 @@ impl Component for DataFrameFieldInfo {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match event.code {
+            KeyCode::Up if event.modifiers == KeyModifiers::SHIFT => {
+                self.scroll_up();
+                true
+            }
+            KeyCode::Down if event.modifiers == KeyModifiers::SHIFT => {
+                self.scroll_down();
+                true
+            }
             KeyCode::Char('K') => {
                 self.scroll_up();
                 true
