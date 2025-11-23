@@ -9,10 +9,11 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
-use tabiew::handler::action::execute;
-use tabiew::handler::command::parse_into_action;
+use tabiew::tui::component::Component;
+// use tabiew::handler::action::execute;
+// use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
-use tabiew::handler::key::KeyHandler;
+// use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, sql};
 use tabiew::misc::paths::{config_path, history_path, theme_path};
@@ -22,7 +23,7 @@ use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::themes::custom::Custom;
 
-use tabiew::tui::{PaneState, TableType};
+use tabiew::tui::{Pane, TableType};
 use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
@@ -159,9 +160,9 @@ fn main() {
 fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(name, df)| PaneState::new(df, TableType::Name(name)))
+        .map(|(name, df)| Pane::new(df, TableType::Name(name)))
         .collect();
-    let keybind = KeyHandler::default();
+    // let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
 
     // Initialize the terminal user interface.
@@ -175,10 +176,10 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
     tui.draw(&mut app)?;
 
     // Run startup script
-    for line in script.lines().filter(|line| !line.is_empty()) {
-        let action = parse_into_action(line).unwrap_or_graceful_shutdown();
-        execute(action, &mut app).unwrap_or_graceful_shutdown();
-    }
+    // for line in script.lines().filter(|line| !line.is_empty()) {
+    //     let action = parse_into_action(line).unwrap_or_graceful_shutdown();
+    //     execute(action, &mut app).unwrap_or_graceful_shutdown();
+    // }
 
     // Main loop
     while app.running() {
@@ -206,17 +207,19 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    let mut action = keybind.action(app.context(), key_event);
-                    loop {
-                        match execute(action, &mut app) {
-                            Ok(Some(next_action)) => action = next_action,
-                            Ok(_) => break,
-                            Err(err) => {
-                                app.show_error(err);
-                                break;
-                            }
-                        }
-                    }
+                    // let mut action = keybind.action(app.context(), key_event);
+                    // loop {
+                    //     match execute(action, &mut app) {
+                    //         Ok(Some(next_action)) => action = next_action,
+                    //         Ok(_) => break,
+                    //         Err(err) => {
+                    //             app.show_error(err);
+                    //             break;
+                    //         }
+                    //     }
+                    // }
+
+                    app.handle(key_event);
                 }
             }
             Event::Mouse(_) => {}
