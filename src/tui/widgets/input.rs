@@ -148,63 +148,63 @@ impl Component for Input {
     }
 
     fn handle(&mut self, event: KeyEvent) -> bool {
-        match event.code {
-            KeyCode::Backspace if event.modifiers == KeyModifiers::ALT => {
+        match (event.code, event.modifiers) {
+            (KeyCode::Backspace, KeyModifiers::ALT) => {
                 self.delete_prev_word();
                 true
             }
-            KeyCode::Backspace => {
+            (KeyCode::Backspace, KeyModifiers::NONE) => {
                 self.delete_prev();
                 true
             }
-            KeyCode::Char('w') if event.modifiers == KeyModifiers::ALT => {
+            (KeyCode::Left, KeyModifiers::ALT) | (KeyCode::Char('b'), KeyModifiers::ALT) => {
                 self.goto_prev_word();
                 true
             }
-            KeyCode::Char('e') if event.modifiers == KeyModifiers::ALT => {
+            (KeyCode::Right, KeyModifiers::ALT) | (KeyCode::Char('f'), KeyModifiers::ALT) => {
                 self.goto_next_word();
                 true
             }
-            KeyCode::Left => {
+            (KeyCode::Left, KeyModifiers::NONE) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => {
                 self.goto_prev();
                 true
             }
-            KeyCode::Right => {
+            (KeyCode::Right, KeyModifiers::NONE) | (KeyCode::Char('f'), KeyModifiers::CONTROL) => {
                 self.goto_next();
                 true
             }
-            KeyCode::Home => {
+            (KeyCode::Home, KeyModifiers::NONE) | (KeyCode::Char('a'), KeyModifiers::CONTROL) => {
                 self.goto_start();
                 true
             }
-            KeyCode::End => {
+            (KeyCode::End, KeyModifiers::NONE) | (KeyCode::Char('e'), KeyModifiers::CONTROL) => {
                 self.goto_end();
                 true
             }
-            KeyCode::Delete => {
+            (KeyCode::Delete, KeyModifiers::NONE) => {
                 self.delete_next();
                 true
             }
-            KeyCode::Char(c) => match self.input_type {
-                InputType::Any => {
-                    self.insert(c);
-                    true
+            (KeyCode::Char(c), KeyModifiers::NONE) | (KeyCode::Char(c), KeyModifiers::SHIFT) => {
+                match self.input_type {
+                    InputType::Any => {
+                        self.insert(c);
+                        true
+                    }
+                    InputType::Numeric if c.is_numeric() => {
+                        self.insert(c);
+                        true
+                    }
+                    InputType::Alphabetic if c.is_alphabetic() => {
+                        self.insert(c);
+                        true
+                    }
+                    _ => false,
                 }
-                InputType::Numeric if c.is_numeric() => {
-                    self.insert(c);
-                    true
-                }
-                InputType::Alphabetic if c.is_alphabetic() => {
-                    self.insert(c);
-                    true
-                }
-                _ => false,
-            },
+            }
             _ => false,
         }
     }
-
-    fn tick(&mut self) {}
 }
 
 // #[derive(Debug)]
