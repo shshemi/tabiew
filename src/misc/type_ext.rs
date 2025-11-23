@@ -27,6 +27,10 @@ pub trait UnwrapOrGracefulShutdown<T> {
     fn unwrap_or_graceful_shutdown(self) -> T;
 }
 
+pub trait VecExt<T> {
+    fn take(&mut self, idx: usize) -> Option<T>;
+}
+
 impl HasSubsequence for str {
     fn has_subsequence(&self, other: &Self) -> bool {
         let mut oitr = other.chars();
@@ -149,6 +153,12 @@ impl FitToWidth for str {
             .last()
             .unwrap_or_default();
         &self[..end]
+    }
+}
+
+impl<T> VecExt<T> for Vec<T> {
+    fn take(&mut self, idx: usize) -> Option<T> {
+        (idx < self.len()).then(|| self.remove(idx))
     }
 }
 
