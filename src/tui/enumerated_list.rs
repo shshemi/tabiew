@@ -1,8 +1,7 @@
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Constraint, Rect},
-    text::Text,
-    widgets::{Cell, Clear, Row, StatefulWidget, Table, TableState, Widget, block::Title},
+    widgets::{Cell, Clear, Row, StatefulWidget, Table, TableState, Widget},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -12,22 +11,22 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct EnumeratedListState {
+pub struct EnumeratedList {
     items: Vec<String>,
     title: String,
     list: TableState,
 }
 
-impl EnumeratedListState {
-    pub fn new(title: String, items: Vec<String>) -> EnumeratedListState {
+impl EnumeratedList {
+    pub fn new(title: impl Into<String>, items: Vec<String>) -> EnumeratedList {
         Self {
             list: TableState::default(),
             items,
-            title,
+            title: title.into(),
         }
     }
 
-    pub fn with_selected(self, selected: usize) -> EnumeratedListState {
+    pub fn with_selected(self, selected: usize) -> EnumeratedList {
         Self {
             list: self.list.with_selected(selected),
             ..self
@@ -39,7 +38,7 @@ impl EnumeratedListState {
     }
 }
 
-impl Component for EnumeratedListState {
+impl Component for EnumeratedList {
     fn render(
         &mut self,
         area: Rect,
@@ -76,7 +75,7 @@ impl Component for EnumeratedListState {
                     Constraint::Length(text_width),
                 ])
                 .column_spacing(1)
-                .block(Block::default().into_widget()),
+                .block(Block::default().title(self.title.as_str()).into_widget()),
             area,
             buf,
             &mut self.list,
