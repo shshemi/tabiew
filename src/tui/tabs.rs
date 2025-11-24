@@ -129,18 +129,17 @@ impl Component for TabsState {
                         super::TableType::Query(query) => Tag::new("Query", query),
                     })
                     .tag(Tag::new(
-                        "Auto-Fit",
-                        if !tabular.table().expanded() {
-                            "Yes"
-                        } else {
-                            " No"
+                        "View Mode",
+                        match tabular.table().view_mode() {
+                            crate::tui::df_table::ViewMode::Compact => "Compact",
+                            crate::tui::df_table::ViewMode::Expanded(_) => "Expanded",
                         },
                     ))
                     .tag(Tag::new(
                         "Row",
                         format!(
                             "{:>width$}",
-                            tabular.table().selected() + 1,
+                            tabular.table().selected().unwrap_or_default() + 1,
                             width = tabular.table().data_frame().height().to_string().len()
                         ),
                     ))
