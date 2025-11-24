@@ -20,6 +20,7 @@ pub struct Custom {
     text_highlighted: Style,
     subtext: Style,
     error: Style,
+    gutter: Style,
     chart: Vec<Style>,
 }
 
@@ -96,6 +97,9 @@ impl Default for Custom {
             text_highlighted: Style::default()
                 .bg(Color::from_u32(0x00000000))
                 .fg(Color::from_u32(0x00ff00ff)),
+            gutter: Style::default()
+                .bg(Color::from_u32(0x00000000))
+                .fg(Color::from_u32(0x00ff00ff)),
         }
     }
 }
@@ -147,5 +151,9 @@ impl Styler for Custom {
 
     fn text_highlighted(&self) -> Style {
         self.text_highlighted
+    }
+
+    fn gutter(&self) -> Style {
+        self.gutter
     }
 }
