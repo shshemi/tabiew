@@ -186,7 +186,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
         tui.draw(&mut app)?;
 
         match tui.events.next()? {
-            Event::Tick => app.tick()?,
+            Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 #[cfg(target_os = "windows")]
                 {
