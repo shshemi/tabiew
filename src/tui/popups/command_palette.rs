@@ -71,7 +71,7 @@ impl Component for CommandPalette {
                 ..ROUNDED
             });
             let inner = block.inner(input_area);
-            block.render(list_area, buf);
+            block.render(input_area, buf);
             inner
         };
         self.input.render(input_area, buf, focus_state);
