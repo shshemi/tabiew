@@ -1,7 +1,7 @@
 use crossterm::event::KeyEvent;
 use ratatui::{buffer::Buffer, layout::Rect};
 
-pub enum AppAction {}
+use crate::handler::action::Action;
 
 #[derive(Debug, Clone, Copy)]
 pub enum FocusState {
@@ -18,7 +18,7 @@ impl FocusState {
 pub trait Component {
     fn render(&mut self, area: Rect, buf: &mut Buffer, focus_state: FocusState);
     #[allow(unused_variables)]
-    fn update(&mut self, action: &AppAction) {}
+    fn update(&mut self, action: &Action) {}
     #[allow(unused_variables)]
     fn handle(&mut self, event: KeyEvent) -> bool {
         false
