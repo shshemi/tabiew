@@ -4,6 +4,7 @@ use std::{
 };
 
 use base64::Engine;
+use ratatui::layout::Constraint;
 use unicode_width::UnicodeWidthChar;
 
 use crate::AppResult;
@@ -29,6 +30,10 @@ pub trait UnwrapOrGracefulShutdown<T> {
 
 pub trait VecExt<T> {
     fn take(&mut self, idx: usize) -> Option<T>;
+}
+
+pub trait ConstraintExt {
+    fn value(&self) -> u16;
 }
 
 impl HasSubsequence for str {
@@ -159,6 +164,18 @@ impl FitToWidth for str {
 impl<T> VecExt<T> for Vec<T> {
     fn take(&mut self, idx: usize) -> Option<T> {
         (idx < self.len()).then(|| self.remove(idx))
+    }
+}
+
+impl ConstraintExt for Constraint {
+    fn value(&self) -> u16 {
+        match self {
+            Constraint::Min(val)
+            | Constraint::Max(val)
+            | Constraint::Length(val)
+            | Constraint::Fill(val) => *val,
+            Constraint::Percentage(_) | Constraint::Ratio(_, _) => 0,
+        }
     }
 }
 
