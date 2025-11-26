@@ -131,8 +131,8 @@ impl Component for TabsState {
                     .tag(Tag::new(
                         "View Mode",
                         match tabular.table().view_mode() {
-                            crate::tui::df_table::ViewMode::Compact => "Compact",
-                            crate::tui::df_table::ViewMode::Expanded(_) => "Expanded",
+                            crate::tui::table::ViewMode::Compact => "Compact",
+                            crate::tui::table::ViewMode::Expanded(_) => "Expanded",
                         },
                     ))
                     .tag(Tag::new(
