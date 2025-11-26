@@ -13,15 +13,17 @@ use polars::{
     prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, SeriesMethods},
     series::Series,
 };
+use ratatui::widgets::Cell;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AppResult, tui::sheet::SheetSection};
 
 use super::type_ext::HasSubsequence;
 
-pub trait IntoString {
+pub trait AnyValueExt {
     fn into_single_line(self) -> String;
     fn into_multi_line(self) -> String;
+    fn into_cell(self, width: usize) -> Cell<'static>;
 }
 
 pub trait TuiWidths {
@@ -48,7 +50,7 @@ pub trait PlotData {
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
-impl IntoString for AnyValue<'_> {
+impl AnyValueExt for AnyValue<'_> {
     fn into_single_line(self) -> String {
         match self {
             AnyValue::Null => "".to_owned(),
@@ -80,6 +82,17 @@ impl IntoString for AnyValue<'_> {
             AnyValue::Binary(buf) => bytes_to_string(buf),
             AnyValue::BinaryOwned(buf) => bytes_to_string(buf),
             _ => self.to_string(),
+        }
+    }
+
+    fn into_cell(self, _width: usize) -> Cell<'static> {
+        match self {
+            // AnyValue::Int8(i) => Cell::new(format!("{i:>w$}", w = width)),
+            // AnyValue::Int16(i) => Cell::new(format!("{i:>w$}", w = width)),
+            // AnyValue::Int32(i) => Cell::new(format!("{i:>w$}", w = width)),
+            // AnyValue::Int64(i) => Cell::new(format!("{i:>w$}", w = width)),
+            // AnyValue::Int128(i) => Cell::new(format!("{i:>w$}", w = width)),
+            _ => Cell::new(self.into_single_line()),
         }
     }
 }
@@ -148,7 +161,7 @@ impl GetSheetSections for DataFrame {
             self.get(pos)
                 .unwrap_or_default()
                 .into_iter()
-                .map(IntoString::into_multi_line),
+                .map(AnyValueExt::into_multi_line),
             self.dtypes()
         )
         .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
