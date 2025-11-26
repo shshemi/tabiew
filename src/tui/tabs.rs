@@ -2,6 +2,7 @@ use crossterm::event::KeyCode;
 use ratatui::widgets::{Borders, Widget};
 
 use crate::{
+    handler::action::Action,
     misc::type_ext::VecExt,
     tui::{component::Component, widgets::block::Block},
 };
@@ -205,7 +206,11 @@ impl Component for TabsState {
             || match event.code {
                 KeyCode::Esc => self.panel.take().is_some(),
                 KeyCode::Char('q') => {
-                    self.panel.take().is_some() || self.panes.take(self.idx).is_some()
+                    let hndl = self.panel.take().is_some() || self.panes.take(self.idx).is_some();
+                    if self.is_empty() {
+                        Action::Quit.submit();
+                    }
+                    hndl
                 }
                 KeyCode::Char('t') => {
                     self.show_panel();
