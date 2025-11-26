@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::{frame::DataFrame, prelude::AnyValue, series::Series};
 use ratatui::{
     layout::{Constraint, Position, Size},
-    widgets::{Cell, Row, StatefulWidget, Table, TableState},
+    widgets::{Cell, Row, StatefulWidget, TableState},
 };
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
@@ -25,7 +25,7 @@ pub enum ViewMode {
 }
 
 #[derive(Debug)]
-pub struct DfTable {
+pub struct Table {
     df: DataFrame,
     col_names: Vec<String>,
     col_widths: Vec<Constraint>,
@@ -39,7 +39,7 @@ pub struct DfTable {
     col_space: u16,
 }
 
-impl DfTable {
+impl Table {
     pub fn new(df: DataFrame) -> Self {
         let col_names = std::iter::once(String::with_capacity(0))
             .chain(df.iter().map(|ser| ser.name().to_string()))
@@ -247,7 +247,7 @@ impl DfTable {
     }
 }
 
-impl Component for DfTable {
+impl Component for Table {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
@@ -286,7 +286,7 @@ impl Component for DfTable {
                 self.row(idx, vals).style(style)
             });
 
-        let mut table = Table::new(rows, self.col_widths())
+        let mut table = ratatui::widgets::Table::new(rows, self.col_widths())
             .style(theme().text())
             .row_highlight_style(theme().row_highlighted())
             .column_spacing(self.col_space);
