@@ -10,7 +10,7 @@ use polars_sql::SQLContext;
 
 use crate::misc::type_ext::SnakeCaseNameGenExt;
 
-use super::{polars_ext::IntoString, vec_map::VecMap};
+use super::{polars_ext::AnyValueExt, vec_map::VecMap};
 
 const DEFAULT_TABLE_NAME: &str = "_";
 
