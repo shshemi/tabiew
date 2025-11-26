@@ -5,3 +5,16 @@
 .vscode
 .idea
 .zed
+
+# formats for testing
+*.csv
+*.sqlite
+*.sqlite3
+*.db
+*.tsv
+*.arrow
+*.xlsx
+*.parquet
+*.json
+*.jsonl
+*.fwf
