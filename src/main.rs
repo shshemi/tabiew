@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
+use tabiew::handler::action::Action;
 use tabiew::tui::component::Component;
 // use tabiew::handler::action::execute;
 // use tabiew::handler::command::parse_into_action;
@@ -192,38 +193,20 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        let mut action = keybind.action(app.context(), key_event);
-                        loop {
-                            match execute(action, &mut app) {
-                                Ok(Some(next_action)) => action = next_action,
-                                Ok(_) => break,
-                                Err(err) => {
-                                    app.error(err);
-                                    break;
-                                }
-                            }
-                        }
+                        app.handle(key_event);
                     }
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    // let mut action = keybind.action(app.context(), key_event);
-                    // loop {
-                    //     match execute(action, &mut app) {
-                    //         Ok(Some(next_action)) => action = next_action,
-                    //         Ok(_) => break,
-                    //         Err(err) => {
-                    //             app.show_error(err);
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-
                     app.handle(key_event);
                 }
             }
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
+        }
+
+        while let Some(action) = Action::next() {
+            app.update(&action);
         }
     }
 
