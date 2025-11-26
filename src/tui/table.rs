@@ -12,7 +12,7 @@ use crate::{
     misc::{
         globals::theme,
         iter_ext::ZipItersExt,
-        polars_ext::{IntoString, TuiWidths},
+        polars_ext::{AnyValueExt, TuiWidths},
         type_ext::ConstraintExt,
     },
     tui::component::Component,
@@ -29,14 +29,14 @@ pub struct Table {
     df: DataFrame,
     col_names: Vec<String>,
     col_widths: Vec<Constraint>,
+    col_space: u16,
     selected: Option<usize>,
     offset: usize,
     rendered_rows: usize,
     view_mode: ViewMode,
-    stripe: bool,
-    header: bool,
-    gutter: bool,
-    col_space: u16,
+    striped: bool,
+    show_header: bool,
+    show_gutter: bool,
 }
 
 impl Table {
@@ -52,13 +52,13 @@ impl Table {
         Self {
             col_names,
             col_widths,
-            selected: Some(0),
+            selected: None,
             offset: 0,
             rendered_rows: 0,
             view_mode: ViewMode::Compact,
-            stripe: false,
-            header: false,
-            gutter: false,
+            striped: false,
+            show_header: false,
+            show_gutter: false,
             df,
             col_space: 1,
         }
@@ -66,21 +66,28 @@ impl Table {
 
     pub fn striped(self) -> Self {
         Self {
-            stripe: true,
+            striped: true,
             ..self
         }
     }
 
-    pub fn with_header(self) -> Self {
+    pub fn with_show_header(self, show_header: bool) -> Self {
         Self {
-            header: true,
+            show_header,
             ..self
         }
     }
 
-    pub fn with_gutter(self) -> Self {
+    pub fn with_show_gutter(self, show_gutter: bool) -> Self {
         Self {
-            gutter: true,
+            show_gutter,
+            ..self
+        }
+    }
+
+    pub fn with_selected(self, selected: impl Into<Option<usize>>) -> Self {
+        Self {
+            selected: selected.into(),
             ..self
         }
     }
@@ -125,12 +132,16 @@ impl Table {
     pub fn select_up(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(1));
+        } else {
+            self.select(self.df.height().saturating_sub(1));
         }
     }
 
     pub fn select_down(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_add(1));
+        } else {
+            self.select(0);
         }
     }
 
@@ -183,7 +194,7 @@ impl Table {
     }
 
     fn col_widths(&self) -> &[Constraint] {
-        if self.gutter {
+        if self.show_gutter {
             &self.col_widths
         } else {
             &self.col_widths[1..]
@@ -191,7 +202,7 @@ impl Table {
     }
 
     fn col_names(&self) -> &[String] {
-        if self.gutter {
+        if self.show_gutter {
             &self.col_names
         } else {
             &self.col_names[1..]
@@ -200,7 +211,7 @@ impl Table {
 
     fn header_row(&self) -> Row<'static> {
         Row::new(self.col_names().iter().cloned().enumerate().map(|(i, d)| {
-            if self.gutter {
+            if self.show_gutter {
                 Cell::new(d).style(theme().header(i.saturating_sub(1)))
             } else {
                 Cell::new(d).style(theme().header(i))
@@ -210,7 +221,7 @@ impl Table {
     }
 
     fn row<'a>(&self, row: usize, vals: Vec<AnyValue<'a>>) -> Row<'a> {
-        if self.gutter {
+        if self.show_gutter {
             let cells = std::iter::once(
                 Cell::new(format!(
                     "{:>w$}",
@@ -221,7 +232,8 @@ impl Table {
             )
             .chain(
                 vals.into_iter()
-                    .map(|val| Cell::new(val.into_single_line())),
+                    .zip(&self.col_widths[1..])
+                    .map(|(val, con)| val.into_cell(con.value() as usize)),
             );
             Row::new(cells)
         } else {
@@ -254,7 +266,7 @@ impl Component for Table {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        let length = if self.header {
+        let length = if self.show_header {
             area.height.saturating_sub(1)
         } else {
             area.height
@@ -278,7 +290,7 @@ impl Component for Table {
             .enumerate()
             .map(|(idx, vals)| {
                 let idx = self.offset + idx;
-                let style = if self.stripe {
+                let style = if self.striped {
                     theme().row(idx)
                 } else {
                     theme().row(0)
@@ -291,7 +303,7 @@ impl Component for Table {
             .row_highlight_style(theme().row_highlighted())
             .column_spacing(self.col_space);
 
-        if self.header {
+        if self.show_header {
             table = table.header(self.header_row())
         }
         let width = self.required_width().max(area.width);
