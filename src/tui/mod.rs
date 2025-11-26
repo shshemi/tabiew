@@ -10,6 +10,7 @@ pub mod schema;
 pub mod search_bar;
 pub mod sheet;
 pub mod status_bar;
+pub mod table;
 pub mod tabs;
 pub mod terminal;
 pub mod themes;
