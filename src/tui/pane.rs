@@ -1,15 +1,8 @@
 use crossterm::event::KeyCode;
 use polars::frame::DataFrame;
-use ratatui::{
-    layout::{Constraint, Flex, Layout, Margin, Rect},
-    widgets::StatefulWidget,
-};
+use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
-use super::{
-    data_frame_table::{DataFrameTable, DataFrameTableState},
-    search_bar::SearchBar,
-    sheet::Sheet,
-};
+use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     misc::{globals::sql, polars_ext::GetSheetSections, sql::Source},
     tui::{
@@ -22,10 +15,11 @@ use crate::{
             inline_query::{InlineQuery, InlineQueryType},
         },
         schema::data_frame_info::DataFrameInfo,
+        table::Table,
     },
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub enum Modal {
     Sheet(Sheet),
     SearchBar(SearchBar),
@@ -36,31 +30,20 @@ pub enum Modal {
     GoToLine(GoToLine),
     ExportWizard(ExportWizard),
     HistogramWizard(HistogramWizard),
-    #[default]
-    None,
 }
 
 impl Modal {
-    fn responder(&mut self) -> Option<&mut dyn Component> {
+    fn responder(&mut self) -> &mut dyn Component {
         match self {
-            Modal::Sheet(sheet) => Some(sheet),
-            Modal::SearchBar(search_bar) => Some(search_bar),
-            Modal::DataFrameInfo(data_frame_info) => Some(data_frame_info),
-            Modal::ScatterPlot(scatter_plot_state) => Some(scatter_plot_state),
-            Modal::HistogramPlot(histogram_plot_state) => Some(histogram_plot_state),
-            Modal::InlineQuery(inline_query) => Some(inline_query),
-            Modal::GoToLine(go_to_line) => Some(go_to_line),
-            Modal::ExportWizard(export_wizard) => Some(export_wizard),
-            Modal::HistogramWizard(histogram_wizard) => Some(histogram_wizard),
-            Modal::None => None,
-        }
-    }
-
-    fn take(&mut self) -> Option<Modal> {
-        if matches!(self, Modal::None) {
-            None
-        } else {
-            Some(std::mem::take(self))
+            Modal::Sheet(sheet) => sheet,
+            Modal::SearchBar(search_bar) => search_bar,
+            Modal::DataFrameInfo(data_frame_info) => data_frame_info,
+            Modal::ScatterPlot(scatter_plot_state) => scatter_plot_state,
+            Modal::HistogramPlot(histogram_plot_state) => histogram_plot_state,
+            Modal::InlineQuery(inline_query) => inline_query,
+            Modal::GoToLine(go_to_line) => go_to_line,
+            Modal::ExportWizard(export_wizard) => export_wizard,
+            Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
         }
     }
 }
@@ -94,8 +77,8 @@ impl AsRef<str> for TableType {
 
 #[derive(Debug)]
 pub struct Pane {
-    table: DataFrameTableState,
-    modal: Modal,
+    table: Table,
+    modal: Option<Modal>,
     table_type: TableType,
 }
 
@@ -103,94 +86,101 @@ impl Pane {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, table_type: TableType) -> Self {
         Self {
-            table: DataFrameTableState::new(data_frame.clone()),
-            modal: Modal::None,
+            table: Table::new(data_frame)
+                .striped()
+                .with_show_header(true)
+                .with_show_gutter(true)
+                .with_col_space(2)
+                .with_extended_view_mode(),
+            modal: None,
             table_type,
         }
     }
 
-    pub fn table(&self) -> &DataFrameTableState {
+    pub fn table(&self) -> &Table {
         &self.table
     }
 
-    pub fn table_mut(&mut self) -> &mut DataFrameTableState {
-        &mut self.table
-    }
+    // pub fn table_mut(&mut self) -> &mut DataFrameTableState {
+    //     &mut self.table
+    // }
 
     pub fn table_type(&self) -> &TableType {
         &self.table_type
     }
 
     pub fn show_sheet(&mut self) {
-        self.modal = Modal::Sheet(Sheet::new(
-            self.table
-                .data_frame()
-                .get_sheet_sections(self.table.selected()),
-        ));
+        if let Some(selected) = self.table.selected() {
+            self.modal = Some(Modal::Sheet(Sheet::new(
+                self.table.data_frame().get_sheet_sections(selected),
+            )));
+        }
     }
 
     pub fn show_fuzzy_search(&mut self) {
-        self.modal = Modal::SearchBar(SearchBar::fuzzy(self.table.data_frame().clone()));
+        self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(
+            self.table.data_frame().clone(),
+        )));
     }
 
     pub fn show_exact_search(&mut self) {
-        self.modal = Modal::SearchBar(SearchBar::exact(self.table.data_frame().clone()));
+        self.modal = Some(Modal::SearchBar(SearchBar::exact(
+            self.table.data_frame().clone(),
+        )));
     }
 
     pub fn show_data_frame_info(&mut self) {
         match &self.table_type {
             TableType::Help => (),
             TableType::Name(name) => {
-                if let Some(input) = sql().schema().get(&name).map(|info| info.source()).cloned() {
-                    self.modal =
-                        Modal::DataFrameInfo(DataFrameInfo::new(&self.table.data_frame(), input))
+                if let Some(input) = sql().schema().get(name).map(|info| info.source()).cloned() {
+                    self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
+                        self.table.data_frame(),
+                        input,
+                    )))
                 }
             }
             TableType::Query(_) => {
-                self.modal =
-                    Modal::DataFrameInfo(DataFrameInfo::new(&self.table.data_frame(), Source::User))
+                self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
+                    self.table.data_frame(),
+                    Source::User,
+                )))
             }
         }
     }
 
     pub fn show_scatter_plot(&mut self, scatter: ScatterPlot) {
-        self.modal = Modal::ScatterPlot(scatter)
+        self.modal = Some(Modal::ScatterPlot(scatter))
     }
 
     pub fn show_histogram_plot(&mut self, hist: HistogramPlot) {
-        self.modal = Modal::HistogramPlot(hist)
+        self.modal = Some(Modal::HistogramPlot(hist))
     }
 
     pub fn show_inline_query(&mut self, query_type: InlineQueryType) {
-        self.modal = Modal::InlineQuery(InlineQuery::new(query_type));
+        self.modal = Some(Modal::InlineQuery(InlineQuery::new(query_type)));
     }
 
     pub fn show_go_to_line(&mut self) {
-        self.modal = Modal::GoToLine(GoToLine::new(self.table.selected()))
+        if let Some(selected) = self.table.selected() {
+            self.modal = Some(Modal::GoToLine(GoToLine::new(selected)))
+        }
     }
 
     pub fn show_go_to_line_with_value(&mut self, value: usize) {
-        self.modal = Modal::GoToLine(GoToLine::new(self.table.selected()).with_value(value))
+        if let Some(selected) = self.table.selected() {
+            self.modal = Some(Modal::GoToLine(GoToLine::new(selected).with_value(value)))
+        }
     }
 
     pub fn show_export_data_frame(&mut self) {
-        self.modal = Modal::ExportWizard(Default::default())
+        self.modal = Some(Modal::ExportWizard(Default::default()))
     }
 
     pub fn show_histogram_wizard(&mut self) {
-        self.modal = Modal::HistogramWizard(HistogramWizard::new(self.table.data_frame()))
-    }
-
-    pub fn modal(&self) -> &Modal {
-        &self.modal
-    }
-
-    pub fn modal_mut(&mut self) -> &mut Modal {
-        &mut self.modal
-    }
-
-    pub fn modal_take(&mut self) -> Modal {
-        std::mem::replace(&mut self.modal, Modal::None)
+        self.modal = Some(Modal::HistogramWizard(HistogramWizard::new(
+            self.table.data_frame(),
+        )))
     }
 }
 
@@ -215,32 +205,23 @@ impl Component for Pane {
         // DataFrameTable::new().render(table_area, buf, &mut state.table);
 
         match &mut self.modal {
-            Modal::Sheet(sheet_state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::Sheet(sheet_state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 let area = area.inner(Margin::new(13, 3));
                 sheet_state.render(area, buf, focus_state);
-                // let sections = self
-                //     .table
-                //     .data_frame()
-                //     .get_sheet_sections(self.table.selected());
-                // Sheet::new()
-                //     .with_sections(sections)
-                //     .render(area, buf, sheet_state);
             }
-            Modal::SearchBar(search_bar_state) => {
+            Some(Modal::SearchBar(search_bar_state)) => {
                 let [search_area, table_area] =
                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-                DataFrameTable::new().render(table_area, buf, &mut self.table);
+                // DataFrameTable::new().render(table_area, buf, &mut self.table);
+                self.table.render(table_area, buf, focus_state);
                 search_bar_state.render(search_area, buf, focus_state);
-                // SearchBar::new().with_selection(true).render(
-                //     search_bar_area,
-                //     buf,
-                //     search_bar_state,
-                // );
             }
-            Modal::DataFrameInfo(data_frame_info) => {
+            Some(Modal::DataFrameInfo(data_frame_info)) => {
                 //
-                DataFrameTable::new().render(area, buf, &mut self.table);
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 let [area] = Layout::horizontal([Constraint::Length(100)])
                     .flex(Flex::Center)
                     .areas(area);
@@ -269,12 +250,14 @@ impl Component for Pane {
                 //     }
                 // };
             }
-            Modal::ScatterPlot(state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::ScatterPlot(state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
             }
-            Modal::HistogramPlot(state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::HistogramPlot(state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 let [area] = Layout::horizontal([Constraint::Length(122)])
                     .flex(Flex::Center)
                     .areas(area);
@@ -282,70 +265,79 @@ impl Component for Pane {
                     Layout::vertical([Constraint::Length(3), Constraint::Length(40)]).areas(area);
                 state.render(area, buf, focus_state);
             }
-            Modal::InlineQuery(state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::InlineQuery(state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
                 // InlineQuery::default().render(area, buf, state);
             }
-            Modal::GoToLine(state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::GoToLine(state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
                 // GoToLine::default().render(area, buf, state);
             }
-            Modal::ExportWizard(state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::ExportWizard(state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
                 // ExportWizard::default().render(area, buf, state);
             }
-            Modal::HistogramWizard(state) => {
-                DataFrameTable::new().render(area, buf, &mut self.table);
+            Some(Modal::HistogramWizard(state)) => {
+                // DataFrameTable::new().render(area, buf, &mut self.table);
+                self.table.render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
                 // HistogramWizard::default().render(area, buf, state);
             }
-            Modal::None => DataFrameTable::new().render(area, buf, &mut self.table),
+            None => self.table.render(area, buf, focus_state),
         }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.modal
-            .responder()
-            .map(|r| r.handle(event))
-            .unwrap_or(false)
-            || match event.code {
-                KeyCode::Esc | KeyCode::Char('q') => self.modal.take().is_some(),
-                KeyCode::Char('I') => {
-                    self.show_data_frame_info();
-                    true
+        if let Some(modal) = self.modal.as_mut() {
+            modal.responder().handle(event)
+                | match event.code {
+                    KeyCode::Esc | KeyCode::Char('q') => self.modal.take().is_some(),
+                    _ => false,
                 }
-                KeyCode::Up | KeyCode::Char('k') => {
-                    //
-                    self.table.select_up(1);
-                    true
-                }
-                KeyCode::Down | KeyCode::Char('j') => {
-                    self.table.select_down(1);
-                    true
-                }
-                _ => false,
-            }
+        } else {
+            // match event.code {
+            //     KeyCode::Esc | KeyCode::Char('q') => self.modal.take().is_some(),
+            //     KeyCode::Char('I') => {
+            //         self.show_data_frame_info();
+            //         true
+            //     }
+            //     KeyCode::Up | KeyCode::Char('k') => {
+            //         //
+            //         self.table.select_up(1);
+            //         true
+            //     }
+            //     KeyCode::Down | KeyCode::Char('j') => {
+            //         self.table.select_down(1);
+            //         true
+            //     }
+            //     _ => false,
+            // }
+            self.table.handle(event)
+        }
     }
 
     fn tick(&mut self) {
         match &mut self.modal {
-            Modal::SearchBar(search_bar) => {
+            Some(Modal::SearchBar(search_bar)) => {
                 if let Some(df) = search_bar.searcher().latest() {
                     self.table.set_data_frame(df);
                 }
             }
-            Modal::Sheet(_) => (),
-            Modal::DataFrameInfo(_) => (),
-            Modal::None => (),
-            Modal::ScatterPlot(_) => (),
-            Modal::HistogramPlot(_) => (),
-            Modal::InlineQuery(_) => (),
-            Modal::GoToLine(_) => (),
-            Modal::ExportWizard(_) => (),
-            Modal::HistogramWizard(_) => (),
+            Some(Modal::Sheet(_)) => (),
+            Some(Modal::DataFrameInfo(_)) => (),
+            Some(Modal::ScatterPlot(_)) => (),
+            Some(Modal::HistogramPlot(_)) => (),
+            Some(Modal::InlineQuery(_)) => (),
+            Some(Modal::GoToLine(_)) => (),
+            Some(Modal::ExportWizard(_)) => (),
+            Some(Modal::HistogramWizard(_)) => (),
+            None => (),
         }
     }
 }
