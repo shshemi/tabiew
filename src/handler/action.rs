@@ -5,7 +5,7 @@ use std::sync::{
 
 #[derive(Debug)]
 pub enum Action {
-    
+    Quit,
 }
 
 impl Action {
