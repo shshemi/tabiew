@@ -4,6 +4,7 @@ use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
+    handler::action::Action,
     misc::{globals::sql, polars_ext::GetSheetSections, sql::Source},
     tui::{
         component::Component,
@@ -191,19 +192,6 @@ impl Component for Pane {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        // let (search_bar_area, table_area) = match &self.modal {
-        //     Modal::SearchBar(_) => {
-        //         let [a0, a1] =
-        //             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-        //         (a0, a1)
-        //     }
-        //     _ => (Rect::default(), area),
-        // };
-        // if let Modal::GoToLine(gtl) = &state.modal {
-        //     state.table.select(gtl.value().saturating_sub(1));
-        // }
-        // DataFrameTable::new().render(table_area, buf, &mut state.table);
-
         match &mut self.modal {
             Some(Modal::Sheet(sheet_state)) => {
                 // DataFrameTable::new().render(area, buf, &mut self.table);
@@ -229,26 +217,6 @@ impl Component for Pane {
                     // .flex(Flex::Center)
                     .areas(area);
                 data_frame_info.render(area, buf, focus_state);
-                // match &state.table_type {
-                //     TableType::Help => (),
-                //     TableType::Name(name) => {
-                //         if let Some(tbl_info) = sql().schema().get(name) {
-                //             let source = tbl_info.source().clone();
-                //             DataFrameInfo::new(&TableInfo::new(
-                //                 source,
-                //                 state.table.data_frame_mut(),
-                //             ))
-                //             .render(area, buf, data_frame_info);
-                //         }
-                //     }
-                //     TableType::Query(_) => {
-                //         DataFrameInfo::new(&TableInfo::new(
-                //             Source::User,
-                //             state.table.data_frame_mut(),
-                //         ))
-                //         .render(area, buf, data_frame_info);
-                //     }
-                // };
             }
             Some(Modal::ScatterPlot(state)) => {
                 // DataFrameTable::new().render(area, buf, &mut self.table);
@@ -301,24 +269,19 @@ impl Component for Pane {
                     _ => false,
                 }
         } else {
-            // match event.code {
-            //     KeyCode::Esc | KeyCode::Char('q') => self.modal.take().is_some(),
-            //     KeyCode::Char('I') => {
-            //         self.show_data_frame_info();
-            //         true
-            //     }
-            //     KeyCode::Up | KeyCode::Char('k') => {
-            //         //
-            //         self.table.select_up(1);
-            //         true
-            //     }
-            //     KeyCode::Down | KeyCode::Char('j') => {
-            //         self.table.select_down(1);
-            //         true
-            //     }
-            //     _ => false,
-            // }
             self.table.handle(event)
+        }
+    }
+
+    fn update(&mut self, action: &crate::handler::action::Action) {
+        if let Some(modal) = self.modal.as_mut() {
+            modal.responder().update(action);
+        }
+        self.table.update(action);
+        #[allow(clippy::single_match)]
+        match action {
+            Action::PaneDismissModal => self.modal = None,
+            _ => (),
         }
     }
 
