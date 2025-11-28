@@ -12,7 +12,7 @@ use crate::tui::{
 
 #[derive(Debug)]
 pub enum HistogramWizard {
-    ColumnSelect { picker: SearchPicker },
+    ColumnSelect { picker: SearchPicker<String> },
     BucketCount { column: String, picker: TextPicker },
     Show { column: String, buckets: usize },
 }
@@ -51,7 +51,7 @@ impl HistogramWizard {
     pub fn step(&mut self) {
         *self = match std::mem::take(self) {
             HistogramWizard::ColumnSelect { picker } => {
-                if let Some(column) = picker.selected_item() {
+                if let Some(column) = picker.selected_str() {
                     HistogramWizard::BucketCount {
                         column: column.to_owned(),
                         picker: TextPicker::default()
