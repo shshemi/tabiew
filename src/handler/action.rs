@@ -6,6 +6,10 @@ use std::sync::{
 #[derive(Debug)]
 pub enum Action {
     Quit,
+    AppDismissOverlay,
+    PaneDismissModal,
+    TableSelectUp,
+    TableSelectDown,
 }
 
 impl Action {
