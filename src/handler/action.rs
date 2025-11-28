@@ -13,10 +13,10 @@ pub enum Action {
 }
 
 impl Action {
-    pub fn submit(self) {
+    pub fn enqueue(self) {
         SHARED_CHANNEL.0.send(self).unwrap();
     }
-    pub fn next() -> Option<Action> {
+    pub fn dequeue() -> Option<Action> {
         SHARED_CHANNEL.1.try_lock().ok()?.try_recv().ok()?.into()
     }
 }
