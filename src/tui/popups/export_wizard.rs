@@ -1,4 +1,6 @@
-use crossterm::event::KeyEvent;
+use std::fmt::Display;
+
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
@@ -14,7 +16,7 @@ use crate::tui::{
 
 #[derive(Debug)]
 pub enum ExportWizard {
-    SelectFormat(SearchPicker),
+    SelectFormat(SearchPicker<Format>),
     Csv(CsvExporterState),
     Tsv(TsvExporter),
     Json(JsonExporterState),
@@ -24,43 +26,43 @@ pub enum ExportWizard {
 }
 
 impl ExportWizard {
-    pub fn step(&mut self) {
-        *self = match std::mem::take(self) {
-            ExportWizard::SelectFormat(picker) => match picker.selected().and_then(Format::new) {
-                Some(Format::Csv) => ExportWizard::Csv(Default::default()),
-                Some(Format::Tsv) => ExportWizard::Tsv(Default::default()),
-                Some(Format::Json) => ExportWizard::Json(Default::default()),
-                Some(Format::JsonL) => ExportWizard::JsonL(Default::default()),
-                Some(Format::Parquet) => ExportWizard::Parquet(Default::default()),
-                Some(Format::Arrow) => ExportWizard::Arrow(Default::default()),
-                None => ExportWizard::SelectFormat(picker),
-            },
-            ExportWizard::Csv(mut state) => {
-                state.step();
-                ExportWizard::Csv(state)
-            }
-            ExportWizard::Tsv(mut state) => {
-                state.step();
-                ExportWizard::Tsv(state)
-            }
-            ExportWizard::Json(mut state) => {
-                state.step();
-                ExportWizard::Json(state)
-            }
-            ExportWizard::JsonL(mut state) => {
-                state.step();
-                ExportWizard::JsonL(state)
-            }
-            ExportWizard::Parquet(mut state) => {
-                state.step();
-                ExportWizard::Parquet(state)
-            }
-            ExportWizard::Arrow(mut state) => {
-                state.step();
-                ExportWizard::Arrow(state)
-            }
-        };
-    }
+    // fn step(&mut self) {
+    // *self = match std::mem::take(self) {
+    //     ExportWizard::SelectFormat(picker) => match picker.selected_item() {
+    //         Some(Format::Csv) => ExportWizard::Csv(Default::default()),
+    //         Some(Format::Tsv) => ExportWizard::Tsv(Default::default()),
+    //         Some(Format::Json) => ExportWizard::Json(Default::default()),
+    //         Some(Format::JsonL) => ExportWizard::JsonL(Default::default()),
+    //         Some(Format::Parquet) => ExportWizard::Parquet(Default::default()),
+    //         Some(Format::Arrow) => ExportWizard::Arrow(Default::default()),
+    //         None => ExportWizard::SelectFormat(picker),
+    //     },
+    //     ExportWizard::Csv(mut state) => {
+    //         state.step();
+    //         ExportWizard::Csv(state)
+    //     }
+    //     ExportWizard::Tsv(mut state) => {
+    //         state.step();
+    //         ExportWizard::Tsv(state)
+    //     }
+    //     ExportWizard::Json(mut state) => {
+    //         state.step();
+    //         ExportWizard::Json(state)
+    //     }
+    //     ExportWizard::JsonL(mut state) => {
+    //         state.step();
+    //         ExportWizard::JsonL(state)
+    //     }
+    //     ExportWizard::Parquet(mut state) => {
+    //         state.step();
+    //         ExportWizard::Parquet(state)
+    //     }
+    //     ExportWizard::Arrow(mut state) => {
+    //         state.step();
+    //         ExportWizard::Arrow(state)
+    //     }
+    // };
+    // }
 
     pub fn responder(&mut self) -> &mut dyn Component {
         match self {
@@ -86,18 +88,32 @@ impl Component for ExportWizard {
     }
 
     fn handle(&mut self, event: KeyEvent) -> bool {
-        self.responder().handle(event)
+        if let ExportWizard::SelectFormat(search_picker) = self {
+            match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    if let Some(fmt) = search_picker.selected_item() {
+                        *self = match fmt {
+                            Format::Csv => ExportWizard::Csv(Default::default()),
+                            Format::Tsv => ExportWizard::Tsv(Default::default()),
+                            Format::Json => ExportWizard::Json(Default::default()),
+                            Format::JsonL => ExportWizard::JsonL(Default::default()),
+                            Format::Parquet => ExportWizard::Parquet(Default::default()),
+                            Format::Arrow => ExportWizard::Arrow(Default::default()),
+                        };
+                    };
+                    true
+                }
+                _ => search_picker.handle(event),
+            }
+        } else {
+            self.responder().handle(event)
+        }
     }
 }
 
 impl Default for ExportWizard {
     fn default() -> Self {
-        Self::SelectFormat(SearchPicker::new(
-            Format::iter()
-                .map(Into::<&str>::into)
-                .map(str::to_string)
-                .collect(),
-        ))
+        Self::SelectFormat(SearchPicker::new(Format::iter().collect()))
     }
 }
 
@@ -166,7 +182,7 @@ impl Default for ExportWizard {
 // }
 
 #[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
-enum Format {
+pub enum Format {
     Csv,
     Tsv,
     Parquet,
@@ -175,16 +191,8 @@ enum Format {
     Arrow,
 }
 
-impl Format {
-    fn new(idx: usize) -> Option<Self> {
-        match idx {
-            0 => Some(Self::Csv),
-            1 => Some(Self::Tsv),
-            2 => Some(Self::Parquet),
-            3 => Some(Self::Json),
-            4 => Some(Self::JsonL),
-            5 => Some(Self::Arrow),
-            _ => None,
-        }
+impl Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", Into::<&str>::into(self))
     }
 }
