@@ -34,7 +34,7 @@ impl Default for JsonExporterState {
 impl JsonExporterState {
     pub fn step(&mut self) {
         *self = match std::mem::take(self) {
-            JsonExporterState::PickOutputTarget { picker } => match picker.selected() {
+            JsonExporterState::PickOutputTarget { picker } => match picker.selected_target() {
                 Some(Target::File) => JsonExporterState::PickOutputPath {
                     picker: Default::default(),
                 },

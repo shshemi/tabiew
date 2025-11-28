@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
@@ -5,12 +7,12 @@ use crate::tui::{component::Component, pickers::list_picker::ListPicker};
 
 #[derive(Debug)]
 pub struct OutputTargetPicker {
-    list_picker: ListPicker,
+    list_picker: ListPicker<Target>,
 }
 
 impl OutputTargetPicker {
-    pub fn selected(&self) -> Option<Target> {
-        self.list_picker.list().selected().and_then(Target::new)
+    pub fn selected_target(&self) -> Option<Target> {
+        self.list_picker.selected_item().copied()
     }
 
     pub fn select_next(&mut self) {
@@ -40,13 +42,7 @@ impl Component for OutputTargetPicker {
 impl Default for OutputTargetPicker {
     fn default() -> Self {
         OutputTargetPicker {
-            list_picker: ListPicker::new(
-                Target::iter()
-                    .map(Into::<&str>::into)
-                    .map(str::to_string)
-                    .to_owned()
-                    .collect(),
-            ),
+            list_picker: ListPicker::new(Target::iter().to_owned().collect()),
         }
     }
 }
@@ -70,18 +66,14 @@ impl Default for OutputTargetPicker {
 //     }
 // }
 
-#[derive(Debug, IntoStaticStr, EnumIter)]
+#[derive(Debug, IntoStaticStr, EnumIter, Clone, Copy)]
 pub enum Target {
     File,
     Clipboard,
 }
 
-impl Target {
-    pub fn new(idx: usize) -> Option<Target> {
-        match idx {
-            0 => Some(Target::File),
-            1 => Some(Target::Clipboard),
-            _ => None,
-        }
+impl Display for Target {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", Into::<&str>::into(self))
     }
 }

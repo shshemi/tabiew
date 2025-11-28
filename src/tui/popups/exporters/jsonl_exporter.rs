@@ -21,7 +21,7 @@ pub enum JsonLExporterState {
 impl JsonLExporterState {
     pub fn step(&mut self) {
         *self = match std::mem::take(self) {
-            JsonLExporterState::PickOutputTarget { picker } => match picker.selected() {
+            JsonLExporterState::PickOutputTarget { picker } => match picker.selected_target() {
                 Some(Target::File) => JsonLExporterState::PickOutputPath {
                     picker: Default::default(),
                 },

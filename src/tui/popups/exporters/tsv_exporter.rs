@@ -29,7 +29,7 @@ impl Default for TsvExporter {
 impl TsvExporter {
     pub fn step(&mut self) {
         *self = match std::mem::take(self) {
-            TsvExporter::PickOutputTarget { picker } => match picker.selected() {
+            TsvExporter::PickOutputTarget { picker } => match picker.selected_target() {
                 Some(Target::File) => TsvExporter::PickOutputPath {
                     picker: Default::default(),
                 },
