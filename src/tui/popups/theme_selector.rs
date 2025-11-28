@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ThemeSelector {
-    search_picker: SearchPicker,
+    search_picker: SearchPicker<AppTheme>,
     rollback: Theme,
 }
 
@@ -21,16 +21,14 @@ impl ThemeSelector {
     }
 
     pub fn selected(&self) -> Option<AppTheme> {
-        self.search_picker
-            .selected()
-            .and_then(|idx| Theme::all().get(idx).cloned())
+        self.search_picker.selected_item().cloned()
     }
 
-    pub fn search_picker(&self) -> &SearchPicker {
+    pub fn search_picker(&self) -> &SearchPicker<AppTheme> {
         &self.search_picker
     }
 
-    pub fn search_picker_mut(&mut self) -> &mut SearchPicker {
+    pub fn search_picker_mut(&mut self) -> &mut SearchPicker<AppTheme> {
         &mut self.search_picker
     }
 }
@@ -52,8 +50,7 @@ impl Component for ThemeSelector {
 
 impl Default for ThemeSelector {
     fn default() -> Self {
-        let mut search_picker =
-            SearchPicker::new(Theme::all().iter().map(|t| t.title().to_owned()).collect());
+        let mut search_picker = SearchPicker::new(Theme::all().to_vec());
         let rollback = config().theme().deref().clone();
         let idx = Theme::all()
             .iter()
