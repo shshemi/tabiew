@@ -205,7 +205,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
             Event::Resize(_, _) => {}
         }
 
-        while let Some(action) = Action::next() {
+        while let Some(action) = Action::dequeue() {
             app.update(&action);
         }
     }
