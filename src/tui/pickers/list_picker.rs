@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Constraint, Flex, Layout},
@@ -10,19 +12,38 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct ListPicker {
+pub struct ListPicker<T> {
     title: String,
     list: ListState,
-    items: Vec<String>,
+    items: Vec<T>,
+    strings: Vec<String>,
 }
 
-impl ListPicker {
-    pub fn new(items: Vec<String>) -> Self {
+impl<T> ListPicker<T>
+where
+    T: Display,
+{
+    pub fn new(items: Vec<T>) -> Self {
         Self {
             list: ListState::default().with_selected(0.into()),
-            items,
+            strings: items.iter().map(ToString::to_string).collect(),
             title: Default::default(),
+            items,
         }
+    }
+
+    pub fn selected(&self) -> Option<usize> {
+        self.list.selected()
+    }
+
+    pub fn selected_item(&self) -> Option<&T> {
+        self.list().selected().and_then(|i| self.items.get(i))
+    }
+
+    pub fn selected_str(&self) -> Option<&str> {
+        self.list()
+            .selected()
+            .and_then(|i| self.strings.get(i).map(String::as_str))
     }
 
     pub fn list(&self) -> &ListState {
@@ -34,7 +55,7 @@ impl ListPicker {
     }
 }
 
-impl Component for ListPicker {
+impl<T> Component for ListPicker<T> {
     fn render(
         &mut self,
         _area: ratatui::prelude::Rect,
@@ -42,7 +63,7 @@ impl Component for ListPicker {
         _focus_state: crate::tui::component::FocusState,
     ) {
         let width = 80;
-        let height = self.items.len().saturating_add(2).min(25) as u16;
+        let height = self.strings.len().saturating_add(2).min(25) as u16;
 
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
@@ -55,7 +76,7 @@ impl Component for ListPicker {
             List::default()
                 .style(theme().text())
                 .highlight_style(theme().row_highlighted())
-                .items(self.items.iter().map(|s| ListItem::from(s.as_str())))
+                .items(self.strings.iter().map(|s| ListItem::from(s.as_str())))
                 .block(Block::default().title(self.title.as_str()).into_widget()),
             area,
             buf,

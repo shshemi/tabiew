@@ -86,7 +86,7 @@ impl CsvExporterState {
                 separator,
                 quote,
                 picker,
-            } => match picker.selected() {
+            } => match picker.selected_target() {
                 Some(Target::File) => CsvExporterState::PickOutputPath {
                     separator,
                     quote,
