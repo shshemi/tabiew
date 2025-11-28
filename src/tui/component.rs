@@ -15,9 +15,12 @@ impl FocusState {
     }
 }
 
+#[allow(unused_variables)]
 pub trait Component {
     fn render(&mut self, area: Rect, buf: &mut Buffer, focus_state: FocusState);
-    fn update(&mut self, action: &Action);
-    fn handle(&mut self, event: KeyEvent) -> bool;
-    fn tick(&mut self);
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        false
+    }
+    fn update(&mut self, action: &Action) {}
+    fn tick(&mut self) {}
 }
