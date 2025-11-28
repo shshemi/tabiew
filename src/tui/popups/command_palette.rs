@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout},
     symbols::{
@@ -9,6 +10,7 @@ use ratatui::{
 };
 
 use crate::{
+    handler::action::Action,
     misc::globals::theme,
     tui::{
         component::Component,
@@ -104,6 +106,17 @@ impl Component for CommandPalette {
     }
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         self.input.handle(event)
+            || match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Action::AppDismissOverlay.enqueue();
+                    true
+                }
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Action::AppDismissOverlay.enqueue();
+                    true
+                }
+                _ => false,
+            }
     }
 }
 
