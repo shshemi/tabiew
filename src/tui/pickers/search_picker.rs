@@ -1,5 +1,5 @@
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     hash::{DefaultHasher, Hash, Hasher},
 };
 
@@ -22,19 +22,24 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct SearchPicker {
+pub struct SearchPicker<T> {
     input: Input,
     list: ListState,
-    items: Vec<String>,
+    items: Vec<T>,
+    strings: Vec<String>,
     cached_filter: CachedFilter,
 }
 
-impl SearchPicker {
-    pub fn new(items: Vec<String>) -> Self {
+impl<T> SearchPicker<T>
+where
+    T: Display,
+{
+    pub fn new(items: Vec<T>) -> Self {
         Self {
             input: Default::default(),
             list: ListState::default().with_selected(Some(0)),
             cached_filter: Default::default(),
+            strings: items.iter().map(|t| format!("{t}")).collect(),
             items,
         }
     }
@@ -70,14 +75,18 @@ impl SearchPicker {
             .map(|(i, _)| *i)
     }
 
-    pub fn selected_item(&self) -> Option<&str> {
+    pub fn selected_item(&self) -> Option<&T> {
+        self.selected().and_then(|i| self.items.get(i))
+    }
+
+    pub fn selected_str(&self) -> Option<&str> {
         self.selected()
-            .and_then(|i| self.items.get(i))
+            .and_then(|i| self.strings.get(i))
             .map(|s| s.as_str())
     }
 }
 
-impl Component for SearchPicker {
+impl<T> Component for SearchPicker<T> {
     fn render(
         &mut self,
         _area: ratatui::prelude::Rect,
@@ -86,9 +95,9 @@ impl Component for SearchPicker {
     ) {
         let list = List::new(
             self.cached_filter
-                .query(self.input.value(), &self.items)
+                .query(self.input.value(), &self.strings)
                 .iter()
-                .map(|(idx, hl)| (&self.items[*idx], hl))
+                .map(|(idx, hl)| (&self.strings[*idx], hl))
                 .map(|(item, hl)| {
                     ListItem::new(
                         HighlightedLine::default()
