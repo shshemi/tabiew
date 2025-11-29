@@ -130,7 +130,7 @@ impl CsvExporterState {
             picker,
         } = self
         {
-            picker.select_previous();
+            picker.select_up();
         }
     }
 
@@ -141,7 +141,7 @@ impl CsvExporterState {
             picker,
         } = self
         {
-            picker.select_next();
+            picker.select_down();
         }
     }
 }

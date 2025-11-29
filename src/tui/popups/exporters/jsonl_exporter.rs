@@ -38,13 +38,13 @@ impl JsonLExporterState {
 
     pub fn select_next(&mut self) {
         if let JsonLExporterState::PickOutputTarget { picker } = self {
-            picker.select_next()
+            picker.select_down()
         }
     }
 
     pub fn select_previous(&mut self) {
         if let JsonLExporterState::PickOutputTarget { picker } = self {
-            picker.select_previous()
+            picker.select_up()
         }
     }
 }
