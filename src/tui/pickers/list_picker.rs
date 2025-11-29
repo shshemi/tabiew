@@ -37,22 +37,29 @@ where
     }
 
     pub fn selected_item(&self) -> Option<&T> {
-        self.list().selected().and_then(|i| self.items.get(i))
+        self.selected().and_then(|i| self.items.get(i))
     }
 
     pub fn selected_str(&self) -> Option<&str> {
-        self.list()
-            .selected()
+        self.selected()
             .and_then(|i| self.strings.get(i).map(String::as_str))
     }
 
-    pub fn list(&self) -> &ListState {
-        &self.list
+    pub fn select_up(&mut self) {
+        self.list.select_previous();
     }
 
-    pub fn list_mut(&mut self) -> &mut ListState {
-        &mut self.list
+    pub fn select_down(&mut self) {
+        self.list.select_next();
     }
+
+    // pub fn list(&self) -> &ListState {
+    //     &self.list
+    // }
+
+    // pub fn list_mut(&mut self) -> &mut ListState {
+    //     &mut self.list
+    // }
 }
 
 impl<T> Component for ListPicker<T> {

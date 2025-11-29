@@ -15,12 +15,12 @@ impl OutputTargetPicker {
         self.list_picker.selected_item().copied()
     }
 
-    pub fn select_next(&mut self) {
-        self.list_picker.list_mut().select_next();
+    pub fn select_up(&mut self) {
+        self.list_picker.select_up();
     }
 
-    pub fn select_previous(&mut self) {
-        self.list_picker.list_mut().select_previous();
+    pub fn select_down(&mut self) {
+        self.list_picker.select_down();
     }
 }
 

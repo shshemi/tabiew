@@ -39,7 +39,7 @@ where
             input: Default::default(),
             list: ListState::default().with_selected(Some(0)),
             cached_filter: Default::default(),
-            strings: items.iter().map(|t| format!("{t}")).collect(),
+            strings: items.iter().map(ToString::to_string).collect(),
             items,
         }
     }
