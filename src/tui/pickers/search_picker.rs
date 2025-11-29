@@ -46,28 +46,20 @@ where
         }
     }
 
-    pub fn input(&self) -> &Input {
-        &self.input
+    pub fn text(&self) -> &str {
+        self.input.value()
     }
 
-    pub fn input_mut(&mut self) -> &mut Input {
-        &mut self.input
-    }
-
-    pub fn list(&self) -> &ListState {
-        &self.list
-    }
-
-    pub fn list_mut(&mut self) -> &mut ListState {
-        &mut self.list
-    }
-
-    pub fn set_input(&mut self, text: String) {
+    pub fn set_text(&mut self, text: impl AsRef<str>) {
         let mut input = Input::default();
-        for c in text.chars() {
+        for c in text.as_ref().chars() {
             input.insert(c);
         }
         self.input = input;
+    }
+
+    pub fn select(&mut self, index: impl Into<Option<usize>>) {
+        self.list.select(index.into());
     }
 
     pub fn selected(&self) -> Option<usize> {

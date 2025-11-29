@@ -57,7 +57,7 @@ impl Default for ThemeSelector {
             .enumerate()
             .find_map(|(i, t)| (t == &rollback.app_theme()).then_some(i))
             .unwrap_or_default();
-        search_picker.list_mut().select(Some(idx));
+        search_picker.select(Some(idx));
 
         Self {
             search_picker,
