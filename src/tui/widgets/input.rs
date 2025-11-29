@@ -149,11 +149,13 @@ impl Component for Input {
 
     fn handle(&mut self, event: KeyEvent) -> bool {
         match (event.code, event.modifiers) {
-            (KeyCode::Backspace, KeyModifiers::ALT) => {
+            (KeyCode::Backspace, KeyModifiers::ALT)
+            | (KeyCode::Char('w'), KeyModifiers::CONTROL) => {
                 self.delete_prev_word();
                 true
             }
-            (KeyCode::Backspace, KeyModifiers::NONE) => {
+            (KeyCode::Backspace, KeyModifiers::NONE)
+            | (KeyCode::Char('h'), KeyModifiers::CONTROL) => {
                 self.delete_prev();
                 true
             }
@@ -181,7 +183,7 @@ impl Component for Input {
                 self.goto_end();
                 true
             }
-            (KeyCode::Delete, KeyModifiers::NONE) => {
+            (KeyCode::Delete, KeyModifiers::NONE) | (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
                 self.delete_next();
                 true
             }
