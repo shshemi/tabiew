@@ -6,6 +6,7 @@ use ratatui::{
 };
 
 use crate::{
+    handler::action::Action,
     misc::globals::theme,
     tui::{
         component::Component,
@@ -101,23 +102,28 @@ impl Component for Sheet {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        match event.code {
-            KeyCode::Char('K') => {
+        match (event.code, event.modifiers) {
+            (KeyCode::Char('k'), KeyModifiers::NONE) | (KeyCode::Up, KeyModifiers::NONE) => {
+                Action::PaneTableSelectUp.enqueue();
+                true
+            }
+            (KeyCode::Char('j'), KeyModifiers::NONE) | (KeyCode::Down, KeyModifiers::NONE) => {
+                Action::PaneTableSelectDown.enqueue();
+                true
+            }
+            (KeyCode::Char('K'), KeyModifiers::SHIFT) | (KeyCode::Up, KeyModifiers::SHIFT) => {
                 self.scroll.up();
                 true
             }
-            KeyCode::Char('J') => {
+            (KeyCode::Char('J'), KeyModifiers::SHIFT) | (KeyCode::Down, KeyModifiers::SHIFT) => {
                 self.scroll.down();
                 true
             }
-            KeyCode::Up if event.modifiers == KeyModifiers::SHIFT => {
-                self.scroll.up();
+            (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                Action::PaneDismissModal.enqueue();
                 true
             }
-            KeyCode::Down if event.modifiers == KeyModifiers::SHIFT => {
-                self.scroll.down();
-                true
-            }
+
             _ => false,
         }
     }
