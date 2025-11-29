@@ -1,4 +1,4 @@
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 use polars::frame::DataFrame;
 use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
@@ -89,6 +89,7 @@ impl Pane {
         Self {
             table: Table::new(data_frame)
                 .striped()
+                .with_selected(0)
                 .with_show_header(true)
                 .with_show_gutter(true)
                 .with_col_space(2)
@@ -111,10 +112,8 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if let Some(selected) = self.table.selected() {
-            self.modal = Some(Modal::Sheet(Sheet::new(
-                self.table.data_frame().get_sheet_sections(selected),
-            )));
+        if let Some(sections) = self.table.selected_sheet_section() {
+            self.modal = Some(Modal::Sheet(Sheet::new(sections)));
         }
     }
 
@@ -264,12 +263,15 @@ impl Component for Pane {
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         if let Some(modal) = self.modal.as_mut() {
             modal.responder().handle(event)
-                | match event.code {
-                    KeyCode::Esc | KeyCode::Char('q') => self.modal.take().is_some(),
-                    _ => false,
-                }
         } else {
             self.table.handle(event)
+                | match (event.code, event.modifiers) {
+                    (KeyCode::Enter, KeyModifiers::NONE) => {
+                        self.show_sheet();
+                        true
+                    }
+                    _ => false,
+                }
         }
     }
 
@@ -281,6 +283,22 @@ impl Component for Pane {
         #[allow(clippy::single_match)]
         match action {
             Action::PaneDismissModal => self.modal = None,
+            Action::PaneTableSelectUp => {
+                self.table.select_up();
+                if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
+                    && let Some(sections) = self.table.selected_sheet_section()
+                {
+                    sheet.set_sections(sections);
+                }
+            }
+            Action::PaneTableSelectDown => {
+                self.table.select_down();
+                if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
+                    && let Some(sections) = self.table.selected_sheet_section()
+                {
+                    sheet.set_sections(sections);
+                }
+            }
             _ => (),
         }
     }
