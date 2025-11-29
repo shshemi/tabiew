@@ -8,8 +8,8 @@ pub enum Action {
     Quit,
     AppDismissOverlay,
     PaneDismissModal,
-    TableSelectUp,
-    TableSelectDown,
+    PaneTableSelectUp,
+    PaneTableSelectDown,
 }
 
 impl Action {
