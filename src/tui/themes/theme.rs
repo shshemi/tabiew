@@ -1,5 +1,5 @@
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     ops::Deref,
     str::FromStr,
     sync::{Arc, OnceLock},
@@ -1035,5 +1035,11 @@ impl AppTheme {
 
     pub fn title(&self) -> &str {
         self.as_ref()
+    }
+}
+
+impl Display for AppTheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.title())
     }
 }
