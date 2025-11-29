@@ -85,13 +85,10 @@ impl AnyValueExt for AnyValue<'_> {
         }
     }
 
-    fn into_cell(self, _width: usize) -> Cell<'static> {
+    fn into_cell(self, width: usize) -> Cell<'static> {
         match self {
-            // AnyValue::Int8(i) => Cell::new(format!("{i:>w$}", w = width)),
-            // AnyValue::Int16(i) => Cell::new(format!("{i:>w$}", w = width)),
-            // AnyValue::Int32(i) => Cell::new(format!("{i:>w$}", w = width)),
-            // AnyValue::Int64(i) => Cell::new(format!("{i:>w$}", w = width)),
-            // AnyValue::Int128(i) => Cell::new(format!("{i:>w$}", w = width)),
+            AnyValue::Float32(f) => Cell::new(format!("{f:>w$.2}", w = width)),
+            AnyValue::Float64(f) => Cell::new(format!("{f:>w$.2}", w = width)),
             _ => Cell::new(self.into_single_line()),
         }
     }
