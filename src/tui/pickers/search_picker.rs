@@ -3,7 +3,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     symbols::{
@@ -20,6 +20,8 @@ use crate::{
         widgets::{block::Block, highlighted_line::HighlightedLine, input::Input},
     },
 };
+
+const SPACE_FROM_TOP_OF_THE_WINDOW: u16 = 3;
 
 #[derive(Debug)]
 pub struct SearchPicker<T> {
@@ -112,7 +114,11 @@ impl<T> Component for SearchPicker<T> {
         .highlight_style(theme().row_highlighted())
         .block(
             Block::default()
-                .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
+                .border_set(Set {
+                    top_left: VERTICAL_RIGHT,
+                    top_right: VERTICAL_LEFT,
+                    ..ROUNDED
+                })
                 .into_widget(),
         );
 
@@ -122,19 +128,18 @@ impl<T> Component for SearchPicker<T> {
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
             .areas(buf.area);
-        let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
+        let [_, area] = Layout::vertical([
+            Constraint::Length(SPACE_FROM_TOP_OF_THE_WINDOW),
+            Constraint::Length(height),
+        ])
+        .areas(area);
 
         Clear.render(area, buf);
         let [input_area, list_area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
+            Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 
         let input_area = {
-            let block = Block::default().border_set(Set {
-                bottom_left: VERTICAL_RIGHT,
-                bottom_right: VERTICAL_LEFT,
-                ..ROUNDED
-            });
+            let block = Block::default().borders(Borders::LEFT | Borders::RIGHT | Borders::TOP);
             let input_inner = block.inner(input_area);
             block.render(area, buf);
             input_inner
@@ -153,12 +158,13 @@ impl<T> Component for SearchPicker<T> {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         self.input.handle(event)
-            || match event.code {
-                KeyCode::Up => {
+            || match (event.code, event.modifiers) {
+                (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
                     self.list.select_previous();
                     true
                 }
-                KeyCode::Down => {
+                (KeyCode::Down, KeyModifiers::NONE)
+                | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
                     self.list.select_next();
                     true
                 }
