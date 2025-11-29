@@ -12,10 +12,10 @@ use crate::{
     misc::{
         globals::theme,
         iter_ext::ZipItersExt,
-        polars_ext::{AnyValueExt, TuiWidths},
+        polars_ext::{AnyValueExt, GetSheetSections, TuiWidths},
         type_ext::ConstraintExt,
     },
-    tui::component::Component,
+    tui::{component::Component, sheet::SheetSection},
 };
 
 #[derive(Debug)]
@@ -120,6 +120,10 @@ impl Table {
 
     pub fn selected(&self) -> Option<usize> {
         self.selected
+    }
+
+    pub fn selected_sheet_sections(&self) -> Option<Vec<SheetSection>> {
+        self.selected.map(|idx| self.df.get_sheet_sections(idx))
     }
 
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {

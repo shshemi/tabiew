@@ -112,7 +112,7 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if let Some(sections) = self.table.selected_sheet_section() {
+        if let Some(sections) = self.table.selected_sheet_sections() {
             self.modal = Some(Modal::Sheet(Sheet::new(sections)));
         }
     }
@@ -286,7 +286,7 @@ impl Component for Pane {
             Action::PaneTableSelectUp => {
                 self.table.select_up();
                 if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
-                    && let Some(sections) = self.table.selected_sheet_section()
+                    && let Some(sections) = self.table.selected_sheet_sections()
                 {
                     sheet.set_sections(sections);
                 }
@@ -294,7 +294,7 @@ impl Component for Pane {
             Action::PaneTableSelectDown => {
                 self.table.select_down();
                 if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
-                    && let Some(sections) = self.table.selected_sheet_section()
+                    && let Some(sections) = self.table.selected_sheet_sections()
                 {
                     sheet.set_sections(sections);
                 }
