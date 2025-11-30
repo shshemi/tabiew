@@ -5,7 +5,7 @@ use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     handler::action::Action,
-    misc::{globals::sql, polars_ext::GetSheetSections, sql::Source},
+    misc::{globals::sql, sql::Source},
     tui::{
         component::Component,
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
@@ -123,13 +123,13 @@ impl Pane {
         )));
     }
 
-    pub fn show_exact_search(&mut self) {
+    fn show_exact_search(&mut self) {
         self.modal = Some(Modal::SearchBar(SearchBar::exact(
             self.table.data_frame().clone(),
         )));
     }
 
-    pub fn show_data_frame_info(&mut self) {
+    fn show_data_frame_info(&mut self) {
         match &self.table_type {
             TableType::Help => (),
             TableType::Name(name) => {
@@ -149,38 +149,62 @@ impl Pane {
         }
     }
 
-    pub fn show_scatter_plot(&mut self, scatter: ScatterPlot) {
+    fn show_scatter_plot(&mut self, scatter: ScatterPlot) {
         self.modal = Some(Modal::ScatterPlot(scatter))
     }
 
-    pub fn show_histogram_plot(&mut self, hist: HistogramPlot) {
+    fn show_histogram_plot(&mut self, hist: HistogramPlot) {
         self.modal = Some(Modal::HistogramPlot(hist))
     }
 
-    pub fn show_inline_query(&mut self, query_type: InlineQueryType) {
+    fn show_inline_query(&mut self, query_type: InlineQueryType) {
         self.modal = Some(Modal::InlineQuery(InlineQuery::new(query_type)));
     }
 
-    pub fn show_go_to_line(&mut self) {
+    fn show_go_to_line(&mut self) {
         if let Some(selected) = self.table.selected() {
             self.modal = Some(Modal::GoToLine(GoToLine::new(selected)))
         }
     }
 
-    pub fn show_go_to_line_with_value(&mut self, value: usize) {
+    fn show_go_to_line_with_value(&mut self, value: usize) {
         if let Some(selected) = self.table.selected() {
             self.modal = Some(Modal::GoToLine(GoToLine::new(selected).with_value(value)))
         }
     }
 
-    pub fn show_export_data_frame(&mut self) {
-        self.modal = Some(Modal::ExportWizard(Default::default()))
+    fn show_export_wizard(&mut self) {
+        self.modal = Some(Modal::ExportWizard(ExportWizard::new(
+            self.table.data_frame().clone(),
+        )))
     }
 
-    pub fn show_histogram_wizard(&mut self) {
+    fn show_histogram_wizard(&mut self) {
         self.modal = Some(Modal::HistogramWizard(HistogramWizard::new(
             self.table.data_frame(),
         )))
+    }
+
+    fn dismiss_model(&mut self) {
+        self.modal = None
+    }
+
+    fn select_up(&mut self) {
+        self.table.select_up();
+        self.update_sheet();
+    }
+
+    fn select_down(&mut self) {
+        self.table.select_down();
+        self.update_sheet();
+    }
+
+    fn update_sheet(&mut self) {
+        if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
+            && let Some(sections) = self.table.selected_sheet_sections()
+        {
+            sheet.set_sections(sections);
+        }
     }
 }
 
@@ -280,25 +304,13 @@ impl Component for Pane {
             modal.responder().update(action);
         }
         self.table.update(action);
-        #[allow(clippy::single_match)]
         match action {
-            Action::PaneDismissModal => self.modal = None,
-            Action::PaneTableSelectUp => {
-                self.table.select_up();
-                if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
-                    && let Some(sections) = self.table.selected_sheet_sections()
-                {
-                    sheet.set_sections(sections);
-                }
-            }
-            Action::PaneTableSelectDown => {
-                self.table.select_down();
-                if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
-                    && let Some(sections) = self.table.selected_sheet_sections()
-                {
-                    sheet.set_sections(sections);
-                }
-            }
+            Action::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
+            Action::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
+            Action::PaneShowExportWizard => self.show_export_wizard(),
+            Action::PaneDismissModal => self.dismiss_model(),
+            Action::PaneTableSelectUp => self.select_up(),
+            Action::PaneTableSelectDown => self.select_down(),
             _ => (),
         }
     }
