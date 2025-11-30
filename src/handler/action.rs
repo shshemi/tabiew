@@ -5,11 +5,15 @@ use std::sync::{
 
 #[derive(Debug)]
 pub enum Action {
-    Quit,
     AppDismissOverlay,
+    AppShowError(String),
+    PaneShowExportWizard,
+    PaneShowInlineFilter,
+    PaneShowInlineOrder,
     PaneDismissModal,
     PaneTableSelectUp,
     PaneTableSelectDown,
+    Quit,
 }
 
 impl Action {
