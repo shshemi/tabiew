@@ -1,16 +1,12 @@
 use std::path::PathBuf;
 
-use crate::{
-    handler::action::Action,
-    tui::{
-        component::Component,
-        popups::{
-            exporters::exporter::{Exporter, State},
-            output_target_picker::{OutputTargetPicker, Target},
-            path_picker::PathPicker,
-        },
+use crate::tui::{
+    component::Component,
+    popups::{
+        exporters::exporter::{Export, Exporter, State},
+        output_target_picker::{OutputTargetPicker, Target},
+        path_picker::PathPicker,
     },
-    writer::Destination,
 };
 
 pub type TsvExporter = Exporter<InnerState>;
@@ -45,25 +41,15 @@ impl State for InnerState {
         match self {
             InnerState::PickOutputTarget { picker } => Some(picker),
             InnerState::PickOutputPath { picker } => Some(picker),
-            _ => todo!(),
+            _ => None,
         }
     }
 
-    fn export_action(&self) -> Option<Action> {
+    fn export(&self) -> Export {
         match self {
-            InnerState::ExportToFile { path } => Some(Action::ExportDsv {
-                destination: Destination::File(path.to_owned()),
-                separator: '\t',
-                quote: '"',
-                header: false,
-            }),
-            InnerState::ExportToClipboard => Some(Action::ExportDsv {
-                destination: Destination::Clipboard,
-                separator: '\t',
-                quote: '"',
-                header: false,
-            }),
-            _ => None,
+            InnerState::ExportToFile { path } => Export::TsvToFile(path.to_owned()),
+            InnerState::ExportToClipboard => Export::TsvToClipboard,
+            _ => Export::WaitingForUserInput,
         }
     }
 }

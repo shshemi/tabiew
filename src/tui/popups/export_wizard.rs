@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use polars::frame::DataFrame;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
@@ -18,26 +19,28 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub enum ExportWizard {
-    SelectFormat(SearchPicker<Format>),
-    Csv(CsvExporter),
-    Tsv(TsvExporter),
-    Json(JsonExporter),
-    JsonL(JsonLExporter),
-    Parquet(ParquetExporter),
-    Arrow(ArrowExporter),
+pub struct ExportWizard {
+    //
+    state: State,
+    df: DataFrame,
 }
 
 impl ExportWizard {
+    pub fn new(df: DataFrame) -> Self {
+        Self {
+            state: Default::default(),
+            df,
+        }
+    }
     pub fn responder(&mut self) -> &mut dyn Component {
-        match self {
-            ExportWizard::SelectFormat(pickers) => pickers,
-            ExportWizard::Csv(state) => state,
-            ExportWizard::Tsv(state) => state,
-            ExportWizard::Json(state) => state,
-            ExportWizard::JsonL(state) => state,
-            ExportWizard::Parquet(state) => state,
-            ExportWizard::Arrow(state) => state,
+        match &mut self.state {
+            State::SelectFormat(pickers) => pickers,
+            State::Csv(state) => state,
+            State::Tsv(state) => state,
+            State::Json(state) => state,
+            State::JsonL(state) => state,
+            State::Parquet(state) => state,
+            State::Arrow(state) => state,
         }
     }
 }
@@ -53,7 +56,7 @@ impl Component for ExportWizard {
     }
 
     fn handle(&mut self, event: KeyEvent) -> bool {
-        if let ExportWizard::SelectFormat(search_picker) = self {
+        if let State::SelectFormat(search_picker) = &mut self.state {
             search_picker.handle(event)
                 || match (event.code, event.modifiers) {
                     (KeyCode::Esc, KeyModifiers::NONE) => {
@@ -62,13 +65,15 @@ impl Component for ExportWizard {
                     }
                     (KeyCode::Enter, KeyModifiers::NONE) => {
                         if let Some(fmt) = search_picker.selected_item() {
-                            *self = match fmt {
-                                Format::Csv => ExportWizard::Csv(Default::default()),
-                                Format::Tsv => ExportWizard::Tsv(Default::default()),
-                                Format::Json => ExportWizard::Json(Default::default()),
-                                Format::JsonL => ExportWizard::JsonL(Default::default()),
-                                Format::Parquet => ExportWizard::Parquet(Default::default()),
-                                Format::Arrow => ExportWizard::Arrow(Default::default()),
+                            self.state = match fmt {
+                                Format::Csv => State::Csv(CsvExporter::new(self.df.clone())),
+                                Format::Tsv => State::Tsv(TsvExporter::new(self.df.clone())),
+                                Format::Json => State::Json(JsonExporter::new(self.df.clone())),
+                                Format::JsonL => State::JsonL(JsonLExporter::new(self.df.clone())),
+                                Format::Parquet => {
+                                    State::Parquet(ParquetExporter::new(self.df.clone()))
+                                }
+                                Format::Arrow => State::Arrow(ArrowExporter::new(self.df.clone())),
                             };
                         };
                         true
@@ -81,7 +86,18 @@ impl Component for ExportWizard {
     }
 }
 
-impl Default for ExportWizard {
+#[derive(Debug)]
+pub enum State {
+    SelectFormat(SearchPicker<Format>),
+    Csv(CsvExporter),
+    Tsv(TsvExporter),
+    Json(JsonExporter),
+    JsonL(JsonLExporter),
+    Parquet(ParquetExporter),
+    Arrow(ArrowExporter),
+}
+
+impl Default for State {
     fn default() -> Self {
         Self::SelectFormat(SearchPicker::new(Format::iter().collect()))
     }
