@@ -80,7 +80,7 @@ where
                             Export::WaitingForUserInput => (),
                             Export::ArrowToFile(path_buf) => {
                                 WriteToArrow
-                                    .write_to_file(&Destination::File(path_buf), &mut self.df)
+                                    .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::CsvToFile(sep, quote, header, path_buf) => {
@@ -88,7 +88,7 @@ where
                                     .with_separator_char(sep)
                                     .with_quote_char(quote)
                                     .with_header(header)
-                                    .write_to_file(&Destination::File(path_buf), &mut self.df)
+                                    .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::CsvToClipboard(sep, quote, header) => {
@@ -96,36 +96,36 @@ where
                                     .with_separator_char(sep)
                                     .with_quote_char(quote)
                                     .with_header(header)
-                                    .write_to_file(&Destination::Clipboard, &mut self.df)
+                                    .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::JsonToFile(path_buf) => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::Json)
-                                    .write_to_file(&Destination::File(path_buf), &mut self.df)
+                                    .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::JsonToClipboard => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::Json)
-                                    .write_to_file(&Destination::Clipboard, &mut self.df)
+                                    .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::JsonLToFile(path_buf) => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::JsonLine)
-                                    .write_to_file(&Destination::File(path_buf), &mut self.df)
+                                    .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::JsonLToClipboard => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::JsonLine)
-                                    .write_to_file(&Destination::Clipboard, &mut self.df)
+                                    .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::ParquetToFile(path_buf) => {
                                 WriteToParquet
-                                    .write_to_file(&Destination::File(path_buf), &mut self.df)
+                                    .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::TsvToFile(path_buf) => {
@@ -133,7 +133,7 @@ where
                                     .with_separator_char('\t')
                                     .with_quote_char('"')
                                     .with_header(false)
-                                    .write_to_file(&Destination::File(path_buf), &mut self.df)
+                                    .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                             Export::TsvToClipboard => {
@@ -141,7 +141,7 @@ where
                                     .with_separator_char('\t')
                                     .with_quote_char('"')
                                     .with_header(false)
-                                    .write_to_file(&Destination::Clipboard, &mut self.df)
+                                    .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
                             }
                         }
