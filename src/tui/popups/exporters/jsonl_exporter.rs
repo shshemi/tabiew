@@ -1,85 +1,72 @@
 use std::path::PathBuf;
 
-use crossterm::event::KeyEvent;
-
-use crate::tui::{
-    component::Component,
-    popups::{
-        output_target_picker::{OutputTargetPicker, Target},
-        path_picker::PathPicker,
+use crate::{
+    handler::action::Action,
+    tui::{
+        component::Component,
+        popups::{
+            exporters::exporter::{Exporter, State},
+            output_target_picker::{OutputTargetPicker, Target},
+            path_picker::PathPicker,
+        },
     },
+    writer::{Destination, JsonFormat},
 };
 
+pub type JsonLExporter = Exporter<InnerState>;
+
 #[derive(Debug)]
-pub enum JsonLExporterState {
+pub enum InnerState {
     PickOutputTarget { picker: OutputTargetPicker },
     PickOutputPath { picker: PathPicker },
     ExportToFile { path: PathBuf },
     ExportToClipboard,
 }
 
-impl JsonLExporterState {
-    pub fn step(&mut self) {
-        *self = match std::mem::take(self) {
-            JsonLExporterState::PickOutputTarget { picker } => match picker.selected_target() {
-                Some(Target::File) => JsonLExporterState::PickOutputPath {
+impl State for InnerState {
+    fn next(self) -> Self {
+        match self {
+            InnerState::PickOutputTarget { picker } => match picker.selected() {
+                Some(Target::File) => InnerState::PickOutputPath {
                     picker: Default::default(),
                 },
-                Some(Target::Clipboard) => JsonLExporterState::ExportToClipboard,
-                None => JsonLExporterState::PickOutputTarget { picker },
+                Some(Target::Clipboard) => InnerState::ExportToClipboard,
+                None => InnerState::PickOutputTarget { picker },
             },
-            JsonLExporterState::PickOutputPath { picker } => JsonLExporterState::ExportToFile {
+            InnerState::PickOutputPath { picker } => InnerState::ExportToFile {
                 path: picker.path(),
             },
-            JsonLExporterState::ExportToFile { path } => JsonLExporterState::ExportToFile { path },
-            JsonLExporterState::ExportToClipboard => JsonLExporterState::ExportToClipboard,
-        };
-    }
-
-    pub fn select_next(&mut self) {
-        if let JsonLExporterState::PickOutputTarget { picker } = self {
-            picker.select_down()
+            InnerState::ExportToFile { path } => InnerState::ExportToFile { path },
+            InnerState::ExportToClipboard => InnerState::ExportToClipboard,
         }
     }
 
-    pub fn select_previous(&mut self) {
-        if let JsonLExporterState::PickOutputTarget { picker } = self {
-            picker.select_up()
-        }
-    }
-}
-
-impl Component for JsonLExporterState {
-    fn render(
-        &mut self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        focus_state: crate::tui::component::FocusState,
-    ) {
+    fn responder(&mut self) -> Option<&mut dyn Component> {
         match self {
-            JsonLExporterState::PickOutputTarget { picker } => {
-                picker.render(area, buf, focus_state);
-            }
-            JsonLExporterState::PickOutputPath { picker } => {
-                picker.render(area, buf, focus_state);
-            }
-            JsonLExporterState::ExportToFile { path: _ } => (),
-            JsonLExporterState::ExportToClipboard => (),
+            InnerState::PickOutputTarget { picker } => Some(picker),
+            InnerState::PickOutputPath { picker } => Some(picker),
+            _ => None,
         }
     }
 
-    fn handle(&mut self, event: KeyEvent) -> bool {
-        if let JsonLExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
-        } else {
-            false
+    fn export_action(&self) -> Option<Action> {
+        match self {
+            InnerState::ExportToFile { path } => Some(Action::ExportJson(
+                Destination::File(path.to_owned()),
+                JsonFormat::JsonLine,
+            )),
+            InnerState::ExportToClipboard => Some(Action::ExportJson(
+                Destination::Clipboard,
+                JsonFormat::JsonLine,
+            )),
+            _ => None,
         }
     }
 }
 
-impl Default for JsonLExporterState {
+impl Default for InnerState {
     fn default() -> Self {
-        JsonLExporterState::PickOutputTarget {
+        InnerState::PickOutputTarget {
             picker: Default::default(),
         }
     }

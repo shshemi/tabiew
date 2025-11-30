@@ -1,74 +1,87 @@
 use std::path::PathBuf;
 
-use crossterm::event::KeyEvent;
+use crate::{
+    handler::action::Action,
+    tui::{
+        component::Component,
+        popups::{
+            exporters::exporter::{Exporter, State},
+            path_picker::PathPicker,
+        },
+    },
+    writer::Destination,
+};
 
-use crate::tui::{component::Component, popups::path_picker::PathPicker};
+pub type ArrowExporter = Exporter<InnerState>;
 
 #[derive(Debug)]
-pub enum ArrowExporter {
+pub enum InnerState {
     PickOutputPath { picker: PathPicker },
     ExportToFile { path: PathBuf },
 }
 
-impl ArrowExporter {
-    pub fn step(&mut self) {
-        if let ArrowExporter::PickOutputPath { picker } = self {
-            *self = ArrowExporter::ExportToFile {
+impl State for InnerState {
+    fn next(self) -> Self {
+        if let InnerState::PickOutputPath { picker } = self {
+            InnerState::ExportToFile {
                 path: picker.path(),
-            };
-        };
-    }
-}
-
-impl Component for ArrowExporter {
-    fn render(
-        &mut self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        focus_state: crate::tui::component::FocusState,
-    ) {
-        match self {
-            ArrowExporter::PickOutputPath { picker } => {
-                picker.render(area, buf, focus_state);
             }
-            ArrowExporter::ExportToFile { path: _ } => (),
+        } else {
+            self
         }
     }
 
-    fn handle(&mut self, event: KeyEvent) -> bool {
-        if let ArrowExporter::PickOutputPath { picker } = self {
-            picker.handle(event)
+    fn responder(&mut self) -> Option<&mut dyn Component> {
+        match self {
+            InnerState::PickOutputPath { picker } => Some(picker),
+            _ => None,
+        }
+    }
+
+    fn export_action(&self) -> Option<Action> {
+        if let InnerState::ExportToFile { path } = self {
+            Some(Action::ExportArrow(Destination::File(path.to_owned())))
         } else {
-            false
+            None
         }
     }
 }
 
-impl Default for ArrowExporter {
+// impl Component for ArrowExporter {
+//     fn render(
+//         &mut self,
+//         area: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         focus_state: crate::tui::component::FocusState,
+//     ) {
+//         match self {
+//             ArrowExporter::PickOutputPath { picker } => {
+//                 picker.render(area, buf, focus_state);
+//             }
+//             ArrowExporter::ExportToFile { path: _ } => (),
+//         }
+//     }
+
+//     fn handle(&mut self, event: KeyEvent) -> bool {
+//         if let ArrowExporter::PickOutputPath { picker } = self {
+//             picker.handle(event)
+//                 || match (event.code, event.modifiers) {
+//                     (KeyCode::Enter, KeyModifiers::NONE) => {
+//                         self.step();
+//                         true
+//                     }
+//                     _ => false,
+//                 }
+//         } else {
+//             false
+//         }
+//     }
+// }
+
+impl Default for InnerState {
     fn default() -> Self {
         Self::PickOutputPath {
             picker: Default::default(),
         }
     }
 }
-
-// #[derive(Debug, Default)]
-// pub struct ArrowExporter {}
-
-// impl StatefulWidget for ArrowExporter {
-//     type State = ArrowExporterState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         match state {
-//             ArrowExporterState::PickOutputPath { picker } => {
-//                 PathPicker::default().render(area, buf, picker)
-//             }
-//             ArrowExporterState::ExportToFile { path: _ } => (),
-//         }
-//     }
-// }
