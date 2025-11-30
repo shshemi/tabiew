@@ -114,6 +114,10 @@ impl Table {
         &self.df
     }
 
+    pub fn data_frame_mut(&mut self) -> &mut DataFrame {
+        &mut self.df
+    }
+
     pub fn set_data_frame(&mut self, df: DataFrame) {
         self.df = df;
     }
