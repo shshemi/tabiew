@@ -16,7 +16,7 @@ use super::{
 #[derive(Debug)]
 pub struct TabsState {
     panes: Vec<Pane>,
-    panel: Option<EnumeratedList>,
+    switcher: Option<EnumeratedList>,
     idx: usize,
     borders: bool,
 }
@@ -65,15 +65,15 @@ impl TabsState {
     }
 
     pub fn side_panel(&self) -> Option<&EnumeratedList> {
-        self.panel.as_ref()
+        self.switcher.as_ref()
     }
 
     pub fn side_panel_mut(&mut self) -> Option<&mut EnumeratedList> {
-        self.panel.as_mut()
+        self.switcher.as_mut()
     }
 
-    pub fn show_panel(&mut self) {
-        self.panel = Some(
+    pub fn show_tab_switcher(&mut self) {
+        self.switcher = Some(
             EnumeratedList::new(
                 "Tabs",
                 self.panes
@@ -86,7 +86,7 @@ impl TabsState {
     }
 
     pub fn hide_side_panel(&mut self) -> Option<EnumeratedList> {
-        self.panel.take()
+        self.switcher.take()
     }
 }
 
@@ -99,17 +99,10 @@ impl Component for TabsState {
     ) {
         // index of tabular to show
         let tabular_idx = self
-            .panel
+            .switcher
             .as_ref()
             .and_then(|list| list.selected())
             .unwrap_or(self.idx);
-        // let tabular_idx = state
-        //     .side_panel
-        //     .as_ref()
-        //     .map(EnumeratedList::list)
-        //     .and_then(TableState::selected)
-        //     .unwrap_or(state.idx)
-        //     .min(state.tabulars.len().saturating_sub(1));
 
         // fix state (if invalid)
         self.idx = self.idx().min(self.len().saturating_sub(1));
@@ -175,26 +168,13 @@ impl Component for TabsState {
             pane.render(area, buf, focus_state);
         }
 
-        // render tabs
-        // TODO: fix later
-        // let tab_titles = self
-        //     .iter()
-        //     .map(|tabular| {
-        //         match tabular.table_type() {
-        //             crate::tui::TableType::Help => "Help",
-        //             crate::tui::TableType::Name(name) => name.as_str(),
-        //             crate::tui::TableType::Query(query) => query.as_str(),
-        //         }
-        //         .to_owned()
-        //     })
-        //     .collect_vec();
-        if let Some(side_panel) = self.panel.as_mut() {
+        if let Some(side_panel) = self.switcher.as_mut() {
             side_panel.render(area, buf, focus_state);
         }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.panel
+        self.switcher
             .as_mut()
             .map(|list| list.handle(event))
             .unwrap_or_default()
@@ -204,20 +184,39 @@ impl Component for TabsState {
                 .map(|pane| pane.handle(event))
                 .unwrap_or_default()
             || match event.code {
-                KeyCode::Esc => self.panel.take().is_some(),
+                KeyCode::Esc => self.switcher.take().is_some(),
                 KeyCode::Char('q') => {
-                    let hndl = self.panel.take().is_some() || self.panes.take(self.idx).is_some();
+                    let hndl =
+                        self.switcher.take().is_some() || self.panes.take(self.idx).is_some();
                     if self.is_empty() {
-                        Action::Quit.submit();
+                        Action::Quit.enqueue();
                     }
                     hndl
                 }
                 KeyCode::Char('t') => {
-                    self.show_panel();
+                    self.show_tab_switcher();
                     true
                 }
                 _ => false,
             }
+    }
+
+    fn update(&mut self, action: &Action) {
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.update(action)
+        }
+        if let Some(selected) = self.selected_mut() {
+            selected.update(action);
+        }
+    }
+
+    fn tick(&mut self) {
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.tick();
+        }
+        for pane in self.panes.iter_mut() {
+            pane.tick();
+        }
     }
 }
 
@@ -226,7 +225,7 @@ impl FromIterator<Pane> for TabsState {
         Self {
             panes: iter.into_iter().collect(),
             idx: 0,
-            panel: None,
+            switcher: None,
             borders: true,
         }
     }
