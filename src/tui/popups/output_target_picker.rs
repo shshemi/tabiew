@@ -11,7 +11,7 @@ pub struct OutputTargetPicker {
 }
 
 impl OutputTargetPicker {
-    pub fn selected_target(&self) -> Option<Target> {
+    pub fn selected(&self) -> Option<Target> {
         self.list_picker.selected_item().copied()
     }
 
