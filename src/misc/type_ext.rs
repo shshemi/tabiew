@@ -7,7 +7,7 @@ use base64::Engine;
 use ratatui::layout::Constraint;
 use unicode_width::UnicodeWidthChar;
 
-use crate::AppResult;
+use crate::{AppResult, handler::action::Action};
 
 pub trait ToAscii {
     fn to_ascii(self) -> Option<u8>;
@@ -30,6 +30,10 @@ pub trait UnwrapOrGracefulShutdown<T> {
 
 pub trait VecExt<T> {
     fn take(&mut self, idx: usize) -> Option<T>;
+}
+
+pub trait UnwrapOrEnqueueError {
+    fn unwrap_or_enqueue_error(&self);
 }
 
 pub trait ConstraintExt {
@@ -175,6 +179,15 @@ impl ConstraintExt for Constraint {
             | Constraint::Length(val)
             | Constraint::Fill(val) => *val,
             Constraint::Percentage(_) | Constraint::Ratio(_, _) => 0,
+        }
+    }
+}
+
+impl UnwrapOrEnqueueError for AppResult<()> {
+    fn unwrap_or_enqueue_error(&self) {
+        match self {
+            Ok(_) => (),
+            Err(err) => Action::AppShowError(err.to_string()).enqueue(),
         }
     }
 }
