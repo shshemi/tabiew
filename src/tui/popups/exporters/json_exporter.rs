@@ -1,104 +1,73 @@
 use std::path::PathBuf;
 
-use crossterm::event::KeyEvent;
-
-use crate::tui::{
-    component::Component,
-    popups::{
-        output_target_picker::{OutputTargetPicker, Target},
-        path_picker::PathPicker,
+use crate::{
+    handler::action::Action,
+    tui::{
+        component::Component,
+        popups::{
+            exporters::exporter::{Exporter, State},
+            output_target_picker::{OutputTargetPicker, Target},
+            path_picker::PathPicker,
+        },
     },
+    writer::{Destination, JsonFormat},
 };
 
+pub type JsonExporter = Exporter<InnerState>;
+
 #[derive(Debug)]
-pub enum JsonExporterState {
+pub enum InnerState {
     PickOutputTarget { picker: OutputTargetPicker },
     PickOutputPath { picker: PathPicker },
     ExportToFile { path: PathBuf },
     ExportToClipboard,
 }
 
-impl Default for JsonExporterState {
+impl State for InnerState {
+    fn next(self) -> InnerState {
+        match self {
+            InnerState::PickOutputTarget { picker } => match picker.selected() {
+                Some(Target::File) => InnerState::PickOutputPath {
+                    picker: Default::default(),
+                },
+                Some(Target::Clipboard) => InnerState::ExportToClipboard,
+                None => InnerState::PickOutputTarget { picker },
+            },
+            InnerState::PickOutputPath { picker } => InnerState::ExportToFile {
+                path: picker.path(),
+            },
+            InnerState::ExportToFile { path } => InnerState::ExportToFile { path },
+            InnerState::ExportToClipboard => InnerState::ExportToClipboard,
+        }
+    }
+
+    fn responder(&mut self) -> Option<&mut dyn Component> {
+        match self {
+            InnerState::PickOutputTarget { picker } => Some(picker),
+            InnerState::PickOutputPath { picker } => Some(picker),
+            InnerState::ExportToFile { path: _ } => None,
+            InnerState::ExportToClipboard => None,
+        }
+    }
+
+    fn export_action(&self) -> Option<Action> {
+        match self {
+            InnerState::ExportToFile { path } => Some(Action::ExportJson(
+                Destination::File(path.to_owned()),
+                JsonFormat::Json,
+            )),
+            InnerState::ExportToClipboard => {
+                Some(Action::ExportJson(Destination::Clipboard, JsonFormat::Json))
+            }
+            _ => None,
+        }
+    }
+}
+
+impl Default for InnerState {
     fn default() -> Self {
         Self::PickOutputTarget {
             picker: Default::default(),
         }
     }
 }
-
-// #[derive(Debug, Default)]
-// pub struct JsonExporterState {
-//     inner: State,
-// }
-
-impl JsonExporterState {
-    pub fn step(&mut self) {
-        *self = match std::mem::take(self) {
-            JsonExporterState::PickOutputTarget { picker } => match picker.selected_target() {
-                Some(Target::File) => JsonExporterState::PickOutputPath {
-                    picker: Default::default(),
-                },
-                Some(Target::Clipboard) => JsonExporterState::ExportToClipboard,
-                None => JsonExporterState::PickOutputTarget { picker },
-            },
-            JsonExporterState::PickOutputPath { picker } => JsonExporterState::ExportToFile {
-                path: picker.path(),
-            },
-            JsonExporterState::ExportToFile { path } => JsonExporterState::ExportToFile { path },
-            JsonExporterState::ExportToClipboard => JsonExporterState::ExportToClipboard,
-        };
-    }
-}
-
-impl Component for JsonExporterState {
-    fn render(
-        &mut self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        focus_state: crate::tui::component::FocusState,
-    ) {
-        match self {
-            JsonExporterState::PickOutputTarget { picker } => {
-                picker.render(area, buf, focus_state);
-            }
-            JsonExporterState::PickOutputPath { picker } => {
-                picker.render(area, buf, focus_state);
-            }
-            JsonExporterState::ExportToFile { path: _ } => (),
-            JsonExporterState::ExportToClipboard => (),
-        }
-    }
-
-    fn handle(&mut self, event: KeyEvent) -> bool {
-        if let JsonExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
-        } else {
-            false
-        }
-    }
-}
-
-// #[derive(Debug, Default)]
-// pub struct JsonExporter {}
-
-// impl StatefulWidget for JsonExporter {
-//     type State = JsonExporterState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         match state {
-//             JsonExporterState::PickOutputTarget { picker } => {
-//                 OutputTargetPicker::default().render(area, buf, picker)
-//             }
-//             JsonExporterState::PickOutputPath { picker } => {
-//                 PathPicker::default().render(area, buf, picker)
-//             }
-//             JsonExporterState::ExportToFile { path: _ } => (),
-//             JsonExporterState::ExportToClipboard => (),
-//         }
-//     }
-// }
