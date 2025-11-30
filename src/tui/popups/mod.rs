@@ -1,4 +1,5 @@
 pub mod command_palette;
+pub mod command_picker;
 pub mod export_wizard;
 pub mod exporters;
 pub mod go_to_line;
