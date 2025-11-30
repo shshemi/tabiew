@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
-use crate::handler::action::Action;
-use crate::tui::popups::exporters::exporter::{Exporter, State};
+use crate::tui::popups::exporters::exporter::{Export, Exporter, State};
 use crate::tui::{
     component::Component,
     pickers::text_picker::TextPicker,
@@ -10,7 +9,6 @@ use crate::tui::{
         path_picker::PathPicker,
     },
 };
-use crate::writer::Destination;
 
 pub type CsvExporter = Exporter<InnerState>;
 
@@ -130,25 +128,17 @@ impl State for InnerState {
         }
     }
 
-    fn export_action(&self) -> Option<Action> {
+    fn export(&self) -> Export {
         match &self {
             InnerState::ExportToFile {
                 separator,
                 quote,
                 path,
-            } => Some(Action::ExportDsv {
-                destination: Destination::File(path.to_owned()),
-                separator: *separator,
-                quote: *quote,
-                header: true,
-            }),
-            InnerState::ExportToClipboard { separator, quote } => Some(Action::ExportDsv {
-                destination: Destination::Clipboard,
-                separator: *separator,
-                quote: *quote,
-                header: true,
-            }),
-            _ => None,
+            } => Export::CsvToFile(*separator, *quote, true, path.to_owned()),
+            InnerState::ExportToClipboard { separator, quote } => {
+                Export::CsvToClipboard(*separator, *quote, true)
+            }
+            _ => Export::WaitingForUserInput,
         }
     }
 }

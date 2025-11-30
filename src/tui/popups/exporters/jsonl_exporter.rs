@@ -1,16 +1,12 @@
 use std::path::PathBuf;
 
-use crate::{
-    handler::action::Action,
-    tui::{
-        component::Component,
-        popups::{
-            exporters::exporter::{Exporter, State},
-            output_target_picker::{OutputTargetPicker, Target},
-            path_picker::PathPicker,
-        },
+use crate::tui::{
+    component::Component,
+    popups::{
+        exporters::exporter::{Export, Exporter, State},
+        output_target_picker::{OutputTargetPicker, Target},
+        path_picker::PathPicker,
     },
-    writer::{Destination, JsonFormat},
 };
 
 pub type JsonLExporter = Exporter<InnerState>;
@@ -49,17 +45,33 @@ impl State for InnerState {
         }
     }
 
-    fn export_action(&self) -> Option<Action> {
+    fn export(&self) -> Export {
         match self {
-            InnerState::ExportToFile { path } => Some(Action::ExportJson(
-                Destination::File(path.to_owned()),
-                JsonFormat::JsonLine,
-            )),
-            InnerState::ExportToClipboard => Some(Action::ExportJson(
-                Destination::Clipboard,
-                JsonFormat::JsonLine,
-            )),
-            _ => None,
+            InnerState::ExportToFile { path } => {
+                //
+                Export::JsonLToFile(path.to_owned())
+                // WriteToJson::default()
+                //     .with_format(JsonFormat::JsonLine)
+                //     .write_to_file(&Destination::File(path.to_owned()), df)
+                //     .into()
+                // Some(Action::ExportJson(
+                //     Destination::File(path.to_owned()),
+                //     JsonFormat::JsonLine,
+                // ))
+            }
+            InnerState::ExportToClipboard => {
+                //
+                Export::JsonLToClipboard
+                // WriteToJson::default()
+                //     .with_format(JsonFormat::JsonLine)
+                //     .write_to_file(&Destination::Clipboard, df)
+                //     .into()
+                // Some(Action::ExportJson(
+                //     Destination::Clipboard,
+                //     JsonFormat::JsonLine,
+                // ))
+            }
+            _ => Export::WaitingForUserInput,
         }
     }
 }

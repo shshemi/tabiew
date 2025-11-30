@@ -1,15 +1,11 @@
 use std::path::PathBuf;
 
-use crate::{
-    handler::action::Action,
-    tui::{
-        component::Component,
-        popups::{
-            exporters::exporter::{Exporter, State},
-            path_picker::PathPicker,
-        },
+use crate::tui::{
+    component::Component,
+    popups::{
+        exporters::exporter::{Export, Exporter, State},
+        path_picker::PathPicker,
     },
-    writer::Destination,
 };
 
 pub type ArrowExporter = Exporter<InnerState>;
@@ -38,45 +34,14 @@ impl State for InnerState {
         }
     }
 
-    fn export_action(&self) -> Option<Action> {
+    fn export(&self) -> Export {
         if let InnerState::ExportToFile { path } = self {
-            Some(Action::ExportArrow(Destination::File(path.to_owned())))
+            Export::ArrowToFile(path.to_owned())
         } else {
-            None
+            Export::WaitingForUserInput
         }
     }
 }
-
-// impl Component for ArrowExporter {
-//     fn render(
-//         &mut self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         focus_state: crate::tui::component::FocusState,
-//     ) {
-//         match self {
-//             ArrowExporter::PickOutputPath { picker } => {
-//                 picker.render(area, buf, focus_state);
-//             }
-//             ArrowExporter::ExportToFile { path: _ } => (),
-//         }
-//     }
-
-//     fn handle(&mut self, event: KeyEvent) -> bool {
-//         if let ArrowExporter::PickOutputPath { picker } = self {
-//             picker.handle(event)
-//                 || match (event.code, event.modifiers) {
-//                     (KeyCode::Enter, KeyModifiers::NONE) => {
-//                         self.step();
-//                         true
-//                     }
-//                     _ => false,
-//                 }
-//         } else {
-//             false
-//         }
-//     }
-// }
 
 impl Default for InnerState {
     fn default() -> Self {

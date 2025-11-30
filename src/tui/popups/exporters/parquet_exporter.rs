@@ -1,17 +1,11 @@
 use std::path::PathBuf;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-
-use crate::{
-    handler::action::Action,
-    tui::{
-        component::Component,
-        popups::{
-            exporters::exporter::{Exporter, State},
-            path_picker::PathPicker,
-        },
+use crate::tui::{
+    component::Component,
+    popups::{
+        exporters::exporter::{Export, Exporter, State},
+        path_picker::PathPicker,
     },
-    writer::Destination,
 };
 
 pub type ParquetExporter = Exporter<InnerState>;
@@ -39,12 +33,14 @@ impl State for InnerState {
         }
     }
 
-    fn export_action(&self) -> Option<Action> {
+    fn export(&self) -> Export {
         match self {
             InnerState::ExportToFile { path } => {
-                Some(Action::ExportParquet(Destination::File(path.to_owned())))
+                //
+                Export::ParquetToFile(path.to_owned())
+                // Some(Action::ExportParquet(Destination::File(path.to_owned())))
             }
-            _ => None,
+            _ => Export::WaitingForUserInput,
         }
     }
 }
