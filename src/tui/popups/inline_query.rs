@@ -62,6 +62,7 @@ impl Component for InlineQuery {
             || match (event.code, event.modifiers) {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     let result = match self.query_type {
+                        InlineQueryType::Select => self.select(self.value()),
                         InlineQueryType::Filter => self.filter(self.value()),
                         InlineQueryType::Order => self.order(self.value()),
                     };
@@ -88,6 +89,7 @@ impl Component for InlineQuery {
 
 #[derive(Debug, Clone, Copy)]
 pub enum InlineQueryType {
+    Select,
     Filter,
     Order,
 }
@@ -95,6 +97,7 @@ pub enum InlineQueryType {
 impl InlineQueryType {
     fn title(&self) -> String {
         match self {
+            InlineQueryType::Select => "Select",
             InlineQueryType::Filter => "Filter",
             InlineQueryType::Order => "Order",
         }
