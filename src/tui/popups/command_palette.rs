@@ -10,7 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     misc::globals::theme,
     tui::{
         component::Component,
@@ -108,11 +108,11 @@ impl Component for CommandPalette {
         self.input.handle(event)
             || match (event.code, event.modifiers) {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
-                    Action::AppDismissOverlay.enqueue();
+                    Message::AppDismissOverlay.enqueue();
                     true
                 }
                 (KeyCode::Esc, KeyModifiers::NONE) => {
-                    Action::AppDismissOverlay.enqueue();
+                    Message::AppDismissOverlay.enqueue();
                     true
                 }
                 _ => false,

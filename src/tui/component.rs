@@ -1,7 +1,7 @@
 use crossterm::event::KeyEvent;
 use ratatui::{buffer::Buffer, layout::Rect};
 
-use crate::handler::action::Action;
+use crate::handler::message::Message;
 
 #[derive(Debug, Clone, Copy)]
 pub enum FocusState {
@@ -21,6 +21,6 @@ pub trait Component {
     fn handle(&mut self, event: KeyEvent) -> bool {
         false
     }
-    fn update(&mut self, action: &Action) {}
+    fn update(&mut self, action: &Message) {}
     fn tick(&mut self) {}
 }

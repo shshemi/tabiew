@@ -7,7 +7,7 @@ use base64::Engine;
 use ratatui::layout::Constraint;
 use unicode_width::UnicodeWidthChar;
 
-use crate::{AppResult, handler::action::Action};
+use crate::{AppResult, handler::message::Message};
 
 pub trait ToAscii {
     fn to_ascii(self) -> Option<u8>;
@@ -187,7 +187,7 @@ impl UnwrapOrEnqueueError for AppResult<()> {
     fn unwrap_or_enqueue_error(&self) {
         match self {
             Ok(_) => (),
-            Err(err) => Action::AppShowError(err.to_string()).enqueue(),
+            Err(err) => Message::AppShowError(err.to_string()).enqueue(),
         }
     }
 }

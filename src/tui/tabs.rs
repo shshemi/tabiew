@@ -2,7 +2,7 @@ use crossterm::event::KeyCode;
 use ratatui::widgets::{Borders, Widget};
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     misc::type_ext::VecExt,
     tui::{component::Component, widgets::block::Block},
 };
@@ -189,7 +189,7 @@ impl Component for TabsState {
                     let hndl =
                         self.switcher.take().is_some() || self.panes.take(self.idx).is_some();
                     if self.is_empty() {
-                        Action::Quit.enqueue();
+                        Message::Quit.enqueue();
                     }
                     hndl
                 }
@@ -201,7 +201,7 @@ impl Component for TabsState {
             }
     }
 
-    fn update(&mut self, action: &Action) {
+    fn update(&mut self, action: &Message) {
         if let Some(switcher) = self.switcher.as_mut() {
             switcher.update(action)
         }

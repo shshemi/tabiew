@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     misc::type_ext::UnwrapOrEnqueueError,
     tui::component::Component,
     writer::{
@@ -70,7 +70,7 @@ where
             responder.handle(event)
                 || match (event.code, event.modifiers) {
                     (KeyCode::Esc, KeyModifiers::NONE) => {
-                        Action::PaneDismissModal.enqueue();
+                        Message::PaneDismissModal.enqueue();
                         true
                     }
                     (KeyCode::Enter, KeyModifiers::NONE) => {

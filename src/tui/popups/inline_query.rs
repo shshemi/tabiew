@@ -3,7 +3,7 @@ use polars::frame::DataFrame;
 
 use crate::{
     AppResult,
-    handler::action::Action,
+    handler::message::Message,
     misc::globals::sql,
     tui::{component::Component, pickers::text_picker::TextPicker},
 };
@@ -68,18 +68,18 @@ impl Component for InlineQuery {
                     };
                     match result {
                         Ok(df) => {
-                            Action::PaneSetDataFrame(df).enqueue();
-                            Action::PaneDismissModal.enqueue();
+                            Message::PaneSetDataFrame(df).enqueue();
+                            Message::PaneDismissModal.enqueue();
                         }
                         Err(err) => {
-                            Action::AppShowError(err.to_string()).enqueue();
-                            Action::PaneDismissModal.enqueue();
+                            Message::AppShowError(err.to_string()).enqueue();
+                            Message::PaneDismissModal.enqueue();
                         }
                     }
                     true
                 }
                 (KeyCode::Esc, KeyModifiers::NONE) => {
-                    Action::PaneDismissModal.enqueue();
+                    Message::PaneDismissModal.enqueue();
                     true
                 }
                 _ => false,
