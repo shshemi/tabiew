@@ -158,7 +158,10 @@ impl Pane {
     }
 
     fn show_inline_query(&mut self, query_type: InlineQueryType) {
-        self.modal = Some(Modal::InlineQuery(InlineQuery::new(query_type)));
+        self.modal = Some(Modal::InlineQuery(InlineQuery::new(
+            self.table.data_frame().clone(),
+            query_type,
+        )));
     }
 
     fn show_go_to_line(&mut self) {
@@ -205,6 +208,16 @@ impl Pane {
         {
             sheet.set_sections(sections);
         }
+    }
+
+    fn set_data_frame(&mut self, df: DataFrame) {
+        self.table = Table::new(df)
+            .striped()
+            .with_selected(0)
+            .with_show_header(true)
+            .with_show_gutter(true)
+            .with_col_space(2)
+            .with_extended_view_mode();
     }
 }
 
@@ -311,6 +324,7 @@ impl Component for Pane {
             Action::PaneDismissModal => self.dismiss_model(),
             Action::PaneTableSelectUp => self.select_up(),
             Action::PaneTableSelectDown => self.select_down(),
+            Action::PaneSetDataFrame(df) => self.set_data_frame(df.clone()),
             _ => (),
         }
     }
