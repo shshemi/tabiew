@@ -3,14 +3,18 @@ use std::sync::{
     mpsc::{Receiver, Sender, channel},
 };
 
+use polars::frame::DataFrame;
+
 #[derive(Debug)]
 pub enum Action {
     AppDismissOverlay,
+    AppShowCommandPicker,
     AppShowError(String),
     PaneShowExportWizard,
     PaneShowInlineFilter,
     PaneShowInlineOrder,
     PaneDismissModal,
+    PaneSetDataFrame(DataFrame),
     PaneTableSelectUp,
     PaneTableSelectDown,
     Quit,
