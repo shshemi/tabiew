@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     tui::{
         component::Component,
         pickers::search_picker::SearchPicker,
@@ -60,7 +60,7 @@ impl Component for ExportWizard {
             search_picker.handle(event)
                 || match (event.code, event.modifiers) {
                     (KeyCode::Esc, KeyModifiers::NONE) => {
-                        Action::PaneDismissModal.enqueue();
+                        Message::PaneDismissModal.enqueue();
                         false
                     }
                     (KeyCode::Enter, KeyModifiers::NONE) => {

@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     misc::globals::theme,
     tui::{
         component::Component,
@@ -104,11 +104,11 @@ impl Component for Sheet {
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
             (KeyCode::Char('k'), KeyModifiers::NONE) | (KeyCode::Up, KeyModifiers::NONE) => {
-                Action::PaneTableSelectUp.enqueue();
+                Message::PaneTableSelectUp.enqueue();
                 true
             }
             (KeyCode::Char('j'), KeyModifiers::NONE) | (KeyCode::Down, KeyModifiers::NONE) => {
-                Action::PaneTableSelectDown.enqueue();
+                Message::PaneTableSelectDown.enqueue();
                 true
             }
             (KeyCode::Char('K'), KeyModifiers::SHIFT) | (KeyCode::Up, KeyModifiers::SHIFT) => {
@@ -120,7 +120,7 @@ impl Component for Sheet {
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                Action::PaneDismissModal.enqueue();
+                Message::PaneDismissModal.enqueue();
                 true
             }
 

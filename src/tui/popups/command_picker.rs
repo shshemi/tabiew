@@ -5,7 +5,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     tui::{component::Component, pickers::search_picker::SearchPicker},
 };
 
@@ -35,21 +35,21 @@ impl Component for CommandPicker {
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
             (KeyCode::Enter, KeyModifiers::NONE) => {
-                Action::AppDismissOverlay.enqueue();
+                Message::AppDismissOverlay.enqueue();
                 if let Some(item) = self.picker.selected_item() {
                     match item {
-                        Command::Export => Action::PaneShowExportWizard.enqueue(),
+                        Command::Export => Message::PaneShowExportWizard.enqueue(),
                         Command::Import => (),
-                        Command::Order => Action::PaneShowInlineOrder.enqueue(),
-                        Command::Sort => Action::PaneShowInlineOrder.enqueue(),
-                        Command::Filter => Action::PaneShowInlineFilter.enqueue(),
+                        Command::Order => Message::PaneShowInlineOrder.enqueue(),
+                        Command::Sort => Message::PaneShowInlineOrder.enqueue(),
+                        Command::Filter => Message::PaneShowInlineFilter.enqueue(),
                         Command::Query => (),
                     }
                 }
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE) => {
-                Action::AppDismissOverlay.enqueue();
+                Message::AppDismissOverlay.enqueue();
                 true
             }
             _ => self.picker.handle(event),

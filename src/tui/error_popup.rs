@@ -5,7 +5,7 @@ use ratatui::{
 };
 
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     misc::globals::theme,
     tui::{component::Component, widgets::block::Block},
 };
@@ -52,8 +52,8 @@ impl Component for ErrorPopup {
     }
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match event.code {
-            KeyCode::Char(':') => Action::AppShowCommandPicker.enqueue(),
-            _ => Action::AppDismissOverlay.enqueue(),
+            KeyCode::Char(':') => Message::AppShowCommandPicker.enqueue(),
+            _ => Message::AppDismissOverlay.enqueue(),
         };
         true
     }

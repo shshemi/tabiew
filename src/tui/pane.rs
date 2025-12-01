@@ -4,7 +4,7 @@ use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     misc::{globals::sql, sql::Source},
     tui::{
         component::Component,
@@ -312,19 +312,19 @@ impl Component for Pane {
         }
     }
 
-    fn update(&mut self, action: &crate::handler::action::Action) {
+    fn update(&mut self, action: &crate::handler::message::Message) {
         if let Some(modal) = self.modal.as_mut() {
             modal.responder().update(action);
         }
         self.table.update(action);
         match action {
-            Action::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
-            Action::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
-            Action::PaneShowExportWizard => self.show_export_wizard(),
-            Action::PaneDismissModal => self.dismiss_model(),
-            Action::PaneTableSelectUp => self.select_up(),
-            Action::PaneTableSelectDown => self.select_down(),
-            Action::PaneSetDataFrame(df) => self.set_data_frame(df.clone()),
+            Message::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
+            Message::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
+            Message::PaneShowExportWizard => self.show_export_wizard(),
+            Message::PaneDismissModal => self.dismiss_model(),
+            Message::PaneTableSelectUp => self.select_up(),
+            Message::PaneTableSelectDown => self.select_down(),
+            Message::PaneSetDataFrame(df) => self.set_data_frame(df.clone()),
             _ => (),
         }
     }

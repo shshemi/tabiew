@@ -1,5 +1,5 @@
 use crate::{
-    handler::action::Action,
+    handler::message::Message,
     tui::{
         component::Component,
         popups::{command_picker::CommandPicker, help_modal::Help, theme_selector::ThemeSelector},
@@ -372,12 +372,12 @@ impl Component for App {
         }
     }
 
-    fn update(&mut self, action: &Action) {
+    fn update(&mut self, action: &Message) {
         match action {
-            Action::Quit => self.quit(),
-            Action::AppDismissOverlay => self.overlay = None,
-            Action::AppShowError(message) => self.show_error(message),
-            Action::AppShowCommandPicker => self.show_palette(""),
+            Message::Quit => self.quit(),
+            Message::AppDismissOverlay => self.overlay = None,
+            Message::AppShowError(message) => self.show_error(message),
+            Message::AppShowCommandPicker => self.show_palette(""),
             _ => (),
         };
         if let Some(overlay) = self.overlay.as_mut() {

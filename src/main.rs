@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
-use tabiew::handler::action::Action;
+use tabiew::handler::message::Message;
 use tabiew::tui::component::Component;
 // use tabiew::handler::action::execute;
 // use tabiew::handler::command::parse_into_action;
@@ -205,7 +205,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
             Event::Resize(_, _) => {}
         }
 
-        while let Some(action) = Action::dequeue() {
+        while let Some(action) = Message::dequeue() {
             app.update(&action);
         }
     }
