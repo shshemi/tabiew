@@ -1,9 +1,11 @@
+use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
     widgets::{Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
+    handler::action::Action,
     misc::globals::theme,
     tui::{component::Component, widgets::block::Block},
 };
@@ -47,5 +49,12 @@ impl Component for ErrorPopup {
             .areas(area);
         Clear.render(area, buf);
         pg.render(area, buf);
+    }
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match event.code {
+            KeyCode::Char(':') => Action::AppShowCommandPicker.enqueue(),
+            _ => Action::AppDismissOverlay.enqueue(),
+        };
+        true
     }
 }
