@@ -20,6 +20,7 @@ pub enum Message {
     PaneTableSelectDown,
     PaneTableSelect(usize),
     Quit,
+    PaneShowInlineSelect,
 }
 
 impl Message {
