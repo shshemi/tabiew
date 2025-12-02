@@ -1,14 +1,17 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     widgets::{Clear, Widget},
 };
 
-use crate::tui::{
-    component::Component,
-    widgets::{
-        block::Block,
-        input::{Input, InputType},
+use crate::{
+    handler::message::Message,
+    tui::{
+        component::Component,
+        widgets::{
+            block::Block,
+            input::{Input, InputType},
+        },
     },
 };
 
@@ -33,15 +36,7 @@ impl GoToLine {
         }
     }
 
-    pub fn handle(&mut self, event: KeyEvent) {
-        self.input.handle(event);
-    }
-
-    pub fn rollback(&self) -> usize {
-        self.rollback
-    }
-
-    pub fn value(&self) -> usize {
+    fn value(&self) -> usize {
         self.input.value().parse().unwrap_or(1)
     }
 }
@@ -68,7 +63,23 @@ impl Component for GoToLine {
         self.input.render(area, buf, focus_state);
     }
     fn handle(&mut self, event: KeyEvent) -> bool {
-        self.input.handle(event)
+        if self.input.handle(event) {
+            Message::PaneTableSelect(self.value().saturating_sub(1)).enqueue();
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    true
+                }
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::PaneTableSelect(self.rollback).enqueue();
+                    true
+                }
+                _ => false,
+            }
+        }
     }
 }
 
