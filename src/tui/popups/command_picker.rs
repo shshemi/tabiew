@@ -45,6 +45,7 @@ impl Component for CommandPicker {
                         Command::Filter => Message::PaneShowInlineFilter.enqueue(),
                         Command::Query => (),
                         Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
+                        Command::Select => Message::PaneShowInlineSelect.enqueue(),
                     }
                 }
                 true
@@ -66,6 +67,7 @@ enum Command {
     Sort,
     Filter,
     Query,
+    Select,
     ThemeSelector,
 }
 

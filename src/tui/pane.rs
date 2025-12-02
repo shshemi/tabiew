@@ -359,6 +359,7 @@ impl Component for Pane {
         }
         self.table.update(action);
         match action {
+            Message::PaneShowInlineSelect => self.show_inline_query(InlineQueryType::Select),
             Message::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
             Message::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
             Message::PaneShowExportWizard => self.show_export_wizard(),
