@@ -18,6 +18,7 @@ pub enum Message {
     PaneSetDataFrame(DataFrame),
     PaneTableSelectUp,
     PaneTableSelectDown,
+    PaneTableSelect(usize),
     Quit,
 }
 

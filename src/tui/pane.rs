@@ -202,6 +202,11 @@ impl Pane {
         self.update_sheet();
     }
 
+    fn select(&mut self, idx: usize) {
+        self.table.select(idx);
+        self.update_sheet();
+    }
+
     fn update_sheet(&mut self) {
         if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
             && let Some(sections) = self.table.selected_sheet_sections()
@@ -307,6 +312,42 @@ impl Component for Pane {
                         self.show_sheet();
                         true
                     }
+                    (KeyCode::Char('1'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(1);
+                        true
+                    }
+                    (KeyCode::Char('2'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(2);
+                        true
+                    }
+                    (KeyCode::Char('3'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(3);
+                        true
+                    }
+                    (KeyCode::Char('4'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(4);
+                        true
+                    }
+                    (KeyCode::Char('5'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(5);
+                        true
+                    }
+                    (KeyCode::Char('6'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(6);
+                        true
+                    }
+                    (KeyCode::Char('7'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(7);
+                        true
+                    }
+                    (KeyCode::Char('8'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(8);
+                        true
+                    }
+                    (KeyCode::Char('9'), KeyModifiers::NONE) => {
+                        self.show_go_to_line_with_value(9);
+                        true
+                    }
                     _ => false,
                 }
         }
@@ -325,6 +366,7 @@ impl Component for Pane {
             Message::PaneTableSelectUp => self.select_up(),
             Message::PaneTableSelectDown => self.select_down(),
             Message::PaneSetDataFrame(df) => self.set_data_frame(df.clone()),
+            Message::PaneTableSelect(idx) => self.select(*idx),
             _ => (),
         }
     }
@@ -348,106 +390,3 @@ impl Component for Pane {
         }
     }
 }
-
-// #[derive(Debug, Default)]
-// pub struct Pane;
-
-// impl StatefulWidget for Pane {
-//     type State = PaneState;
-
-//     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer, state: &mut Self::State) {
-//         let (search_bar_area, table_area) = match state.modal {
-//             Modal::SearchBar(_) => {
-//                 let [a0, a1] =
-//                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-//                 (a0, a1)
-//             }
-//             _ => (Rect::default(), area),
-//         };
-//         if let Modal::GoToLine(gtl) = &state.modal {
-//             state.table.select(gtl.value().saturating_sub(1));
-//         }
-//         DataFrameTable::new().render(table_area, buf, &mut state.table);
-
-//         match &mut state.modal {
-//             Modal::Sheet(sheet_state) => {
-//                 let area = area.inner(Margin::new(13, 3));
-//                 let sections = state
-//                     .table
-//                     .data_frame()
-//                     .get_sheet_sections(state.table.selected());
-//                 Sheet::new()
-//                     .with_sections(sections)
-//                     .render(area, buf, sheet_state);
-//             }
-//             Modal::SearchBar(search_bar_state) => {
-//                 search_bar_state.render(area, buf, focus_state);
-//                 // SearchBar::new().with_selection(true).render(
-//                 //     search_bar_area,
-//                 //     buf,
-//                 //     search_bar_state,
-//                 // );
-//             }
-//             Modal::DataFrameInfo(data_frame_info) => {
-//                 //
-//                 let [area] = Layout::horizontal([Constraint::Length(100)])
-//                     .flex(Flex::Center)
-//                     .areas(area);
-//                 let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(25)])
-//                     // .flex(Flex::Center)
-//                     .areas(area);
-//                 data_frame_info.render(area, buf, focus_state);
-//                 // match &state.table_type {
-//                 //     TableType::Help => (),
-//                 //     TableType::Name(name) => {
-//                 //         if let Some(tbl_info) = sql().schema().get(name) {
-//                 //             let source = tbl_info.source().clone();
-//                 //             DataFrameInfo::new(&TableInfo::new(
-//                 //                 source,
-//                 //                 state.table.data_frame_mut(),
-//                 //             ))
-//                 //             .render(area, buf, data_frame_info);
-//                 //         }
-//                 //     }
-//                 //     TableType::Query(_) => {
-//                 //         DataFrameInfo::new(&TableInfo::new(
-//                 //             Source::User,
-//                 //             state.table.data_frame_mut(),
-//                 //         ))
-//                 //         .render(area, buf, data_frame_info);
-//                 //     }
-//                 // };
-//             }
-//             Modal::ScatterPlot(state) => {
-//                 let [area] = Layout::horizontal([Constraint::Length(120)])
-//                     .flex(Flex::Center)
-//                     .areas(area);
-//                 let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(40)])
-//                     // .flex(Flex::Center)
-//                     .areas(area);
-//                 ScatterPlot::default().render(area, buf, state);
-//             }
-//             Modal::HistogramPlot(state) => {
-//                 let [area] = Layout::horizontal([Constraint::Length(122)])
-//                     .flex(Flex::Center)
-//                     .areas(area);
-//                 let [_, area] =
-//                     Layout::vertical([Constraint::Length(3), Constraint::Length(40)]).areas(area);
-//                 HistogramPlot.render(area, buf, state);
-//             }
-//             Modal::InlineQuery(state) => {
-//                 InlineQuery::default().render(area, buf, state);
-//             }
-//             Modal::GoToLine(state) => {
-//                 GoToLine::default().render(area, buf, state);
-//             }
-//             Modal::ExportWizard(state) => {
-//                 ExportWizard::default().render(area, buf, state);
-//             }
-//             Modal::HistogramWizard(state) => {
-//                 HistogramWizard::default().render(area, buf, state);
-//             }
-//             Modal::None => (),
-//         }
-//     }
-// }
