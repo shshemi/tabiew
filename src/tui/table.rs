@@ -153,6 +153,13 @@ impl Table {
         }
     }
 
+    pub fn toggle_view_mode(&mut self) {
+        self.view_mode = match self.view_mode {
+            ViewMode::Compact => ViewMode::Expanded(0),
+            ViewMode::Expanded(_) => ViewMode::Compact,
+        }
+    }
+
     pub fn select_first(&mut self) {
         self.select(0);
     }

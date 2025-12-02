@@ -312,6 +312,10 @@ impl Component for Pane {
                         self.show_sheet();
                         true
                     }
+                    (KeyCode::Char('e'), KeyModifiers::NONE) => {
+                        self.table.toggle_view_mode();
+                        true
+                    }
                     (KeyCode::Char('1'), KeyModifiers::NONE) => {
                         self.show_go_to_line_with_value(1);
                         true
