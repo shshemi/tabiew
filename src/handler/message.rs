@@ -10,6 +10,7 @@ pub enum Message {
     AppDismissOverlay,
     AppShowCommandPicker,
     AppShowError(String),
+    AppShowThemeSelector,
     PaneShowExportWizard,
     PaneShowInlineFilter,
     PaneShowInlineOrder,
