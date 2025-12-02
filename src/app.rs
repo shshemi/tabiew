@@ -161,9 +161,9 @@ impl App {
     //     }
     // }
 
-    // pub fn show_theme_selector(&mut self) {
-    //     self.overlay = Overlay::ThemeSelector(Default::default())
-    // }
+    pub fn show_theme_selector(&mut self) {
+        self.overlay = Some(Overlay::ThemeSelector(Default::default()));
+    }
 
     // pub fn history_mut(&mut self) -> &mut History {
     //     &mut self.history
@@ -378,6 +378,7 @@ impl Component for App {
             Message::AppDismissOverlay => self.overlay = None,
             Message::AppShowError(message) => self.show_error(message),
             Message::AppShowCommandPicker => self.show_palette(""),
+            Message::AppShowThemeSelector => self.show_theme_selector(),
             _ => (),
         };
         if let Some(overlay) = self.overlay.as_mut() {
