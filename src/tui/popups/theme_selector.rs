@@ -1,7 +1,13 @@
 use std::ops::Deref;
 
+use crossterm::event::KeyCode;
+
 use crate::{
-    misc::globals::config,
+    handler::message::Message,
+    misc::{
+        config::store_config,
+        globals::{config, set_theme},
+    },
     tui::{
         component::Component,
         pickers::search_picker::SearchPicker,
@@ -44,7 +50,26 @@ impl Component for ThemeSelector {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.search_picker.handle(event)
+        if self.search_picker.handle(event)
+            && let Some(theme) = self.search_picker.selected_item()
+        {
+            set_theme(theme.to_owned().into());
+            true
+        } else {
+            match event.code {
+                KeyCode::Esc => {
+                    set_theme(self.rollback.clone());
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                KeyCode::Enter => {
+                    store_config();
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                _ => false,
+            }
+        }
     }
 }
 
