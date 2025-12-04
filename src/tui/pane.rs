@@ -1,5 +1,5 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use itertools::Itertools;
+
 use polars::frame::DataFrame;
 use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
@@ -7,13 +7,7 @@ use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::{
-        globals::sql,
-        jagged_vec::JaggedVec,
-        polars_ext::{AnyValueExt, PlotData},
-        sql::Source,
-        type_ext::UnwrapOrEnqueueError,
-    },
+    misc::{globals::sql, polars_ext::PlotData, sql::Source, type_ext::UnwrapOrEnqueueError},
     tui::{
         component::Component,
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
