@@ -78,6 +78,22 @@ where
             .and_then(|i| self.strings.get(i))
             .map(|s| s.as_str())
     }
+
+    pub fn items(&self) -> &[T] {
+        &self.items
+    }
+
+    pub fn strings(&self) -> &[String] {
+        &self.strings
+    }
+
+    pub fn into_items(self) -> Vec<T> {
+        self.items
+    }
+
+    pub fn into_string(self) -> Vec<String> {
+        self.strings
+    }
 }
 
 impl<T> Component for SearchPicker<T> {
