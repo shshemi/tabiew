@@ -8,4 +8,6 @@ pub mod histogram_wizard;
 pub mod inline_query;
 pub mod output_target_picker;
 pub mod path_picker;
+pub mod scatter_plot_wizard;
 pub mod theme_selector;
+pub mod wizard;
