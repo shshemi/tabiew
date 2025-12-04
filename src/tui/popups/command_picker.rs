@@ -46,6 +46,8 @@ impl Component for CommandPicker {
                         Command::Query => (),
                         Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
                         Command::Select => Message::PaneShowInlineSelect.enqueue(),
+                        Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
+                        Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
                     }
                 }
                 true
@@ -69,6 +71,8 @@ enum Command {
     Query,
     Select,
     ThemeSelector,
+    Histogram,
+    Scatter,
 }
 
 impl Command {

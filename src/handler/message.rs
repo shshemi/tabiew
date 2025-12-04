@@ -14,6 +14,8 @@ pub enum Message {
     PaneShowExportWizard,
     PaneShowInlineFilter,
     PaneShowInlineOrder,
+    PaneShowHistogramWizard,
+    PaneShowScatterPlotWizard,
     PaneDismissModal,
     PaneSetDataFrame(DataFrame),
     PaneTableSelectUp,
