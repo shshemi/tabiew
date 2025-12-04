@@ -23,23 +23,8 @@ impl HistogramWizard {
             picker: SearchPicker::new(
                 df.column_iter()
                     .filter(|col| {
-                        matches!(
-                            col.dtype(),
-                            DataType::UInt8
-                                | DataType::UInt16
-                                | DataType::UInt32
-                                | DataType::UInt64
-                                | DataType::Int8
-                                | DataType::Int16
-                                | DataType::Int32
-                                | DataType::Int64
-                                | DataType::Int128
-                                | DataType::Float32
-                                | DataType::Float64
-                                | DataType::Decimal(_, _)
-                                | DataType::Boolean
-                                | DataType::String
-                        )
+                        let dtype = col.dtype();
+                        dtype.is_numeric() || dtype.is_string() || dtype.is_bool()
                     })
                     .map(Column::name)
                     .map(PlSmallStr::to_string)
