@@ -47,6 +47,7 @@ pub trait TryMapAll {
 
 pub trait PlotData {
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
+    #[allow(clippy::type_complexity)]
     fn scatter_plot_data_grouped(
         &self,
         x_label: &str,
