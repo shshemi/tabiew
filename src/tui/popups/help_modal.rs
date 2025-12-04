@@ -23,6 +23,12 @@ impl Help {
     }
 }
 
+impl Default for Help {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Component for Help {
     fn render(
         &mut self,

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
+use crossterm::event::{KeyCode,  KeyModifiers, };
 use itertools::Itertools;
 use ratatui::{
     layout::{Alignment, Constraint, Margin},
