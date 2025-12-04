@@ -204,13 +204,18 @@ impl TryMapAll for Series {
 }
 
 impl PlotData for DataFrame {
-    fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>> {
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<Vec<(f64, f64)>> {
         Ok(self
-            .column(x_lab)?
+            .column(x_label)?
             .cast(&DataType::Float64)?
             .f64()?
             .iter()
-            .zip(self.column(y_lab)?.cast(&DataType::Float64)?.f64()?.iter())
+            .zip(
+                self.column(y_label)?
+                    .cast(&DataType::Float64)?
+                    .f64()?
+                    .iter(),
+            )
             .filter_map(|(x, y)| Some((x?, y?)))
             .collect_vec())
     }
