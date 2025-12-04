@@ -38,7 +38,7 @@ impl<T> JaggedVec<T> {
 impl<A> FromIterator<A> for JaggedVec<A> {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
         let mut jv = JaggedVec::default();
-        jv.push(iter.into_iter());
+        jv.push(iter);
         jv
     }
 }
