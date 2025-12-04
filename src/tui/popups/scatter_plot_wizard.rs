@@ -26,11 +26,6 @@ pub enum State {
         y: String,
         picker: SearchPicker<String>,
     },
-    Visualize {
-        x: String,
-        y: String,
-        group_by: Option<String>,
-    },
 }
 
 impl State {
@@ -111,44 +106,25 @@ impl WizardState for State {
                 }
                 State::PickGroupBy { x, y, picker }
             }
-            State::Visualize {
-                x: _,
-                y: _,
-                group_by: _,
-            } => self,
         }
     }
 
-    fn responder(&mut self) -> Option<&mut dyn crate::tui::component::Component> {
+    fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
         match self {
             State::PickX {
                 picker,
                 group_by_item: _,
-            } => Some(picker),
+            } => picker,
             State::PickY {
                 x: _x,
                 picker,
                 group_by_item: _,
-            } => Some(picker),
+            } => picker,
             State::PickGroupBy {
                 x: _x,
                 y: _y,
                 picker,
-            } => Some(picker),
-            State::Visualize {
-                x: _x,
-                y: _y,
-                group_by: _group_by,
-            } => None,
-        }
-    }
-
-    fn finalize(&self) -> bool {
-        if let State::Visualize { x, y, group_by } = self {
-            Message::PaneShowScatterPlot(x.to_owned(), y.to_owned(), group_by.to_owned()).enqueue();
-            true
-        } else {
-            false
+            } => picker,
         }
     }
 }

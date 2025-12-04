@@ -4,8 +4,7 @@ use crate::{handler::message::Message, tui::component::Component};
 
 pub trait WizardState {
     fn next(self) -> Self;
-    fn responder(&mut self) -> Option<&mut dyn Component>;
-    fn finalize(&self) -> bool;
+    fn responder(&mut self) -> &mut dyn Component;
 }
 
 #[derive(Debug)]
@@ -32,13 +31,13 @@ where
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        if let Some(responder) = self.state.as_mut().and_then(|s| s.responder()) {
+        if let Some(responder) = self.state.as_mut().map(|s| s.responder()) {
             responder.render(area, buf, focus_state);
         }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        if let Some(responder) = self.state.as_mut().and_then(|s| s.responder()) {
+        if let Some(responder) = self.state.as_mut().map(|s| s.responder()) {
             responder.handle(event)
                 || match (event.code, event.modifiers) {
                     (KeyCode::Esc, KeyModifiers::NONE) => {
@@ -47,11 +46,6 @@ where
                     }
                     (KeyCode::Enter, KeyModifiers::NONE) => {
                         self.state = self.state.take().map(|s| s.next());
-                        if let Some(state) = self.state.as_ref()
-                            && state.finalize()
-                        {
-                            Message::PaneDismissModal.enqueue();
-                        }
                         true
                     }
                     _ => false,
