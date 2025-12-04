@@ -19,7 +19,6 @@ pub struct DataFrameInfo {
 
 impl DataFrameInfo {
     pub fn new(df: &DataFrame, input: Source) -> Self {
-        //
         Self {
             meta_info: DataFrameMetaInfo::new(TableInfo::new(input, df)),
             field_info: DataFrameFieldInfo::new(TableSchema::new(df)),
