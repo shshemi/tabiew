@@ -25,6 +25,7 @@ const SPACE_FROM_TOP_OF_THE_WINDOW: u16 = 3;
 
 #[derive(Debug)]
 pub struct SearchPicker<T> {
+    title: String,
     input: Input,
     list: ListState,
     items: Vec<T>,
@@ -38,11 +39,19 @@ where
 {
     pub fn new(items: Vec<T>) -> Self {
         Self {
+            title: Default::default(),
             input: Default::default(),
             list: ListState::default().with_selected(Some(0)),
             cached_filter: Default::default(),
             strings: items.iter().map(ToString::to_string).collect(),
             items,
+        }
+    }
+
+    pub fn with_title(self, title: impl Into<String>) -> Self {
+        Self {
+            title: title.into(),
+            ..self
         }
     }
 
@@ -147,7 +156,9 @@ impl<T> Component for SearchPicker<T> {
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 
         let input_area = {
-            let block = Block::default().borders(Borders::LEFT | Borders::RIGHT | Borders::TOP);
+            let block = Block::default()
+                .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
+                .title(self.title.as_str());
             let input_inner = block.inner(input_area);
             block.render(area, buf);
             input_inner
