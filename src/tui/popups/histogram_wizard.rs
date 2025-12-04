@@ -1,7 +1,7 @@
 use crossterm::event::KeyEvent;
 use polars::{
     frame::DataFrame,
-    prelude::{Column, DataType, PlSmallStr},
+    prelude::{Column, PlSmallStr},
 };
 
 use crate::tui::{
