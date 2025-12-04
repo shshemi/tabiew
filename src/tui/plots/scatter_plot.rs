@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
 use itertools::Itertools;
 use ratatui::{
     layout::{Alignment, Constraint, Margin},
@@ -9,6 +10,7 @@ use ratatui::{
 
 use crate::{
     AppResult,
+    handler::message::Message,
     misc::{globals::theme, jagged_vec::JaggedVec},
     tui::{component::Component, widgets::block::Block},
 };
@@ -61,7 +63,7 @@ impl Component for ScatterPlot {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        let area = buf.area.inner(Margin::new(10, 10));
+        let area = buf.area.inner(Margin::new(7, 3));
         Widget::render(Clear, area, buf);
         let ds = self
             .data
@@ -115,6 +117,16 @@ impl Component for ScatterPlot {
         // .hidden_legend_constraints((Constraint::Min(0), Constraint::Ratio(1, 2)));
 
         chart.render(area, buf);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match (event.code, event.modifiers) {
+            (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                Message::PaneDismissModal.enqueue();
+                true
+            }
+            _ => false,
+        }
     }
 }
 
