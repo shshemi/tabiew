@@ -15,6 +15,7 @@ pub enum Message {
     PaneShowInlineFilter,
     PaneShowInlineOrder,
     PaneShowHistogramWizard,
+    PaneShowScatterPlot(String, String, Option<String>),
     PaneShowScatterPlotWizard,
     PaneDismissModal,
     PaneSetDataFrame(DataFrame),
