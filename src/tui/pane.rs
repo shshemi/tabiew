@@ -14,6 +14,8 @@ use crate::{
             go_to_line::GoToLine,
             histogram_wizard::HistogramWizard,
             inline_query::{InlineQuery, InlineQueryType},
+            scatter_plot_wizard::{self, ScatterPlotWizard},
+            wizard::Wizard,
         },
         schema::data_frame_info::DataFrameInfo,
         table::Table,
@@ -31,6 +33,7 @@ pub enum Modal {
     GoToLine(GoToLine),
     ExportWizard(ExportWizard),
     HistogramWizard(HistogramWizard),
+    ScatterPlotWizard(ScatterPlotWizard),
 }
 
 impl Modal {
@@ -45,6 +48,7 @@ impl Modal {
             Modal::GoToLine(go_to_line) => go_to_line,
             Modal::ExportWizard(export_wizard) => export_wizard,
             Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
+            Modal::ScatterPlotWizard(wizard) => wizard,
         }
     }
 }
@@ -188,6 +192,12 @@ impl Pane {
         )))
     }
 
+    fn show_scatter_plot_wizard(&mut self) {
+        self.modal = Some(Modal::ScatterPlotWizard(Wizard::new(
+            scatter_plot_wizard::State::new(self.table.data_frame().clone()),
+        )))
+    }
+
     fn dismiss_model(&mut self) {
         self.modal = None
     }
@@ -298,6 +308,10 @@ impl Component for Pane {
                 state.render(area, buf, focus_state);
                 // HistogramWizard::default().render(area, buf, state);
             }
+            Some(Modal::ScatterPlotWizard(state)) => {
+                self.table.render(area, buf, focus_state);
+                state.render(area, buf, focus_state);
+            }
             None => self.table.render(area, buf, focus_state),
         }
     }
@@ -367,6 +381,8 @@ impl Component for Pane {
             Message::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
             Message::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
             Message::PaneShowExportWizard => self.show_export_wizard(),
+            Message::PaneShowHistogramWizard => self.show_histogram_wizard(),
+            Message::PaneShowScatterPlotWizard => self.show_scatter_plot_wizard(),
             Message::PaneDismissModal => self.dismiss_model(),
             Message::PaneTableSelectUp => self.select_up(),
             Message::PaneTableSelectDown => self.select_down(),
@@ -391,6 +407,7 @@ impl Component for Pane {
             Some(Modal::GoToLine(_)) => (),
             Some(Modal::ExportWizard(_)) => (),
             Some(Modal::HistogramWizard(_)) => (),
+            Some(Modal::ScatterPlotWizard(_)) => (),
             None => (),
         }
     }
