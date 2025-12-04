@@ -12,6 +12,7 @@ use crate::{
         component::Component,
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
+            data_frame_info::DataFrameInfo,
             export_wizard::ExportWizard,
             go_to_line::GoToLine,
             histogram_wizard::HistogramWizard,
@@ -19,7 +20,6 @@ use crate::{
             scatter_plot_wizard::{self, ScatterPlotWizard},
             wizard::Wizard,
         },
-        schema::data_frame_info::DataFrameInfo,
         table::Table,
     },
 };
@@ -380,6 +380,10 @@ impl Component for Pane {
                     }
                     (KeyCode::Char('9'), KeyModifiers::NONE) => {
                         self.show_go_to_line_with_value(9);
+                        true
+                    }
+                    (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
+                        self.show_data_frame_info();
                         true
                     }
                     _ => false,
