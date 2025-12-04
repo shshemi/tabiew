@@ -1,11 +1,19 @@
 use crossterm::event::{KeyCode, KeyModifiers};
+use itertools::Itertools;
 use polars::frame::DataFrame;
 use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
+    AppResult,
     handler::message::Message,
-    misc::{globals::sql, sql::Source},
+    misc::{
+        globals::sql,
+        jagged_vec::JaggedVec,
+        polars_ext::{AnyValueExt, PlotData},
+        sql::Source,
+        type_ext::UnwrapOrEnqueueError,
+    },
     tui::{
         component::Component,
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
@@ -153,12 +161,26 @@ impl Pane {
         }
     }
 
-    fn show_scatter_plot(&mut self, scatter: ScatterPlot) {
-        self.modal = Some(Modal::ScatterPlot(scatter))
-    }
+    // fn show_scatter_plot(&mut self, scatter: ScatterPlot) {
+    //     self.modal = Some(Modal::ScatterPlot(scatter))
+    // }
 
-    fn show_histogram_plot(&mut self, hist: HistogramPlot) {
-        self.modal = Some(Modal::HistogramPlot(hist))
+    fn show_scatter_plot(
+        &mut self,
+        x_label: String,
+        y_label: String,
+        group_by: Option<&str>,
+    ) -> AppResult<()> {
+        let df = self.table.data_frame();
+        let plot = if let Some(group_by) = group_by {
+            let (data, groups) = df.scatter_plot_data_grouped(&x_label, &y_label, group_by)?;
+            ScatterPlot::new(x_label, y_label, data)?.with_groups(groups)
+        } else {
+            let data = df.scatter_plot_data(&x_label, &y_label)?;
+            ScatterPlot::new(x_label, y_label, data)?
+        };
+        self.modal = Some(Modal::ScatterPlot(plot));
+        Ok(())
     }
 
     fn show_inline_query(&mut self, query_type: InlineQueryType) {
@@ -382,6 +404,9 @@ impl Component for Pane {
             Message::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
             Message::PaneShowExportWizard => self.show_export_wizard(),
             Message::PaneShowHistogramWizard => self.show_histogram_wizard(),
+            Message::PaneShowScatterPlot(x, y, grp) => self
+                .show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
+                .unwrap_or_enqueue_error(),
             Message::PaneShowScatterPlotWizard => self.show_scatter_plot_wizard(),
             Message::PaneDismissModal => self.dismiss_model(),
             Message::PaneTableSelectUp => self.select_up(),

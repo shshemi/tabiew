@@ -16,7 +16,7 @@ use polars::{
 use ratatui::widgets::Cell;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AppResult, tui::sheet::SheetSection};
+use crate::{AppResult, misc::jagged_vec::JaggedVec, tui::sheet::SheetSection};
 
 use super::type_ext::HasSubsequence;
 
@@ -46,7 +46,13 @@ pub trait TryMapAll {
 }
 
 pub trait PlotData {
-    fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>>;
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
+    fn scatter_plot_data_grouped(
+        &self,
+        x_label: &str,
+        y_label: &str,
+        group_by: &str,
+    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)>;
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
@@ -204,7 +210,7 @@ impl TryMapAll for Series {
 }
 
 impl PlotData for DataFrame {
-    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<Vec<(f64, f64)>> {
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>> {
         Ok(self
             .column(x_label)?
             .cast(&DataType::Float64)?
@@ -217,7 +223,34 @@ impl PlotData for DataFrame {
                     .iter(),
             )
             .filter_map(|(x, y)| Some((x?, y?)))
-            .collect_vec())
+            .collect())
+    }
+
+    fn scatter_plot_data_grouped(
+        &self,
+        x_label: &str,
+        y_label: &str,
+        group_by: &str,
+    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)> {
+        let mut groups = Vec::new();
+        let mut data = JaggedVec::new();
+        for (name, df) in self
+            .partition_by(vec![group_by], true)?
+            .into_iter()
+            .map(|df| {
+                let name = df
+                    .column(group_by)
+                    .and_then(|column| column.get(0))
+                    .map(AnyValueExt::into_single_line)
+                    .unwrap_or("null".to_owned());
+                (name, df)
+            })
+            .sorted_by(|(a, _), (b, _)| a.cmp(b))
+        {
+            groups.push(name);
+            data.push(df.scatter_plot_data(x_label, y_label)?);
+        }
+        Ok((data, groups))
     }
 
     fn histogram_plot_data(&self, col_name: &str, buckets: usize) -> AppResult<Vec<(String, u64)>> {
