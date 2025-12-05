@@ -14,14 +14,14 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct TabsState {
+pub struct Tabs {
     panes: Vec<Pane>,
     switcher: Option<TabSwitcher>,
     idx: usize,
     borders: bool,
 }
 
-impl TabsState {
+impl Tabs {
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
     }
@@ -38,40 +38,25 @@ impl TabsState {
         self.idx
     }
 
-    fn selected(&self) -> Option<&Pane> {
-        self.panes.get(self.idx)
-    }
-
     fn selected_mut(&mut self) -> Option<&mut Pane> {
         self.panes.get_mut(self.idx)
-    }
-
-    fn remove(&mut self, idx: usize) {
-        if idx < self.panes.len() {
-            self.panes.remove(idx);
-        }
     }
 
     fn select(&mut self, idx: usize) {
         self.idx = idx;
     }
 
-    fn iter(&self) -> impl Iterator<Item = &Pane> {
-        self.panes.iter()
+    fn select_prev(&mut self) {
+        self.select(self.idx().saturating_sub(1));
     }
 
-    fn iter_mut(&mut self) -> impl Iterator<Item = &mut Pane> {
-        self.panes.iter_mut()
+    fn select_next(&mut self) {
+        self.select(
+            self.idx()
+                .saturating_add(1)
+                .min(self.len().saturating_sub(1)),
+        );
     }
-
-    fn side_panel(&self) -> Option<&TabSwitcher> {
-        self.switcher.as_ref()
-    }
-
-    fn side_panel_mut(&mut self) -> Option<&mut TabSwitcher> {
-        self.switcher.as_mut()
-    }
-
     fn show_tab_switcher(&mut self) {
         self.switcher = Some(TabSwitcher::new(
             "Tabs",
@@ -88,7 +73,7 @@ impl TabsState {
     }
 }
 
-impl Component for TabsState {
+impl Component for Tabs {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
@@ -184,6 +169,16 @@ impl Component for TabsState {
                         self.show_tab_switcher();
                         true
                     }
+                    (KeyCode::Char('H'), KeyModifiers::SHIFT)
+                    | (KeyCode::Left, KeyModifiers::SHIFT) => {
+                        self.select_prev();
+                        true
+                    }
+                    (KeyCode::Char('L'), KeyModifiers::SHIFT)
+                    | (KeyCode::Right, KeyModifiers::SHIFT) => {
+                        self.select_next();
+                        true
+                    }
                     _ => false,
                 }
         }
@@ -213,7 +208,7 @@ impl Component for TabsState {
     }
 }
 
-impl FromIterator<Pane> for TabsState {
+impl FromIterator<Pane> for Tabs {
     fn from_iter<T: IntoIterator<Item = Pane>>(iter: T) -> Self {
         Self {
             panes: iter.into_iter().collect(),
