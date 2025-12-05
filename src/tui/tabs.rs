@@ -1,4 +1,4 @@
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::widgets::{Borders, Widget};
 
 use crate::{
@@ -8,85 +8,83 @@ use crate::{
 };
 
 use super::{
-    enumerated_list::EnumeratedList,
     pane::Pane,
     status_bar::{StatusBar, Tag},
+    tab_switcher::TabSwitcher,
 };
 
 #[derive(Debug)]
 pub struct TabsState {
     panes: Vec<Pane>,
-    switcher: Option<EnumeratedList>,
+    switcher: Option<TabSwitcher>,
     idx: usize,
     borders: bool,
 }
 
 impl TabsState {
-    pub fn add(&mut self, tabular: Pane) {
+    fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
     }
 
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.panes.len()
     }
 
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn idx(&self) -> usize {
+    fn idx(&self) -> usize {
         self.idx
     }
 
-    pub fn selected(&self) -> Option<&Pane> {
+    fn selected(&self) -> Option<&Pane> {
         self.panes.get(self.idx)
     }
 
-    pub fn selected_mut(&mut self) -> Option<&mut Pane> {
+    fn selected_mut(&mut self) -> Option<&mut Pane> {
         self.panes.get_mut(self.idx)
     }
 
-    pub fn remove(&mut self, idx: usize) {
+    fn remove(&mut self, idx: usize) {
         if idx < self.panes.len() {
             self.panes.remove(idx);
         }
     }
 
-    pub fn select(&mut self, idx: usize) {
+    fn select(&mut self, idx: usize) {
         self.idx = idx;
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Pane> {
+    fn iter(&self) -> impl Iterator<Item = &Pane> {
         self.panes.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Pane> {
+    fn iter_mut(&mut self) -> impl Iterator<Item = &mut Pane> {
         self.panes.iter_mut()
     }
 
-    pub fn side_panel(&self) -> Option<&EnumeratedList> {
+    fn side_panel(&self) -> Option<&TabSwitcher> {
         self.switcher.as_ref()
     }
 
-    pub fn side_panel_mut(&mut self) -> Option<&mut EnumeratedList> {
+    fn side_panel_mut(&mut self) -> Option<&mut TabSwitcher> {
         self.switcher.as_mut()
     }
 
-    pub fn show_tab_switcher(&mut self) {
-        self.switcher = Some(
-            EnumeratedList::new(
-                "Tabs",
-                self.panes
-                    .iter()
-                    .map(|pane| pane.table_type().title())
-                    .collect(),
-            )
-            .with_selected(self.idx),
-        );
+    fn show_tab_switcher(&mut self) {
+        self.switcher = Some(TabSwitcher::new(
+            "Tabs",
+            self.panes
+                .iter()
+                .map(|pane| pane.table_type().title())
+                .collect(),
+            self.idx,
+        ));
     }
 
-    pub fn hide_side_panel(&mut self) -> Option<EnumeratedList> {
-        self.switcher.take()
+    fn dismiss_tab_switcher(&mut self) {
+        self.switcher.take();
     }
 }
 
@@ -97,25 +95,18 @@ impl Component for TabsState {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        // index of tabular to show
-        let tabular_idx = self
-            .switcher
-            .as_ref()
-            .and_then(|list| list.selected())
-            .unwrap_or(self.idx);
-
         // fix state (if invalid)
         self.idx = self.idx().min(self.len().saturating_sub(1));
 
         // build the status bar
         let status_bar = self
             .panes
-            .get(tabular_idx)
+            .get(self.idx)
             .map(|tabular| {
                 StatusBar::default()
                     .tag(Tag::new(
                         "Tab",
-                        format!("{} / {}", tabular_idx + 1, self.len()),
+                        format!("{} / {}", self.idx + 1, self.len()),
                     ))
                     .tag(match tabular.table_type() {
                         super::TableType::Help => Tag::new("Table", "Help"),
@@ -163,7 +154,7 @@ impl Component for TabsState {
         };
 
         // render tabular
-        if let Some(pane) = self.panes.get_mut(tabular_idx) {
+        if let Some(pane) = self.panes.get_mut(self.idx) {
             // Pane.render(area, buf, tabular);
             pane.render(area, buf, focus_state);
         }
@@ -174,34 +165,36 @@ impl Component for TabsState {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.switcher
-            .as_mut()
-            .map(|list| list.handle(event))
-            .unwrap_or_default()
-            || self
-                .panes
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.handle(event)
+        } else {
+            self.panes
                 .get_mut(self.idx)
                 .map(|pane| pane.handle(event))
-                .unwrap_or_default()
-            || match event.code {
-                KeyCode::Esc => self.switcher.take().is_some(),
-                KeyCode::Char('q') => {
-                    let hndl =
-                        self.switcher.take().is_some() || self.panes.take(self.idx).is_some();
-                    if self.is_empty() {
-                        Message::Quit.enqueue();
+                .unwrap_or(false)
+                || match (event.code, event.modifiers) {
+                    (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                        self.panes.take(self.idx);
+                        if self.is_empty() {
+                            Message::Quit.enqueue();
+                        }
+                        true
                     }
-                    hndl
+                    (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                        self.show_tab_switcher();
+                        true
+                    }
+                    _ => false,
                 }
-                KeyCode::Char('t') => {
-                    self.show_tab_switcher();
-                    true
-                }
-                _ => false,
-            }
+        }
     }
 
     fn update(&mut self, action: &Message) {
+        match action {
+            Message::TabsSelect(idx) => self.select(*idx),
+            Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
+            _ => (),
+        }
         if let Some(switcher) = self.switcher.as_mut() {
             switcher.update(action)
         }
@@ -230,136 +223,3 @@ impl FromIterator<Pane> for TabsState {
         }
     }
 }
-
-// pub struct Tabs {
-//     selection: bool,
-//     borders: bool,
-// }
-
-// impl Tabs {
-//     pub fn new() -> Self {
-//         Self {
-//             selection: false,
-//             borders: true,
-//         }
-//     }
-
-//     pub fn selection(mut self, selection: bool) -> Self {
-//         self.selection = selection;
-//         self
-//     }
-
-//     pub fn with_borders(mut self, borders: bool) -> Self {
-//         self.borders = borders;
-//         self
-//     }
-// }
-
-// impl Default for Tabs {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
-
-// impl StatefulWidget for Tabs {
-//     type State = TabsState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         // index of tabular to show
-//         let tabular_idx = state
-//             .side_panel
-//             .as_ref()
-//             .map(EnumeratedList::list)
-//             .and_then(TableState::selected)
-//             .unwrap_or(state.idx)
-//             .min(state.tabulars.len().saturating_sub(1));
-
-//         // fix state (if invalid)
-//         state.idx = state.idx().min(state.len().saturating_sub(1));
-
-//         // build the status bar
-//         let status_bar = state
-//             .tabulars
-//             .get(tabular_idx)
-//             .map(|tabular| {
-//                 StatusBar::default()
-//                     .tag(Tag::new(
-//                         "Tab",
-//                         format!("{} / {}", tabular_idx + 1, state.len()),
-//                     ))
-//                     .tag(match tabular.table_type() {
-//                         super::TableType::Help => Tag::new("Table", "Help"),
-//                         super::TableType::Name(name) => Tag::new("Table", name),
-//                         super::TableType::Query(query) => Tag::new("Query", query),
-//                     })
-//                     .tag(Tag::new(
-//                         "Auto-Fit",
-//                         if !tabular.table().expanded() {
-//                             "Yes"
-//                         } else {
-//                             " No"
-//                         },
-//                     ))
-//                     .tag(Tag::new(
-//                         "Row",
-//                         format!(
-//                             "{:>width$}",
-//                             tabular.table().selected() + 1,
-//                             width = tabular.table().data_frame().height().to_string().len()
-//                         ),
-//                     ))
-//                     .tag(Tag::new(
-//                         "Shape",
-//                         format!(
-//                             "{} x {}",
-//                             tabular.table().data_frame().height(),
-//                             tabular.table().data_frame().width()
-//                         ),
-//                     ))
-//             })
-//             .unwrap_or_default();
-
-//         // render block with status bar
-//         let area = {
-//             let blk = Block::default()
-//                 .borders(if self.borders {
-//                     Borders::all()
-//                 } else {
-//                     Borders::empty()
-//                 })
-//                 .bottom(status_bar);
-//             let new = blk.inner(area);
-//             blk.render(area, buf);
-//             new
-//         };
-
-//         // render tabular
-//         if let Some(pane) = state.tabulars.get_mut(tabular_idx) {
-//             // Pane.render(area, buf, tabular);
-//             pane.render(area, buf, focus_state);
-//         }
-
-//         // render tabs
-//         // TODO: fix later
-//         let tab_titles = state
-//             .iter()
-//             .map(|tabular| {
-//                 match tabular.table_type() {
-//                     crate::tui::TableType::Help => "Help",
-//                     crate::tui::TableType::Name(name) => name.as_str(),
-//                     crate::tui::TableType::Query(query) => query.as_str(),
-//                 }
-//                 .to_owned()
-//             })
-//             .collect_vec();
-//         if let Some(side_panel_state) = state.side_panel.as_mut() {
-//             let side_panel = EnumeratedList::default().items(tab_titles).title("Tabs");
-//             side_panel.render(area, buf, side_panel_state);
-//         }
-//     }
-// }
