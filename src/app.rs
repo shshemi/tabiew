@@ -8,7 +8,7 @@ use crate::{
 };
 use crate::{
     misc::history::History,
-    tui::{error_popup::ErrorPopup, tabs::TabsState},
+    tui::{error_popup::ErrorPopup, tabs::Tabs},
 };
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Flex, Layout};
@@ -35,14 +35,14 @@ impl Overlay {
 }
 
 pub struct App {
-    tabs: TabsState,
+    tabs: Tabs,
     overlay: Option<Overlay>,
     history: History,
     running: bool,
 }
 
 impl App {
-    pub fn new(tabs: TabsState, history: History) -> Self {
+    pub fn new(tabs: Tabs, history: History) -> Self {
         Self {
             tabs,
             history,
