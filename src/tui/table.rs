@@ -18,13 +18,13 @@ use crate::{
     tui::{component::Component, sheet::SheetSection},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ViewMode {
     Compact,
     Expanded(u16),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Table {
     df: DataFrame,
     col_names: Vec<String>,

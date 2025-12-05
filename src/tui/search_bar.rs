@@ -60,11 +60,6 @@ impl SearchBar {
         &self.searcher
     }
 
-    // pub fn handle_key(&mut self, event: KeyEvent) {
-    //     self.input.handle(event);
-    //     self.update_search();
-    // }
-
     pub fn into_rollback_df(self) -> DataFrame {
         self.rollback_df
     }
@@ -129,55 +124,3 @@ impl Component for SearchBar {
         }
     }
 }
-
-// #[derive(Debug)]
-// pub struct SearchBar {
-//     selection: bool,
-// }
-
-// impl SearchBar {
-//     pub fn new() -> Self {
-//         Self { selection: false }
-//     }
-
-//     pub fn with_selection(self, selection: bool) -> Self {
-//         Self { selection }
-//     }
-// }
-
-// impl Default for SearchBar {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
-
-// impl StatefulWidget for SearchBar {
-//     type State = SearchBarState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         let title = match state.search {
-//             Search::Fuzzy(_) => "Fuzzy Search",
-//             Search::Exact(_) => "Search",
-//         };
-//         let area = {
-//             let block = Block::default().title(title);
-//             let inner = block.inner(area);
-//             block.render(area, buf);
-//             inner
-//         };
-//         state.input.render(
-//             area,
-//             buf,
-//             if self.selection {
-//                 FocusState::Focused
-//             } else {
-//                 FocusState::Unfocused
-//             },
-//         );
-//     }
-// }
