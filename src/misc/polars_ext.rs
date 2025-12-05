@@ -14,6 +14,7 @@ use polars::{
     series::Series,
 };
 use ratatui::widgets::Cell;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{AppResult, misc::jagged_vec::JaggedVec, tui::sheet::SheetSection};
@@ -22,12 +23,13 @@ use super::type_ext::HasSubsequence;
 
 pub trait AnyValueExt {
     fn into_single_line(self) -> String;
+    fn width(self) -> usize;
     fn into_multi_line(self) -> String;
     fn into_cell(self, width: usize) -> Cell<'static>;
 }
 
 pub trait TuiWidths {
-    fn tui_widths(&self) -> Vec<usize>;
+    fn widths(&self) -> Vec<usize>;
 }
 
 pub trait FuzzyCmp {
@@ -72,6 +74,21 @@ impl AnyValueExt for AnyValue<'_> {
             AnyValue::Binary(buf) => format!("Blob (Length: {})", buf.len()),
             AnyValue::BinaryOwned(buf) => format!("Blob (Length: {})", buf.len()),
             _ => self.to_string(),
+        }
+    }
+
+    fn width(self) -> usize {
+        match self {
+            AnyValue::Null => 0,
+            AnyValue::Boolean(v) => {
+                if v {
+                    4 // true
+                } else {
+                    5 // false
+                }
+            }
+            AnyValue::String(s) => s.width(),
+            _ => self.into_single_line().width(),
         }
     }
 
@@ -126,7 +143,7 @@ fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
 }
 
 impl TuiWidths for DataFrame {
-    fn tui_widths(&self) -> Vec<usize> {
+    fn widths(&self) -> Vec<usize> {
         self.iter().map(series_width).collect()
     }
 }
@@ -134,14 +151,8 @@ impl TuiWidths for DataFrame {
 fn series_width(series: &Series) -> usize {
     series
         .iter()
-        .map(|any_value| {
-            any_value
-                .into_multi_line()
-                .lines()
-                .next()
-                .map(|s| s.width())
-                .unwrap_or(0)
-        })
+        .par_bridge()
+        .map(|val| val.width())
         .max()
         .unwrap_or_default()
         .max(series.name().as_str().width())
