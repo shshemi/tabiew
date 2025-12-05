@@ -117,7 +117,7 @@ impl Component for SearchBar {
             match (event.code, event.modifiers) {
                 (KeyCode::Esc, KeyModifiers::NONE) => {
                     Message::PaneDismissModal.enqueue();
-                    Message::PaneResetDataFrame.enqueue();
+                    Message::PanePopDataFrame.enqueue();
                     true
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {

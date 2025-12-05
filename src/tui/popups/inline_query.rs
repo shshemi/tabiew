@@ -68,7 +68,7 @@ impl Component for InlineQuery {
                     };
                     match result {
                         Ok(df) => {
-                            Message::PaneSetDataFrame(df).enqueue();
+                            Message::PanePushDataFrame(df).enqueue();
                             Message::PaneDismissModal.enqueue();
                         }
                         Err(err) => {
