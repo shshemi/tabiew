@@ -1,6 +1,5 @@
 pub mod component;
 pub mod data_frame_table;
-pub mod enumerated_list;
 pub mod error_popup;
 pub mod pane;
 pub mod pickers;
@@ -10,6 +9,7 @@ pub mod schema;
 pub mod search_bar;
 pub mod sheet;
 pub mod status_bar;
+pub mod tab_switcher;
 pub mod table;
 pub mod tabs;
 pub mod terminal;

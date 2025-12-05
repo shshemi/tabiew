@@ -11,6 +11,8 @@ pub enum Message {
     AppShowCommandPicker,
     AppShowError(String),
     AppShowThemeSelector,
+    TabsSelect(usize),
+    TabsDismissSwitcher,
     PaneShowExportWizard,
     PaneShowInlineFilter,
     PaneShowInlineOrder,
