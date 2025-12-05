@@ -32,10 +32,6 @@ impl Overlay {
             Overlay::Help(help) => help,
         }
     }
-
-    fn is_error(&self) -> bool {
-        matches!(self, Overlay::Error(_))
-    }
 }
 
 pub struct App {
