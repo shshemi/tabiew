@@ -125,14 +125,16 @@ impl Pane {
     }
 
     fn show_fuzzy_search(&mut self) {
-        self.push_data_frame(self.tstack.last().data_frame().clone());
+        let tbl = self.tstack.last().to_owned();
+        self.tstack.push(tbl);
         self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(
             self.tstack.last().data_frame().clone(),
         )));
     }
 
     fn show_exact_search(&mut self) {
-        self.push_data_frame(self.tstack.last().data_frame().clone());
+        let tbl = self.tstack.last().to_owned();
+        self.tstack.push(tbl);
         self.modal = Some(Modal::SearchBar(SearchBar::exact(
             self.tstack.last().data_frame().clone(),
         )));
