@@ -46,7 +46,7 @@ impl Table {
             .collect();
 
         let col_widths = std::iter::once(df.height().to_string().len() + 1)
-            .chain(df.tui_widths())
+            .chain(df.widths())
             .map(|u| Constraint::Length(u as u16))
             .collect();
         Self {

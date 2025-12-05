@@ -41,7 +41,7 @@ impl DataFrameTableState {
             rendered_rows: 0,
             rendered_width: 0,
             expanded: true,
-            widths: data_frame.tui_widths(),
+            widths: data_frame.widths(),
             headers: data_frame
                 .get_column_names()
                 .into_iter()
@@ -62,7 +62,7 @@ impl DataFrameTableState {
     pub fn set_data_frame(&mut self, data_frame: DataFrame) {
         self.offset_y = 0;
         self.select = 0;
-        self.widths = data_frame.tui_widths();
+        self.widths = data_frame.widths();
         self.headers = data_frame
             .get_column_names()
             .into_iter()
