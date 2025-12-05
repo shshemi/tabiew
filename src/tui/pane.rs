@@ -87,13 +87,14 @@ pub struct Pane {
     table: Table,
     modal: Option<Modal>,
     table_type: TableType,
+    rollback: DataFrame,
 }
 
 impl Pane {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, table_type: TableType) -> Self {
         Self {
-            table: Table::new(data_frame)
+            table: Table::new(data_frame.clone())
                 .striped()
                 .with_selected(0)
                 .with_show_header(true)
@@ -102,6 +103,7 @@ impl Pane {
                 .with_extended_view_mode(),
             modal: None,
             table_type,
+            rollback: data_frame,
         }
     }
 
@@ -123,7 +125,7 @@ impl Pane {
         }
     }
 
-    pub fn show_fuzzy_search(&mut self) {
+    fn show_fuzzy_search(&mut self) {
         self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(
             self.table.data_frame().clone(),
         )));
@@ -154,10 +156,6 @@ impl Pane {
             }
         }
     }
-
-    // fn show_scatter_plot(&mut self, scatter: ScatterPlot) {
-    //     self.modal = Some(Modal::ScatterPlot(scatter))
-    // }
 
     fn show_scatter_plot(
         &mut self,
@@ -249,6 +247,10 @@ impl Pane {
             .with_show_gutter(true)
             .with_col_space(2)
             .with_extended_view_mode();
+    }
+
+    fn rollback(&mut self) {
+        self.set_data_frame(self.rollback.clone());
     }
 }
 
@@ -386,6 +388,15 @@ impl Component for Pane {
                         self.show_data_frame_info();
                         true
                     }
+                    (KeyCode::Char('/'), KeyModifiers::NONE) => {
+                        self.show_fuzzy_search();
+                        true
+                    }
+                    (KeyCode::Char('?'), KeyModifiers::NONE)
+                    | (KeyCode::Char('?'), KeyModifiers::SHIFT) => {
+                        self.show_exact_search();
+                        true
+                    }
                     _ => false,
                 }
         }
@@ -410,6 +421,7 @@ impl Component for Pane {
             Message::PaneTableSelectUp => self.select_up(),
             Message::PaneTableSelectDown => self.select_down(),
             Message::PaneSetDataFrame(df) => self.set_data_frame(df.clone()),
+            Message::PaneResetDataFrame => self.rollback(),
             Message::PaneTableSelect(idx) => self.select(*idx),
             _ => (),
         }

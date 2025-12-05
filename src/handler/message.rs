@@ -21,6 +21,7 @@ pub enum Message {
     PaneShowScatterPlotWizard,
     PaneDismissModal,
     PaneSetDataFrame(DataFrame),
+    PaneResetDataFrame,
     PaneTableSelectUp,
     PaneTableSelectDown,
     PaneTableSelect(usize),

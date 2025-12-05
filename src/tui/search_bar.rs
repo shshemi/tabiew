@@ -1,8 +1,9 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
 use ratatui::widgets::Widget;
 
 use crate::{
+    handler::message::Message,
     misc::search::{self, Contain, Skim},
     tui::{component::Component, widgets::block::Block},
 };
@@ -109,9 +110,23 @@ impl Component for SearchBar {
     }
 
     fn handle(&mut self, event: KeyEvent) -> bool {
-        let hndl = self.input.handle(event);
-        self.update_search();
-        hndl
+        if self.input.handle(event) {
+            self.update_search();
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::PaneResetDataFrame.enqueue();
+                    true
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    true
+                }
+                _ => false,
+            }
+        }
     }
 }
 
