@@ -1,9 +1,6 @@
 use std::fmt::Display;
 
-use polars::{
-    frame::DataFrame,
-    prelude::{Column, DataType, PlSmallStr},
-};
+use polars::{frame::DataFrame, prelude::DataType};
 
 use crate::{
     handler::message::Message,

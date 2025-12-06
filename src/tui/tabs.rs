@@ -43,6 +43,9 @@ impl Tabs {
     }
 
     fn select(&mut self, idx: usize) {
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.select(idx);
+        }
         self.idx = idx;
     }
 
@@ -150,38 +153,39 @@ impl Component for Tabs {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        if let Some(switcher) = self.switcher.as_mut() {
-            switcher.handle(event)
-        } else {
-            self.panes
+        self.switcher
+            .as_mut()
+            .map(|switcher| switcher.handle(event))
+            .unwrap_or_default()
+            || self
+                .panes
                 .get_mut(self.idx)
                 .map(|pane| pane.handle(event))
-                .unwrap_or(false)
-                || match (event.code, event.modifiers) {
-                    (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                        self.panes.take(self.idx);
-                        if self.is_empty() {
-                            Message::Quit.enqueue();
-                        }
-                        true
+                .unwrap_or_default()
+            || match (event.code, event.modifiers) {
+                (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                    self.panes.take(self.idx);
+                    if self.is_empty() {
+                        Message::Quit.enqueue();
                     }
-                    (KeyCode::Char('t'), KeyModifiers::NONE) => {
-                        self.show_tab_switcher();
-                        true
-                    }
-                    (KeyCode::Char('H'), KeyModifiers::SHIFT)
-                    | (KeyCode::Left, KeyModifiers::SHIFT) => {
-                        self.select_prev();
-                        true
-                    }
-                    (KeyCode::Char('L'), KeyModifiers::SHIFT)
-                    | (KeyCode::Right, KeyModifiers::SHIFT) => {
-                        self.select_next();
-                        true
-                    }
-                    _ => false,
+                    true
                 }
-        }
+                (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                    self.show_tab_switcher();
+                    true
+                }
+                (KeyCode::Char('H'), KeyModifiers::SHIFT)
+                | (KeyCode::Left, KeyModifiers::SHIFT) => {
+                    self.select_prev();
+                    true
+                }
+                (KeyCode::Char('L'), KeyModifiers::SHIFT)
+                | (KeyCode::Right, KeyModifiers::SHIFT) => {
+                    self.select_next();
+                    true
+                }
+                _ => false,
+            }
     }
 
     fn update(&mut self, action: &Message) {
