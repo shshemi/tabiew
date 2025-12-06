@@ -31,13 +31,15 @@ impl SheetSection {
 #[derive(Debug)]
 pub struct Sheet {
     scroll: Scroll,
+    row: usize,
     sections: Vec<SheetSection>,
 }
 
 impl Sheet {
-    pub fn new(sections: Vec<SheetSection>) -> Self {
+    pub fn new(row: usize, sections: Vec<SheetSection>) -> Self {
         Self {
             scroll: Default::default(),
+            row,
             sections,
         }
     }
@@ -50,7 +52,12 @@ impl Sheet {
         self.scroll.down();
     }
 
-    pub fn set_sections(&mut self, sections: Vec<SheetSection>) {
+    pub fn row(&self) -> usize {
+        self.row
+    }
+
+    pub fn update(&mut self, row: usize, sections: Vec<SheetSection>) {
+        self.row = row;
         self.sections = sections;
     }
 }
@@ -103,14 +110,6 @@ impl Component for Sheet {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
-            (KeyCode::Char('k'), KeyModifiers::NONE) | (KeyCode::Up, KeyModifiers::NONE) => {
-                Message::PaneTableSelectUp.enqueue();
-                true
-            }
-            (KeyCode::Char('j'), KeyModifiers::NONE) | (KeyCode::Down, KeyModifiers::NONE) => {
-                Message::PaneTableSelectDown.enqueue();
-                true
-            }
             (KeyCode::Char('K'), KeyModifiers::SHIFT) | (KeyCode::Up, KeyModifiers::SHIFT) => {
                 self.scroll.up();
                 true
@@ -128,53 +127,3 @@ impl Component for Sheet {
         }
     }
 }
-
-// impl StatefulWidget for Sheet {
-//     type State = SheetState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         Clear.render(area, buf);
-
-//         let pg = Paragraph::new(
-//             self.sections
-//                 .iter()
-//                 .enumerate()
-//                 .flat_map(|(idx, SheetSection { header, content })| {
-//                     std::iter::once(Line::raw(header).style(theme().header(idx)))
-//                         .chain(
-//                             content
-//                                 .lines()
-//                                 .map(|line| Line::raw(line).style(theme().text())),
-//                         )
-//                         .chain(std::iter::once(Line::raw("\n")))
-//                 })
-//                 .collect::<Vec<_>>(),
-//         )
-//         .style(theme().text())
-//         .alignment(Alignment::Left)
-//         .wrap(Wrap { trim: true })
-//         .block(
-//             Block::default()
-//                 .bottom(
-//                     StatusBar::new()
-//                         .mono_color()
-//                         .centered()
-//                         .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
-//                         .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
-//                 )
-//                 .title_alignment(Alignment::Center)
-//                 .into_widget(),
-//         );
-
-//         state
-//             .scroll
-//             .adjust(pg.line_count(area.width), area.height.saturating_sub(2));
-
-//         pg.scroll((state.scroll.val_u16(), 0)).render(area, buf);
-//     }
-// }

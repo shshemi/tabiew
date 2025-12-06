@@ -33,6 +33,10 @@ impl TabSwitcher {
         self.list_state.selected()
     }
 
+    pub fn select(&mut self, idx: impl Into<Option<usize>>) {
+        self.list_state.select(idx.into());
+    }
+
     pub fn select_prev(&mut self) {
         self.list_state.select_previous();
     }

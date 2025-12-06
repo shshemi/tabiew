@@ -351,21 +351,21 @@ impl Component for App {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        (if let Some(overlay) = self.overlay.as_mut() {
-            overlay.responder().handle(event)
-        } else {
-            self.tabs.handle(event)
-        }) || match event.code {
-            KeyCode::Char(':') => {
-                self.show_palette("");
-                true
+        self.overlay
+            .as_mut()
+            .map(|overlay| overlay.responder().handle(event))
+            .unwrap_or_else(|| self.tabs.handle(event))
+            || match event.code {
+                KeyCode::Char(':') => {
+                    self.show_palette("");
+                    true
+                }
+                KeyCode::Char('Q') => {
+                    self.quit();
+                    true
+                }
+                _ => false,
             }
-            KeyCode::Char('Q') => {
-                self.quit();
-                true
-            }
-            _ => false,
-        }
     }
 
     fn update(&mut self, action: &Message) {

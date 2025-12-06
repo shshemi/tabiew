@@ -23,8 +23,6 @@ pub enum Message {
     PaneDismissModal,
     PanePushDataFrame(DataFrame),
     PanePopDataFrame,
-    PaneTableSelectUp,
-    PaneTableSelectDown,
     PaneTableSelect(usize),
     Quit,
     PaneShowInlineSelect,

@@ -119,8 +119,10 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if let Some(sections) = self.tstack.last().selected_sheet_sections() {
-            self.modal = Some(Modal::Sheet(Sheet::new(sections)));
+        if let Some(row) = self.tstack.last().selected()
+            && let Some(sections) = self.tstack.last().selected_sheet_sections()
+        {
+            self.modal = Some(Modal::Sheet(Sheet::new(row, sections)));
         }
     }
 
@@ -185,12 +187,6 @@ impl Pane {
         )));
     }
 
-    fn show_go_to_line(&mut self) {
-        if let Some(selected) = self.tstack.last().selected() {
-            self.modal = Some(Modal::GoToLine(GoToLine::new(selected)))
-        }
-    }
-
     fn show_go_to_line_with_value(&mut self, value: usize) {
         if let Some(selected) = self.tstack.last().selected() {
             self.modal = Some(Modal::GoToLine(GoToLine::new(selected).with_value(value)))
@@ -225,33 +221,6 @@ impl Pane {
         )))
     }
 
-    fn dismiss_model(&mut self) {
-        self.modal = None
-    }
-
-    fn select_up(&mut self) {
-        self.tstack.last_mut().select_up();
-        self.update_sheet();
-    }
-
-    fn select_down(&mut self) {
-        self.tstack.last_mut().select_down();
-        self.update_sheet();
-    }
-
-    fn select(&mut self, idx: usize) {
-        self.tstack.last_mut().select(idx);
-        self.update_sheet();
-    }
-
-    fn update_sheet(&mut self) {
-        if let Some(Modal::Sheet(sheet)) = self.modal.as_mut()
-            && let Some(sections) = self.tstack.last_mut().selected_sheet_sections()
-        {
-            sheet.set_sections(sections);
-        }
-    }
-
     fn push_data_frame(&mut self, df: DataFrame) {
         self.tstack.push(
             Table::new(df)
@@ -267,6 +236,14 @@ impl Pane {
     fn pop_data_frame(&mut self) {
         self.tstack.pop();
     }
+
+    fn select(&mut self, idx: usize) {
+        self.tstack.last_mut().select(idx);
+    }
+
+    fn cancel_modal(&mut self) {
+        self.modal.take();
+    }
 }
 
 impl Component for Pane {
@@ -278,7 +255,12 @@ impl Component for Pane {
     ) {
         match &mut self.modal {
             Some(Modal::Sheet(sheet_state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
+                if let Some(row) = self.tstack.last().selected()
+                    && row != sheet_state.row()
+                    && let Some(sections) = self.tstack.last().selected_sheet_sections()
+                {
+                    sheet_state.update(row, sections);
+                }
                 self.tstack.last_mut().render(area, buf, focus_state);
                 let area = area.inner(Margin::new(13, 3));
                 sheet_state.render(area, buf, focus_state);
@@ -286,29 +268,23 @@ impl Component for Pane {
             Some(Modal::SearchBar(search_bar_state)) => {
                 let [search_area, table_area] =
                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-                // DataFrameTable::new().render(table_area, buf, &mut self.table);
                 self.tstack.last_mut().render(table_area, buf, focus_state);
                 search_bar_state.render(search_area, buf, focus_state);
             }
             Some(Modal::DataFrameInfo(data_frame_info)) => {
-                //
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 let [area] = Layout::horizontal([Constraint::Length(100)])
                     .flex(Flex::Center)
                     .areas(area);
-                let [_, area] = Layout::vertical([Constraint::Length(3), Constraint::Length(25)])
-                    // .flex(Flex::Center)
-                    .areas(area);
+                let [_, area] =
+                    Layout::vertical([Constraint::Length(3), Constraint::Length(25)]).areas(area);
                 data_frame_info.render(area, buf, focus_state);
             }
             Some(Modal::ScatterPlot(state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::HistogramPlot(state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 let [area] = Layout::horizontal([Constraint::Length(122)])
                     .flex(Flex::Center)
@@ -318,28 +294,20 @@ impl Component for Pane {
                 state.render(area, buf, focus_state);
             }
             Some(Modal::InlineQuery(state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
-                // InlineQuery::default().render(area, buf, state);
             }
             Some(Modal::GoToLine(state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
-                // GoToLine::default().render(area, buf, state);
             }
             Some(Modal::ExportWizard(state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
-                // ExportWizard::default().render(area, buf, state);
             }
             Some(Modal::HistogramWizard(state)) => {
-                // DataFrameTable::new().render(area, buf, &mut self.table);
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
-                // HistogramWizard::default().render(area, buf, state);
             }
             Some(Modal::ScatterPlotWizard(state)) => {
                 self.tstack.last_mut().render(area, buf, focus_state);
@@ -443,9 +411,7 @@ impl Component for Pane {
                 .show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
                 .unwrap_or_enqueue_error(),
             Message::PaneShowScatterPlotWizard => self.show_scatter_plot_wizard(),
-            Message::PaneDismissModal => self.dismiss_model(),
-            Message::PaneTableSelectUp => self.select_up(),
-            Message::PaneTableSelectDown => self.select_down(),
+            Message::PaneDismissModal => self.cancel_modal(),
             Message::PanePushDataFrame(df) => self.push_data_frame(df.clone()),
             Message::PanePopDataFrame => self.pop_data_frame(),
             Message::PaneTableSelect(idx) => self.select(*idx),
