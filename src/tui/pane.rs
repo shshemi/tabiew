@@ -350,10 +350,11 @@ impl Component for Pane {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        if let Some(modal) = self.modal.as_mut() {
-            modal.responder().handle(event)
-        } else {
-            self.tstack.last_mut().handle(event)
+        self.modal
+            .as_mut()
+            .map(|m| m.responder().handle(event))
+            .unwrap_or_default()
+            || self.tstack.last_mut().handle(event)
                 | match (event.code, event.modifiers) {
                     (KeyCode::Enter, KeyModifiers::NONE) => {
                         self.show_sheet();
@@ -422,7 +423,6 @@ impl Component for Pane {
                     }
                     _ => false,
                 }
-        }
     }
 
     fn update(&mut self, action: &crate::handler::message::Message) {
