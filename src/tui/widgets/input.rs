@@ -187,6 +187,7 @@ impl Component for Input {
                 self.delete_next();
                 true
             }
+            (KeyCode::Char('i'), KeyModifiers::CONTROL) => true,
             (KeyCode::Char(c), KeyModifiers::NONE) | (KeyCode::Char(c), KeyModifiers::SHIFT) => {
                 match self.input_type {
                     InputType::Any => {
