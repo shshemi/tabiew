@@ -139,7 +139,7 @@ impl Component for TabSwitcher {
                 Message::TabsDismissSwitcher.enqueue();
                 true
             }
-            (KeyCode::Esc, KeyModifiers::NONE) => {
+            (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                 Message::TabsDismissSwitcher.enqueue();
                 Message::TabsSelect(self.rollback).enqueue();
                 true
