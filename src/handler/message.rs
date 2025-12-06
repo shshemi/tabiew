@@ -16,6 +16,7 @@ pub enum Message {
     PaneShowExportWizard,
     PaneShowInlineFilter,
     PaneShowInlineOrder,
+    PaneShowHistogram(String, usize),
     PaneShowHistogramWizard,
     PaneShowScatterPlot(String, String, Option<String>),
     PaneShowScatterPlotWizard,

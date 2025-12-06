@@ -303,7 +303,8 @@ impl PlotData for DataFrame {
     }
 }
 
-fn discrete_histogram(counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
+fn discrete_histogram(mut counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
+    counts.rechunk_mut();
     Ok(counts[0]
         .as_materialized_series()
         .iter()

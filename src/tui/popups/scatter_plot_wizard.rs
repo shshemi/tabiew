@@ -97,10 +97,8 @@ impl WizardState for State {
                     let x = x.clone();
                     let y = y.clone();
                     if picker.selected() == Some(0) {
-                        Message::PaneDismissModal.enqueue();
                         Message::PaneShowScatterPlot(x, y, None).enqueue();
                     } else {
-                        Message::PaneDismissModal.enqueue();
                         Message::PaneShowScatterPlot(x, y, Some(grp)).enqueue();
                     }
                 }

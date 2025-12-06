@@ -18,7 +18,7 @@ use crate::{
             data_frame_info::DataFrameInfo,
             export_wizard::ExportWizard,
             go_to_line::GoToLine,
-            histogram_wizard::HistogramWizard,
+            histogram_wizard::{self, HistogramWizard},
             inline_query::{InlineQuery, InlineQueryType},
             scatter_plot_wizard::{self, ScatterPlotWizard},
             wizard::Wizard,
@@ -203,9 +203,19 @@ impl Pane {
         )))
     }
 
+    fn show_histogram(&mut self, col: &str, buckets: usize) -> AppResult<()> {
+        self.modal = Some(Modal::HistogramPlot(HistogramPlot::new(
+            self.tstack
+                .last()
+                .data_frame()
+                .histogram_plot_data(col, buckets)?,
+        )));
+        Ok(())
+    }
+
     fn show_histogram_wizard(&mut self) {
         self.modal = Some(Modal::HistogramWizard(HistogramWizard::new(
-            self.tstack.last().data_frame(),
+            histogram_wizard::State::new(self.tstack.last().data_frame()),
         )))
     }
 
@@ -425,6 +435,9 @@ impl Component for Pane {
             Message::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
             Message::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
             Message::PaneShowExportWizard => self.show_export_wizard(),
+            Message::PaneShowHistogram(col, buckets) => {
+                self.show_histogram(col, *buckets).unwrap_or_enqueue_error()
+            }
             Message::PaneShowHistogramWizard => self.show_histogram_wizard(),
             Message::PaneShowScatterPlot(x, y, grp) => self
                 .show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
