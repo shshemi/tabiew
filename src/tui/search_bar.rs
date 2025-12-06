@@ -119,6 +119,15 @@ impl Component for SearchBar {
                     Message::PaneDismissModal.enqueue();
                     true
                 }
+                // (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+                //     Message::PaneTableSelectUp.enqueue();
+                //     true
+                // }
+                // (KeyCode::Down, KeyModifiers::NONE)
+                // | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+                //     Message::PaneTableSelectDown.enqueue();
+                //     true
+                // }
                 _ => false,
             }
         }
