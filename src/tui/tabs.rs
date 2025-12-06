@@ -38,15 +38,18 @@ impl Tabs {
         self.idx
     }
 
-    fn selected_mut(&mut self) -> Option<&mut Pane> {
-        self.panes.get_mut(self.idx)
-    }
-
     fn select(&mut self, idx: usize) {
         if let Some(switcher) = self.switcher.as_mut() {
             switcher.select(idx);
         }
         self.idx = idx;
+    }
+
+    fn remove_selected(&mut self) {
+        self.panes.take(self.idx);
+        if self.switcher.is_some() {
+            self.show_tab_switcher();
+        }
     }
 
     fn select_prev(&mut self) {
@@ -164,7 +167,7 @@ impl Component for Tabs {
                 .unwrap_or_default()
             || match (event.code, event.modifiers) {
                 (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                    self.panes.take(self.idx);
+                    self.remove_selected();
                     if self.is_empty() {
                         Message::Quit.enqueue();
                     }
@@ -197,7 +200,7 @@ impl Component for Tabs {
         if let Some(switcher) = self.switcher.as_mut() {
             switcher.update(action)
         }
-        if let Some(selected) = self.selected_mut() {
+        if let Some(selected) = self.panes.get_mut(self.idx) {
             selected.update(action);
         }
     }
