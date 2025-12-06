@@ -43,7 +43,7 @@ impl Component for CommandPicker {
                         Command::Order => Message::PaneShowInlineOrder.enqueue(),
                         Command::Sort => Message::PaneShowInlineOrder.enqueue(),
                         Command::Filter => Message::PaneShowInlineFilter.enqueue(),
-                        Command::Query => (),
+                        Command::Query => Message::PaneShowSqlQuery.enqueue(),
                         Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
                         Command::Select => Message::PaneShowInlineSelect.enqueue(),
                         Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),

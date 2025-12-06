@@ -19,7 +19,7 @@ use crate::{
             export_wizard::ExportWizard,
             go_to_line::GoToLine,
             histogram_wizard::{self, HistogramWizard},
-            inline_query::{InlineQuery, InlineQueryType},
+            query_picker::{QueryPicker, QueryType},
             scatter_plot_wizard::{self, ScatterPlotWizard},
             wizard::Wizard,
         },
@@ -34,7 +34,7 @@ pub enum Modal {
     DataFrameInfo(DataFrameInfo),
     ScatterPlot(ScatterPlot),
     HistogramPlot(HistogramPlot),
-    InlineQuery(InlineQuery),
+    QueryPicker(QueryPicker),
     GoToLine(GoToLine),
     ExportWizard(ExportWizard),
     HistogramWizard(HistogramWizard),
@@ -49,7 +49,7 @@ impl Modal {
             Modal::DataFrameInfo(data_frame_info) => data_frame_info,
             Modal::ScatterPlot(scatter_plot_state) => scatter_plot_state,
             Modal::HistogramPlot(histogram_plot_state) => histogram_plot_state,
-            Modal::InlineQuery(inline_query) => inline_query,
+            Modal::QueryPicker(query_picker) => query_picker,
             Modal::GoToLine(go_to_line) => go_to_line,
             Modal::ExportWizard(export_wizard) => export_wizard,
             Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
@@ -180,8 +180,8 @@ impl Pane {
         Ok(())
     }
 
-    fn show_inline_query(&mut self, query_type: InlineQueryType) {
-        self.modal = Some(Modal::InlineQuery(InlineQuery::new(
+    fn show_query_picker(&mut self, query_type: QueryType) {
+        self.modal = Some(Modal::QueryPicker(QueryPicker::new(
             self.tstack.last().data_frame().clone(),
             query_type,
         )));
@@ -293,7 +293,7 @@ impl Component for Pane {
                     Layout::vertical([Constraint::Length(3), Constraint::Length(40)]).areas(area);
                 state.render(area, buf, focus_state);
             }
-            Some(Modal::InlineQuery(state)) => {
+            Some(Modal::QueryPicker(state)) => {
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
             }
@@ -399,9 +399,10 @@ impl Component for Pane {
         }
         self.tstack.last_mut().update(action);
         match action {
-            Message::PaneShowInlineSelect => self.show_inline_query(InlineQueryType::Select),
-            Message::PaneShowInlineFilter => self.show_inline_query(InlineQueryType::Filter),
-            Message::PaneShowInlineOrder => self.show_inline_query(InlineQueryType::Order),
+            Message::PaneShowInlineSelect => self.show_query_picker(QueryType::InlineSelect),
+            Message::PaneShowInlineFilter => self.show_query_picker(QueryType::InlineFilter),
+            Message::PaneShowInlineOrder => self.show_query_picker(QueryType::InlineOrder),
+            Message::PaneShowSqlQuery => self.show_query_picker(QueryType::Sql),
             Message::PaneShowExportWizard => self.show_export_wizard(),
             Message::PaneShowHistogram(col, buckets) => {
                 self.show_histogram(col, *buckets).unwrap_or_enqueue_error()
@@ -430,7 +431,7 @@ impl Component for Pane {
             Some(Modal::DataFrameInfo(_)) => (),
             Some(Modal::ScatterPlot(_)) => (),
             Some(Modal::HistogramPlot(_)) => (),
-            Some(Modal::InlineQuery(_)) => (),
+            Some(Modal::QueryPicker(_)) => (),
             Some(Modal::GoToLine(_)) => (),
             Some(Modal::ExportWizard(_)) => (),
             Some(Modal::HistogramWizard(_)) => (),

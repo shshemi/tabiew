@@ -9,14 +9,14 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct InlineQuery {
+pub struct QueryPicker {
     df: DataFrame,
     text_picker: TextPicker,
-    query_type: InlineQueryType,
+    query_type: QueryType,
 }
 
-impl InlineQuery {
-    pub fn new(df: DataFrame, query_type: InlineQueryType) -> Self {
+impl QueryPicker {
+    pub fn new(df: DataFrame, query_type: QueryType) -> Self {
         Self {
             text_picker: TextPicker::default().with_title(query_type.title()),
             query_type,
@@ -28,7 +28,7 @@ impl InlineQuery {
         self.text_picker.input().value()
     }
 
-    pub fn query_type(&self) -> &InlineQueryType {
+    pub fn query_type(&self) -> &QueryType {
         &self.query_type
     }
 
@@ -47,7 +47,7 @@ impl InlineQuery {
     }
 }
 
-impl Component for InlineQuery {
+impl Component for QueryPicker {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
@@ -62,9 +62,10 @@ impl Component for InlineQuery {
             || match (event.code, event.modifiers) {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     let result = match self.query_type {
-                        InlineQueryType::Select => self.select(self.value()),
-                        InlineQueryType::Filter => self.filter(self.value()),
-                        InlineQueryType::Order => self.order(self.value()),
+                        QueryType::InlineSelect => self.select(self.value()),
+                        QueryType::InlineFilter => self.filter(self.value()),
+                        QueryType::InlineOrder => self.order(self.value()),
+                        QueryType::Sql => self.sql_query(self.value()),
                     };
                     match result {
                         Ok(df) => {
@@ -88,18 +89,20 @@ impl Component for InlineQuery {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum InlineQueryType {
-    Select,
-    Filter,
-    Order,
+pub enum QueryType {
+    InlineSelect,
+    InlineFilter,
+    InlineOrder,
+    Sql,
 }
 
-impl InlineQueryType {
+impl QueryType {
     fn title(&self) -> String {
         match self {
-            InlineQueryType::Select => "Select",
-            InlineQueryType::Filter => "Filter",
-            InlineQueryType::Order => "Order",
+            QueryType::InlineSelect => "Inline Select",
+            QueryType::InlineFilter => "Inline Filter",
+            QueryType::InlineOrder => "Inline Order",
+            QueryType::Sql => "SQL",
         }
         .to_owned()
     }
