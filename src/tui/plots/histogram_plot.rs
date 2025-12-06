@@ -77,11 +77,15 @@ impl Component for HistogramPlot {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
-            (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('k'), KeyModifiers::NONE) => {
+            (KeyCode::Up, KeyModifiers::NONE)
+            | (KeyCode::Char('k'), KeyModifiers::NONE)
+            | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
                 self.scroll_up();
                 true
             }
-            (KeyCode::Down, KeyModifiers::NONE) | (KeyCode::Char('j'), KeyModifiers::NONE) => {
+            (KeyCode::Down, KeyModifiers::NONE)
+            | (KeyCode::Char('j'), KeyModifiers::NONE)
+            | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
                 self.scroll_down();
                 true
             }
