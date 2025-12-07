@@ -4,7 +4,7 @@ use ratatui::widgets::{Borders, Widget};
 use crate::{
     handler::message::Message,
     misc::type_ext::VecExt,
-    tui::{component::Component, widgets::block::Block},
+    tui::{TableType, component::Component, widgets::block::Block},
 };
 
 use super::{
@@ -24,6 +24,7 @@ pub struct Tabs {
 impl Tabs {
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
+        self.idx = self.panes.len().saturating_sub(1);
     }
 
     fn len(&self) -> usize {
@@ -193,6 +194,9 @@ impl Component for Tabs {
 
     fn update(&mut self, action: &Message) {
         match action {
+            Message::TabsAddQueryPane(df, query) => {
+                self.add(Pane::new(df.clone(), TableType::Query(query.to_owned())));
+            }
             Message::TabsSelect(idx) => self.select(*idx),
             Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
             _ => (),

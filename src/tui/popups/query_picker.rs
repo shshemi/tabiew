@@ -67,14 +67,18 @@ impl Component for QueryPicker {
                         QueryType::InlineOrder => self.order(self.value()),
                         QueryType::Sql => self.sql_query(self.value()),
                     };
-                    match result {
-                        Ok(df) => {
-                            Message::PanePushDataFrame(df).enqueue();
+                    match (result, self.query_type) {
+                        (Ok(df), QueryType::Sql) => {
                             Message::PaneDismissModal.enqueue();
+                            Message::TabsAddQueryPane(df, self.value().to_owned()).enqueue();
                         }
-                        Err(err) => {
-                            Message::AppShowError(err.to_string()).enqueue();
+                        (Ok(df), _) => {
                             Message::PaneDismissModal.enqueue();
+                            Message::PanePushDataFrame(df).enqueue();
+                        }
+                        (Err(err), _) => {
+                            Message::PaneDismissModal.enqueue();
+                            Message::AppShowError(err.to_string()).enqueue();
                         }
                     }
                     true
