@@ -17,7 +17,7 @@ use ratatui::layout::{Constraint, Flex, Layout};
 pub enum Overlay {
     Schema(Schema),
     Error(ErrorPopup),
-    CommandPalette(CommandPicker),
+    CommandPicker(CommandPicker),
     ThemeSelector(ThemeSelector),
     Help(Help),
 }
@@ -27,7 +27,7 @@ impl Overlay {
         match self {
             Overlay::Schema(schema) => schema,
             Overlay::Error(error) => error,
-            Overlay::CommandPalette(command_palette) => command_palette,
+            Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,
             Overlay::Help(help) => help,
         }
@@ -173,7 +173,7 @@ impl App {
     //     &mut self.overlay
     // }
     pub fn show_palette(&mut self, _cmd: impl ToString) {
-        self.overlay = Some(Overlay::CommandPalette(CommandPicker::default()));
+        self.overlay = Some(Overlay::CommandPicker(CommandPicker::default()));
     }
     // pub fn take_palette(&mut self) -> Option<CommandPalette> {
     //     if matches!(&self.overlay, Overlay::CommandPalette(_))
@@ -325,7 +325,7 @@ impl Component for App {
             Some(Overlay::Error(error)) => {
                 error.render(area, buf, focus_state);
             }
-            Some(Overlay::CommandPalette(cmd)) => {
+            Some(Overlay::CommandPicker(cmd)) => {
                 let upmid = {
                     let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
                         .flex(Flex::Center)
