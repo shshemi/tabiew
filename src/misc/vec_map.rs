@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, vec::IntoIter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct VecMap<K, V> {
     vec: Vec<(K, V)>,
 }

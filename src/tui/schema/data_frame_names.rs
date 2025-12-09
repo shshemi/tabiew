@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Span,
@@ -16,19 +17,27 @@ use crate::{
 #[derive(Debug)]
 pub struct DataFrameNames {
     table: TableState,
-    items: Vec<String>,
 }
 
 impl DataFrameNames {
     pub fn selected(&self) -> Option<usize> {
         self.table.selected()
     }
-    pub fn table(&self) -> &TableState {
-        &self.table
+
+    fn select_up(&mut self) {
+        self.table.select_previous();
     }
 
-    pub fn table_mut(&mut self) -> &mut TableState {
-        &mut self.table
+    fn select_down(&mut self) {
+        self.table.select_next();
+    }
+}
+
+impl Default for DataFrameNames {
+    fn default() -> Self {
+        Self {
+            table: TableState::default().with_selected(0),
+        }
     }
 }
 
@@ -39,10 +48,10 @@ impl Component for DataFrameNames {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        let num_width = self.items.len().to_string().len();
+        let num_width = sql().schema().len().to_string().len();
 
         Table::default()
-            .rows(self.items.iter().enumerate().map(|(i, s)| {
+            .rows(sql().schema().iter().enumerate().map(|(i, (s, _))| {
                 Row::new([
                     Span::raw(format!(" {:>width$}", i + 1, width = num_width))
                         .style(theme().subtext()),
@@ -70,73 +79,32 @@ impl Component for DataFrameNames {
             )
             .render(area, buf, &mut self.table);
     }
-}
 
-impl Default for DataFrameNames {
-    fn default() -> Self {
-        Self {
-            table: TableState::default().with_selected(0),
-            items: sql()
-                .schema()
-                .iter()
-                .map(|(name, _)| name.to_owned())
-                .collect(),
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match (event.code, event.modifiers) {
+            (KeyCode::Up, KeyModifiers::NONE)
+            | (KeyCode::Char('k'), KeyModifiers::NONE)
+            | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+                self.select_up();
+                true
+            }
+            (KeyCode::Down, KeyModifiers::NONE)
+            | (KeyCode::Char('j'), KeyModifiers::NONE)
+            | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+                self.select_down();
+                true
+            }
+            (KeyCode::Delete, KeyModifiers::NONE) => {
+                if let Some(name) = self
+                    .selected()
+                    .and_then(|idx| sql().schema().get_by_index(idx).map(|(s, _)| s.to_owned()))
+                {
+                    sql().unregister(&name);
+                }
+                true
+            }
+
+            _ => false,
         }
     }
 }
-// pub struct DataFrameNames<I> {
-//     names: I,
-// }
-
-// impl<T> DataFrameNames<T> {
-//     pub fn new(names: T) -> Self {
-//         DataFrameNames { names }
-//     }
-// }
-
-// impl<'a, I> StatefulWidget for DataFrameNames<I>
-// where
-//     I: IntoIterator,
-//     I::Item: Into<Cow<'a, str>>,
-// {
-//     type State = DataFrameNamesState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         let items = self.names.into_iter().collect::<Vec<_>>();
-//         let num_width = items.len().to_string().len();
-
-//         Table::default()
-//             .rows(items.into_iter().enumerate().map(|(i, s)| {
-//                 Row::new([
-//                     Span::raw(format!(" {:>width$}", i + 1, width = num_width))
-//                         .style(theme().subtext()),
-//                     Span::raw(s.into()).style(theme().text()),
-//                 ])
-//             }))
-//             .row_highlight_style(theme().row_highlighted())
-//             .widths([
-//                 Constraint::Length(num_width as u16 + 1),
-//                 Constraint::Fill(1),
-//             ])
-//             .column_spacing(1)
-//             .block(
-//                 Block::default()
-//                     .title("Tables")
-//                     .bottom(
-//                         StatusBar::new()
-//                             .mono_color()
-//                             .centered()
-//                             .tag(Tag::new(" Open ", " Enter"))
-//                             .tag(Tag::new(" Unload ", " Delete ")),
-//                     )
-//                     .title_alignment(Alignment::Center)
-//                     .into_widget(),
-//             )
-//             .render(area, buf, &mut state.table);
-//     }
-// }

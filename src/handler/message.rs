@@ -5,12 +5,16 @@ use std::sync::{
 
 use polars::frame::DataFrame;
 
+use crate::misc::sql::TableInfo;
+
 #[derive(Debug)]
 pub enum Message {
     AppDismissOverlay,
     AppShowCommandPicker,
     AppShowError(String),
     AppShowThemeSelector,
+    AppShowSchema,
+    AppDismissSchema,
     TabsSelect(usize),
     TabsDismissSwitcher,
     TabsAddQueryPane(DataFrame, String),
@@ -26,8 +30,8 @@ pub enum Message {
     PanePushDataFrame(DataFrame),
     PanePopDataFrame,
     PaneTableSelect(usize),
-    Quit,
     PaneShowInlineSelect,
+    Quit,
 }
 
 impl Message {

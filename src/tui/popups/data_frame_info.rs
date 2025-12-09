@@ -4,6 +4,7 @@ use ratatui::layout::Margin;
 
 use crate::{
     handler::message::Message,
+    misc::sql::TableInfo,
     tui::{component::Component, schema::data_frame_info},
 };
 
@@ -15,7 +16,7 @@ pub struct DataFrameInfo {
 impl DataFrameInfo {
     pub fn new(df: &DataFrame, input: crate::misc::sql::Source) -> Self {
         Self {
-            data_frame_info: data_frame_info::DataFrameInfo::new(df, input),
+            data_frame_info: data_frame_info::DataFrameInfo::new(TableInfo::new(input, df)),
         }
     }
 }
