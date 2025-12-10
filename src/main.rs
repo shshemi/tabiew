@@ -4,14 +4,13 @@ use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use ratatui::backend::CrosstermBackend;
 use std::fs::{self};
-use std::io::{self, IsTerminal};
+use std::io::{self, BufWriter, IsTerminal};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
-use tabiew::handler::message::Message;
-use tabiew::tui::component::Component;
 use tabiew::handler::event::{Event, EventHandler};
+use tabiew::handler::message::Message;
 use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, sql};
 use tabiew::misc::paths::{config_path, history_path, theme_path};
@@ -19,6 +18,7 @@ use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
+use tabiew::tui::component::Component;
 use tabiew::tui::themes::custom::Custom;
 
 use tabiew::tui::{Pane, TableType};
@@ -165,7 +165,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
 
     // Initialize the terminal user interface.
     let mut tui = tui::Terminal::new(
-        ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
+        ratatui::Terminal::new(CrosstermBackend::new(BufWriter::new(io::stdout())))?,
         EventHandler::new(100),
     );
     tui.init()?;
