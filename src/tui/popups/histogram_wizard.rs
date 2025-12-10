@@ -81,7 +81,7 @@ impl WizardState for State {
 }
 
 #[derive(Debug)]
-struct ColumnNameType(String, DataType);
+pub struct ColumnNameType(String, DataType);
 
 impl Display for ColumnNameType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
