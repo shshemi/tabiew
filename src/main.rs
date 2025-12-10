@@ -165,7 +165,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
 
     // Initialize the terminal user interface.
     let mut tui = tui::Terminal::new(
-        ratatui::Terminal::new(CrosstermBackend::new(BufWriter::new(io::stdout())))?,
+        ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?,
         EventHandler::new(100),
     );
     tui.init()?;
