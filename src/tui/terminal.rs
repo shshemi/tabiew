@@ -65,7 +65,7 @@ impl<B: Backend> Terminal<B> {
     /// the terminal properties if unexpected errors occur.
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stderr(), LeaveAlternateScreen)?;
+        crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
         Ok(())
     }
 
