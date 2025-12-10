@@ -8,10 +8,7 @@ use ratatui::{
 
 use crate::{
     handler::message::Message,
-    misc::{
-        globals::{sql, theme},
-        sql::TableInfo,
-    },
+    misc::globals::{sql, theme},
     tui::{
         component::Component,
         schema::{data_frame_info::DataFrameInfo, data_frame_names::DataFrameNames},
@@ -23,24 +20,6 @@ use crate::{
 pub struct Schema {
     names: DataFrameNames,
     info: Option<DataFrameInfo>,
-}
-
-impl Schema {
-    // fn selected_info_mut(&mut self) -> Option<&mut DataFrameInfo> {
-    //     self.names.selected().and_then(|idx| self.info.get_mut(idx))
-    // }
-
-    // fn remove_selected(&mut self) {
-    //     if let Some((idx, name)) = self.names.remove_selected() {
-    //         sql().unregister(name.as_str());
-    //         self.info.remove(idx);
-    //     }
-    // }
-
-    // fn push(&mut self, name: String, table_info: TableInfo) {
-    //     self.names.push(name);
-    //     self.info.push(DataFrameInfo::new(table_info));
-    // }
 }
 
 impl Component for Schema {

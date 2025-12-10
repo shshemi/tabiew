@@ -5,7 +5,6 @@ use std::sync::{
 
 use polars::frame::DataFrame;
 
-use crate::misc::sql::TableInfo;
 
 #[derive(Debug)]
 pub enum Message {
