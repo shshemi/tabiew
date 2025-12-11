@@ -202,26 +202,26 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
             Event::Resize(_, _) => {}
         }
 
-        while let Ok(event) = tui.events.try_next() {
-            match event {
-                Event::Tick => app.tick(),
-                Event::Key(key_event) => {
-                    #[cfg(target_os = "windows")]
-                    {
-                        use crossterm::event::KeyEventKind;
-                        if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                            app.handle(key_event);
-                        }
-                    }
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        app.handle(key_event);
-                    }
-                }
-                Event::Mouse(_) => {}
-                Event::Resize(_, _) => {}
-            }
-        }
+        // while let Ok(event) = tui.events.try_next() {
+        //     match event {
+        //         Event::Tick => app.tick(),
+        //         Event::Key(key_event) => {
+        //             #[cfg(target_os = "windows")]
+        //             {
+        //                 use crossterm::event::KeyEventKind;
+        //                 if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+        //                     app.handle(key_event);
+        //                 }
+        //             }
+        //             #[cfg(not(target_os = "windows"))]
+        //             {
+        //                 app.handle(key_event);
+        //             }
+        //         }
+        //         Event::Mouse(_) => {}
+        //         Event::Resize(_, _) => {}
+        //     }
+        // }
 
         while let Some(action) = Message::dequeue() {
             app.update(&action);
