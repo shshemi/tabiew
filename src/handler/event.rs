@@ -78,4 +78,8 @@ impl EventHandler {
     pub fn next(&self) -> AppResult<Event> {
         Ok(self.receiver.recv()?)
     }
+
+    pub fn try_next(&self) -> AppResult<Event> {
+        Ok(self.receiver.try_recv()?)
+    }
 }
