@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::AnyValue, series::Series};
 use ratatui::{
-    layout::{Constraint, Layout, Position, Size},
+    layout::{Constraint, Layout, Position, Rect, Size},
     text::Text,
     widgets::{Cell, List, ListItem, ListState, Row, StatefulWidget, TableState},
 };
@@ -19,27 +19,6 @@ use crate::{
     },
     tui::{component::Component, sheet::SheetSection},
 };
-
-#[derive(Debug, Clone, Copy)]
-enum ColumnMode {
-    Compact,
-    Expanded(u16),
-}
-
-#[derive(Debug, Clone, Copy)]
-enum GutterMode {
-    Hidden,
-    Visible(u16),
-}
-
-impl GutterMode {
-    fn width(&self) -> u16 {
-        match self {
-            GutterMode::Hidden => 0,
-            GutterMode::Visible(w) => *w,
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Table {
@@ -304,6 +283,19 @@ impl Table {
         .style(theme().gutter(idx))
     }
 
+    fn gutter_table_area(&self, area: Rect) -> (Option<Rect>, Rect) {
+        if let GutterMode::Visible(width) = self.gutter_mode {
+            let [gutter_area, table_area] =
+                Layout::horizontal([Constraint::Length(width + 4), Constraint::Fill(1)])
+                    .areas(area);
+            let [_, gutter_area] =
+                Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(gutter_area);
+            (Some(gutter_area), table_area)
+        } else {
+            (None, area)
+        }
+    }
+
     fn required_width(&self) -> u16 {
         let spaces = self.col_space * self.col_widths.len().saturating_sub(1) as u16;
         let columns = self.col_widths.iter().map(|c| c.value()).sum::<u16>();
@@ -335,12 +327,9 @@ impl Component for Table {
 
         let slice = self.df.slice(self.offset as i64, length);
 
-        let table_area = if let GutterMode::Visible(width) = self.gutter_mode {
-            let [gutter_area, table_area] =
-                Layout::horizontal([Constraint::Length(width + 4), Constraint::Fill(1)])
-                    .areas(area);
-            let [_, gutter_area] =
-                Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(gutter_area);
+        let (gutter_area, table_area) = self.gutter_table_area(area);
+
+        if let Some(gutter_area) = gutter_area {
             List::default()
                 .items((self.offset..(self.offset + length)).map(|idx| self.gutter_item(idx)))
                 .highlight_style(theme().row_highlighted())
@@ -350,10 +339,8 @@ impl Component for Table {
                     &mut ListState::default()
                         .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
                 );
-            table_area
-        } else {
-            area
-        };
+        }
+
         let mut table = ratatui::widgets::Table::default()
             .widths(&self.col_widths)
             .style(theme().text())
@@ -459,6 +446,27 @@ impl Component for Table {
                 true
             }
             _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ColumnMode {
+    Compact,
+    Expanded(u16),
+}
+
+#[derive(Debug, Clone, Copy)]
+enum GutterMode {
+    Hidden,
+    Visible(u16),
+}
+
+impl GutterMode {
+    fn width(&self) -> u16 {
+        match self {
+            GutterMode::Hidden => 0,
+            GutterMode::Visible(w) => *w,
         }
     }
 }
