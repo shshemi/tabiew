@@ -101,7 +101,6 @@ impl Pane {
                     .striped()
                     .with_selected(0)
                     .with_show_header(true)
-                    .with_show_gutter(true)
                     .with_col_space(2)
                     .with_extended_view_mode(),
             ),
@@ -227,7 +226,6 @@ impl Pane {
                 .striped()
                 .with_selected(0)
                 .with_show_header(true)
-                .with_show_gutter(true)
                 .with_col_space(2)
                 .with_extended_view_mode(),
         );

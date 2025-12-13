@@ -62,7 +62,7 @@ impl Styler for Terminal {
         Style::default().fg(Color::Yellow)
     }
 
-    fn gutter(&self) -> Style {
-        Style::default().fg(Color::White)
+    fn gutter(&self, _: usize) -> Style {
+        Style::default().bg(Color::Black).fg(Color::White)
     }
 }

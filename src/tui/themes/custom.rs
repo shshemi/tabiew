@@ -153,7 +153,7 @@ impl Styler for Custom {
         self.text_highlighted
     }
 
-    fn gutter(&self) -> Style {
+    fn gutter(&self, _: usize) -> Style {
         self.gutter
     }
 }
