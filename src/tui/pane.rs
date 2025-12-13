@@ -102,7 +102,7 @@ impl Pane {
                     .with_selected(0)
                     .with_show_header(true)
                     .with_col_space(2)
-                    .with_extended_view_mode(),
+                    .with_extended_column(),
             ),
             modal: None,
             table_type,
@@ -227,7 +227,7 @@ impl Pane {
                 .with_selected(0)
                 .with_show_header(true)
                 .with_col_space(2)
-                .with_extended_view_mode(),
+                .with_extended_column(),
         );
     }
 

@@ -21,21 +21,21 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
-pub enum ViewMode {
+enum ColumnMode {
     Compact,
     Expanded(u16),
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum GutterMode {
-    Hide,
+enum GutterMode {
+    Hidden,
     Visible(u16),
 }
 
 impl GutterMode {
     fn width(&self) -> u16 {
         match self {
-            GutterMode::Hide => 0,
+            GutterMode::Hidden => 0,
             GutterMode::Visible(w) => *w,
         }
     }
@@ -50,10 +50,10 @@ pub struct Table {
     selected: Option<usize>,
     offset: usize,
     rendered_rows: usize,
-    view_mode: ViewMode,
     striped: bool,
     show_header: bool,
-    show_gutter: GutterMode,
+    column_mode: ColumnMode,
+    gutter_mode: GutterMode,
 }
 
 impl Table {
@@ -71,10 +71,10 @@ impl Table {
             selected: None,
             offset: 0,
             rendered_rows: 0,
-            view_mode: ViewMode::Compact,
+            column_mode: ColumnMode::Compact,
             striped: false,
             show_header: false,
-            show_gutter: GutterMode::Visible(gutter_width),
+            gutter_mode: GutterMode::Visible(gutter_width),
             df,
             col_space: 1,
         }
@@ -94,20 +94,6 @@ impl Table {
         }
     }
 
-    pub fn with_show_gutter(self, show_gutter: bool) -> Self {
-        if show_gutter {
-            Self {
-                show_gutter: GutterMode::Visible(self.df.height().to_string().len() as u16),
-                ..self
-            }
-        } else {
-            Self {
-                show_gutter: GutterMode::Hide,
-                ..self
-            }
-        }
-    }
-
     pub fn with_selected(self, selected: impl Into<Option<usize>>) -> Self {
         Self {
             selected: selected.into(),
@@ -119,16 +105,30 @@ impl Table {
         Self { col_space, ..self }
     }
 
-    pub fn with_compaect_view_mode(self) -> Self {
+    pub fn with_visible_gutter(self) -> Self {
         Self {
-            view_mode: ViewMode::Compact,
+            gutter_mode: GutterMode::Visible(self.df.height().to_string().len() as u16),
             ..self
         }
     }
 
-    pub fn with_extended_view_mode(self) -> Self {
+    pub fn with_hidden_gutter(self) -> Self {
         Self {
-            view_mode: ViewMode::Expanded(Default::default()),
+            gutter_mode: GutterMode::Hidden,
+            ..self
+        }
+    }
+
+    pub fn with_compaect_column(self) -> Self {
+        Self {
+            column_mode: ColumnMode::Compact,
+            ..self
+        }
+    }
+
+    pub fn with_extended_column(self) -> Self {
+        Self {
+            column_mode: ColumnMode::Expanded(Default::default()),
             ..self
         }
     }
@@ -177,9 +177,9 @@ impl Table {
     }
 
     pub fn toggle_view_mode(&mut self) {
-        self.view_mode = match self.view_mode {
-            ViewMode::Compact => ViewMode::Expanded(0),
-            ViewMode::Expanded(_) => ViewMode::Compact,
+        self.column_mode = match self.column_mode {
+            ColumnMode::Compact => ColumnMode::Expanded(0),
+            ColumnMode::Expanded(_) => ColumnMode::Compact,
         }
     }
 
@@ -204,19 +204,19 @@ impl Table {
     }
 
     pub fn scroll_left(&mut self) {
-        if let ViewMode::Expanded(st) = &mut self.view_mode {
+        if let ColumnMode::Expanded(st) = &mut self.column_mode {
             *st = st.saturating_sub(1)
         }
     }
 
     pub fn scroll_right(&mut self) {
-        if let ViewMode::Expanded(st) = &mut self.view_mode {
+        if let ColumnMode::Expanded(st) = &mut self.column_mode {
             *st = st.saturating_add(1)
         }
     }
 
     pub fn scroll_to_prev_column(&mut self) {
-        if let ViewMode::Expanded(offset) = &mut self.view_mode {
+        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
             *offset = self
                 .col_widths
                 .iter()
@@ -232,7 +232,7 @@ impl Table {
     }
 
     pub fn scroll_to_next_column(&mut self) {
-        if let ViewMode::Expanded(offset) = &mut self.view_mode {
+        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
             self.col_widths
                 .iter()
                 .map(|c| c.value())
@@ -266,8 +266,11 @@ impl Table {
         }
     }
 
-    pub fn view_mode(&self) -> &ViewMode {
-        &self.view_mode
+    pub fn expended_column(&self) -> bool {
+        match self.column_mode {
+            ColumnMode::Compact => false,
+            ColumnMode::Expanded(_) => true,
+        }
     }
 
     fn header_row(&self) -> Row<'static> {
@@ -296,7 +299,7 @@ impl Table {
         ListItem::new(Text::raw(format!(
             "  {:>w$}  ",
             idx + 1,
-            w = self.show_gutter.width().into()
+            w = self.gutter_mode.width().into()
         )))
         .style(theme().gutter(idx))
     }
@@ -332,7 +335,7 @@ impl Component for Table {
 
         let slice = self.df.slice(self.offset as i64, length);
 
-        let table_area = if let GutterMode::Visible(width) = self.show_gutter {
+        let table_area = if let GutterMode::Visible(width) = self.gutter_mode {
             let [gutter_area, table_area] =
                 Layout::horizontal([Constraint::Length(width + 4), Constraint::Fill(1)])
                     .areas(area);
@@ -369,8 +372,8 @@ impl Component for Table {
             table = table.header(self.header_row())
         }
         let width = self.required_width().max(table_area.width);
-        match &mut self.view_mode {
-            ViewMode::Compact => {
+        match &mut self.column_mode {
+            ColumnMode::Compact => {
                 table.render(
                     table_area,
                     buf,
@@ -378,7 +381,7 @@ impl Component for Table {
                         .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
                 );
             }
-            ViewMode::Expanded(x) => {
+            ColumnMode::Expanded(x) => {
                 *x = (*x).min(width.saturating_sub(table_area.width));
                 let mut scroll_area = ScrollView::new(Size {
                     width,
