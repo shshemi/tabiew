@@ -106,10 +106,11 @@ impl Component for Tabs {
                         super::TableType::Query(query) => Tag::new("Query", query),
                     })
                     .tag(Tag::new(
-                        "View Mode",
-                        match tabular.table().view_mode() {
-                            crate::tui::table::ViewMode::Compact => "Compact",
-                            crate::tui::table::ViewMode::Expanded(_) => "Expanded",
+                        "Column Mode",
+                        if tabular.table().expended_column() {
+                            "Compact"
+                        } else {
+                            "Expanded"
                         },
                     ))
                     .tag(Tag::new(
@@ -147,7 +148,6 @@ impl Component for Tabs {
 
         // render tabular
         if let Some(pane) = self.panes.get_mut(self.idx) {
-            // Pane.render(area, buf, tabular);
             pane.render(area, buf, focus_state);
         }
 
