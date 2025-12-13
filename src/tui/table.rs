@@ -288,9 +288,14 @@ impl Table {
             let [gutter_area, table_area] =
                 Layout::horizontal([Constraint::Length(width + 4), Constraint::Fill(1)])
                     .areas(area);
-            let [_, gutter_area] =
-                Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(gutter_area);
-            (Some(gutter_area), table_area)
+            if self.show_header {
+                let [_, gutter_area] =
+                    Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+                        .areas(gutter_area);
+                (Some(gutter_area), table_area)
+            } else {
+                (Some(gutter_area), table_area)
+            }
         } else {
             (None, area)
         }
