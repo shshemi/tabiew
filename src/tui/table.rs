@@ -1,10 +1,12 @@
 use std::ops::Div;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::AnyValue, series::Series};
 use ratatui::{
-    layout::{Constraint, Position, Size},
-    widgets::{Cell, Row, StatefulWidget, TableState},
+    layout::{Constraint, Layout, Position, Size},
+    text::Text,
+    widgets::{Cell, List, ListItem, ListState, Row, StatefulWidget, TableState},
 };
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
@@ -24,6 +26,21 @@ pub enum ViewMode {
     Expanded(u16),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum GutterMode {
+    Hide,
+    Visible(u16),
+}
+
+impl GutterMode {
+    fn width(&self) -> u16 {
+        match self {
+            GutterMode::Hide => 0,
+            GutterMode::Visible(w) => *w,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Table {
     df: DataFrame,
@@ -36,19 +53,18 @@ pub struct Table {
     view_mode: ViewMode,
     striped: bool,
     show_header: bool,
-    show_gutter: bool,
+    show_gutter: GutterMode,
 }
 
 impl Table {
     pub fn new(df: DataFrame) -> Self {
-        let col_names = std::iter::once(String::with_capacity(0))
-            .chain(df.iter().map(|ser| ser.name().to_string()))
-            .collect();
-
-        let col_widths = std::iter::once(df.height().to_string().len() + 1)
-            .chain(df.widths())
+        let col_names = df.iter().map(|ser| ser.name().to_string()).collect();
+        let col_widths = df
+            .widths()
+            .into_iter()
             .map(|u| Constraint::Length(u as u16))
             .collect();
+        let gutter_width = df.height().to_string().len() as u16;
         Self {
             col_names,
             col_widths,
@@ -58,7 +74,7 @@ impl Table {
             view_mode: ViewMode::Compact,
             striped: false,
             show_header: false,
-            show_gutter: false,
+            show_gutter: GutterMode::Visible(gutter_width),
             df,
             col_space: 1,
         }
@@ -79,9 +95,16 @@ impl Table {
     }
 
     pub fn with_show_gutter(self, show_gutter: bool) -> Self {
-        Self {
-            show_gutter,
-            ..self
+        if show_gutter {
+            Self {
+                show_gutter: GutterMode::Visible(self.df.height().to_string().len() as u16),
+                ..self
+            }
+        } else {
+            Self {
+                show_gutter: GutterMode::Hide,
+                ..self
+            }
         }
     }
 
@@ -192,6 +215,45 @@ impl Table {
         }
     }
 
+    pub fn scroll_to_prev_column(&mut self) {
+        if let ViewMode::Expanded(offset) = &mut self.view_mode {
+            *offset = self
+                .col_widths
+                .iter()
+                .map(|c| c.value())
+                .scan(0, |s, u| {
+                    *s += u + self.col_space;
+                    Some(*s)
+                })
+                .take_while(|u| u < offset)
+                .last()
+                .unwrap_or(0);
+        }
+    }
+
+    pub fn scroll_to_next_column(&mut self) {
+        if let ViewMode::Expanded(offset) = &mut self.view_mode {
+            self.col_widths
+                .iter()
+                .map(|c| c.value())
+                .scan(0, |s, u| {
+                    *s += u + self.col_space;
+                    Some(*s)
+                })
+                .collect_vec();
+            *offset = self
+                .col_widths
+                .iter()
+                .map(|c| c.value())
+                .scan(0, |s, u| {
+                    *s += u + self.col_space;
+                    Some(*s)
+                })
+                .find(|u| &*offset < u)
+                .unwrap_or(0);
+        }
+    }
+
     pub fn half_page_up(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(self.rendered_rows.div(2)));
@@ -208,69 +270,41 @@ impl Table {
         &self.view_mode
     }
 
-    fn col_widths(&self) -> &[Constraint] {
-        if self.show_gutter {
-            &self.col_widths
-        } else {
-            &self.col_widths[1..]
-        }
-    }
-
-    fn col_names(&self) -> &[String] {
-        if self.show_gutter {
-            &self.col_names
-        } else {
-            &self.col_names[1..]
-        }
-    }
-
     fn header_row(&self) -> Row<'static> {
-        Row::new(self.col_names().iter().cloned().enumerate().map(|(i, d)| {
-            if self.show_gutter {
-                Cell::new(d).style(theme().header(i.saturating_sub(1)))
-            } else {
-                Cell::new(d).style(theme().header(i))
-            }
-        }))
+        Row::new(
+            self.col_names
+                .iter()
+                .cloned()
+                .enumerate()
+                .map(|(i, d)| Cell::new(d).style(theme().header(i))),
+        )
         .style(theme().table_header())
     }
 
-    fn row<'a>(&self, row: usize, vals: Vec<AnyValue<'a>>) -> Row<'a> {
-        if self.show_gutter {
-            let cells = std::iter::once(
-                Cell::new(format!(
-                    "{:>w$}",
-                    self.gutter_val(row),
-                    w = self.gutter_width()
-                ))
-                .style(theme().gutter()),
-            )
-            .chain(
-                vals.into_iter()
-                    .zip(&self.col_widths[1..])
-                    .map(|(val, con)| val.into_cell(con.value() as usize)),
-            );
-            Row::new(cells)
+    fn row<'a>(&self, idx: usize, vals: Vec<AnyValue<'a>>) -> Row<'a> {
+        let cells = vals
+            .into_iter()
+            .map(|val| Cell::new(val.into_single_line()));
+        Row::new(cells).style(if self.striped {
+            theme().row(self.offset + idx)
         } else {
-            let cells = vals
-                .into_iter()
-                .map(|val| Cell::new(val.into_single_line()));
-            Row::new(cells)
-        }
+            theme().row(0)
+        })
     }
 
-    fn gutter_val(&self, idx: usize) -> usize {
-        idx + 1
-    }
-
-    fn gutter_width(&self) -> usize {
-        self.col_widths[0].value() as usize
+    fn gutter_item(&self, idx: usize) -> ListItem<'_> {
+        ListItem::new(Text::raw(format!(
+            "  {:>w$}  ",
+            idx + 1,
+            w = self.show_gutter.width().into()
+        )))
+        .style(theme().gutter(idx))
     }
 
     fn required_width(&self) -> u16 {
-        let spaces = self.col_space * self.col_widths().len().saturating_sub(1) as u16;
-        let columns = self.col_widths().iter().map(|c| c.value()).sum::<u16>();
-        (columns + spaces).saturating_sub(1)
+        let spaces = self.col_space * self.col_widths.len().saturating_sub(1) as u16;
+        let columns = self.col_widths.iter().map(|c| c.value()).sum::<u16>();
+        columns + spaces
     }
 }
 
@@ -298,44 +332,57 @@ impl Component for Table {
 
         let slice = self.df.slice(self.offset as i64, length);
 
-        let rows = slice
-            .iter()
-            .map(Series::iter)
-            .zip_iters()
-            .enumerate()
-            .map(|(idx, vals)| {
-                let idx = self.offset + idx;
-                let style = if self.striped {
-                    theme().row(idx)
-                } else {
-                    theme().row(0)
-                };
-                self.row(idx, vals).style(style)
-            });
-
-        let mut table = ratatui::widgets::Table::new(rows, self.col_widths())
+        let table_area = if let GutterMode::Visible(width) = self.show_gutter {
+            let [gutter_area, table_area] =
+                Layout::horizontal([Constraint::Length(width + 4), Constraint::Fill(1)])
+                    .areas(area);
+            let [_, gutter_area] =
+                Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(gutter_area);
+            List::default()
+                .items((self.offset..(self.offset + length)).map(|idx| self.gutter_item(idx)))
+                .highlight_style(theme().row_highlighted())
+                .render(
+                    gutter_area,
+                    buf,
+                    &mut ListState::default()
+                        .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
+                );
+            table_area
+        } else {
+            area
+        };
+        let mut table = ratatui::widgets::Table::default()
+            .widths(&self.col_widths)
             .style(theme().text())
             .row_highlight_style(theme().row_highlighted())
-            .column_spacing(self.col_space);
+            .column_spacing(self.col_space)
+            .rows(
+                slice
+                    .iter()
+                    .map(Series::iter)
+                    .zip_iters()
+                    .enumerate()
+                    .map(|(idx, vals)| self.row(idx, vals)),
+            );
 
         if self.show_header {
             table = table.header(self.header_row())
         }
-        let width = self.required_width().max(area.width);
+        let width = self.required_width().max(table_area.width);
         match &mut self.view_mode {
             ViewMode::Compact => {
                 table.render(
-                    area,
+                    table_area,
                     buf,
                     &mut TableState::default()
                         .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
                 );
             }
             ViewMode::Expanded(x) => {
-                *x = (*x).min(width.saturating_sub(area.width));
+                *x = (*x).min(width.saturating_sub(table_area.width));
                 let mut scroll_area = ScrollView::new(Size {
                     width,
-                    height: area.height,
+                    height: table_area.height,
                 })
                 .scrollbars_visibility(ScrollbarVisibility::Never);
                 scroll_area.render_stateful_widget(
@@ -345,7 +392,7 @@ impl Component for Table {
                         .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
                 );
                 scroll_area.render(
-                    area,
+                    table_area,
                     buf,
                     &mut ScrollViewState::with_offset(Position { x: *x, y: 0 }),
                 );
@@ -398,6 +445,14 @@ impl Component for Table {
             }
             (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
                 self.half_page_down();
+                true
+            }
+            (KeyCode::Char('w'), KeyModifiers::NONE) => {
+                self.scroll_to_next_column();
+                true
+            }
+            (KeyCode::Char('b'), KeyModifiers::NONE) => {
+                self.scroll_to_prev_column();
                 true
             }
             _ => false,
