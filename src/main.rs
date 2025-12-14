@@ -4,7 +4,7 @@ use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use ratatui::backend::CrosstermBackend;
 use std::fs::{self};
-use std::io::{self, BufWriter, IsTerminal};
+use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
