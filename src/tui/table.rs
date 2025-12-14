@@ -336,7 +336,10 @@ impl Component for Table {
 
         if let Some(gutter_area) = gutter_area {
             List::default()
-                .items((self.offset..(self.offset + length)).map(|idx| self.gutter_item(idx)))
+                .items(
+                    (self.offset..(self.offset + length).min(self.df.height()))
+                        .map(|idx| self.gutter_item(idx)),
+                )
                 .highlight_style(theme().row_highlighted())
                 .render(
                     gutter_area,
