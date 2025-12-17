@@ -1,12 +1,26 @@
 use std::{
     fmt::Display,
-    io::{Write, stdout},
+    io::Write,
+    sync::Mutex,
 };
 
 use base64::Engine;
+use lazy_static::lazy_static;
 use unicode_width::UnicodeWidthChar;
 
 use crate::AppResult;
+
+lazy_static! {
+    static ref OSC52_BUFFER: Mutex<Vec<String>> = Mutex::new(Vec::new());
+}
+
+pub fn flush_osc52_buffer() {
+    let mut buffer = OSC52_BUFFER.lock().unwrap();
+    for seq in buffer.drain(..) {
+        print!("{}", seq);
+    }
+    std::io::stdout().flush().unwrap();
+}
 
 pub trait ToAscii {
     fn to_ascii(self) -> Option<u8>;
@@ -89,9 +103,8 @@ where
     fn copy_to_clipboard_via_osc52(&self) -> AppResult<()> {
         let encoded = base64::engine::general_purpose::STANDARD.encode(self);
         let sequence = format!("\x1b]52;c;{encoded}\x07");
-        let mut out = stdout();
-        out.write_all(sequence.as_bytes())?;
-        out.flush()?;
+        let mut buffer = OSC52_BUFFER.lock().unwrap();
+        buffer.push(sequence);
         Ok(())
     }
 }
