@@ -55,7 +55,7 @@ impl Keybind {
 
     fn char(mut self, c: char) -> Self {
         self.code = KeyCode::Char(c);
-        if c.is_uppercase() {
+        if c.is_uppercase() || "!@#$%^&*()_+{}|:\"<>?~".contains(c) {
             self.modifiers |= KeyModifiers::SHIFT
         }
         self
@@ -155,7 +155,13 @@ impl Default for KeyHandler {
             // :
             .add(
                 Keybind::default()
-                    .char(':')
+                    .code(KeyCode::Char(':'))
+                    .action(AppAction::PaletteShow(String::default())),
+            )
+            .add(
+                Keybind::default()
+                    .code(KeyCode::Char(':'))
+                    .shift()
                     .action(AppAction::PaletteShow(String::default())),
             )
             .fallback(|event| match event.code {
