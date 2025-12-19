@@ -29,6 +29,9 @@ impl<B: Backend> Terminal<B> {
     /// It enables the raw mode and sets terminal properties.
     pub fn init(&mut self) -> AppResult<()> {
         terminal::enable_raw_mode()?;
+        #[cfg(target_os = "windows")]
+        crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
+        #[cfg(not(target_os = "windows"))]
         crossterm::execute!(io::stderr(), EnterAlternateScreen)?;
 
         // Define a custom panic hook to reset the terminal properties.
@@ -61,6 +64,9 @@ impl<B: Backend> Terminal<B> {
     /// the terminal properties if unexpected errors occur.
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
+        #[cfg(target_os = "windows")]
+        crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
+        #[cfg(not(target_os = "windows"))]
         crossterm::execute!(io::stderr(), LeaveAlternateScreen)?;
         Ok(())
     }
