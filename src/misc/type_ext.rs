@@ -1,18 +1,15 @@
 use std::{
     fmt::Display,
     io::Write,
-    sync::Mutex,
+    sync::{LazyLock, Mutex},
 };
 
 use base64::Engine;
-use lazy_static::lazy_static;
 use unicode_width::UnicodeWidthChar;
 
 use crate::AppResult;
 
-lazy_static! {
-    static ref OSC52_BUFFER: Mutex<Vec<String>> = Mutex::new(Vec::new());
-}
+static OSC52_BUFFER: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(Vec::new()));
 
 pub fn flush_osc52_buffer() {
     let mut buffer = OSC52_BUFFER.lock().unwrap();
