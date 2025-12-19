@@ -14,14 +14,6 @@ impl OutputTargetPicker {
     pub fn selected(&self) -> Option<Target> {
         self.list_picker.selected_item().copied()
     }
-
-    pub fn select_up(&mut self) {
-        self.list_picker.select_up();
-    }
-
-    pub fn select_down(&mut self) {
-        self.list_picker.select_down();
-    }
 }
 
 impl Component for OutputTargetPicker {
@@ -41,30 +33,11 @@ impl Component for OutputTargetPicker {
 
 impl Default for OutputTargetPicker {
     fn default() -> Self {
-        OutputTargetPicker {
+        Self {
             list_picker: ListPicker::new(Target::iter().to_owned().collect()),
         }
     }
 }
-
-// #[derive(Debug, Default)]
-// pub struct OutputTargetPicker {}
-
-// impl StatefulWidget for OutputTargetPicker {
-//     type State = OutputTargetPickerState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         ListPicker::default()
-//             .title("Output Target")
-//             .items(Target::iter().map(Into::into).map(Cow::Borrowed))
-//             .render(area, buf, &mut state.list_picker)
-//     }
-// }
 
 #[derive(Debug, IntoStaticStr, EnumIter, Clone, Copy)]
 pub enum Target {
