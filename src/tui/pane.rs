@@ -1,6 +1,7 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
 use polars::frame::DataFrame;
+use rand::Rng;
 use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
 use super::{search_bar::SearchBar, sheet::Sheet};
@@ -239,6 +240,10 @@ impl Pane {
         self.tstack.last_mut().select(idx);
     }
 
+    fn select_random(&mut self) {
+        self.select(rand::rng().random_range(0..self.tstack.last().data_frame().height()));
+    }
+
     fn cancel_modal(&mut self) {
         self.modal.take();
     }
@@ -372,6 +377,12 @@ impl Component for Pane {
                     }
                     (KeyCode::Char('/'), KeyModifiers::NONE) => {
                         self.show_fuzzy_search();
+                        true
+                    }
+                    (KeyCode::Char('R'), KeyModifiers::SHIFT)
+                        if !matches!(self.modal, Some(Modal::GoToLine(_))) =>
+                    {
+                        self.select_random();
                         true
                     }
                     (KeyCode::Char('?'), KeyModifiers::NONE)
