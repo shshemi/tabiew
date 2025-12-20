@@ -1,8 +1,8 @@
-use std::ops::Div;
+use std::ops::{Add, Div};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::AnyValue, series::Series};
+use polars::{frame::DataFrame, series::Series};
 use ratatui::{
     layout::{Constraint, Layout, Position, Rect, Size},
     text::Text,
@@ -23,8 +23,8 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Table {
     df: DataFrame,
-    col_names: Vec<String>,
     col_widths: Vec<Constraint>,
+    col_offsets: Vec<u16>,
     col_space: u16,
     selected: Option<usize>,
     offset: usize,
@@ -37,17 +37,18 @@ pub struct Table {
 
 impl Table {
     pub fn new(df: DataFrame) -> Self {
-        let col_names = df.iter().map(|ser| ser.name().to_string()).collect();
+        let col_space = 1;
         let col_widths = df
             .widths()
             .into_iter()
             .map(|u| Constraint::Length(u as u16))
-            .collect();
+            .collect_vec();
+        let col_offsets = col_offsets(&col_widths, col_space);
         let gutter_width = df.height().to_string().len() as u16;
         Self {
-            col_names,
             col_widths,
             selected: None,
+            col_offsets,
             offset: 0,
             rendered_rows: 0,
             column_mode: ColumnMode::Compact,
@@ -55,7 +56,7 @@ impl Table {
             show_header: false,
             gutter_mode: GutterMode::Visible(gutter_width),
             df,
-            col_space: 1,
+            col_space,
         }
     }
 
@@ -81,7 +82,11 @@ impl Table {
     }
 
     pub fn with_col_space(self, col_space: u16) -> Self {
-        Self { col_space, ..self }
+        Self {
+            col_space,
+            col_offsets: col_offsets(&self.col_widths, col_space),
+            ..self
+        }
     }
 
     pub fn with_visible_gutter(self) -> Self {
@@ -196,40 +201,13 @@ impl Table {
 
     pub fn scroll_to_prev_column(&mut self) {
         if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = self
-                .col_widths
-                .iter()
-                .map(|c| c.value())
-                .scan(0, |s, u| {
-                    *s += u + self.col_space;
-                    Some(*s)
-                })
-                .take_while(|u| u < offset)
-                .last()
-                .unwrap_or(0);
+            *offset = prev_column_offset(&self.col_offsets, offset);
         }
     }
 
     pub fn scroll_to_next_column(&mut self) {
         if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            self.col_widths
-                .iter()
-                .map(|c| c.value())
-                .scan(0, |s, u| {
-                    *s += u + self.col_space;
-                    Some(*s)
-                })
-                .collect_vec();
-            *offset = self
-                .col_widths
-                .iter()
-                .map(|c| c.value())
-                .scan(0, |s, u| {
-                    *s += u + self.col_space;
-                    Some(*s)
-                })
-                .find(|u| &*offset < u)
-                .unwrap_or(0);
+            *offset = next_column_offset(&self.col_offsets, offset);
         }
     }
 
@@ -250,28 +228,6 @@ impl Table {
             ColumnMode::Compact => false,
             ColumnMode::Expanded(_) => true,
         }
-    }
-
-    fn header_row(&self) -> Row<'static> {
-        Row::new(
-            self.col_names
-                .iter()
-                .cloned()
-                .enumerate()
-                .map(|(i, d)| Cell::new(d).style(theme().header(i))),
-        )
-        .style(theme().table_header())
-    }
-
-    fn row<'a>(&self, idx: usize, vals: Vec<AnyValue<'a>>) -> Row<'a> {
-        let cells = vals
-            .into_iter()
-            .map(|val| Cell::new(val.into_single_line()));
-        Row::new(cells).style(if self.striped {
-            theme().row(self.offset + idx)
-        } else {
-            theme().row(0)
-        })
     }
 
     fn gutter_item(&self, idx: usize) -> ListItem<'_> {
@@ -315,29 +271,27 @@ impl Component for Table {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        let length = if self.show_header {
+        let height = if self.show_header {
             area.height.saturating_sub(1)
         } else {
             area.height
         } as usize;
-        self.rendered_rows = length;
+        self.rendered_rows = height;
 
         if let Some(selected) = self.selected {
             self.offset = self
                 .offset
-                .clamp(selected.saturating_sub(length.saturating_sub(1)), selected);
+                .clamp(selected.saturating_sub(height.saturating_sub(1)), selected);
         } else {
-            self.offset = self.offset.min(self.df.height().saturating_sub(length))
+            self.offset = self.offset.min(self.df.height().saturating_sub(height))
         }
-
-        let slice = self.df.slice(self.offset as i64, length);
 
         let (gutter_area, table_area) = self.gutter_table_area(area);
 
         if let Some(gutter_area) = gutter_area {
             List::default()
                 .items(
-                    (self.offset..(self.offset + length).min(self.df.height()))
+                    (self.offset..(self.offset + height).min(self.df.height()))
                         .map(|idx| self.gutter_item(idx)),
                 )
                 .highlight_style(theme().row_highlighted())
@@ -349,26 +303,19 @@ impl Component for Table {
                 );
         }
 
-        let mut table = ratatui::widgets::Table::default()
-            .widths(&self.col_widths)
-            .style(theme().text())
-            .row_highlight_style(theme().row_highlighted())
-            .column_spacing(self.col_space)
-            .rows(
-                slice
-                    .iter()
-                    .map(Series::iter)
-                    .zip_iters()
-                    .enumerate()
-                    .map(|(idx, vals)| self.row(idx, vals)),
-            );
-
-        if self.show_header {
-            table = table.header(self.header_row())
-        }
         let width = self.required_width().max(table_area.width);
         match &mut self.column_mode {
             ColumnMode::Compact => {
+                let df = self.df.slice(self.offset as i64, height);
+                let table = build_table(
+                    &df,
+                    &self.col_widths,
+                    self.col_space,
+                    self.show_header,
+                    self.striped,
+                    self.offset,
+                    0,
+                );
                 table.render(
                     table_area,
                     buf,
@@ -378,6 +325,23 @@ impl Component for Table {
             }
             ColumnMode::Expanded(x) => {
                 *x = (*x).min(width.saturating_sub(table_area.width));
+                let col_start = column_index(&self.col_offsets, x);
+                let col_end = column_index(&self.col_offsets, &x.add(table_area.width)).add(1);
+                let col_start_offset = self.col_offsets.get(col_start).copied().unwrap_or_default();
+                let df = self
+                    .df
+                    .select_by_range(col_start..col_end)
+                    .unwrap()
+                    .slice(self.offset as i64, height);
+                let table = build_table(
+                    &df,
+                    &self.col_widths[col_start..col_end],
+                    self.col_space,
+                    self.show_header,
+                    self.striped,
+                    self.offset,
+                    col_start,
+                );
                 let mut scroll_area = ScrollView::new(Size {
                     width,
                     height: table_area.height,
@@ -392,7 +356,10 @@ impl Component for Table {
                 scroll_area.render(
                     table_area,
                     buf,
-                    &mut ScrollViewState::with_offset(Position { x: *x, y: 0 }),
+                    &mut ScrollViewState::with_offset(Position {
+                        x: x.saturating_sub(col_start_offset),
+                        y: 0,
+                    }),
                 );
             }
         }
@@ -477,4 +444,77 @@ impl GutterMode {
             GutterMode::Visible(w) => *w,
         }
     }
+}
+
+fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<u16> {
+    std::iter::once(0)
+        .chain(col_widths.iter().map(|c| c.value()).scan(0, |s, u| {
+            *s += u + col_space;
+            Some(*s)
+        }))
+        .collect_vec()
+}
+
+fn column_index(col_offsets: &[u16], offset: &u16) -> usize {
+    match col_offsets.binary_search(offset) {
+        Ok(idx) => idx,
+        Err(idx) => idx.saturating_sub(1),
+    }
+    .min(col_offsets.len().saturating_sub(1))
+}
+fn prev_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
+    col_offsets
+        .get(column_index(col_offsets, offset).saturating_sub(1))
+        .copied()
+        .unwrap_or_default()
+}
+
+fn next_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
+    col_offsets
+        .get(column_index(col_offsets, offset).saturating_add(1))
+        .copied()
+        .unwrap_or_default()
+}
+
+fn build_table<'a>(
+    df: &'a DataFrame,
+    col_widths: &[Constraint],
+    col_space: u16,
+    show_header: bool,
+    striped: bool,
+    offset_row: usize,
+    offset_col: usize,
+) -> ratatui::widgets::Table<'a> {
+    let mut table = ratatui::widgets::Table::default()
+        .widths(col_widths)
+        .style(theme().text())
+        .row_highlight_style(theme().row_highlighted())
+        .column_spacing(col_space)
+        .rows(
+            df.iter()
+                .map(Series::iter)
+                .zip_iters()
+                .enumerate()
+                .map(|(idx, vals)| {
+                    let cells = vals
+                        .into_iter()
+                        .map(|val| Cell::new(val.into_single_line()));
+                    Row::new(cells).style(if striped {
+                        theme().row(offset_row + idx)
+                    } else {
+                        theme().row(0)
+                    })
+                }),
+        );
+
+    if show_header {
+        table =
+            table.header(
+                Row::new(df.iter().enumerate().map(|(i, d)| {
+                    Cell::new(d.name().as_str()).style(theme().header(offset_col + i))
+                }))
+                .style(theme().table_header()),
+            )
+    }
+    table
 }
