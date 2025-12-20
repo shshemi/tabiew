@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use polars::frame::DataFrame;
 use rand::Rng;
-use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
+use ratatui::layout::{Constraint, Layout, Margin, Rect};
 
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
@@ -262,7 +262,7 @@ impl Component for Pane {
                     && row != sheet_state.row()
                     && let Some(sections) = self.tstack.last().selected_sheet_sections()
                 {
-                    sheet_state.update(row, sections);
+                    sheet_state.set(row, sections);
                 }
                 self.tstack.last_mut().render(area, buf, focus_state);
                 let area = area.inner(Margin::new(13, 3));
@@ -276,11 +276,6 @@ impl Component for Pane {
             }
             Some(Modal::DataFrameInfo(data_frame_info)) => {
                 self.tstack.last_mut().render(area, buf, focus_state);
-                let [area] = Layout::horizontal([Constraint::Length(100)])
-                    .flex(Flex::Center)
-                    .areas(area);
-                let [_, area] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Length(25)]).areas(area);
                 data_frame_info.render(area, buf, focus_state);
             }
             Some(Modal::ScatterPlot(state)) => {
@@ -289,11 +284,6 @@ impl Component for Pane {
             }
             Some(Modal::HistogramPlot(state)) => {
                 self.tstack.last_mut().render(area, buf, focus_state);
-                let [area] = Layout::horizontal([Constraint::Length(122)])
-                    .flex(Flex::Center)
-                    .areas(area);
-                let [_, area] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Length(40)]).areas(area);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::QueryPicker(state)) => {
