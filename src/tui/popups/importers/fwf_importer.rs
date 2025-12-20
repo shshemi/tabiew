@@ -72,8 +72,9 @@ impl WizardState for State {
                 let widths = picker
                     .value()
                     .split(' ')
-                    .map(|s| s.parse().unwrap_or(0))
-                    .collect();
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()
+                    .unwrap_or_default();
                 State::PickHeader {
                     widths,
                     source,
