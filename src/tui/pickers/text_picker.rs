@@ -39,8 +39,18 @@ impl TextPicker {
         }
     }
 
-    pub fn with_title(self, title: String) -> Self {
-        Self { title, ..self }
+    pub fn with_title(self, title: impl Into<String>) -> Self {
+        Self {
+            title: title.into(),
+            ..self
+        }
+    }
+
+    pub fn with_hint(self, hint: impl Into<String>) -> Self {
+        Self {
+            input: self.input.with_hint(hint.into()),
+            ..self
+        }
     }
 
     pub fn input(&self) -> &Input {

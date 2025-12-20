@@ -3,7 +3,7 @@ mod fwf;
 mod sqlite;
 
 use anyhow::{Ok, anyhow};
-use excel::ExcelToDataFarmes;
+pub use excel::ExcelToDataFarmes;
 pub use fwf::FwfToDataFrame;
 pub use sqlite::SqliteToDataFrames;
 
@@ -44,13 +44,6 @@ impl Source {
                 .unwrap_or("unknown".into())
                 .into_owned(),
             Source::Stdin => String::from("Stdin"),
-        }
-    }
-
-    pub fn display_path(&self) -> String {
-        match self {
-            Source::File(path_buf) => path_buf.to_string_lossy().into_owned(),
-            Source::Stdin => "Stdin".to_owned(),
         }
     }
 }
@@ -294,4 +287,3 @@ impl ReadToDataFrames for ArrowIpcToDataFrame {
         Ok([(input.table_name(), df)].into())
     }
 }
-

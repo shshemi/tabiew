@@ -2,7 +2,10 @@ use crate::{
     handler::message::Message,
     tui::{
         component::Component,
-        popups::{command_picker::CommandPicker, help_modal::Help, theme_selector::ThemeSelector},
+        popups::{
+            command_picker::CommandPicker, help_modal::Help, import_wizard::ImportWizard,
+            theme_selector::ThemeSelector,
+        },
         schema::schema::Schema,
     },
 };
@@ -11,13 +14,13 @@ use crate::{
     tui::{error_popup::ErrorPopup, tabs::Tabs},
 };
 use crossterm::event::KeyCode;
-use ratatui::layout::{Constraint, Flex, Layout};
 
 #[derive(Debug)]
 pub enum Overlay {
     Error(ErrorPopup),
     CommandPicker(CommandPicker),
     ThemeSelector(ThemeSelector),
+    Import(ImportWizard),
     Help(Help),
 }
 
@@ -28,6 +31,7 @@ impl Overlay {
             Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,
             Overlay::Help(help) => help,
+            Overlay::Import(wizard) => wizard,
         }
     }
 }
@@ -67,6 +71,10 @@ impl App {
         self.overlay = Some(Overlay::Error(ErrorPopup::new(message)));
     }
 
+    fn show_import_wizard(&mut self) {
+        self.overlay = Some(Overlay::Import(ImportWizard::default()))
+    }
+
     fn dismiss_overlay(&mut self) {
         self.overlay = None;
     }
@@ -96,30 +104,33 @@ impl Component for App {
         } else {
             self.tabs.render(area, buf, focus_state);
         }
-        match self.overlay.as_mut() {
-            Some(Overlay::Error(error)) => {
-                error.render(area, buf, focus_state);
-            }
-            Some(Overlay::CommandPicker(cmd)) => {
-                let upmid = {
-                    let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
-                        .flex(Flex::Center)
-                        .areas(area);
-                    let [_, mid_hor] =
-                        Layout::vertical([Constraint::Length(3), Constraint::Length(15)])
-                            .areas(mid_ver);
-                    mid_hor
-                };
-                cmd.render(upmid, buf, focus_state);
-            }
-            Some(Overlay::ThemeSelector(theme_selector)) => {
-                theme_selector.render(area, buf, focus_state);
-            }
-            Some(Overlay::Help(help)) => {
-                help.render(area, buf, focus_state);
-            }
-            None => {}
+        if let Some(overlay) = self.overlay.as_mut() {
+            overlay.responder().render(area, buf, focus_state);
         }
+        // match self.overlay.as_mut() {
+        //     Some(Overlay::Error(error)) => {
+        //         error.render(area, buf, focus_state);
+        //     }
+        //     Some(Overlay::CommandPicker(cmd)) => {
+        //         let upmid = {
+        //             let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
+        //                 .flex(Flex::Center)
+        //                 .areas(area);
+        //             let [_, mid_hor] =
+        //                 Layout::vertical([Constraint::Length(3), Constraint::Length(15)])
+        //                     .areas(mid_ver);
+        //             mid_hor
+        //         };
+        //         cmd.render(upmid, buf, focus_state);
+        //     }
+        //     Some(Overlay::ThemeSelector(theme_selector)) => {
+        //         theme_selector.render(area, buf, focus_state);
+        //     }
+        //     Some(Overlay::Help(help)) => {
+        //         help.render(area, buf, focus_state);
+        //     }
+        //     None => {}
+        // }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
@@ -154,6 +165,7 @@ impl Component for App {
             Message::AppShowCommandPicker => self.show_palette(""),
             Message::AppShowThemeSelector => self.show_theme_selector(),
             Message::AppShowSchema => self.show_schema(),
+            Message::AppShowImportWizard => self.show_import_wizard(),
             Message::AppDismissSchema => self.dismiss_schema(),
             _ => (),
         };

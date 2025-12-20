@@ -5,7 +5,6 @@ use std::sync::{
 
 use polars::frame::DataFrame;
 
-
 #[derive(Debug)]
 pub enum Message {
     AppDismissOverlay,
@@ -13,9 +12,11 @@ pub enum Message {
     AppShowError(String),
     AppShowThemeSelector,
     AppShowSchema,
+    AppShowImportWizard,
     AppDismissSchema,
     TabsSelect(usize),
     TabsDismissSwitcher,
+    TabsAddNamePane(DataFrame, String),
     TabsAddQueryPane(DataFrame, String),
     PaneShowExportWizard,
     PaneShowInlineFilter,
