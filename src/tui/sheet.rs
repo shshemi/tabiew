@@ -56,7 +56,7 @@ impl Sheet {
         self.row
     }
 
-    pub fn update(&mut self, row: usize, sections: Vec<SheetSection>) {
+    pub fn set(&mut self, row: usize, sections: Vec<SheetSection>) {
         self.row = row;
         self.sections = sections;
     }
