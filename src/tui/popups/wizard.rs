@@ -37,21 +37,30 @@ where
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        if let Some(responder) = self.state.as_mut().map(|s| s.responder()) {
-            responder.handle(event)
-                || match (event.code, event.modifiers) {
-                    (KeyCode::Esc, KeyModifiers::NONE) => {
-                        Message::PaneDismissModal.enqueue();
-                        true
-                    }
-                    (KeyCode::Enter, KeyModifiers::NONE) => {
-                        self.state = self.state.take().map(|s| s.next());
-                        true
-                    }
-                    _ => false,
+        self.state
+            .as_mut()
+            .map(|s| s.responder().handle(event))
+            .unwrap_or(false)
+            || match (event.code, event.modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::AppDismissOverlay.enqueue();
+                    true
                 }
-        } else {
-            false
-        }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    self.state = self.state.take().map(|s| s.next());
+                    true
+                }
+                _ => false,
+            }
+    }
+}
+
+impl<State> Default for Wizard<State>
+where
+    State: Default + WizardState,
+{
+    fn default() -> Self {
+        Self::new(Default::default())
     }
 }
