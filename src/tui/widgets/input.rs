@@ -12,6 +12,7 @@ pub enum InputType {
     Any,
     Numeric,
     Alphabetic,
+    MultiNumeric,
 }
 
 #[derive(Debug, Default)]
@@ -193,13 +194,21 @@ impl Component for Input {
                     InputType::Any => {
                         self.insert(c);
                     }
-                    InputType::Numeric if c.is_numeric() => {
-                        self.insert(c);
+                    InputType::Numeric => {
+                        if c.is_numeric() {
+                            self.insert(c);
+                        }
                     }
-                    InputType::Alphabetic if c.is_alphabetic() => {
-                        self.insert(c);
+                    InputType::Alphabetic => {
+                        if c.is_alphabetic() {
+                            self.insert(c);
+                        }
                     }
-                    _ => (),
+                    InputType::MultiNumeric => {
+                        if c.is_numeric() || c == ' ' {
+                            self.insert(c);
+                        }
+                    }
                 }
                 true
             }
