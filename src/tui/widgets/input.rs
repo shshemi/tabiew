@@ -192,18 +192,16 @@ impl Component for Input {
                 match self.input_type {
                     InputType::Any => {
                         self.insert(c);
-                        true
                     }
                     InputType::Numeric if c.is_numeric() => {
                         self.insert(c);
-                        true
                     }
                     InputType::Alphabetic if c.is_alphabetic() => {
                         self.insert(c);
-                        true
                     }
-                    _ => false,
+                    _ => (),
                 }
+                true
             }
             _ => false,
         }
