@@ -42,6 +42,13 @@ impl Input {
         }
     }
 
+    pub fn with_hint(self, value: String) -> Self {
+        Self {
+            hint: value,
+            ..self
+        }
+    }
+
     pub fn delete_prev(&mut self) {
         self.input.handle(tui_input::InputRequest::DeletePrevChar);
     }

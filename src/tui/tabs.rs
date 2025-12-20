@@ -194,6 +194,9 @@ impl Component for Tabs {
 
     fn update(&mut self, action: &Message) {
         match action {
+            Message::TabsAddNamePane(df, name) => {
+                self.add(Pane::new(df.clone(), TableType::Name(name.to_owned())));
+            }
             Message::TabsAddQueryPane(df, query) => {
                 self.add(Pane::new(df.clone(), TableType::Query(query.to_owned())));
             }

@@ -32,6 +32,13 @@ where
         }
     }
 
+    pub fn with_title(self, title: impl Into<String>) -> Self {
+        Self {
+            title: title.into(),
+            ..self
+        }
+    }
+
     pub fn selected(&self) -> Option<usize> {
         self.list.selected()
     }

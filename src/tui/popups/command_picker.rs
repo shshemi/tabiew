@@ -39,7 +39,7 @@ impl Component for CommandPicker {
                 if let Some(item) = self.picker.selected_item() {
                     match item {
                         Command::Export => Message::PaneShowExportWizard.enqueue(),
-                        Command::Import => (),
+                        Command::Import => Message::AppShowImportWizard.enqueue(),
                         Command::Order => Message::PaneShowInlineOrder.enqueue(),
                         Command::Sort => Message::PaneShowInlineOrder.enqueue(),
                         Command::Filter => Message::PaneShowInlineFilter.enqueue(),
@@ -48,8 +48,8 @@ impl Component for CommandPicker {
                         Command::Select => Message::PaneShowInlineSelect.enqueue(),
                         Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
                         Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
-                        Command::Quit => Message::Quit.enqueue(),
                         Command::Schema => Message::AppShowSchema.enqueue(),
+                        Command::Quit => Message::Quit.enqueue(),
                     }
                 }
                 true
