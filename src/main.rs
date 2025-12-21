@@ -16,7 +16,7 @@ use tabiew::handler::key::KeyHandler;
 use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, sql};
 use tabiew::misc::paths::{config_path, history_path, theme_path};
-use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
+use tabiew::misc::type_ext::{UnwrapOrGracefulShutdown, flush_osc52_buffer};
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
@@ -166,13 +166,19 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
 
     // Initialize the terminal user interface.
     let mut tui = tui::Terminal::new(
-        ratatui::Terminal::new(CrosstermBackend::new(io::stderr()))?,
+        ratatui::Terminal::new(CrosstermBackend::new(
+            #[cfg(target_os = "windows")]
+            io::stdout(),
+            #[cfg(not(target_os = "windows"))]
+            io::stderr(),
+        ))?,
         EventHandler::new(100),
     );
     tui.init()?;
 
     // Draw once before startup script
     tui.draw(&mut app)?;
+    flush_osc52_buffer();
 
     // Run startup script
     for line in script.lines().filter(|line| !line.is_empty()) {
@@ -183,6 +189,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
     // Main loop
     while app.running() {
         tui.draw(&mut app)?;
+        flush_osc52_buffer();
 
         match tui.events.next()? {
             Event::Tick => app.tick()?,
@@ -197,7 +204,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
                                 Ok(Some(next_action)) => action = next_action,
                                 Ok(_) => break,
                                 Err(err) => {
-                                    app.error(err);
+                                    app.show_error(err);
                                     break;
                                 }
                             }

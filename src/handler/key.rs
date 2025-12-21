@@ -55,9 +55,6 @@ impl Keybind {
 
     fn char(mut self, c: char) -> Self {
         self.code = KeyCode::Char(c);
-        if c.is_uppercase() {
-            self.modifiers |= KeyModifiers::SHIFT
-        }
         self
     }
 
@@ -89,12 +86,23 @@ impl Keybind {
     }
 
     fn matches(&self, event: KeyEvent) -> Option<AppAction> {
-        (self.code == event.code && self.modifiers == event.modifiers).then_some(
-            match &self.action {
-                Action::Direct(app_action) => app_action.clone(),
-                Action::Closure(closure) => closure(event),
-            },
-        )
+        if self.code != event.code {
+            return None;
+        }
+
+        // Ignore SHIFT for character keys (cross-platform/cross-keyboard compatibility)
+        let dominated = match self.code {
+            KeyCode::Char(_) => KeyModifiers::SHIFT,
+            _ => KeyModifiers::empty(),
+        };
+
+        let self_mods = self.modifiers.difference(dominated);
+        let event_mods = event.modifiers.difference(dominated);
+
+        (self_mods == event_mods).then_some(match &self.action {
+            Action::Direct(app_action) => app_action.clone(),
+            Action::Closure(closure) => closure(event),
+        })
     }
 }
 
