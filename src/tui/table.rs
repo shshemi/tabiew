@@ -17,7 +17,7 @@ use crate::{
         polars_ext::{AnyValueExt, GetSheetSections, TuiWidths},
         type_ext::ConstraintExt,
     },
-    tui::{component::Component, sheet::SheetSection},
+    tui::{component::Component, sheet::SheetSection, table},
 };
 
 #[derive(Debug, Clone)]
@@ -317,10 +317,16 @@ impl Component for Table {
                 );
             }
             ColumnMode::Expanded(x) => {
-                let width = required_width(&self.col_widths, self.col_space).max(table_area.width);
-                *x = (*x).min(width.saturating_sub(table_area.width));
+                let width = self
+                    .col_offsets
+                    .last()
+                    .copied()
+                    .unwrap_or(0)
+                    .saturating_sub(table_area.width)
+                    .max(table_area.width);
+                *x = (*x).min(width);
                 let col_start = column_index(&self.col_offsets, x);
-                let col_end = column_index(&self.col_offsets, &x.add(width));
+                let col_end = column_index(&self.col_offsets, &x.add(table_area.width));
                 let df = self
                     .df
                     .select_by_range(col_start..=col_end)
