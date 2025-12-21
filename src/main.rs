@@ -18,7 +18,7 @@ use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
-use tabiew::tui::component::Component;
+use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::themes::custom::Custom;
 
 use tabiew::tui::{Pane, TableType};
@@ -203,7 +203,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
         }
 
         while let Some(action) = Message::dequeue() {
-            app.update(&action);
+            app.update(&action, FocusState::Focused);
         }
     }
 

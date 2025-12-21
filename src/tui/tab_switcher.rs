@@ -65,7 +65,7 @@ impl Component for TabSwitcher {
         &mut self,
         area: Rect,
         buf: &mut ratatui::prelude::Buffer,
-        _focus_state: super::component::FocusState,
+        focus_state: super::component::FocusState,
     ) {
         let num_width = (self.items.len().ilog10() + 1) as u16;
         let text_width = self
@@ -87,21 +87,26 @@ impl Component for TabSwitcher {
                 Cell::new(s.as_str()).style(theme().text()),
             ])
         });
-        StatefulWidget::render(
-            Table::default()
-                .rows(rows)
-                .style(theme().text())
-                .row_highlight_style(theme().row_highlighted())
-                .widths([
-                    Constraint::Length(num_width + 1),
-                    Constraint::Length(text_width),
-                ])
-                .column_spacing(1)
-                .block(Block::default().title(self.title.as_str()).into_widget()),
-            area,
-            buf,
-            &mut self.list_state,
-        );
+        let table = Table::default()
+            .rows(rows)
+            .style(theme().text())
+            .row_highlight_style(theme().row_highlighted())
+            .widths([
+                Constraint::Length(num_width + 1),
+                Constraint::Length(text_width),
+            ])
+            .column_spacing(1)
+            .block(Block::default().title(self.title.as_str()).into_widget());
+        if focus_state.is_focused() {
+            StatefulWidget::render(table, area, buf, &mut self.list_state);
+        } else {
+            StatefulWidget::render(
+                table,
+                area,
+                buf,
+                &mut self.list_state.clone().with_selected(None),
+            );
+        }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
