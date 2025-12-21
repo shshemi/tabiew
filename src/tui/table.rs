@@ -199,15 +199,27 @@ impl Table {
         }
     }
 
-    pub fn scroll_to_prev_column(&mut self) {
+    pub fn scroll_to_left_column(&mut self) {
         if let ColumnMode::Expanded(offset) = &mut self.column_mode {
             *offset = prev_column_offset(&self.col_offsets, offset);
         }
     }
 
-    pub fn scroll_to_next_column(&mut self) {
+    pub fn scroll_to_right_column(&mut self) {
         if let ColumnMode::Expanded(offset) = &mut self.column_mode {
             *offset = next_column_offset(&self.col_offsets, offset);
+        }
+    }
+
+    fn scroll_to_first_column(&mut self) {
+        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
+            *offset = 0;
+        }
+    }
+
+    fn scroll_to_last_column(&mut self) {
+        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
+            *offset = self.col_offsets.last().copied().unwrap_or(0);
         }
     }
 
@@ -414,11 +426,19 @@ impl Component for Table {
                 true
             }
             (KeyCode::Char('w'), KeyModifiers::NONE) => {
-                self.scroll_to_next_column();
+                self.scroll_to_right_column();
                 true
             }
             (KeyCode::Char('b'), KeyModifiers::NONE) => {
-                self.scroll_to_prev_column();
+                self.scroll_to_left_column();
+                true
+            }
+            (KeyCode::Char('_'), KeyModifiers::SHIFT) => {
+                self.scroll_to_first_column();
+                true
+            }
+            (KeyCode::Char('$'), KeyModifiers::SHIFT) => {
+                self.scroll_to_last_column();
                 true
             }
             _ => false,
