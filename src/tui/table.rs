@@ -112,7 +112,7 @@ impl Table {
 
     pub fn with_extended_column(self) -> Self {
         Self {
-            column_mode: ColumnMode::Expanded(Default::default()),
+            column_mode: ColumnMode::Expanded(0),
             ..self
         }
     }
@@ -331,14 +331,13 @@ impl Component for Table {
                 );
             }
             ColumnMode::Expanded(x) => {
-                let width = self
+                let total_width = self
                     .col_offsets
                     .last()
                     .copied()
                     .unwrap_or(0)
-                    .saturating_sub(table_area.width)
                     .max(table_area.width);
-                *x = (*x).min(width);
+                *x = (*x).min(total_width.saturating_sub(table_area.width));
                 let col_start = column_index(&self.col_offsets, x);
                 let col_end = column_index(&self.col_offsets, &x.add(table_area.width));
                 let df = self
@@ -355,6 +354,7 @@ impl Component for Table {
                     self.offset,
                     col_start,
                 );
+                let width = self.col_offsets[col_end + 1] - self.col_offsets[col_start];
                 let mut scroll_area = ScrollView::new(Size {
                     width,
                     height: table_area.height,
@@ -438,11 +438,11 @@ impl Component for Table {
                 self.scroll_to_left_column();
                 true
             }
-            (KeyCode::Char('_'), KeyModifiers::SHIFT) => {
+            (KeyCode::Char('_'), _) => {
                 self.scroll_to_first_column();
                 true
             }
-            (KeyCode::Char('$'), KeyModifiers::SHIFT) => {
+            (KeyCode::Char('$'), _) => {
                 self.scroll_to_last_column();
                 true
             }
@@ -474,10 +474,22 @@ impl GutterMode {
 
 fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<u16> {
     std::iter::once(0)
-        .chain(col_widths.iter().map(|c| c.value()).scan(0, |s, u| {
-            *s += u + col_space;
-            Some(*s)
-        }))
+        .chain(
+            col_widths
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    if i != col_widths.len().saturating_sub(1) {
+                        c.value() + col_space
+                    } else {
+                        c.value()
+                    }
+                })
+                .scan(0, |s, u| {
+                    *s += u;
+                    Some(*s)
+                }),
+        )
         .collect_vec()
 }
 
