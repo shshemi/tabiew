@@ -112,9 +112,9 @@ impl Component for Tabs {
                     .tag(Tag::new(
                         "Column Mode",
                         if tabular.table().expended_column() {
-                            "Compact"
-                        } else {
                             "Expanded"
+                        } else {
+                            " Compact"
                         },
                     ))
                     .tag(Tag::new(
