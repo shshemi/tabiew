@@ -31,6 +31,7 @@ pub enum Message {
     PanePopDataFrame,
     PaneTableSelect(usize),
     PaneShowInlineSelect,
+    PaneShowTableRegisterer,
     Quit,
 }
 

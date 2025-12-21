@@ -13,6 +13,7 @@ pub mod output_target_picker;
 pub mod path_picker;
 pub mod query_picker;
 pub mod scatter_plot_wizard;
+pub mod table_registerer;
 pub mod theme_selector;
 pub mod wizard;
 pub mod yes_no_picker;
