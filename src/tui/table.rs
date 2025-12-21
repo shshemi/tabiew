@@ -26,11 +26,11 @@ pub struct Table {
     col_widths: Vec<Constraint>,
     col_offsets: Vec<u16>,
     col_space: u16,
+    striped: bool,
+    show_header: bool,
     selected: Option<usize>,
     offset: usize,
     rendered_rows: usize,
-    striped: bool,
-    show_header: bool,
     column_mode: ColumnMode,
     gutter_mode: GutterMode,
 }
@@ -38,11 +38,12 @@ pub struct Table {
 impl Table {
     pub fn new(df: DataFrame) -> Self {
         let col_space = 1;
-        let col_widths = df
-            .widths()
-            .into_iter()
-            .map(|u| Constraint::Length(u as u16))
-            .collect_vec();
+        // let col_widths = df
+        //     .widths()
+        //     .into_iter()
+        //     .map(|u| Constraint::Length(u as u16))
+        //     .collect_vec();
+        let col_widths = df.iter().map(|_| Constraint::Length(12)).collect_vec();
         let col_offsets = col_offsets(&col_widths, col_space);
         let gutter_width = df.height().to_string().len() as u16;
         Self {
@@ -256,12 +257,6 @@ impl Table {
             (None, area)
         }
     }
-
-    fn required_width(&self) -> u16 {
-        let spaces = self.col_space * self.col_widths.len().saturating_sub(1) as u16;
-        let columns = self.col_widths.iter().map(|c| c.value()).sum::<u16>();
-        columns + spaces
-    }
 }
 
 impl Component for Table {
@@ -303,7 +298,6 @@ impl Component for Table {
                 );
         }
 
-        let width = self.required_width().max(table_area.width);
         match &mut self.column_mode {
             ColumnMode::Compact => {
                 let df = self.df.slice(self.offset as i64, height);
@@ -324,18 +318,18 @@ impl Component for Table {
                 );
             }
             ColumnMode::Expanded(x) => {
+                let width = required_width(&self.col_widths, self.col_space).max(table_area.width);
                 *x = (*x).min(width.saturating_sub(table_area.width));
                 let col_start = column_index(&self.col_offsets, x);
-                let col_end = column_index(&self.col_offsets, &x.add(table_area.width)).add(1);
-                let col_start_offset = self.col_offsets.get(col_start).copied().unwrap_or_default();
+                let col_end = column_index(&self.col_offsets, &x.add(width));
                 let df = self
                     .df
-                    .select_by_range(col_start..col_end)
+                    .select_by_range(col_start..=col_end)
                     .unwrap()
                     .slice(self.offset as i64, height);
                 let table = build_table(
                     &df,
-                    &self.col_widths[col_start..col_end],
+                    &self.col_widths[col_start..=col_end],
                     self.col_space,
                     self.show_header,
                     self.striped,
@@ -357,7 +351,9 @@ impl Component for Table {
                     table_area,
                     buf,
                     &mut ScrollViewState::with_offset(Position {
-                        x: x.saturating_sub(col_start_offset),
+                        x: x.saturating_sub(
+                            self.col_offsets.get(col_start).copied().unwrap_or_default(),
+                        ),
                         y: 0,
                     }),
                 );
@@ -456,11 +452,14 @@ fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<u16> {
 }
 
 fn column_index(col_offsets: &[u16], offset: &u16) -> usize {
+    // col_offsets index: 0    1    2    3    4
+    // col_offsets      : 0---10---20---30---40
+    // return value     :   0    1    2   (3)-> maximum allowed = col_effsets.len() - 2
     match col_offsets.binary_search(offset) {
         Ok(idx) => idx,
         Err(idx) => idx.saturating_sub(1),
     }
-    .min(col_offsets.len().saturating_sub(1))
+    .min(col_offsets.len().saturating_sub(2))
 }
 fn prev_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
     col_offsets
@@ -474,6 +473,12 @@ fn next_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
         .get(column_index(col_offsets, offset).saturating_add(1))
         .copied()
         .unwrap_or_default()
+}
+
+fn required_width(col_widths: &[Constraint], col_space: u16) -> u16 {
+    let spaces = col_space * col_widths.len().saturating_sub(1) as u16;
+    let columns = col_widths.iter().map(|c| c.value()).sum::<u16>();
+    columns + spaces
 }
 
 fn build_table<'a>(
