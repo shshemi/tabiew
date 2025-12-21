@@ -9,7 +9,10 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        globals::sql, non_empty_stack::NonEmptyStack, polars_ext::PlotData, sql::Source,
+        globals::sql,
+        non_empty_stack::NonEmptyStack,
+        polars_ext::{GetSheetSections, PlotData},
+        sql::Source,
         type_ext::UnwrapOrEnqueueError,
     },
     tui::{
@@ -22,6 +25,7 @@ use crate::{
             histogram_wizard::{self, HistogramWizard},
             query_picker::{QueryPicker, QueryType},
             scatter_plot_wizard::{self, ScatterPlotWizard},
+            table_registerer::TableRegisterer,
             wizard::Wizard,
         },
         table::Table,
@@ -40,6 +44,7 @@ pub enum Modal {
     ExportWizard(ExportWizard),
     HistogramWizard(HistogramWizard),
     ScatterPlotWizard(ScatterPlotWizard),
+    TableRegisterer(TableRegisterer),
 }
 
 impl Modal {
@@ -55,6 +60,7 @@ impl Modal {
             Modal::ExportWizard(export_wizard) => export_wizard,
             Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
             Modal::ScatterPlotWizard(wizard) => wizard,
+            Modal::TableRegisterer(table_registerer) => table_registerer,
         }
     }
 }
@@ -119,9 +125,8 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if let Some(row) = self.tstack.last().selected()
-            && let Some(sections) = self.tstack.last().selected_sheet_sections()
-        {
+        if let Some(row) = self.tstack.last().selected() {
+            let sections = self.tstack.last().data_frame().get_sheet_sections(row);
             self.modal = Some(Modal::Sheet(Sheet::new(row, sections)));
         }
     }
@@ -221,6 +226,12 @@ impl Pane {
         )))
     }
 
+    fn show_table_registerer(&mut self) {
+        self.modal = Some(Modal::TableRegisterer(TableRegisterer::new(
+            self.tstack.last().data_frame().clone(),
+        )));
+    }
+
     fn push_data_frame(&mut self, df: DataFrame) {
         self.tstack.push(
             Table::new(df)
@@ -260,8 +271,8 @@ impl Component for Pane {
             Some(Modal::Sheet(sheet_state)) => {
                 if let Some(row) = self.tstack.last().selected()
                     && row != sheet_state.row()
-                    && let Some(sections) = self.tstack.last().selected_sheet_sections()
                 {
+                    let sections = self.tstack.last().data_frame().get_sheet_sections(row);
                     sheet_state.set(row, sections);
                 }
                 self.tstack.last_mut().render(area, buf, focus_state);
@@ -303,6 +314,10 @@ impl Component for Pane {
                 state.render(area, buf, focus_state);
             }
             Some(Modal::ScatterPlotWizard(state)) => {
+                self.tstack.last_mut().render(area, buf, focus_state);
+                state.render(area, buf, focus_state);
+            }
+            Some(Modal::TableRegisterer(state)) => {
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
             }
@@ -411,6 +426,7 @@ impl Component for Pane {
                 .show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
                 .unwrap_or_enqueue_error(),
             Message::PaneShowScatterPlotWizard => self.show_scatter_plot_wizard(),
+            Message::PaneShowTableRegisterer => self.show_table_registerer(),
             Message::PaneDismissModal => self.cancel_modal(),
             Message::PanePushDataFrame(df) => self.push_data_frame(df.clone()),
             Message::PanePopDataFrame => self.pop_data_frame(),
@@ -435,6 +451,7 @@ impl Component for Pane {
             Some(Modal::ExportWizard(_)) => (),
             Some(Modal::HistogramWizard(_)) => (),
             Some(Modal::ScatterPlotWizard(_)) => (),
+            Some(Modal::TableRegisterer(_)) => (),
             None => (),
         }
     }

@@ -50,6 +50,7 @@ impl Component for CommandPicker {
                         Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
                         Command::Schema => Message::AppShowSchema.enqueue(),
                         Command::Quit => Message::Quit.enqueue(),
+                        Command::Register => Message::PaneShowTableRegisterer.enqueue(),
                     }
                 }
                 true
@@ -77,6 +78,7 @@ enum Command {
     Histogram,
     Scatter,
     Schema,
+    Register,
 }
 
 impl Command {

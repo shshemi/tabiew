@@ -14,10 +14,10 @@ use crate::{
     misc::{
         globals::theme,
         iter_ext::ZipItersExt,
-        polars_ext::{AnyValueExt, GetSheetSections, TuiWidths},
+        polars_ext::{AnyValueExt, TuiWidths},
         type_ext::ConstraintExt,
     },
-    tui::{component::Component, sheet::SheetSection, table},
+    tui::component::Component,
 };
 
 #[derive(Debug, Clone)]
@@ -133,30 +133,10 @@ impl Table {
         self.selected
     }
 
-    pub fn selected_sheet_sections(&self) -> Option<Vec<SheetSection>> {
-        self.selected.map(|idx| self.df.get_sheet_sections(idx))
-    }
-
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {
         let height = self.df.height();
         if height > 0 {
             self.selected = idx.into().map(|idx| idx.min(height - 1));
-        }
-    }
-
-    pub fn select_up(&mut self) {
-        if let Some(selected) = self.selected {
-            self.select(selected.saturating_sub(1));
-        } else {
-            self.select(self.df.height().saturating_sub(1));
-        }
-    }
-
-    pub fn select_down(&mut self) {
-        if let Some(selected) = self.selected {
-            self.select(selected.saturating_add(1));
-        } else {
-            self.select(0);
         }
     }
 
@@ -167,45 +147,68 @@ impl Table {
         }
     }
 
-    pub fn select_first(&mut self) {
+    pub fn expended_column(&self) -> bool {
+        match self.column_mode {
+            ColumnMode::Compact => false,
+            ColumnMode::Expanded(_) => true,
+        }
+    }
+
+    fn select_up(&mut self) {
+        if let Some(selected) = self.selected {
+            self.select(selected.saturating_sub(1));
+        } else {
+            self.select(self.df.height().saturating_sub(1));
+        }
+    }
+
+    fn select_down(&mut self) {
+        if let Some(selected) = self.selected {
+            self.select(selected.saturating_add(1));
+        } else {
+            self.select(0);
+        }
+    }
+
+    fn select_first(&mut self) {
         self.select(0);
     }
 
-    pub fn select_last(&mut self) {
+    fn select_last(&mut self) {
         self.select(self.df.height().saturating_sub(1));
     }
 
-    pub fn page_up(&mut self) {
+    fn page_up(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(self.rendered_rows));
         }
     }
 
-    pub fn page_down(&mut self) {
+    fn page_down(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_add(self.rendered_rows));
         }
     }
 
-    pub fn scroll_left(&mut self) {
+    fn scroll_left(&mut self) {
         if let ColumnMode::Expanded(st) = &mut self.column_mode {
             *st = st.saturating_sub(1)
         }
     }
 
-    pub fn scroll_right(&mut self) {
+    fn scroll_right(&mut self) {
         if let ColumnMode::Expanded(st) = &mut self.column_mode {
             *st = st.saturating_add(1)
         }
     }
 
-    pub fn scroll_to_left_column(&mut self) {
+    fn scroll_to_left_column(&mut self) {
         if let ColumnMode::Expanded(offset) = &mut self.column_mode {
             *offset = prev_column_offset(&self.col_offsets, offset);
         }
     }
 
-    pub fn scroll_to_right_column(&mut self) {
+    fn scroll_to_right_column(&mut self) {
         if let ColumnMode::Expanded(offset) = &mut self.column_mode {
             *offset = next_column_offset(&self.col_offsets, offset);
         }
@@ -223,22 +226,15 @@ impl Table {
         }
     }
 
-    pub fn half_page_up(&mut self) {
+    fn half_page_up(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(self.rendered_rows.div(2)));
         }
     }
 
-    pub fn half_page_down(&mut self) {
+    fn half_page_down(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_add(self.rendered_rows.div(2)));
-        }
-    }
-
-    pub fn expended_column(&self) -> bool {
-        match self.column_mode {
-            ColumnMode::Compact => false,
-            ColumnMode::Expanded(_) => true,
         }
     }
 
@@ -498,12 +494,6 @@ fn next_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
         .get(column_index(col_offsets, offset).saturating_add(1))
         .copied()
         .unwrap_or_default()
-}
-
-fn required_width(col_widths: &[Constraint], col_space: u16) -> u16 {
-    let spaces = col_space * col_widths.len().saturating_sub(1) as u16;
-    let columns = col_widths.iter().map(|c| c.value()).sum::<u16>();
-    columns + spaces
 }
 
 fn build_table<'a>(
