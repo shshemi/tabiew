@@ -38,12 +38,11 @@ pub struct Table {
 impl Table {
     pub fn new(df: DataFrame) -> Self {
         let col_space = 1;
-        // let col_widths = df
-        //     .widths()
-        //     .into_iter()
-        //     .map(|u| Constraint::Length(u as u16))
-        //     .collect_vec();
-        let col_widths = df.iter().map(|_| Constraint::Length(12)).collect_vec();
+        let col_widths = df
+            .widths()
+            .into_iter()
+            .map(|u| Constraint::Length(u as u16))
+            .collect_vec();
         let col_offsets = col_offsets(&col_widths, col_space);
         let gutter_width = df.height().to_string().len() as u16;
         Self {
