@@ -6,7 +6,7 @@ use crate::handler::message::Message;
 #[derive(Debug, Clone, Copy)]
 pub enum FocusState {
     Focused,
-    Unfocused,
+    NotFocused,
 }
 
 impl FocusState {
@@ -21,6 +21,6 @@ pub trait Component {
     fn handle(&mut self, event: KeyEvent) -> bool {
         false
     }
-    fn update(&mut self, action: &Message) {}
+    fn update(&mut self, action: &Message, focus_state: FocusState) {}
     fn tick(&mut self) {}
 }

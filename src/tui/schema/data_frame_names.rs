@@ -46,16 +46,16 @@ impl Component for DataFrameNames {
         &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        _focus_state: crate::tui::component::FocusState,
+        focus_state: crate::tui::component::FocusState,
     ) {
         let num_width = sql().schema().len().to_string().len();
 
-        Table::default()
+        let table = Table::default()
             .rows(sql().schema().iter().enumerate().map(|(i, (s, _))| {
                 Row::new([
                     Span::raw(format!(" {:>width$}", i + 1, width = num_width))
                         .style(theme().subtext()),
-                    Span::raw(s).style(theme().text()),
+                    Span::raw(s.to_owned()).style(theme().text()),
                 ])
             }))
             .row_highlight_style(theme().row_highlighted())
@@ -76,8 +76,12 @@ impl Component for DataFrameNames {
                     )
                     .title_alignment(Alignment::Center)
                     .into_widget(),
-            )
-            .render(area, buf, &mut self.table);
+            );
+        if focus_state.is_focused() {
+            table.render(area, buf, &mut self.table);
+        } else {
+            table.render(area, buf, &mut self.table.clone().with_selected(None));
+        }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {

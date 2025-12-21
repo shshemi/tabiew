@@ -4,7 +4,11 @@ use ratatui::widgets::{Borders, Widget};
 use crate::{
     handler::message::Message,
     misc::type_ext::VecExt,
-    tui::{TableType, component::Component, widgets::block::Block},
+    tui::{
+        TableType,
+        component::{Component, FocusState},
+        widgets::block::Block,
+    },
 };
 
 use super::{
@@ -147,12 +151,18 @@ impl Component for Tabs {
         };
 
         // render tabular
-        if let Some(pane) = self.panes.get_mut(self.idx) {
-            pane.render(area, buf, focus_state);
-        }
-
-        if let Some(side_panel) = self.switcher.as_mut() {
-            side_panel.render(area, buf, focus_state);
+        match (self.switcher.as_mut(), self.panes.get_mut(self.idx)) {
+            (Some(switcher), Some(pane)) => {
+                pane.render(area, buf, FocusState::NotFocused);
+                switcher.render(area, buf, focus_state);
+            }
+            (Some(switcher), None) => {
+                switcher.render(area, buf, focus_state);
+            }
+            (None, Some(pane)) => {
+                pane.render(area, buf, focus_state);
+            }
+            (None, None) => (),
         }
     }
 
@@ -192,7 +202,7 @@ impl Component for Tabs {
             }
     }
 
-    fn update(&mut self, action: &Message) {
+    fn update(&mut self, action: &Message, focus_state: FocusState) {
         match action {
             Message::TabsAddNamePane(df, name) => {
                 self.add(Pane::new(df.clone(), TableType::Name(name.to_owned())));
@@ -200,15 +210,26 @@ impl Component for Tabs {
             Message::TabsAddQueryPane(df, query) => {
                 self.add(Pane::new(df.clone(), TableType::Query(query.to_owned())));
             }
-            Message::TabsSelect(idx) => self.select(*idx),
-            Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
+            Message::TabsSelect(idx) if focus_state.is_focused() => self.select(*idx),
+            Message::TabsDismissSwitcher if focus_state.is_focused() => self.dismiss_tab_switcher(),
             _ => (),
         }
         if let Some(switcher) = self.switcher.as_mut() {
-            switcher.update(action)
-        }
-        if let Some(selected) = self.panes.get_mut(self.idx) {
-            selected.update(action);
+            switcher.update(action, focus_state);
+            for (idx, pane) in self.panes.iter_mut().enumerate() {
+                pane.update(
+                    action,
+                    if idx == self.idx {
+                        focus_state
+                    } else {
+                        FocusState::NotFocused
+                    },
+                );
+            }
+        } else {
+            for pane in self.panes.iter_mut() {
+                pane.update(action, focus_state);
+            }
         }
     }
 

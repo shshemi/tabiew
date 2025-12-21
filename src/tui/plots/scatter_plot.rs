@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use crossterm::event::{KeyCode,  KeyModifiers, };
+use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::{
     layout::{Alignment, Constraint, Margin},
@@ -129,70 +129,3 @@ impl Component for ScatterPlot {
         }
     }
 }
-
-// impl StatefulWidget for ScatterPlot {
-//     type State = ScatterPlotState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         Widget::render(Clear, area, buf);
-//         let ds = state
-//             .data
-//             .iter()
-//             .enumerate()
-//             .map(|(i, v)| {
-//                 let ds = Dataset::default()
-//                     .marker(Marker::Dot)
-//                     .graph_type(GraphType::Scatter)
-//                     .style(theme().graph(i))
-//                     .data(v);
-//                 if let Some(g) = &state.groups {
-//                     ds.name(g[i].as_str())
-//                 } else {
-//                     ds
-//                 }
-//             })
-//             .collect_vec();
-
-//         let chart = Chart::new(ds)
-//             .x_axis(
-//                 Axis::default()
-//                     .title(Span::styled(&state.x_label, theme().text()))
-//                     .bounds(state.x_bounds)
-//                     .style(theme().text())
-//                     .labels(
-//                         state
-//                             .x_bounds
-//                             .map(|f| Span::styled(format!("{f:.2}"), theme().text())),
-//                     ),
-//             )
-//             .y_axis(
-//                 Axis::default()
-//                     .title(Span::styled(&state.y_label, theme().text()))
-//                     .bounds(state.y_bounds)
-//                     .style(theme().text())
-//                     .labels(
-//                         state
-//                             .y_bounds
-//                             .map(|f| Span::styled(format!("{f:.2}"), theme().text())),
-//                     ),
-//             )
-//             .style(theme().text())
-//             .block(
-//                 Block::default()
-//                     .title("Scatter Plot")
-//                     .title_alignment(Alignment::Center)
-//                     .padding(Padding::new(1, 2, 0, 0))
-//                     .into_widget(),
-//             )
-//             .legend_position(Some(LegendPosition::TopRight))
-//             .hidden_legend_constraints((Constraint::Min(0), Constraint::Min(0)));
-//         // .hidden_legend_constraints((Constraint::Min(0), Constraint::Ratio(1, 2)));
-
-//         chart.render(area, buf);
-//     }
-// }

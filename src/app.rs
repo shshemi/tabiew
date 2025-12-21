@@ -1,7 +1,7 @@
 use crate::{
     handler::message::Message,
     tui::{
-        component::Component,
+        component::{Component, FocusState},
         popups::{
             command_picker::CommandPicker, help_modal::Help, import_wizard::ImportWizard,
             theme_selector::ThemeSelector,
@@ -97,40 +97,24 @@ impl Component for App {
         &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        focus_state: crate::tui::component::FocusState,
+        _: crate::tui::component::FocusState,
     ) {
-        if let Some(schema) = self.schema.as_mut() {
-            schema.render(area, buf, focus_state);
-        } else {
-            self.tabs.render(area, buf, focus_state);
+        match (self.overlay.as_mut(), self.schema.as_mut()) {
+            (Some(overlay), Some(schema)) => {
+                schema.render(area, buf, FocusState::NotFocused);
+                overlay.responder().render(area, buf, FocusState::Focused);
+            }
+            (Some(overlay), None) => {
+                self.tabs.render(area, buf, FocusState::NotFocused);
+                overlay.responder().render(area, buf, FocusState::Focused);
+            }
+            (None, Some(schema)) => {
+                schema.render(area, buf, FocusState::Focused);
+            }
+            (None, None) => {
+                self.tabs.render(area, buf, FocusState::Focused);
+            }
         }
-        if let Some(overlay) = self.overlay.as_mut() {
-            overlay.responder().render(area, buf, focus_state);
-        }
-        // match self.overlay.as_mut() {
-        //     Some(Overlay::Error(error)) => {
-        //         error.render(area, buf, focus_state);
-        //     }
-        //     Some(Overlay::CommandPicker(cmd)) => {
-        //         let upmid = {
-        //             let [mid_ver] = Layout::horizontal([Constraint::Max(80)])
-        //                 .flex(Flex::Center)
-        //                 .areas(area);
-        //             let [_, mid_hor] =
-        //                 Layout::vertical([Constraint::Length(3), Constraint::Length(15)])
-        //                     .areas(mid_ver);
-        //             mid_hor
-        //         };
-        //         cmd.render(upmid, buf, focus_state);
-        //     }
-        //     Some(Overlay::ThemeSelector(theme_selector)) => {
-        //         theme_selector.render(area, buf, focus_state);
-        //     }
-        //     Some(Overlay::Help(help)) => {
-        //         help.render(area, buf, focus_state);
-        //     }
-        //     None => {}
-        // }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
@@ -157,7 +141,7 @@ impl Component for App {
             }
     }
 
-    fn update(&mut self, action: &Message) {
+    fn update(&mut self, action: &Message, _: FocusState) {
         match action {
             Message::Quit => self.quit(),
             Message::AppDismissOverlay => self.dismiss_overlay(),
@@ -169,10 +153,24 @@ impl Component for App {
             Message::AppDismissSchema => self.dismiss_schema(),
             _ => (),
         };
-        if let Some(overlay) = self.overlay.as_mut() {
-            overlay.responder().update(action);
+        match (self.overlay.as_mut(), self.schema.as_mut()) {
+            (Some(overlay), Some(schema)) => {
+                overlay.responder().update(action, FocusState::Focused);
+                schema.update(action, FocusState::NotFocused);
+                self.tabs.update(action, FocusState::NotFocused);
+            }
+            (Some(overlay), None) => {
+                overlay.responder().update(action, FocusState::Focused);
+                self.tabs.update(action, FocusState::NotFocused);
+            }
+            (None, Some(schema)) => {
+                schema.update(action, FocusState::Focused);
+                self.tabs.update(action, FocusState::NotFocused);
+            }
+            (None, None) => {
+                self.tabs.update(action, FocusState::Focused);
+            }
         }
-        self.tabs.update(action);
     }
 
     fn tick(&mut self) {

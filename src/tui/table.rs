@@ -271,7 +271,7 @@ impl Component for Table {
         &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        _focus_state: super::component::FocusState,
+        focus_state: super::component::FocusState,
     ) {
         let height = if self.show_header {
             area.height.saturating_sub(1)
@@ -300,8 +300,11 @@ impl Component for Table {
                 .render(
                     gutter_area,
                     buf,
-                    &mut ListState::default()
-                        .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
+                    &mut ListState::default().with_selected(if focus_state.is_focused() {
+                        self.selected.map(|s| s.saturating_sub(self.offset))
+                    } else {
+                        None
+                    }),
                 );
         }
 
@@ -320,8 +323,11 @@ impl Component for Table {
                 table.render(
                     table_area,
                     buf,
-                    &mut TableState::default()
-                        .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
+                    &mut TableState::default().with_selected(if focus_state.is_focused() {
+                        self.selected.map(|s| s.saturating_sub(self.offset))
+                    } else {
+                        None
+                    }),
                 );
             }
             ColumnMode::Expanded(x) => {
@@ -357,8 +363,11 @@ impl Component for Table {
                 scroll_area.render_stateful_widget(
                     table,
                     scroll_area.area(),
-                    &mut TableState::default()
-                        .with_selected(self.selected.map(|s| s.saturating_sub(self.offset))),
+                    &mut TableState::default().with_selected(if focus_state.is_focused() {
+                        self.selected.map(|s| s.saturating_sub(self.offset))
+                    } else {
+                        None
+                    }),
                 );
                 scroll_area.render(
                     table_area,

@@ -16,7 +16,7 @@ use crate::{
         type_ext::UnwrapOrEnqueueError,
     },
     tui::{
-        component::Component,
+        component::{Component, FocusState},
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             data_frame_info::DataFrameInfo,
@@ -407,30 +407,46 @@ impl Component for Pane {
                 }
     }
 
-    fn update(&mut self, action: &crate::handler::message::Message) {
+    fn update(&mut self, action: &crate::handler::message::Message, focus_state: FocusState) {
         if let Some(modal) = self.modal.as_mut() {
-            modal.responder().update(action);
+            modal.responder().update(action, focus_state);
         }
-        self.tstack.last_mut().update(action);
+        self.tstack.last_mut().update(action, focus_state);
         match action {
-            Message::PaneShowInlineSelect => self.show_query_picker(QueryType::InlineSelect),
-            Message::PaneShowInlineFilter => self.show_query_picker(QueryType::InlineFilter),
-            Message::PaneShowInlineOrder => self.show_query_picker(QueryType::InlineOrder),
-            Message::PaneShowSqlQuery => self.show_query_picker(QueryType::Sql),
-            Message::PaneShowExportWizard => self.show_export_wizard(),
-            Message::PaneShowHistogram(col, buckets) => {
+            Message::PaneShowInlineSelect if focus_state.is_focused() => {
+                self.show_query_picker(QueryType::InlineSelect)
+            }
+            Message::PaneShowInlineFilter if focus_state.is_focused() => {
+                self.show_query_picker(QueryType::InlineFilter)
+            }
+            Message::PaneShowInlineOrder if focus_state.is_focused() => {
+                self.show_query_picker(QueryType::InlineOrder)
+            }
+            Message::PaneShowSqlQuery if focus_state.is_focused() => {
+                self.show_query_picker(QueryType::Sql)
+            }
+            Message::PaneShowExportWizard if focus_state.is_focused() => self.show_export_wizard(),
+            Message::PaneShowScatterPlotWizard if focus_state.is_focused() => {
+                self.show_scatter_plot_wizard()
+            }
+            Message::PaneShowHistogramWizard if focus_state.is_focused() => {
+                self.show_histogram_wizard()
+            }
+            Message::PaneShowHistogram(col, buckets) if focus_state.is_focused() => {
                 self.show_histogram(col, *buckets).unwrap_or_enqueue_error()
             }
-            Message::PaneShowHistogramWizard => self.show_histogram_wizard(),
-            Message::PaneShowScatterPlot(x, y, grp) => self
+            Message::PaneShowScatterPlot(x, y, grp) if focus_state.is_focused() => self
                 .show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
                 .unwrap_or_enqueue_error(),
-            Message::PaneShowScatterPlotWizard => self.show_scatter_plot_wizard(),
-            Message::PaneShowTableRegisterer => self.show_table_registerer(),
-            Message::PaneDismissModal => self.cancel_modal(),
-            Message::PanePushDataFrame(df) => self.push_data_frame(df.clone()),
-            Message::PanePopDataFrame => self.pop_data_frame(),
-            Message::PaneTableSelect(idx) => self.select(*idx),
+            Message::PaneShowTableRegisterer if focus_state.is_focused() => {
+                self.show_table_registerer()
+            }
+            Message::PaneDismissModal if focus_state.is_focused() => self.cancel_modal(),
+            Message::PanePushDataFrame(df) if focus_state.is_focused() => {
+                self.push_data_frame(df.clone())
+            }
+            Message::PanePopDataFrame if focus_state.is_focused() => self.pop_data_frame(),
+            Message::PaneTableSelect(idx) if focus_state.is_focused() => self.select(*idx),
             _ => (),
         }
     }
