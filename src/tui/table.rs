@@ -505,7 +505,7 @@ fn column_index(col_offsets: &[u16], offset: &u16) -> usize {
 }
 fn prev_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
     col_offsets
-        .get(column_index(col_offsets, offset).saturating_sub(1))
+        .get(column_index(col_offsets, &offset.saturating_sub(1)))
         .copied()
         .unwrap_or_default()
 }
