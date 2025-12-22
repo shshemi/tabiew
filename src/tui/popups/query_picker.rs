@@ -103,10 +103,10 @@ pub enum QueryType {
 impl QueryType {
     fn title(&self) -> String {
         match self {
-            QueryType::InlineSelect => "Inline Select",
-            QueryType::InlineFilter => "Inline Filter",
-            QueryType::InlineOrder => "Inline Order",
-            QueryType::Sql => "SQL",
+            QueryType::InlineSelect => "Select",
+            QueryType::InlineFilter => "Filter",
+            QueryType::InlineOrder => "Order",
+            QueryType::Sql => "Query",
         }
         .to_owned()
     }
