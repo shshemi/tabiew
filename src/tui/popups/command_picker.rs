@@ -33,33 +33,56 @@ impl Component for CommandPicker {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        match (event.code, event.modifiers) {
-            (KeyCode::Enter, KeyModifiers::NONE) => {
-                Message::AppDismissOverlay.enqueue();
-                if let Some(item) = self.picker.selected_item() {
-                    match item {
-                        Command::Export => Message::PaneShowExportWizard.enqueue(),
-                        Command::Import => Message::AppShowImportWizard.enqueue(),
-                        Command::Order => Message::PaneShowInlineOrder.enqueue(),
-                        Command::Sort => Message::PaneShowInlineOrder.enqueue(),
-                        Command::Filter => Message::PaneShowInlineFilter.enqueue(),
-                        Command::Query => Message::PaneShowSqlQuery.enqueue(),
-                        Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
-                        Command::Select => Message::PaneShowInlineSelect.enqueue(),
-                        Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
-                        Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
-                        Command::Schema => Message::AppShowSchema.enqueue(),
-                        Command::Quit => Message::Quit.enqueue(),
-                        Command::Register => Message::PaneShowTableRegisterer.enqueue(),
-                    }
+        if self.picker.handle(event) {
+            match self.picker.text() {
+                "s " => {
+                    Message::AppDismissOverlay.enqueue();
+                    Message::PaneShowInlineOrder.enqueue();
                 }
-                true
+                "o " => {
+                    Message::AppDismissOverlay.enqueue();
+                    Message::PaneShowInlineOrder.enqueue();
+                }
+                "f " => {
+                    Message::AppDismissOverlay.enqueue();
+                    Message::PaneShowInlineFilter.enqueue();
+                }
+                "q " => {
+                    Message::AppDismissOverlay.enqueue();
+                    Message::PaneShowSqlQuery.enqueue();
+                }
+                _ => (),
             }
-            (KeyCode::Esc, KeyModifiers::NONE) => {
-                Message::AppDismissOverlay.enqueue();
-                true
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::AppDismissOverlay.enqueue();
+                    if let Some(item) = self.picker.selected_item() {
+                        match item {
+                            Command::Export => Message::PaneShowExportWizard.enqueue(),
+                            Command::Import => Message::AppShowImportWizard.enqueue(),
+                            Command::Order => Message::PaneShowInlineOrder.enqueue(),
+                            Command::Sort => Message::PaneShowInlineOrder.enqueue(),
+                            Command::Filter => Message::PaneShowInlineFilter.enqueue(),
+                            Command::Query => Message::PaneShowSqlQuery.enqueue(),
+                            Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
+                            Command::Select => Message::PaneShowInlineSelect.enqueue(),
+                            Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
+                            Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
+                            Command::Schema => Message::AppShowSchema.enqueue(),
+                            Command::Quit => Message::Quit.enqueue(),
+                            Command::Register => Message::PaneShowTableRegisterer.enqueue(),
+                        }
+                    }
+                    true
+                }
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                _ => false,
             }
-            _ => self.picker.handle(event),
         }
     }
 }

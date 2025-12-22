@@ -285,40 +285,56 @@ impl Component for Pane {
                 self.tstack.last_mut().render(table_area, buf, focus_state);
                 search_bar_state.render(search_area, buf, focus_state);
             }
-            Some(Modal::DataFrameInfo(data_frame_info)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
-                data_frame_info.render(area, buf, focus_state);
-            }
-            Some(Modal::ScatterPlot(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
-                state.render(area, buf, focus_state);
-            }
-            Some(Modal::HistogramPlot(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
-                state.render(area, buf, focus_state);
-            }
-            Some(Modal::QueryPicker(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
-                state.render(area, buf, focus_state);
-            }
             Some(Modal::GoToLine(state)) => {
                 self.tstack.last_mut().render(area, buf, focus_state);
                 state.render(area, buf, focus_state);
             }
+            Some(Modal::DataFrameInfo(data_frame_info)) => {
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::NotFocused);
+                data_frame_info.render(area, buf, focus_state);
+            }
+            Some(Modal::ScatterPlot(state)) => {
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::NotFocused);
+                state.render(area, buf, focus_state);
+            }
+            Some(Modal::HistogramPlot(state)) => {
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::NotFocused);
+                state.render(area, buf, focus_state);
+            }
+            Some(Modal::QueryPicker(state)) => {
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::NotFocused);
+                state.render(area, buf, focus_state);
+            }
             Some(Modal::ExportWizard(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::Focused);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::HistogramWizard(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::Focused);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::ScatterPlotWizard(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::Focused);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::TableRegisterer(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::Focused);
                 state.render(area, buf, focus_state);
             }
             None => self.tstack.last_mut().render(area, buf, focus_state),
@@ -326,85 +342,101 @@ impl Component for Pane {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.modal
-            .as_mut()
-            .map(|m| m.responder().handle(event))
-            .unwrap_or_default()
-            || self.tstack.last_mut().handle(event)
-                | match (event.code, event.modifiers) {
-                    (KeyCode::Enter, KeyModifiers::NONE) => {
-                        self.show_sheet();
-                        true
-                    }
-                    (KeyCode::Char('e'), KeyModifiers::NONE) => {
-                        self.tstack.last_mut().toggle_view_mode();
-                        true
-                    }
-                    (KeyCode::Char('1'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(1);
-                        true
-                    }
-                    (KeyCode::Char('2'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(2);
-                        true
-                    }
-                    (KeyCode::Char('3'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(3);
-                        true
-                    }
-                    (KeyCode::Char('4'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(4);
-                        true
-                    }
-                    (KeyCode::Char('5'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(5);
-                        true
-                    }
-                    (KeyCode::Char('6'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(6);
-                        true
-                    }
-                    (KeyCode::Char('7'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(7);
-                        true
-                    }
-                    (KeyCode::Char('8'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(8);
-                        true
-                    }
-                    (KeyCode::Char('9'), KeyModifiers::NONE) => {
-                        self.show_go_to_line_with_value(9);
-                        true
-                    }
-                    (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
-                        self.show_data_frame_info();
-                        true
-                    }
-                    (KeyCode::Char('/'), KeyModifiers::NONE) => {
-                        self.show_fuzzy_search();
-                        true
-                    }
-                    (KeyCode::Char('R'), KeyModifiers::SHIFT)
-                        if !matches!(self.modal, Some(Modal::GoToLine(_))) =>
-                    {
-                        self.select_random();
-                        true
-                    }
-                    (KeyCode::Char('?'), KeyModifiers::NONE)
-                    | (KeyCode::Char('?'), KeyModifiers::SHIFT) => {
-                        self.show_exact_search();
-                        true
-                    }
-                    (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                        if self.tstack.len_without_base() > 0 {
-                            self.pop_data_frame();
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    _ => false,
+        (match &mut self.modal {
+            Some(Modal::GoToLine(go_to_line)) => {
+                go_to_line.handle(event) || self.tstack.last_mut().handle(event)
+            }
+            Some(Modal::SearchBar(search_bar)) => {
+                search_bar.handle(event) || self.tstack.last_mut().handle(event)
+            }
+            Some(Modal::Sheet(sheet)) => {
+                sheet.handle(event) || self.tstack.last_mut().handle(event)
+            }
+            Some(Modal::DataFrameInfo(data_frame_info)) => data_frame_info.handle(event),
+            Some(Modal::ExportWizard(export_wizard)) => export_wizard.handle(event),
+            Some(Modal::HistogramPlot(histogram_plot)) => histogram_plot.handle(event),
+            Some(Modal::HistogramWizard(histogram_wizard)) => histogram_wizard.handle(event),
+            Some(Modal::QueryPicker(query_picker)) => query_picker.handle(event),
+            Some(Modal::ScatterPlot(scatter_plot)) => scatter_plot.handle(event),
+            Some(Modal::TableRegisterer(table_registerer)) => table_registerer.handle(event),
+            Some(Modal::ScatterPlotWizard(scatter_plot_wizard)) => {
+                scatter_plot_wizard.handle(event)
+            }
+            _ => self.tstack.last_mut().handle(event),
+        }) || (match (event.code, event.modifiers) {
+            (KeyCode::Enter, KeyModifiers::NONE) => {
+                self.show_sheet();
+                true
+            }
+            (KeyCode::Char('e'), KeyModifiers::NONE) => {
+                self.tstack.last_mut().toggle_view_mode();
+                true
+            }
+            (KeyCode::Char('1'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(1);
+                true
+            }
+            (KeyCode::Char('2'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(2);
+                true
+            }
+            (KeyCode::Char('3'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(3);
+                true
+            }
+            (KeyCode::Char('4'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(4);
+                true
+            }
+            (KeyCode::Char('5'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(5);
+                true
+            }
+            (KeyCode::Char('6'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(6);
+                true
+            }
+            (KeyCode::Char('7'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(7);
+                true
+            }
+            (KeyCode::Char('8'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(8);
+                true
+            }
+            (KeyCode::Char('9'), KeyModifiers::NONE) => {
+                self.show_go_to_line_with_value(9);
+                true
+            }
+            (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
+                self.show_data_frame_info();
+                true
+            }
+            (KeyCode::Char('/'), KeyModifiers::NONE) => {
+                self.show_fuzzy_search();
+                true
+            }
+            (KeyCode::Char('R'), KeyModifiers::SHIFT)
+                if !matches!(self.modal, Some(Modal::GoToLine(_))) =>
+            {
+                self.select_random();
+                true
+            }
+            (KeyCode::Char('?'), KeyModifiers::NONE)
+            | (KeyCode::Char('?'), KeyModifiers::SHIFT) => {
+                self.show_exact_search();
+                true
+            }
+            (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                if self.tstack.len_without_base() > 0 {
+                    self.pop_data_frame();
+                    true
+                } else {
+                    false
                 }
+            }
+            _ => false,
+        })
     }
 
     fn update(&mut self, action: &crate::handler::message::Message, focus_state: FocusState) {
