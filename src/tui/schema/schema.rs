@@ -1,4 +1,4 @@
-use std::{ops::Div, process::id};
+use std::ops::Div;
 
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
