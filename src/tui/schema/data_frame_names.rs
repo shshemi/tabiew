@@ -31,6 +31,14 @@ impl DataFrameNames {
     fn select_down(&mut self) {
         self.table.select_next();
     }
+
+    fn select_first(&mut self) {
+        self.table.select_first();
+    }
+
+    fn select_last(&mut self) {
+        self.table.select_last();
+    }
 }
 
 impl Default for DataFrameNames {
@@ -96,6 +104,14 @@ impl Component for DataFrameNames {
             | (KeyCode::Char('j'), KeyModifiers::NONE)
             | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
                 self.select_down();
+                true
+            }
+            (KeyCode::Home, KeyModifiers::NONE) | (KeyCode::Char('g'), KeyModifiers::NONE) => {
+                self.select_first();
+                true
+            }
+            (KeyCode::End, KeyModifiers::NONE) | (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
+                self.select_last();
                 true
             }
             (KeyCode::Delete, KeyModifiers::NONE) => {

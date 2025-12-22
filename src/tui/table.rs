@@ -354,7 +354,8 @@ impl Component for Table {
                     self.offset,
                     col_start,
                 );
-                let width = self.col_offsets[col_end + 1] - self.col_offsets[col_start];
+                let width = (self.col_offsets[col_end + 1] - self.col_offsets[col_start])
+                    .max(table_area.width);
                 let mut scroll_area = ScrollView::new(Size {
                     width,
                     height: table_area.height,
