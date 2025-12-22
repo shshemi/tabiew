@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::{ops::Div, process::id};
 
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
@@ -93,6 +93,28 @@ impl Component for Schema {
             || match (event.code, event.modifiers) {
                 (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                     Message::AppDismissSchema.enqueue();
+                    true
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    if let Some((name, df)) = self
+                        .names
+                        .selected()
+                        .and_then(|idx| {
+                            sql()
+                                .schema()
+                                .get_by_index(idx)
+                                .map(|(name, _)| name.to_owned())
+                        })
+                        .and_then(|name| {
+                            sql()
+                                .execute(&format!("SELECT * FROM {name}"), None)
+                                .ok()
+                                .map(|df| (name, df))
+                        })
+                    {
+                        Message::TabsAddNamePane(df, name).enqueue();
+                        Message::AppDismissSchema.enqueue();
+                    }
                     true
                 }
                 _ => false,
