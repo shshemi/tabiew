@@ -4,6 +4,7 @@ use std::{
 };
 
 use crossterm::event::{KeyCode, KeyModifiers};
+use itertools::Itertools;
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     symbols::{
@@ -20,8 +21,6 @@ use crate::{
         widgets::{block::Block, highlighted_line::HighlightedLine, input::Input},
     },
 };
-
-const SPACE_FROM_TOP_OF_THE_WINDOW: u16 = 3;
 
 #[derive(Debug)]
 pub struct SearchPicker<T> {
@@ -145,11 +144,8 @@ impl<T> Component for SearchPicker<T> {
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
             .areas(buf.area);
-        let [_, area] = Layout::vertical([
-            Constraint::Length(SPACE_FROM_TOP_OF_THE_WINDOW),
-            Constraint::Length(height),
-        ])
-        .areas(area);
+        let [_, area] =
+            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
 
         Clear.render(area, buf);
         let [input_area, list_area] =
@@ -307,9 +303,13 @@ impl CachedFilter {
         if self.query_hash != query_hash {
             self.indices.clear();
             self.indices.extend(
-                items.iter().enumerate().filter_map(|(idx, item)| {
-                    subsequence_pos(item.as_ref(), query).map(|v| (idx, v))
-                }),
+                items
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, item)| {
+                        subsequence_pos(item.as_ref(), query).map(|v| (idx, v))
+                    })
+                    .sorted_by_key(|(idx, _)| items[*idx].as_ref().len()),
             );
             self.query_hash = query_hash;
         }
