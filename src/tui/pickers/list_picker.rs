@@ -103,13 +103,21 @@ impl<T> Component for ListPicker<T> {
             (KeyCode::Up, KeyModifiers::NONE)
             | (KeyCode::Char('k'), KeyModifiers::NONE)
             | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
-                self.list.select_previous();
+                if self.list.selected() != Some(0) {
+                    self.list.select_previous();
+                } else {
+                    self.list.select(Some(self.items.len().saturating_sub(1)));
+                }
                 true
             }
             (KeyCode::Down, KeyModifiers::NONE)
             | (KeyCode::Char('j'), KeyModifiers::NONE)
             | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-                self.list.select_next();
+                if self.list.selected() != Some(self.items.len().saturating_sub(1)) {
+                    self.list.select_next();
+                } else {
+                    self.list.select_first();
+                }
                 true
             }
             _ => false,

@@ -46,7 +46,9 @@ where
             items,
         }
     }
+}
 
+impl<T> SearchPicker<T> {
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
@@ -71,10 +73,14 @@ where
     }
 
     pub fn selected(&self) -> Option<usize> {
-        self.list
-            .selected()
-            .and_then(|idx| self.cached_filter.indices.get(idx))
-            .map(|(i, _)| *i)
+        if self.text().is_empty() {
+            self.list.selected()
+        } else {
+            self.list
+                .selected()
+                .and_then(|idx| self.cached_filter.indices.get(idx))
+                .map(|(i, _)| *i)
+        }
     }
 
     pub fn selected_item(&self) -> Option<&T> {
@@ -101,6 +107,18 @@ where
 
     pub fn into_string(self) -> Vec<String> {
         self.strings
+    }
+
+    pub fn len(&self) -> usize {
+        if self.input.value().is_empty() {
+            self.items.len()
+        } else {
+            self.cached_filter.indices.len()
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -182,12 +200,20 @@ impl<T> Component for SearchPicker<T> {
         self.input.handle(event)
             || match (event.code, event.modifiers) {
                 (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
-                    self.list.select_previous();
+                    if self.list.selected() != Some(0) {
+                        self.list.select_previous();
+                    } else {
+                        self.list.select(Some(self.len().saturating_sub(1)));
+                    }
                     true
                 }
                 (KeyCode::Down, KeyModifiers::NONE)
                 | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-                    self.list.select_next();
+                    if self.list.selected() != Some(self.len().saturating_sub(1)) {
+                        self.list.select_next();
+                    } else {
+                        self.list.select_first();
+                    }
                     true
                 }
                 _ => false,
