@@ -9,19 +9,19 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppResult,
     misc::{globals::config, paths::config_path},
-    tui::themes::theme::Theme,
+    tui::themes::theme::LoadedTheme,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    theme: RwLock<Theme>,
+    theme: RwLock<LoadedTheme>,
 }
 
 impl Config {
     pub fn new() -> Self {
         Self {
-            theme: RwLock::new(Theme::default()),
+            theme: RwLock::new(LoadedTheme::default()),
         }
     }
 
@@ -35,11 +35,11 @@ impl Config {
         Ok(toml::to_string(self)?)
     }
 
-    pub fn theme(&self) -> impl Deref<Target = Theme> {
+    pub fn theme(&self) -> impl Deref<Target = LoadedTheme> {
         self.theme.read().unwrap()
     }
 
-    pub fn theme_mut(&self) -> impl DerefMut<Target = Theme> {
+    pub fn theme_mut(&self) -> impl DerefMut<Target = LoadedTheme> {
         self.theme.write().unwrap()
     }
 }
