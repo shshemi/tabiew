@@ -18,8 +18,8 @@ pub fn config() -> &'static Config {
     CONFIG.get_or_init(Config::new)
 }
 
-pub fn set_theme(theme: LoadedTheme) {
-    *config().theme_mut() = theme;
+pub fn set_theme(theme: impl Into<LoadedTheme>) {
+    *config().theme_mut() = theme.into();
 }
 
 pub fn theme() -> impl Deref<Target = LoadedTheme> {
