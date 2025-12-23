@@ -11,30 +11,30 @@ use crate::{
     tui::{
         component::Component,
         pickers::search_picker::SearchPicker,
-        themes::theme::{AppTheme, Theme},
+        themes::theme::{LoadedTheme, Theme},
     },
 };
 
 #[derive(Debug)]
 pub struct ThemeSelector {
-    search_picker: SearchPicker<AppTheme>,
-    rollback: Theme,
+    search_picker: SearchPicker<Theme>,
+    rollback: LoadedTheme,
 }
 
 impl ThemeSelector {
-    pub fn into_rollback_theme(self) -> Theme {
+    pub fn into_rollback_theme(self) -> LoadedTheme {
         self.rollback
     }
 
-    pub fn selected(&self) -> Option<AppTheme> {
+    pub fn selected(&self) -> Option<Theme> {
         self.search_picker.selected_item().cloned()
     }
 
-    pub fn search_picker(&self) -> &SearchPicker<AppTheme> {
+    pub fn search_picker(&self) -> &SearchPicker<Theme> {
         &self.search_picker
     }
 
-    pub fn search_picker_mut(&mut self) -> &mut SearchPicker<AppTheme> {
+    pub fn search_picker_mut(&mut self) -> &mut SearchPicker<Theme> {
         &mut self.search_picker
     }
 }
@@ -75,9 +75,9 @@ impl Component for ThemeSelector {
 
 impl Default for ThemeSelector {
     fn default() -> Self {
-        let mut search_picker = SearchPicker::new(Theme::all().to_vec());
+        let mut search_picker = SearchPicker::new(LoadedTheme::all().to_vec());
         let rollback = config().theme().deref().clone();
-        let idx = Theme::all()
+        let idx = LoadedTheme::all()
             .iter()
             .enumerate()
             .find_map(|(i, t)| (t == &rollback.app_theme()).then_some(i))
