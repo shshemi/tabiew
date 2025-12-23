@@ -149,13 +149,9 @@ pub struct LoadedTheme {
 }
 
 impl LoadedTheme {
-    pub fn all() -> &'static [Theme] {
-        static ALL: OnceLock<Vec<Theme>> = OnceLock::new();
-        ALL.get_or_init(|| Theme::iter().collect())
-    }
 
-    pub fn app_theme(&self) -> Theme {
-        self.app_theme
+    pub fn app_theme(&self) -> &Theme {
+        &self.app_theme
     }
 
     fn new<S: Styler + Send + Sync + 'static>(app_theme: Theme, theme: S) -> Self {
@@ -585,7 +581,7 @@ impl From<Theme> for LoadedTheme {
             Theme::TokyoNight => LoadedTheme::new(value, TokyoNight),
             Theme::Terminal => LoadedTheme::new(value, Terminal),
             Theme::Chakra => LoadedTheme::new(value, Chakra),
-            Theme::Custom => LoadedTheme::new(value, Custom::default()),
+            Theme::Custom => LoadedTheme::new(value, Custom::create_or_load()),
         }
     }
 }

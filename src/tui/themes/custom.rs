@@ -25,10 +25,27 @@ pub struct Custom {
 }
 
 impl Custom {
-    pub fn read_from_config_dir() -> AppResult<Self> {
+    fn load() -> AppResult<Self> {
         let path = theme_path().ok_or(anyhow!("Home dir not found"))?;
         let contents = fs::read_to_string(path)?;
         Ok(toml::from_str(&contents)?)
+    }
+
+    fn store(&self) -> AppResult<()> {
+        let path = theme_path().ok_or(anyhow!("Home dir not found"))?;
+        let contents = toml::to_string_pretty(self)?;
+        fs::write(path, contents)?;
+        Ok(())
+    }
+
+    pub fn create_or_load() -> Self {
+        if let Ok(theme) = Self::load() {
+            theme
+        } else {
+            let theme = Self::default();
+            let _ = theme.store();
+            theme
+        }
     }
 }
 
