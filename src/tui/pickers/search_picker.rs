@@ -111,7 +111,12 @@ impl<T> Component for SearchPicker<T> {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        let list = List::new(
+        let items = if self.input.value().is_empty() {
+            self.strings
+                .iter()
+                .map(|item| ListItem::new(item.as_str()).style(theme().text()))
+                .collect_vec()
+        } else {
             self.cached_filter
                 .query(self.input.value(), &self.strings)
                 .iter()
@@ -125,18 +130,20 @@ impl<T> Component for SearchPicker<T> {
                             .highlight_style(theme().text_highlighted()),
                     )
                     .style(theme().text())
-                }),
-        )
-        .highlight_style(theme().row_highlighted())
-        .block(
-            Block::default()
-                .border_set(Set {
-                    top_left: VERTICAL_RIGHT,
-                    top_right: VERTICAL_LEFT,
-                    ..ROUNDED
                 })
-                .into_widget(),
-        );
+                .collect_vec()
+        };
+        let list = List::new(items)
+            .highlight_style(theme().row_highlighted())
+            .block(
+                Block::default()
+                    .border_set(Set {
+                        top_left: VERTICAL_RIGHT,
+                        top_right: VERTICAL_LEFT,
+                        ..ROUNDED
+                    })
+                    .into_widget(),
+            );
 
         let width = 80;
         let height = list.len().saturating_add(4).min(25) as u16;
@@ -187,103 +194,6 @@ impl<T> Component for SearchPicker<T> {
             }
     }
 }
-
-// #[derive(Debug)]
-// pub struct SearchPicker<'a> {
-//     txt_blk: Block<'a>,
-//     items: Vec<Cow<'a, str>>,
-//     input: Input<'a>,
-
-// impl<'a> SearchPicker<'a> {
-//     pub fn title(mut self, title: impl Into<Title<'a>>) -> Self {
-//         self.txt_blk = self.txt_blk.title(title);
-//         self
-//     }
-
-//     pub fn items<T>(mut self, items: T) -> Self
-//     where
-//         T: IntoIterator,
-//         T::Item: Into<Cow<'a, str>>,
-//     {
-//         self.items = items.into_iter().map(Into::into).collect();
-//         self
-//     }
-// }
-
-// impl<'a> Default for SearchPicker<'a> {
-//     fn default() -> Self {
-//         Self {
-//             txt_blk: Block::default().border_set(Set {
-//                 bottom_left: VERTICAL_RIGHT,
-//                 bottom_right: VERTICAL_LEFT,
-//                 ..ROUNDED
-//             }),
-//             items: Default::default(),
-//             input: Input::default(),
-//         }
-//     }
-// }
-
-// impl<'a> StatefulWidget for SearchPicker<'a> {
-//     type State = SearchPickerState;
-
-//     fn render(
-//         self,
-//         _: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         let list = List::new(
-//             state
-//                 .cached_filter
-//                 .query(state.input.value(), &self.items)
-//                 .iter()
-//                 .map(|(idx, hl)| (&self.items[*idx], hl))
-//                 .map(|(item, hl)| {
-//                     ListItem::new(
-//                         HighlightedLine::default()
-//                             .text(item.as_ref())
-//                             .highlights(hl.iter().copied())
-//                             .text_style(theme().text())
-//                             .highlight_style(theme().text_highlighted()),
-//                     )
-//                     .style(theme().text())
-//                 }),
-//         )
-//         .highlight_style(theme().row_highlighted())
-//         .block(
-//             Block::default()
-//                 .borders(Borders::LEFT | Borders::BOTTOM | Borders::RIGHT)
-//                 .into_widget(),
-//         );
-
-//         let width = 80;
-//         let height = list.len().saturating_add(4).min(25) as u16;
-
-//         let [area] = Layout::horizontal([Constraint::Length(width)])
-//             .flex(Flex::Center)
-//             .areas(buf.area);
-//         let [_, area] =
-//             Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
-
-//         Clear.render(area, buf);
-//         let [input_area, list_area] =
-//             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
-
-//         self.input
-//             .block(self.txt_blk)
-//             .render(input_area, buf, &mut state.input);
-
-//         *state.list.offset_mut() = state
-//             .list()
-//             .offset()
-//             .min(list.len().saturating_sub(list_area.height as usize));
-//         if state.list.selected().is_none() && !list.is_empty() {
-//             state.list.select(Some(0));
-//         }
-//         StatefulWidget::render(list, list_area, buf, &mut state.list);
-//     }
-// }
 
 #[derive(Debug, Default)]
 struct CachedFilter {
