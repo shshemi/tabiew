@@ -316,25 +316,25 @@ impl Component for Pane {
             Some(Modal::ExportWizard(state)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::Focused);
+                    .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::HistogramWizard(state)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::Focused);
+                    .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::ScatterPlotWizard(state)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::Focused);
+                    .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
             Some(Modal::TableRegisterer(state)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::Focused);
+                    .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
             None => self.tstack.last_mut().render(area, buf, focus_state),
