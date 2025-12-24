@@ -34,7 +34,8 @@ impl Component for OutputTargetPicker {
 impl Default for OutputTargetPicker {
     fn default() -> Self {
         Self {
-            list_picker: ListPicker::new(Target::iter().to_owned().collect()),
+            list_picker: ListPicker::new(Target::iter().to_owned().collect())
+                .with_title("Export Target"),
         }
     }
 }
