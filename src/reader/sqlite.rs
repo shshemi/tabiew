@@ -24,7 +24,7 @@ impl SqliteToDataFrames {
         }
     }
 
-    pub fn key(key: String) -> Self {
+    pub fn key(self, key: String) -> Self {
         SqliteToDataFrames { key: Some(key) }
     }
 }
