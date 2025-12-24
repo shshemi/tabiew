@@ -2,11 +2,10 @@ use std::{
     fmt::{Debug, Display},
     ops::Deref,
     str::FromStr,
-    sync::{Arc, OnceLock},
+    sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
 use strum_macros::{AsRefStr, EnumIter, EnumString};
 
 use crate::tui::themes::{
@@ -149,7 +148,6 @@ pub struct LoadedTheme {
 }
 
 impl LoadedTheme {
-
     pub fn app_theme(&self) -> &Theme {
         &self.app_theme
     }
