@@ -82,6 +82,7 @@ where
                                 WriteToArrow
                                     .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::CsvToFile(sep, quote, header, path_buf) => {
                                 WriteToCsv::default()
@@ -90,6 +91,7 @@ where
                                     .with_header(header)
                                     .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::CsvToClipboard(sep, quote, header) => {
                                 WriteToCsv::default()
@@ -98,35 +100,41 @@ where
                                     .with_header(header)
                                     .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::JsonToFile(path_buf) => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::Json)
                                     .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::JsonToClipboard => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::Json)
                                     .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::JsonLToFile(path_buf) => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::JsonLine)
                                     .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::JsonLToClipboard => {
                                 WriteToJson::default()
                                     .with_format(JsonFormat::JsonLine)
                                     .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::ParquetToFile(path_buf) => {
                                 WriteToParquet
                                     .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::TsvToFile(path_buf) => {
                                 WriteToCsv::default()
@@ -135,6 +143,7 @@ where
                                     .with_header(false)
                                     .write_to_file(Destination::File(path_buf), &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                             Export::TsvToClipboard => {
                                 WriteToCsv::default()
@@ -143,6 +152,7 @@ where
                                     .with_header(false)
                                     .write_to_file(Destination::Clipboard, &mut self.df)
                                     .unwrap_or_enqueue_error();
+                                Message::PaneDismissModal.enqueue();
                             }
                         }
                         true
