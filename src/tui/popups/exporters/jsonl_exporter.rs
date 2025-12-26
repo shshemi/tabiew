@@ -1,110 +1,76 @@
-use std::path::PathBuf;
+use crate::{
+    misc::type_ext::UnwrapOrEnqueueError,
+    writer::{Destination, WriteToFile},
+};
+use polars::frame::DataFrame;
 
-use crate::tui::{
-    component::Component,
-    popups::{
-        exporters::exporter::{Export, Exporter, State},
-        output_target_picker::{OutputTargetPicker, Target},
-        path_picker::PathPicker,
+use crate::{
+    handler::message::Message,
+    tui::{
+        component::Component,
+        popups::{
+            output_target_picker::{OutputTargetPicker, Target},
+            path_picker::PathPicker,
+            wizard::WizardState,
+        },
     },
+    writer::{JsonFormat, WriteToJson},
 };
 
-pub type JsonLExporter = Exporter<InnerState>;
-
 #[derive(Debug)]
-pub enum InnerState {
-    PickOutputTarget { picker: OutputTargetPicker },
-    PickOutputPath { picker: PathPicker },
-    ExportToFile { path: PathBuf },
-    ExportToClipboard,
+pub enum State {
+    PickOutputTarget {
+        df: DataFrame,
+        picker: OutputTargetPicker,
+    },
+    PickOutputPath {
+        df: DataFrame,
+        picker: PathPicker,
+    },
 }
 
-impl State for InnerState {
-    fn next(self) -> Self {
-        match self {
-            InnerState::PickOutputTarget { picker } => match picker.selected() {
-                Some(Target::File) => InnerState::PickOutputPath {
-                    picker: Default::default(),
-                },
-                Some(Target::Clipboard) => InnerState::ExportToClipboard,
-                None => InnerState::PickOutputTarget { picker },
-            },
-            InnerState::PickOutputPath { picker } => InnerState::ExportToFile {
-                path: picker.path(),
-            },
-            InnerState::ExportToFile { path } => InnerState::ExportToFile { path },
-            InnerState::ExportToClipboard => InnerState::ExportToClipboard,
-        }
-    }
-
-    fn responder(&mut self) -> Option<&mut dyn Component> {
-        match self {
-            InnerState::PickOutputTarget { picker } => Some(picker),
-            InnerState::PickOutputPath { picker } => Some(picker),
-            _ => None,
-        }
-    }
-
-    fn export(&self) -> Export {
-        match self {
-            InnerState::ExportToFile { path } => {
-                //
-                Export::JsonLToFile(path.to_owned())
-                // WriteToJson::default()
-                //     .with_format(JsonFormat::JsonLine)
-                //     .write_to_file(&Destination::File(path.to_owned()), df)
-                //     .into()
-                // Some(Action::ExportJson(
-                //     Destination::File(path.to_owned()),
-                //     JsonFormat::JsonLine,
-                // ))
-            }
-            InnerState::ExportToClipboard => {
-                //
-                Export::JsonLToClipboard
-                // WriteToJson::default()
-                //     .with_format(JsonFormat::JsonLine)
-                //     .write_to_file(&Destination::Clipboard, df)
-                //     .into()
-                // Some(Action::ExportJson(
-                //     Destination::Clipboard,
-                //     JsonFormat::JsonLine,
-                // ))
-            }
-            _ => Export::WaitingForUserInput,
-        }
-    }
-}
-
-impl Default for InnerState {
-    fn default() -> Self {
-        InnerState::PickOutputTarget {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
+        State::PickOutputTarget {
+            df: value,
             picker: Default::default(),
         }
     }
 }
 
-// #[derive(Debug, Default)]
-// pub struct JsonLExporter {}
+impl WizardState for State {
+    fn next(self) -> Self {
+        match self {
+            State::PickOutputTarget { mut df, picker } => match picker.selected() {
+                Some(Target::File) => State::PickOutputPath {
+                    df,
+                    picker: Default::default(),
+                },
+                Some(Target::Clipboard) => {
+                    WriteToJson::default()
+                        .with_format(JsonFormat::JsonLine)
+                        .write_to_file(Destination::Clipboard, &mut df)
+                        .unwrap_or_enqueue_error();
+                    Message::PaneDismissModal.enqueue();
+                    State::PickOutputTarget { df, picker }
+                }
+                None => State::PickOutputTarget { df, picker },
+            },
+            State::PickOutputPath { mut df, picker } => {
+                WriteToJson::default()
+                    .with_format(JsonFormat::JsonLine)
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                State::PickOutputPath { df, picker }
+            }
+        }
+    }
 
-// impl StatefulWidget for JsonLExporter {
-//     type State = JsonLExporterState;
-
-//     fn render(
-//         self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         match state {
-//             JsonLExporterState::PickOutputTarget { picker } => {
-//                 OutputTargetPicker::default().render(area, buf, picker)
-//             }
-//             JsonLExporterState::PickOutputPath { picker } => {
-//                 PathPicker::default().render(area, buf, picker)
-//             }
-//             JsonLExporterState::ExportToFile { path: _ } => (),
-//             JsonLExporterState::ExportToClipboard => (),
-//         }
-//     }
-// }
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            State::PickOutputTarget { df: _, picker } => picker,
+            State::PickOutputPath { df: _, picker } => picker,
+        }
+    }
+}

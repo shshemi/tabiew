@@ -1,52 +1,45 @@
-use std::path::PathBuf;
+use polars::frame::DataFrame;
 
-use crate::tui::{
-    component::Component,
-    popups::{
-        exporters::exporter::{Export, Exporter, State},
-        path_picker::PathPicker,
+use crate::{
+    handler::message::Message,
+    misc::type_ext::UnwrapOrEnqueueError,
+    tui::{
+        component::Component,
+        popups::{path_picker::PathPicker, wizard::WizardState},
     },
+    writer::{Destination, WriteToArrow, WriteToFile},
 };
 
-pub type ArrowExporter = Exporter<InnerState>;
-
 #[derive(Debug)]
-pub enum InnerState {
-    PickOutputPath { picker: PathPicker },
-    ExportToFile { path: PathBuf },
+pub enum State {
+    PickOutputPath { df: DataFrame, picker: PathPicker },
 }
 
-impl State for InnerState {
-    fn next(self) -> Self {
-        if let InnerState::PickOutputPath { picker } = self {
-            InnerState::ExportToFile {
-                path: picker.path(),
-            }
-        } else {
-            self
-        }
-    }
-
-    fn responder(&mut self) -> Option<&mut dyn Component> {
-        match self {
-            InnerState::PickOutputPath { picker } => Some(picker),
-            _ => None,
-        }
-    }
-
-    fn export(&self) -> Export {
-        if let InnerState::ExportToFile { path } = self {
-            Export::ArrowToFile(path.to_owned())
-        } else {
-            Export::WaitingForUserInput
-        }
-    }
-}
-
-impl Default for InnerState {
-    fn default() -> Self {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
         Self::PickOutputPath {
+            df: value,
             picker: Default::default(),
+        }
+    }
+}
+
+impl WizardState for State {
+    fn next(self) -> Self {
+        match self {
+            State::PickOutputPath { mut df, picker } => {
+                WriteToArrow
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                Self::PickOutputPath { df, picker }
+            }
+        }
+    }
+
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            State::PickOutputPath { df: _, picker } => picker,
         }
     }
 }

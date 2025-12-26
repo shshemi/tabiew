@@ -1,154 +1,174 @@
-use std::path::PathBuf;
+use crate::{
+    misc::type_ext::UnwrapOrEnqueueError,
+    writer::{Destination, WriteToFile},
+};
+use polars::frame::DataFrame;
 
-use crate::tui::popups::exporters::exporter::{Export, Exporter, State};
-use crate::tui::{
-    component::Component,
-    pickers::text_picker::TextPicker,
-    popups::{
-        output_target_picker::{OutputTargetPicker, Target},
-        path_picker::PathPicker,
+use crate::{
+    handler::message::Message,
+    tui::{
+        component::Component,
+        pickers::text_picker::TextPicker,
+        popups::{
+            output_target_picker::{OutputTargetPicker, Target},
+            path_picker::PathPicker,
+            wizard::WizardState,
+        },
     },
+    writer::WriteToCsv,
 };
 
-pub type CsvExporter = Exporter<InnerState>;
-
 #[derive(Debug)]
-pub enum InnerState {
+pub enum State {
     PickSeparator {
+        df: DataFrame,
         picker: TextPicker,
     },
     PickQuoteChar {
+        df: DataFrame,
         separator: char,
         picker: TextPicker,
     },
     PickOutputTarget {
+        df: DataFrame,
         separator: char,
         quote: char,
         picker: OutputTargetPicker,
     },
     PickOutputPath {
+        df: DataFrame,
         separator: char,
         quote: char,
         picker: PathPicker,
     },
-    ExportToFile {
-        separator: char,
-        quote: char,
-        path: PathBuf,
-    },
-    ExportToClipboard {
-        separator: char,
-        quote: char,
-    },
 }
 
-impl State for InnerState {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
+        Self::PickSeparator {
+            df: value,
+            picker: TextPicker::default()
+                .with_title("Separator")
+                .with_max_len(1)
+                .with_value(",".to_owned()),
+        }
+    }
+}
+
+impl WizardState for State {
     fn next(self) -> Self {
         match self {
-            Self::PickSeparator { picker } => {
-                if let Some(separator) = picker.input().value().chars().next() {
-                    Self::PickQuoteChar {
+            State::PickSeparator { df, picker } => {
+                if let Some(separator) = picker.value().chars().next() {
+                    State::PickQuoteChar {
+                        df,
                         separator,
                         picker: TextPicker::default()
+                            .with_title("Quote")
                             .with_max_len(1)
                             .with_value("\"".to_owned()),
                     }
                 } else {
-                    Self::PickSeparator { picker }
+                    State::PickSeparator { df, picker }
                 }
             }
-            Self::PickQuoteChar { separator, picker } => {
-                if let Some(quote) = picker.input().value().chars().next() {
-                    Self::PickOutputTarget {
+            State::PickQuoteChar {
+                df,
+                separator,
+                picker,
+            } => {
+                if let Some(quote) = picker.value().chars().next() {
+                    State::PickOutputTarget {
+                        df,
                         separator,
                         quote,
                         picker: OutputTargetPicker::default(),
                     }
                 } else {
-                    Self::PickQuoteChar { separator, picker }
+                    State::PickQuoteChar {
+                        df,
+                        separator,
+                        picker,
+                    }
                 }
             }
-            Self::PickOutputTarget {
+            State::PickOutputTarget {
+                mut df,
                 separator,
                 quote,
                 picker,
             } => match picker.selected() {
-                Some(Target::File) => Self::PickOutputPath {
+                Some(Target::Clipboard) => {
+                    WriteToCsv::default()
+                        .with_separator_char(separator)
+                        .with_quote_char(quote)
+                        .with_header(true)
+                        .write_to_file(Destination::Clipboard, &mut df)
+                        .unwrap_or_enqueue_error();
+                    Message::PaneDismissModal.enqueue();
+                    State::PickOutputTarget {
+                        df,
+                        separator,
+                        quote,
+                        picker,
+                    }
+                }
+                Some(Target::File) => State::PickOutputPath {
+                    df,
                     separator,
                     quote,
-                    picker: Default::default(),
+                    picker: PathPicker::default(),
                 },
-                Some(Target::Clipboard) => Self::ExportToClipboard { separator, quote },
-                None => Self::PickOutputTarget {
+                None => State::PickOutputTarget {
+                    df,
                     separator,
                     quote,
                     picker,
                 },
             },
-            Self::PickOutputPath {
+            State::PickOutputPath {
+                mut df,
                 separator,
                 quote,
                 picker,
-            } => Self::ExportToFile {
-                separator,
-                quote,
-                path: picker.path(),
-            },
-            Self::ExportToClipboard {
-                separator: _,
-                quote: _,
-            } => self,
-
-            Self::ExportToFile {
-                separator: _,
-                quote: _,
-                path: _,
-            } => self,
-        }
-    }
-
-    fn responder(&mut self) -> Option<&mut dyn Component> {
-        match self {
-            InnerState::PickSeparator { picker } => Some(picker),
-            InnerState::PickQuoteChar {
-                separator: _,
-                picker,
-            } => Some(picker),
-            InnerState::PickOutputTarget {
-                separator: _,
-                quote: _,
-                picker,
-            } => Some(picker),
-            InnerState::PickOutputPath {
-                separator: _,
-                quote: _,
-                picker,
-            } => Some(picker),
-            _ => None,
-        }
-    }
-
-    fn export(&self) -> Export {
-        match &self {
-            InnerState::ExportToFile {
-                separator,
-                quote,
-                path,
-            } => Export::CsvToFile(*separator, *quote, true, path.to_owned()),
-            InnerState::ExportToClipboard { separator, quote } => {
-                Export::CsvToClipboard(*separator, *quote, true)
+            } => {
+                WriteToCsv::default()
+                    .with_separator_char(separator)
+                    .with_quote_char(quote)
+                    .with_header(true)
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                State::PickOutputPath {
+                    df,
+                    separator,
+                    quote,
+                    picker,
+                }
             }
-            _ => Export::WaitingForUserInput,
         }
     }
-}
 
-impl Default for InnerState {
-    fn default() -> Self {
-        Self::PickSeparator {
-            picker: TextPicker::default()
-                .with_max_len(1)
-                .with_value(",".to_owned()),
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            State::PickSeparator { picker, df: _ } => picker,
+            State::PickQuoteChar {
+                separator: _,
+                picker,
+                df: _,
+            } => picker,
+            State::PickOutputTarget {
+                separator: _,
+                quote: _,
+                picker,
+                df: _,
+            } => picker,
+            State::PickOutputPath {
+                separator: _,
+                quote: _,
+                picker,
+                df: _,
+            } => picker,
         }
     }
 }

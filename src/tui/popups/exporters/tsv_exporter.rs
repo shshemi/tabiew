@@ -1,63 +1,77 @@
-use std::path::PathBuf;
+use polars::frame::DataFrame;
 
-use crate::tui::{
-    component::Component,
-    popups::{
-        exporters::exporter::{Export, Exporter, State},
-        output_target_picker::{OutputTargetPicker, Target},
-        path_picker::PathPicker,
+use crate::{
+    handler::message::Message,
+    misc::type_ext::UnwrapOrEnqueueError,
+    tui::{
+        component::Component,
+        popups::{
+            output_target_picker::{OutputTargetPicker, Target},
+            path_picker::PathPicker,
+            wizard::WizardState,
+        },
     },
+    writer::{Destination, WriteToCsv, WriteToFile},
 };
 
-pub type TsvExporter = Exporter<InnerState>;
-
 #[derive(Debug)]
-pub enum InnerState {
-    PickOutputTarget { picker: OutputTargetPicker },
-    PickOutputPath { picker: PathPicker },
-    ExportToFile { path: PathBuf },
-    ExportToClipboard,
+pub enum State {
+    PickOutputTarget {
+        df: DataFrame,
+        picker: OutputTargetPicker,
+    },
+    PickOutputPath {
+        df: DataFrame,
+        picker: PathPicker,
+    },
 }
 
-impl State for InnerState {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
+        Self::PickOutputTarget {
+            df: value,
+            picker: Default::default(),
+        }
+    }
+}
+
+impl WizardState for State {
     fn next(self) -> Self {
         match self {
-            InnerState::PickOutputTarget { picker } => match picker.selected() {
-                Some(Target::File) => InnerState::PickOutputPath {
-                    picker: Default::default(),
+            State::PickOutputTarget { mut df, picker } => match picker.selected() {
+                Some(Target::File) => State::PickOutputPath {
+                    df,
+                    picker: PathPicker::default(),
                 },
-                Some(Target::Clipboard) => InnerState::ExportToClipboard,
-                None => InnerState::PickOutputTarget { picker },
+                Some(Target::Clipboard) => {
+                    WriteToCsv::default()
+                        .with_separator_char('\t')
+                        .with_quote_char('"')
+                        .with_header(false)
+                        .write_to_file(Destination::Clipboard, &mut df)
+                        .unwrap_or_enqueue_error();
+                    Message::PaneDismissModal.enqueue();
+                    State::PickOutputTarget { df, picker }
+                }
+                None => State::PickOutputTarget { df, picker },
             },
-            InnerState::PickOutputPath { picker } => InnerState::ExportToFile {
-                path: picker.path(),
-            },
-            InnerState::ExportToFile { path } => InnerState::ExportToFile { path },
-            InnerState::ExportToClipboard => InnerState::ExportToClipboard,
+            State::PickOutputPath { mut df, picker } => {
+                WriteToCsv::default()
+                    .with_separator_char('\t')
+                    .with_quote_char('"')
+                    .with_header(false)
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                State::PickOutputPath { df, picker }
+            }
         }
     }
 
-    fn responder(&mut self) -> Option<&mut dyn Component> {
+    fn responder(&mut self) -> &mut dyn Component {
         match self {
-            InnerState::PickOutputTarget { picker } => Some(picker),
-            InnerState::PickOutputPath { picker } => Some(picker),
-            _ => None,
-        }
-    }
-
-    fn export(&self) -> Export {
-        match self {
-            InnerState::ExportToFile { path } => Export::TsvToFile(path.to_owned()),
-            InnerState::ExportToClipboard => Export::TsvToClipboard,
-            _ => Export::WaitingForUserInput,
-        }
-    }
-}
-
-impl Default for InnerState {
-    fn default() -> Self {
-        Self::PickOutputTarget {
-            picker: Default::default(),
+            State::PickOutputTarget { df: _, picker } => picker,
+            State::PickOutputPath { df: _, picker } => picker,
         }
     }
 }

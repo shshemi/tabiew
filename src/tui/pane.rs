@@ -20,7 +20,7 @@ use crate::{
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             data_frame_info::DataFrameInfo,
-            export_wizard::ExportWizard,
+            export_wizard::{ExportWizard, State},
             go_to_line::GoToLine,
             histogram_wizard::{self, HistogramWizard},
             query_picker::{QueryPicker, QueryType},
@@ -200,7 +200,7 @@ impl Pane {
 
     fn show_export_wizard(&mut self) {
         self.modal = Some(Modal::ExportWizard(ExportWizard::new(
-            self.tstack.last().data_frame().clone(),
+            self.tstack.last().data_frame().clone().into(),
         )))
     }
 
