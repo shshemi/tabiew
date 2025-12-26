@@ -60,19 +60,20 @@ impl Component for CommandPicker {
                     Message::AppDismissOverlay.enqueue();
                     if let Some(item) = self.picker.selected_item() {
                         match item {
+                            Command::DataFrameInfo => Message::PaneShowTableInfo.enqueue(),
                             Command::Export => Message::PaneShowExportWizard.enqueue(),
+                            Command::Filter => Message::PaneShowInlineFilter.enqueue(),
+                            Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
                             Command::Import => Message::AppShowImportWizard.enqueue(),
                             Command::Order => Message::PaneShowInlineOrder.enqueue(),
-                            Command::Sort => Message::PaneShowInlineOrder.enqueue(),
-                            Command::Filter => Message::PaneShowInlineFilter.enqueue(),
                             Command::Query => Message::PaneShowSqlQuery.enqueue(),
-                            Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
-                            Command::Select => Message::PaneShowInlineSelect.enqueue(),
-                            Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
-                            Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
-                            Command::Schema => Message::AppShowSchema.enqueue(),
                             Command::Quit | Command::Q => Message::Quit.enqueue(),
                             Command::Register => Message::PaneShowTableRegisterer.enqueue(),
+                            Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
+                            Command::Schema => Message::AppShowSchema.enqueue(),
+                            Command::Select => Message::PaneShowInlineSelect.enqueue(),
+                            Command::Sort => Message::PaneShowInlineOrder.enqueue(),
+                            Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
                         }
                     }
                     true
@@ -89,6 +90,7 @@ impl Component for CommandPicker {
 
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
+    DataFrameInfo,
     Export,
     Filter,
     Histogram,

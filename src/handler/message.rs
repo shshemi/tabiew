@@ -32,6 +32,7 @@ pub enum Message {
     PaneTableSelect(usize),
     PaneShowInlineSelect,
     PaneShowTableRegisterer,
+    PaneShowTableInfo,
     Quit,
 }
 
