@@ -1,52 +1,51 @@
+use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::{
-    layout::{Alignment, Direction, Size},
+    layout::{Alignment, Direction, Margin},
     text::Line,
-    widgets::{Bar, BarChart, BarGroup, Clear, StatefulWidget, Widget},
+    widgets::{Bar, BarChart, BarGroup, Clear, Widget},
 };
-use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
+use unicode_width::UnicodeWidthStr;
 
-use crate::{misc::globals::theme, tui::widgets::block::Block};
-
-#[derive(Debug, Default)]
-pub struct HistogramPlot;
+use crate::{
+    handler::message::Message,
+    misc::globals::theme,
+    tui::{component::Component, widgets::block::Block},
+};
 
 #[derive(Debug)]
-pub struct HistogramPlotState {
-    data: Vec<(String, u64)>,
-    scroll_view: ScrollViewState,
+pub struct HistogramPlot {
+    offset: usize,
+    bars: Vec<Bar<'static>>,
+    max_value: u64,
 }
 
-impl HistogramPlotState {
+impl HistogramPlot {
     pub fn new(data: Vec<(String, u64)>) -> Self {
         Self {
-            data,
-            scroll_view: Default::default(),
+            offset: 0,
+            max_value: data.first().map(|(_, v)| *v).unwrap_or_default(),
+            bars: bars_from_data(data),
         }
     }
 
-    pub fn bucket_count(&self) -> usize {
-        self.data.len()
+    fn scroll_up(&mut self) {
+        self.offset = self.offset.saturating_sub(1);
     }
 
-    pub fn scroll_up(&mut self) {
-        self.scroll_view.scroll_up();
-    }
-
-    pub fn scroll_down(&mut self) {
-        self.scroll_view.scroll_down();
+    fn scroll_down(&mut self) {
+        self.offset = self.offset.saturating_add(1);
     }
 }
 
-impl StatefulWidget for HistogramPlot {
-    type State = HistogramPlotState;
-
+impl Component for HistogramPlot {
     fn render(
-        self,
-        area: ratatui::prelude::Rect,
+        &mut self,
+        _area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        _focus_state: crate::tui::component::FocusState,
     ) {
+        let area = buf.area.inner(Margin::new(7, 3));
         Widget::render(Clear, area, buf);
         let area = {
             let blk = Block::default()
@@ -57,45 +56,72 @@ impl StatefulWidget for HistogramPlot {
             new_area
         };
 
-        let lab_len = state
-            .data
-            .iter()
-            .map(|(l, _)| l.len())
-            .max()
-            .unwrap_or_default();
-        let val_len = state
-            .data
-            .iter()
-            .map(|(_, v)| v.to_string().len())
-            .max()
-            .unwrap_or_default();
-        let bars = state
-            .data
-            .iter()
-            .enumerate()
-            .map(|(idx, (label, value))| {
-                Bar::default()
-                    .value(*value)
-                    .text_value(format!("{value:>val_len$} "))
-                    .label(Line::styled(
-                        format!("{label:>lab_len$} "),
-                        theme().graph(idx),
-                    ))
-                    .style(theme().graph(idx))
-            })
-            .collect_vec();
+        self.offset = self
+            .offset
+            .min(self.bars.len().saturating_sub(area.height as usize));
 
-        let mut scroll_view = ScrollView::new(Size::new(area.width, bars.len() as u16))
-            .scrollbars_visibility(ScrollbarVisibility::Never);
-        if !bars.is_empty() {
-            let chart = BarChart::default()
-                .style(theme().text())
-                .bar_width(1)
-                .direction(Direction::Horizontal)
-                .bar_gap(0)
-                .data(BarGroup::default().bars(&bars));
-            scroll_view.render_widget(chart, scroll_view.area());
-        }
-        scroll_view.render(area, buf, &mut state.scroll_view);
+        let end = self
+            .offset
+            .saturating_add(area.height as usize)
+            .min(self.bars.len());
+
+        let chart = BarChart::default()
+            .style(theme().text())
+            .bar_width(1)
+            .max(self.max_value)
+            .direction(Direction::Horizontal)
+            .bar_gap(0)
+            .data(BarGroup::default().bars(&self.bars[self.offset..end]));
+        chart.render(area, buf);
     }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match (event.code, event.modifiers) {
+            (KeyCode::Up, KeyModifiers::NONE)
+            | (KeyCode::Char('k'), KeyModifiers::NONE)
+            | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+                self.scroll_up();
+                true
+            }
+            (KeyCode::Down, KeyModifiers::NONE)
+            | (KeyCode::Char('j'), KeyModifiers::NONE)
+            | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+                self.scroll_down();
+                true
+            }
+            (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                Message::PaneDismissModal.enqueue();
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
+fn bars_from_data(data: Vec<(String, u64)>) -> Vec<Bar<'static>> {
+    let label_len = data
+        .iter()
+        .map(|(l, _)| l.trim().width())
+        .max()
+        .unwrap_or_default()
+        .min(24);
+    let value_len = data
+        .iter()
+        .map(|(_, v)| v.to_string().len())
+        .max()
+        .unwrap_or_default();
+    data.iter()
+        .enumerate()
+        .map(|(idx, (label, value))| {
+            let label = label.trim().chars().take(label_len).collect::<String>();
+            Bar::default()
+                .value(*value)
+                .text_value(format!("{value:>value_len$} "))
+                .label(Line::styled(
+                    format!("{label:>label_len$}"),
+                    theme().graph(idx),
+                ))
+                .style(theme().graph(idx))
+        })
+        .collect_vec()
 }

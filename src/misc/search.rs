@@ -16,7 +16,7 @@ use polars::{frame::DataFrame, prelude::IdxCa};
 
 use rayon::prelude::*;
 
-use crate::misc::polars_ext::IntoString;
+use crate::misc::polars_ext::AnyValueExt;
 
 pub trait Score {
     fn score(&self, a: &str, b: &str) -> Option<i64>;

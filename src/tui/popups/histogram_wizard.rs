@@ -1,175 +1,90 @@
-use crossterm::event::KeyEvent;
-use polars::{
-    frame::DataFrame,
-    prelude::{Column, DataType, PlSmallStr},
-};
-use ratatui::widgets::StatefulWidget;
+use std::fmt::Display;
 
-use crate::tui::{
-    pickers::{
-        search_picker::{SearchPicker, SearchPickerState},
-        text_picker::{TextPicker, TextPickerState},
+use polars::{frame::DataFrame, prelude::DataType};
+
+use crate::{
+    handler::message::Message,
+    tui::{
+        pickers::{search_picker::SearchPicker, text_picker::TextPicker},
+        popups::wizard::{Wizard, WizardState},
+        widgets::input::InputType,
     },
-    widgets::input::InputType,
 };
+
+const DEFAULT_BUCKET_COUNT: &str = "38";
+
+pub type HistogramWizard = Wizard<State>;
 
 #[derive(Debug)]
-pub enum HistogramWizardState {
+pub enum State {
     ColumnSelect {
-        columns: Vec<String>,
-        picker: SearchPickerState,
+        picker: SearchPicker<ColumnNameType>,
     },
     BucketCount {
         column: String,
-        picker: TextPickerState,
-    },
-    Show {
-        column: String,
-        buckets: usize,
+        picker: TextPicker,
     },
 }
 
-impl HistogramWizardState {
+impl State {
     pub fn new(df: &DataFrame) -> Self {
-        HistogramWizardState::ColumnSelect {
-            columns: df
-                .column_iter()
-                .filter(|col| {
-                    matches!(
-                        col.dtype(),
-                        DataType::UInt8
-                            | DataType::UInt16
-                            | DataType::UInt32
-                            | DataType::UInt64
-                            | DataType::Int8
-                            | DataType::Int16
-                            | DataType::Int32
-                            | DataType::Int64
-                            | DataType::Int128
-                            | DataType::Float32
-                            | DataType::Float64
-                            | DataType::Decimal(_, _)
-                            | DataType::Boolean
-                            | DataType::String
-                    )
-                })
-                .map(Column::name)
-                .map(PlSmallStr::to_string)
-                .collect(),
-            picker: Default::default(),
+        let items = df
+            .column_iter()
+            .filter(|col| {
+                let dtype = col.dtype();
+                dtype.is_numeric() || dtype.is_string() || dtype.is_bool()
+            })
+            .map(|col| ColumnNameType(col.name().to_string(), col.dtype().to_owned()))
+            .collect();
+
+        State::ColumnSelect {
+            picker: SearchPicker::new(items),
         }
     }
+}
 
-    pub fn step(&mut self) {
-        *self = match std::mem::take(self) {
-            HistogramWizardState::ColumnSelect { columns, picker } => {
-                let column = picker
-                    .selected()
-                    .and_then(|i| columns.get(i))
-                    .map(|m| m.to_owned())
-                    .unwrap_or("Default".to_owned());
-                HistogramWizardState::BucketCount {
-                    column,
-                    picker: TextPickerState::default()
-                        .with_value("38".to_owned())
-                        .with_input_type(InputType::Numeric),
+impl WizardState for State {
+    fn next(self) -> Self {
+        match self {
+            State::ColumnSelect { picker } => {
+                if let Some(ColumnNameType(name, dtype)) = picker.selected_item() {
+                    if dtype.is_string() {
+                        Message::PaneShowHistogram(name.clone(), 0).enqueue();
+
+                        State::ColumnSelect { picker }
+                    } else {
+                        State::BucketCount {
+                            column: name.to_owned(),
+                            picker: TextPicker::default()
+                                .with_input_type(InputType::Numeric)
+                                .with_value(DEFAULT_BUCKET_COUNT.to_owned()),
+                        }
+                    }
+                } else {
+                    State::ColumnSelect { picker }
                 }
             }
-            HistogramWizardState::BucketCount { column, picker } => {
+            State::BucketCount { column, picker } => {
                 let buckets = picker.value().parse().unwrap_or(1);
-                HistogramWizardState::Show { column, buckets }
-            }
-            HistogramWizardState::Show { column, buckets } => {
-                HistogramWizardState::Show { column, buckets }
+                Message::PaneShowHistogram(column.clone(), buckets).enqueue();
+                State::BucketCount { column, picker }
             }
         }
     }
 
-    pub fn select_next(&mut self) {
+    fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
         match self {
-            HistogramWizardState::ColumnSelect { columns: _, picker } => {
-                picker.list_mut().select_next();
-            }
-            HistogramWizardState::BucketCount {
-                column: _,
-                picker: _,
-            } => (),
-            HistogramWizardState::Show {
-                column: _,
-                buckets: _,
-            } => (),
-        }
-    }
-
-    pub fn select_previous(&mut self) {
-        match self {
-            HistogramWizardState::ColumnSelect { columns: _, picker } => {
-                picker.list_mut().select_previous()
-            }
-            HistogramWizardState::BucketCount {
-                column: _,
-                picker: _,
-            } => (),
-            HistogramWizardState::Show {
-                column: _,
-                buckets: _,
-            } => (),
-        }
-    }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        match self {
-            HistogramWizardState::ColumnSelect { columns: _, picker } => {
-                picker.input_mut().handle(event);
-            }
-            HistogramWizardState::BucketCount { column: _, picker } => {
-                picker.input_mut().handle(event);
-            }
-            HistogramWizardState::Show {
-                column: _,
-                buckets: _,
-            } => (),
+            State::ColumnSelect { picker } => picker,
+            State::BucketCount { column: _, picker } => picker,
         }
     }
 }
 
-impl Default for HistogramWizardState {
-    fn default() -> Self {
-        HistogramWizardState::ColumnSelect {
-            columns: Default::default(),
-            picker: Default::default(),
-        }
-    }
-}
+#[derive(Debug)]
+pub struct ColumnNameType(String, DataType);
 
-#[derive(Debug, Default)]
-pub struct HistogramWizard {}
-
-impl StatefulWidget for HistogramWizard {
-    type State = HistogramWizardState;
-
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        match state {
-            HistogramWizardState::ColumnSelect { columns, picker } => {
-                SearchPicker::default()
-                    .items(columns.iter().map(String::as_str))
-                    .title("Column")
-                    .render(area, buf, picker);
-            }
-            HistogramWizardState::BucketCount { column: _, picker } => {
-                TextPicker::default()
-                    .title("Suggested Bucket Count")
-                    .render(area, buf, picker);
-            }
-            HistogramWizardState::Show {
-                column: _,
-                buckets: _,
-            } => (),
-        }
+impl Display for ColumnNameType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }

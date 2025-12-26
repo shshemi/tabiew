@@ -61,4 +61,8 @@ impl Styler for Terminal {
     fn text_highlighted(&self) -> Style {
         Style::default().fg(Color::Yellow)
     }
+
+    fn gutter(&self, _: usize) -> Style {
+        Style::default().bg(Color::Black).fg(Color::White)
+    }
 }

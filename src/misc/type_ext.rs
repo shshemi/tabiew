@@ -1,13 +1,9 @@
-use std::{
-    fmt::Display,
-    io::Write,
-    sync::{LazyLock, Mutex},
-};
+use std::fmt::Display;
 
-use base64::Engine;
+use ratatui::layout::Constraint;
 use unicode_width::UnicodeWidthChar;
 
-use crate::AppResult;
+use crate::{AppResult, handler::message::Message};
 
 static OSC52_BUFFER: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(Vec::new()));
 
@@ -36,6 +32,18 @@ pub trait HasSubsequence {
 
 pub trait UnwrapOrGracefulShutdown<T> {
     fn unwrap_or_graceful_shutdown(self) -> T;
+}
+
+pub trait VecExt<T> {
+    fn take(&mut self, idx: usize) -> Option<T>;
+}
+
+pub trait UnwrapOrEnqueueError {
+    fn unwrap_or_enqueue_error(&self);
+}
+
+pub trait ConstraintExt {
+    fn value(&self) -> u16;
 }
 
 impl HasSubsequence for str {
@@ -86,23 +94,6 @@ pub trait SnakeCaseNameGenExt {
 impl SnakeCaseNameGenExt for str {
     fn snake_case_names(&self) -> SnakeCaseNameGen<'_> {
         SnakeCaseNameGen::with(self)
-    }
-}
-
-pub trait CopyToClipboardOsc52 {
-    fn copy_to_clipboard_via_osc52(&self) -> AppResult<()>;
-}
-
-impl<T> CopyToClipboardOsc52 for T
-where
-    T: AsRef<[u8]>,
-{
-    fn copy_to_clipboard_via_osc52(&self) -> AppResult<()> {
-        let encoded = base64::engine::general_purpose::STANDARD.encode(self);
-        let sequence = format!("\x1b]52;c;{encoded}\x07");
-        let mut buffer = OSC52_BUFFER.lock().unwrap();
-        buffer.push(sequence);
-        Ok(())
     }
 }
 
@@ -159,6 +150,33 @@ impl FitToWidth for str {
             .last()
             .unwrap_or_default();
         &self[..end]
+    }
+}
+
+impl<T> VecExt<T> for Vec<T> {
+    fn take(&mut self, idx: usize) -> Option<T> {
+        (idx < self.len()).then(|| self.remove(idx))
+    }
+}
+
+impl ConstraintExt for Constraint {
+    fn value(&self) -> u16 {
+        match self {
+            Constraint::Min(val)
+            | Constraint::Max(val)
+            | Constraint::Length(val)
+            | Constraint::Fill(val) => *val,
+            Constraint::Percentage(_) | Constraint::Ratio(_, _) => 0,
+        }
+    }
+}
+
+impl UnwrapOrEnqueueError for AppResult<()> {
+    fn unwrap_or_enqueue_error(&self) {
+        match self {
+            Ok(_) => (),
+            Err(err) => Message::AppShowError(err.to_string()).enqueue(),
+        }
     }
 }
 

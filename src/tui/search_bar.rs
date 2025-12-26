@@ -1,70 +1,63 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
-use ratatui::widgets::StatefulWidget;
+use ratatui::widgets::Widget;
 
 use crate::{
-    misc::{
-        globals::theme,
-        search::{self, Contain, Skim},
-    },
-    tui::widgets::block::Block,
+    handler::message::Message,
+    misc::search::{self, Contain, Skim},
+    tui::{component::Component, widgets::block::Block},
 };
 
-use super::widgets::input::{Input, InputState};
+use super::widgets::input::Input;
 
 #[derive(Debug)]
-pub enum Search {
+pub enum Searcher {
     Fuzzy(search::Search<Skim>),
     Exact(search::Search<Contain>),
 }
 
-impl Search {
+impl Searcher {
     pub fn pattern(&self) -> &str {
         match self {
-            Search::Fuzzy(search) => search.pattern(),
-            Search::Exact(search) => search.pattern(),
+            Searcher::Fuzzy(search) => search.pattern(),
+            Searcher::Exact(search) => search.pattern(),
         }
     }
 
     pub fn latest(&self) -> Option<DataFrame> {
         match self {
-            Search::Fuzzy(search) => search.latest(),
-            Search::Exact(search) => search.latest(),
+            Searcher::Fuzzy(search) => search.latest(),
+            Searcher::Exact(search) => search.latest(),
         }
     }
 }
 
 #[derive(Debug)]
-pub struct SearchBarState {
-    input: InputState,
-    search: Search,
+pub struct SearchBar {
+    input: Input,
+    searcher: Searcher,
     rollback_df: DataFrame,
 }
 
-impl SearchBarState {
+impl SearchBar {
     pub fn exact(dataframe: DataFrame) -> Self {
-        SearchBarState {
+        SearchBar {
             input: Default::default(),
-            search: Search::Exact(search::Search::new(dataframe.clone(), Default::default())),
+            searcher: Searcher::Exact(search::Search::new(dataframe.clone(), Default::default())),
             rollback_df: dataframe,
         }
     }
 
     pub fn fuzzy(dataframe: DataFrame) -> Self {
-        SearchBarState {
+        SearchBar {
             input: Default::default(),
-            search: Search::Fuzzy(search::Search::new(dataframe.clone(), Default::default())),
+            searcher: Searcher::Fuzzy(search::Search::new(dataframe.clone(), Default::default())),
             rollback_df: dataframe,
         }
     }
 
-    pub fn search(&self) -> &Search {
-        &self.search
-    }
-
-    pub fn handle_key(&mut self, event: KeyEvent) {
-        self.input.handle(event);
-        self.update_search();
+    pub fn searcher(&self) -> &Searcher {
+        &self.searcher
     }
 
     pub fn into_rollback_df(self) -> DataFrame {
@@ -72,16 +65,16 @@ impl SearchBarState {
     }
 
     fn update_search(&mut self) {
-        if self.input.value() != self.search.pattern() {
-            match self.search {
-                Search::Fuzzy(_) => {
-                    self.search = Search::Fuzzy(search::Search::new(
+        if self.input.value() != self.searcher.pattern() {
+            match self.searcher {
+                Searcher::Fuzzy(_) => {
+                    self.searcher = Searcher::Fuzzy(search::Search::new(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))
                 }
-                Search::Exact(_) => {
-                    self.search = Search::Exact(search::Search::new(
+                Searcher::Exact(_) => {
+                    self.searcher = Searcher::Exact(search::Search::new(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))
@@ -91,44 +84,52 @@ impl SearchBarState {
     }
 }
 
-#[derive(Debug)]
-pub struct SearchBar {
-    selection: bool,
-}
-
-impl SearchBar {
-    pub fn new() -> Self {
-        Self { selection: false }
-    }
-
-    pub fn with_selection(self, selection: bool) -> Self {
-        Self { selection }
-    }
-}
-
-impl Default for SearchBar {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl StatefulWidget for SearchBar {
-    type State = SearchBarState;
-
+impl Component for SearchBar {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: super::component::FocusState,
     ) {
-        let title = match state.search {
-            Search::Fuzzy(_) => "Fuzzy Search",
-            Search::Exact(_) => "Search",
+        let title = match &self.searcher {
+            Searcher::Fuzzy(_) => "Fuzzy Search",
+            Searcher::Exact(_) => "Search",
         };
-        Input::default()
-            .style(theme().text())
-            .with_show_cursor(self.selection)
-            .block(Block::default().title(title))
-            .render(area, buf, &mut state.input);
+        let area = {
+            let block = Block::default().title(title);
+            let inner = block.inner(area);
+            block.render(area, buf);
+            inner
+        };
+        self.input.render(area, buf, focus_state);
+    }
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        if self.input.handle(event) {
+            self.update_search();
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::PanePopDataFrame.enqueue();
+                    true
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    true
+                }
+                // (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+                //     Message::PaneTableSelectUp.enqueue();
+                //     true
+                // }
+                // (KeyCode::Down, KeyModifiers::NONE)
+                // | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+                //     Message::PaneTableSelectDown.enqueue();
+                //     true
+                // }
+                _ => false,
+            }
+        }
     }
 }

@@ -1,12 +1,15 @@
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::Alignment,
     text::Line,
-    widgets::{Clear, Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
+    handler::message::Message,
     misc::globals::theme,
     tui::{
+        component::Component,
         status_bar::{StatusBar, Tag},
         utils::Scroll,
         widgets::block::Block,
@@ -27,34 +30,20 @@ impl SheetSection {
 
 #[derive(Debug)]
 pub struct Sheet {
+    scroll: Scroll,
+    row: usize,
     sections: Vec<SheetSection>,
 }
 
 impl Sheet {
-    pub fn new() -> Self {
+    pub fn new(row: usize, sections: Vec<SheetSection>) -> Self {
         Self {
-            sections: Default::default(),
+            scroll: Default::default(),
+            row,
+            sections,
         }
     }
 
-    pub fn with_sections(mut self, sections: Vec<SheetSection>) -> Self {
-        self.sections = sections;
-        self
-    }
-}
-
-impl Default for Sheet {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct SheetState {
-    scroll: Scroll,
-}
-
-impl SheetState {
     pub fn scroll_up(&mut self) {
         self.scroll.up();
     }
@@ -62,16 +51,23 @@ impl SheetState {
     pub fn scroll_down(&mut self) {
         self.scroll.down();
     }
+
+    pub fn row(&self) -> usize {
+        self.row
+    }
+
+    pub fn set(&mut self, row: usize, sections: Vec<SheetSection>) {
+        self.row = row;
+        self.sections = sections;
+    }
 }
 
-impl StatefulWidget for Sheet {
-    type State = SheetState;
-
+impl Component for Sheet {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        _focus_state: super::component::FocusState,
     ) {
         Clear.render(area, buf);
 
@@ -106,10 +102,28 @@ impl StatefulWidget for Sheet {
                 .into_widget(),
         );
 
-        state
-            .scroll
+        self.scroll
             .adjust(pg.line_count(area.width), area.height.saturating_sub(2));
 
-        pg.scroll((state.scroll.val_u16(), 0)).render(area, buf);
+        pg.scroll((self.scroll.val_u16(), 0)).render(area, buf);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match (event.code, event.modifiers) {
+            (KeyCode::Char('K'), KeyModifiers::SHIFT) | (KeyCode::Up, KeyModifiers::SHIFT) => {
+                self.scroll.up();
+                true
+            }
+            (KeyCode::Char('J'), KeyModifiers::SHIFT) | (KeyCode::Down, KeyModifiers::SHIFT) => {
+                self.scroll.down();
+                true
+            }
+            (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                Message::PaneDismissModal.enqueue();
+                true
+            }
+
+            _ => false,
+        }
     }
 }

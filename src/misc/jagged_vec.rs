@@ -35,6 +35,24 @@ impl<T> JaggedVec<T> {
     }
 }
 
+impl<A> FromIterator<A> for JaggedVec<A> {
+    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
+        let mut jv = JaggedVec::default();
+        jv.push(iter);
+        jv
+    }
+}
+
+impl<A> IntoIterator for JaggedVec<A> {
+    type Item = A;
+
+    type IntoIter = std::vec::IntoIter<A>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.into_iter()
+    }
+}
+
 #[derive(Debug)]
 pub struct Iter<'a, T> {
     nidx: usize,

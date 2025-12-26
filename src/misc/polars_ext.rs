@@ -13,19 +13,23 @@ use polars::{
     prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, SeriesMethods},
     series::Series,
 };
+use ratatui::widgets::Cell;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AppResult, tui::sheet::SheetSection};
+use crate::{AppResult, misc::jagged_vec::JaggedVec, tui::sheet::SheetSection};
 
 use super::type_ext::HasSubsequence;
 
-pub trait IntoString {
+pub trait AnyValueExt {
     fn into_single_line(self) -> String;
+    fn width(self) -> usize;
     fn into_multi_line(self) -> String;
+    fn into_cell(self, width: usize) -> Cell<'static>;
 }
 
 pub trait TuiWidths {
-    fn tui_widths(&self) -> Vec<usize>;
+    fn widths(&self) -> Vec<usize>;
 }
 
 pub trait FuzzyCmp {
@@ -44,11 +48,18 @@ pub trait TryMapAll {
 }
 
 pub trait PlotData {
-    fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>>;
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
+    #[allow(clippy::type_complexity)]
+    fn scatter_plot_data_grouped(
+        &self,
+        x_label: &str,
+        y_label: &str,
+        group_by: &str,
+    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)>;
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
-impl IntoString for AnyValue<'_> {
+impl AnyValueExt for AnyValue<'_> {
     fn into_single_line(self) -> String {
         match self {
             AnyValue::Null => "".to_owned(),
@@ -66,6 +77,21 @@ impl IntoString for AnyValue<'_> {
         }
     }
 
+    fn width(self) -> usize {
+        match self {
+            AnyValue::Null => 0,
+            AnyValue::Boolean(v) => {
+                if v {
+                    4 // true
+                } else {
+                    5 // false
+                }
+            }
+            AnyValue::String(s) => s.width(),
+            _ => self.into_single_line().width(),
+        }
+    }
+
     fn into_multi_line(self) -> String {
         match self {
             AnyValue::Null => "".to_owned(),
@@ -80,6 +106,14 @@ impl IntoString for AnyValue<'_> {
             AnyValue::Binary(buf) => bytes_to_string(buf),
             AnyValue::BinaryOwned(buf) => bytes_to_string(buf),
             _ => self.to_string(),
+        }
+    }
+
+    fn into_cell(self, width: usize) -> Cell<'static> {
+        match self {
+            AnyValue::Float32(f) => Cell::new(format!("{f:>w$.2}", w = width)),
+            AnyValue::Float64(f) => Cell::new(format!("{f:>w$.2}", w = width)),
+            _ => Cell::new(self.into_single_line()),
         }
     }
 }
@@ -109,7 +143,7 @@ fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
 }
 
 impl TuiWidths for DataFrame {
-    fn tui_widths(&self) -> Vec<usize> {
+    fn widths(&self) -> Vec<usize> {
         self.iter().map(series_width).collect()
     }
 }
@@ -117,14 +151,8 @@ impl TuiWidths for DataFrame {
 fn series_width(series: &Series) -> usize {
     series
         .iter()
-        .map(|any_value| {
-            any_value
-                .into_multi_line()
-                .lines()
-                .next()
-                .map(|s| s.width())
-                .unwrap_or(0)
-        })
+        .par_bridge()
+        .map(|val| val.width())
         .max()
         .unwrap_or_default()
         .max(series.name().as_str().width())
@@ -148,7 +176,7 @@ impl GetSheetSections for DataFrame {
             self.get(pos)
                 .unwrap_or_default()
                 .into_iter()
-                .map(IntoString::into_multi_line),
+                .map(AnyValueExt::into_multi_line),
             self.dtypes()
         )
         .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
@@ -194,15 +222,47 @@ impl TryMapAll for Series {
 }
 
 impl PlotData for DataFrame {
-    fn scatter_plot_data(&self, x_lab: &str, y_lab: &str) -> AppResult<Vec<(f64, f64)>> {
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>> {
         Ok(self
-            .column(x_lab)?
+            .column(x_label)?
             .cast(&DataType::Float64)?
             .f64()?
             .iter()
-            .zip(self.column(y_lab)?.cast(&DataType::Float64)?.f64()?.iter())
+            .zip(
+                self.column(y_label)?
+                    .cast(&DataType::Float64)?
+                    .f64()?
+                    .iter(),
+            )
             .filter_map(|(x, y)| Some((x?, y?)))
-            .collect_vec())
+            .collect())
+    }
+
+    fn scatter_plot_data_grouped(
+        &self,
+        x_label: &str,
+        y_label: &str,
+        group_by: &str,
+    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)> {
+        let mut groups = Vec::new();
+        let mut data = JaggedVec::new();
+        for (name, df) in self
+            .partition_by(vec![group_by], true)?
+            .into_iter()
+            .map(|df| {
+                let name = df
+                    .column(group_by)
+                    .and_then(|column| column.get(0))
+                    .map(AnyValueExt::into_single_line)
+                    .unwrap_or("null".to_owned());
+                (name, df)
+            })
+            .sorted_by(|(a, _), (b, _)| a.cmp(b))
+        {
+            groups.push(name);
+            data.push(df.scatter_plot_data(x_label, y_label)?);
+        }
+        Ok((data, groups))
     }
 
     fn histogram_plot_data(&self, col_name: &str, buckets: usize) -> AppResult<Vec<(String, u64)>> {
@@ -243,7 +303,8 @@ impl PlotData for DataFrame {
     }
 }
 
-fn discrete_histogram(counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
+fn discrete_histogram(mut counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
+    counts.rechunk_mut();
     Ok(counts[0]
         .as_materialized_series()
         .iter()

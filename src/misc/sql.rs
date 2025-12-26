@@ -10,7 +10,7 @@ use polars_sql::SQLContext;
 
 use crate::misc::type_ext::SnakeCaseNameGenExt;
 
-use super::{polars_ext::IntoString, vec_map::VecMap};
+use super::{polars_ext::AnyValueExt, vec_map::VecMap};
 
 const DEFAULT_TABLE_NAME: &str = "_";
 
@@ -115,7 +115,7 @@ impl BackendSchema {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableInfo {
     source: Source,
     height: usize,
@@ -163,7 +163,7 @@ impl TableInfo {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Source {
     File(PathBuf),
     Stdin,
@@ -189,7 +189,7 @@ impl From<crate::reader::Source> for Source {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableSchema {
     schema: VecMap<String, FieldInfo>,
 }
@@ -217,7 +217,7 @@ impl TableSchema {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FieldInfo {
     dtype: DataType,
     est_size: usize,

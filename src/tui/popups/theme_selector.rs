@@ -1,74 +1,91 @@
 use std::ops::Deref;
 
-use ratatui::widgets::StatefulWidget;
+use crossterm::event::KeyCode;
+use strum::IntoEnumIterator;
 
 use crate::{
-    misc::globals::{config, set_theme},
+    handler::message::Message,
+    misc::{
+        config::store_config,
+        globals::{config, set_theme, theme},
+    },
     tui::{
-        pickers::search_picker::{SearchPicker, SearchPickerState},
-        themes::theme::Theme,
+        component::Component,
+        pickers::search_picker::SearchPicker,
+        themes::theme::{LoadedTheme, Theme},
     },
 };
 
 #[derive(Debug)]
-pub struct ThemeSelectorState {
-    search_picker: SearchPickerState,
-    rollback: Theme,
+pub struct ThemeSelector {
+    search_picker: SearchPicker<Theme>,
+    rollback: LoadedTheme,
 }
 
-impl ThemeSelectorState {
-    pub fn into_rollback_theme(self) -> Theme {
+impl ThemeSelector {
+    pub fn into_rollback_theme(self) -> LoadedTheme {
         self.rollback
     }
 
-    pub fn search_picker(&self) -> &SearchPickerState {
+    pub fn selected(&self) -> Option<Theme> {
+        self.search_picker.selected_item().cloned()
+    }
+
+    pub fn search_picker(&self) -> &SearchPicker<Theme> {
         &self.search_picker
     }
 
-    pub fn search_picker_mut(&mut self) -> &mut SearchPickerState {
+    pub fn search_picker_mut(&mut self) -> &mut SearchPicker<Theme> {
         &mut self.search_picker
     }
 }
 
-impl Default for ThemeSelectorState {
+impl Component for ThemeSelector {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        focus_state: crate::tui::component::FocusState,
+    ) {
+        self.search_picker.render(area, buf, focus_state);
+        if let Some(t) = self.search_picker.selected_item()
+            && t != theme().app_theme()
+        {
+            set_theme(*t);
+        }
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.search_picker.handle(event)
+            || match event.code {
+                KeyCode::Esc => {
+                    set_theme(self.rollback.clone());
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                KeyCode::Enter => {
+                    store_config();
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                _ => false,
+            }
+    }
+}
+
+impl Default for ThemeSelector {
     fn default() -> Self {
-        let mut search_picker = SearchPickerState::default();
+        let mut search_picker = SearchPicker::new(Theme::iter().collect());
         let rollback = config().theme().deref().clone();
-        let idx = Theme::all()
-            .iter()
+        let idx = Theme::iter()
             .enumerate()
-            .find_map(|(i, t)| (t == &rollback.app_theme()).then_some(i))
+            .find_map(|(i, t)| rollback.app_theme().eq(&t).then_some(i))
             .unwrap_or_default();
-        search_picker.list_mut().select(Some(idx));
+        search_picker.select(Some(idx));
 
         Self {
             search_picker,
             rollback,
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct ThemeSelector {}
-
-impl StatefulWidget for ThemeSelector {
-    type State = ThemeSelectorState;
-
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        SearchPicker::default()
-            .items(Theme::all().iter().map(|t| t.title()))
-            .render(area, buf, &mut state.search_picker);
-        if let Some(theme) = state
-            .search_picker
-            .selected()
-            .and_then(|idx| Theme::all().get(idx).cloned())
-        {
-            set_theme(theme.into());
         }
     }
 }

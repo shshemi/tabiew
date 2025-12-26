@@ -21,18 +21,18 @@ use crate::{
         ParquetToDataFrame, ReadToDataFrames, Source, SqliteToDataFrames,
     },
     tui::{
-        PaneState, TableType,
+        Pane, TableType,
         data_frame_table::DataFrameTableState,
         pane::Modal,
-        plots::{histogram_plot::HistogramPlotState, scatter_plot::ScatterPlotState},
+        plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
-            export_wizard::ExportWizardState,
+            export_wizard::ExportWizard,
             exporters::{
-                arrow_exporter::ArrowExporterState, csv_exporter::CsvExporterState,
+                arrow_exporter::ArrowExporter, csv_exporter::CsvExporterState,
                 json_exporter::JsonExporterState, jsonl_exporter::JsonLExporterState,
-                parquet_exporter::ParquetExporterState, tsv_exporter::TsvExporterState,
+                parquet_exporter::ParquetExporterState, tsv_exporter::TsvExporter,
             },
-            histogram_wizard::HistogramWizardState,
+            histogram_wizard::HistogramWizard,
             inline_query::InlineQueryType,
         },
         themes::theme::Theme,
@@ -46,42 +46,7 @@ use super::command::{commands_help_data_frame, parse_into_action};
 
 #[derive(Debug, Clone)]
 pub enum AppAction {
-    NoAction,
-    DataFrameInfoScrollDown,
-    DataFrameInfoScrollUp,
-    DataFrameInfoShow,
-    DismissError,
-    DismissModal,
-    DismissErrorAndShowPalette,
-    ExportDataFrameShow,
-    ExportWizardSelectNext,
-    ExportWizardSelectPrev,
-    ExportWizardNextStep,
-    ExportWizardHandleKeyEvent(KeyEvent),
-    HistogramWizardShow,
-    HistogramWizardSelectNext,
-    HistogramWizardSelectPrev,
-    HistogramWizardNextStep,
-    HistogramWizardHandleKeyEvent(KeyEvent),
-    ExportArrow(Destination),
-    ExportDsv {
-        destination: Destination,
-        separator: char,
-        quote: char,
-        header: bool,
-    },
-    ExportJson(Destination, JsonFormat),
-    ExportParquet(Destination),
-    GotoLine(usize),
-    GoToLineShow,
-    GoToLineShowWithValue(usize),
-    GoToLineRollback,
-    GoToLineCommit,
-    GoToLineHandleKeyEvent(KeyEvent),
     Help,
-    HistogramPlot(String, usize),
-    HistogramScrollDown,
-    HistogramScrollUp,
     ImportArrow(Source),
     ImportDsv {
         source: Source,
@@ -99,74 +64,15 @@ pub enum AppAction {
     ImportJson(Source, JsonFormat),
     ImportParquet(Source),
     ImportSqlite(Source),
-    InlineQueryShow(InlineQueryType),
-    InlineQueryCommit,
-    InlineQueryHandleKeyEvent(KeyEvent),
-    PaletteDeleteNext,
-    PaletteDeleteNextWord,
-    PaletteDeletePrev,
-    PaletteDeletePrevWord,
-    PaletteDeselectOrDismiss,
-    PaletteGotoEnd,
-    PaletteGotoNext,
-    PaletteGotoNextWord,
-    PaletteGotoPrev,
-    PaletteGotoPrevWord,
-    PaletteGotoStart,
-    PalleteHandleKeyEvent(KeyEvent),
-    PaletteInsert(char),
-    PaletteInsertSelectedOrCommit,
-    PaletteSelectNext,
-    PaletteSelectPrevious,
-    PaletteShow(String),
-    PreviewTheme(Theme),
     RegisterDataFrame(String),
-    ScatterPlot(String, String, Vec<String>),
-    SchemaFieldsScrollDown,
-    SchemaFieldsScrollUp,
     SchemaNamesSelectFirst,
     SchemaNamesSelectLast,
-    SchemaNamesSelectNext,
-    SchemaNamesSelectPrev,
     SchemaOpenTable,
     SchemaUnloadTable,
-    SearchCommit,
-    SearchExactShow,
-    SearchFuzzyShow,
-    SearchHandleKeyEvent(KeyEvent),
-    SearchRollback,
-    SheetScrollDown,
-    SheetScrollUp,
-    SheetShow,
     HelpShow,
     HelpDismiss,
-    StoreConfig,
-    SwitchToSchema,
-    SwitchToTabulars,
-    TabHidePanel,
-    TabNewQuery(String),
-    TabNext,
-    TabPanelNext,
-    TabPanelPrev,
-    TabPanelSelect,
-    TabPrev,
-    TabRemove(usize),
-    TabRemoveOrQuit,
-    TabSelect(usize),
-    TabShowPanel,
-    TableFilter(String),
-    TableGoDown(usize),
-    TableGoDownFullPage,
-    TableGoDownHalfPage,
-    TableGoUp(usize),
-    TableGoUpFullPage,
-    TableGoUpHalfPage,
-    TableGotoFirst,
-    TableGotoLast,
     TableGotoRandom,
     TableInferColumns(TypeInferer),
-    TableOrder(String),
-    TableQuery(String),
     TableReset,
     TableScrollEnd,
     TableScrollLeft,
@@ -174,17 +80,7 @@ pub enum AppAction {
     TableScrollRight,
     TableScrollRightColumn,
     TableScrollStart,
-    TableSelect(String),
-    TableSetDataFrame(DataFrame),
-    TableToggleExpansion,
-    ThemeSelectorCommit,
-    ThemeSelectorHandleKeyEvent(KeyEvent),
-    ThemeSelectorRollback,
-    ThemeSelectorSelectNext,
-    ThemeSelectorSelectPrev,
-    ThemeSelectorShow,
     ToggleBorders,
-    Quit,
 }
 
 pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>> {
@@ -324,7 +220,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             let df = sql().execute(
                 &query,
                 app.pane()
-                    .map(PaneState::table)
+                    .map(Pane::table)
                     .map(DataFrameTableState::data_frame)
                     .cloned(),
             )?;
@@ -361,11 +257,11 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if sql().schema().iter().any(|(name, _)| name == &query) {
                 let df = sql().execute(&format!("SELECT * FROM '{query}'"), None)?;
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(query)));
+                    .add(Pane::new(df, TableType::Name(query)));
             } else {
                 let df = sql().execute(&query, app.data_frame().cloned())?;
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Query(query)));
+                    .add(Pane::new(df, TableType::Query(query)));
             }
 
             Ok(Some(AppAction::TabSelect(usize::MAX)))
@@ -460,7 +356,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(name)));
+                    .add(Pane::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -469,7 +365,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(name)));
+                    .add(Pane::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -483,7 +379,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(name)));
+                    .add(Pane::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -492,7 +388,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(name)));
+                    .add(Pane::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -501,7 +397,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(name)));
+                    .add(Pane::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -521,7 +417,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(df, TableType::Name(name)));
+                    .add(Pane::new(df, TableType::Name(name)));
             }
             Ok(Some(AppAction::TabSelect(usize::MAX)))
         }
@@ -534,7 +430,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::SearchCommit => {
             if let Some(tab) = app.pane_mut()
                 && let Modal::SearchBar(sb) = tab.modal_take()
-                && let Some(df) = sb.search().latest()
+                && let Some(df) = sb.searcher().latest()
             {
                 tab.table_mut().set_data_frame(df);
             }
@@ -561,7 +457,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 Ok(Some(AppAction::TabSelect(idx)))
             } else {
                 app.tab_mut_unchecked()
-                    .add(PaneState::new(commands_help_data_frame(), TableType::Help));
+                    .add(Pane::new(commands_help_data_frame(), TableType::Help));
                 Ok(Some(AppAction::TabSelect(usize::MAX)))
             }
         }
@@ -893,7 +789,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                 if group_by.is_empty() {
                     let mut data = JaggedVec::new();
                     data.push(df.scatter_plot_data(&x_lab, &y_lab)?);
-                    tab_content.show_scatter_plot(ScatterPlotState::new(x_lab, y_lab, data)?)
+                    tab_content.show_scatter_plot(ScatterPlot::new(x_lab, y_lab, data)?)
                 } else {
                     let mut groups = Vec::new();
                     let mut data = JaggedVec::new();
@@ -911,7 +807,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                         data.push(df.scatter_plot_data(&x_lab, &y_lab)?);
                     }
                     tab_content.show_scatter_plot(
-                        ScatterPlotState::new(x_lab, y_lab, data)?.groups(groups),
+                        ScatterPlot::new(x_lab, y_lab, data)?.with_groups(groups),
                     )
                 }
             }
@@ -920,7 +816,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::HistogramPlot(group_by, buckets) => {
             if let Some(tab_content) = app.pane_mut() {
                 let df = tab_content.table().data_frame();
-                tab_content.show_histogram_plot(HistogramPlotState::new(
+                tab_content.show_histogram_plot(HistogramPlot::new(
                     df.histogram_plot_data(&group_by, buckets)?,
                 ))
             }
@@ -1080,7 +976,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
             if let Some(Modal::ExportWizard(wizard)) = app.modal_mut() {
                 wizard.step();
                 let next = match wizard {
-                    ExportWizardState::Csv(CsvExporterState::ExportToFile {
+                    ExportWizard::Csv(CsvExporterState::ExportToFile {
                         separator,
                         quote,
                         path,
@@ -1090,16 +986,15 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                         quote: *quote,
                         header: true,
                     }),
-                    ExportWizardState::Csv(CsvExporterState::ExportToClipboard {
-                        separator,
-                        quote,
-                    }) => Some(AppAction::ExportDsv {
-                        destination: Destination::Clipboard,
-                        separator: *separator,
-                        quote: *quote,
-                        header: true,
-                    }),
-                    ExportWizardState::Tsv(TsvExporterState::ExportToFile { path }) => {
+                    ExportWizard::Csv(CsvExporterState::ExportToClipboard { separator, quote }) => {
+                        Some(AppAction::ExportDsv {
+                            destination: Destination::Clipboard,
+                            separator: *separator,
+                            quote: *quote,
+                            header: true,
+                        })
+                    }
+                    ExportWizard::Tsv(TsvExporter::ExportToFile { path }) => {
                         Some(AppAction::ExportDsv {
                             destination: Destination::File(path.clone()),
                             separator: '\t',
@@ -1107,7 +1002,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                             header: false,
                         })
                     }
-                    ExportWizardState::Tsv(TsvExporterState::ExportToClipboard) => {
+                    ExportWizard::Tsv(TsvExporter::ExportToClipboard) => {
                         Some(AppAction::ExportDsv {
                             destination: Destination::Clipboard,
                             separator: '\t',
@@ -1115,25 +1010,25 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
                             header: false,
                         })
                     }
-                    ExportWizardState::Json(JsonExporterState::ExportToFile { path }) => Some(
+                    ExportWizard::Json(JsonExporterState::ExportToFile { path }) => Some(
                         AppAction::ExportJson(Destination::File(path.clone()), JsonFormat::Json),
                     ),
-                    ExportWizardState::Json(JsonExporterState::ExportToClipboard) => Some(
+                    ExportWizard::Json(JsonExporterState::ExportToClipboard) => Some(
                         AppAction::ExportJson(Destination::Clipboard, JsonFormat::Json),
                     ),
-                    ExportWizardState::JsonL(JsonLExporterState::ExportToFile { path }) => {
+                    ExportWizard::JsonL(JsonLExporterState::ExportToFile { path }) => {
                         Some(AppAction::ExportJson(
                             Destination::File(path.clone()),
                             JsonFormat::JsonLine,
                         ))
                     }
-                    ExportWizardState::JsonL(JsonLExporterState::ExportToClipboard) => Some(
+                    ExportWizard::JsonL(JsonLExporterState::ExportToClipboard) => Some(
                         AppAction::ExportJson(Destination::Clipboard, JsonFormat::JsonLine),
                     ),
-                    ExportWizardState::Parquet(ParquetExporterState::ExportToFile { path }) => {
+                    ExportWizard::Parquet(ParquetExporterState::ExportToFile { path }) => {
                         Some(AppAction::ExportParquet(Destination::File(path.clone())))
                     }
-                    ExportWizardState::Arrow(ArrowExporterState::ExportToFile { path }) => {
+                    ExportWizard::Arrow(ArrowExporter::ExportToFile { path }) => {
                         Some(AppAction::ExportArrow(Destination::File(path.clone())))
                     }
                     _ => None,
@@ -1173,7 +1068,7 @@ pub fn execute(action: AppAction, app: &mut App) -> AppResult<Option<AppAction>>
         AppAction::HistogramWizardNextStep => {
             if let Some(Modal::HistogramWizard(wizard)) = app.modal_mut() {
                 wizard.step();
-                let next = if let HistogramWizardState::Show { column, buckets } = wizard {
+                let next = if let HistogramWizard::Show { column, buckets } = wizard {
                     let next = AppAction::HistogramPlot(column.to_owned(), *buckets);
                     app.modal_take();
                     Some(next)

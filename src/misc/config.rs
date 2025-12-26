@@ -1,23 +1,27 @@
 use std::{
+    fs,
     ops::{Deref, DerefMut},
     sync::RwLock,
 };
 
-use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
-use crate::{AppResult, tui::themes::theme::Theme};
+use crate::{
+    AppResult,
+    misc::{globals::config, paths::config_path},
+    tui::themes::theme::LoadedTheme,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    theme: RwLock<Theme>,
+    theme: RwLock<LoadedTheme>,
 }
 
 impl Config {
     pub fn new() -> Self {
         Self {
-            theme: RwLock::new(Theme::default()),
+            theme: RwLock::new(LoadedTheme::default()),
         }
     }
 
@@ -27,15 +31,15 @@ impl Config {
         Ok(())
     }
 
-    pub fn store(&self) -> AppResult<String> {
+    pub fn dump(&self) -> AppResult<String> {
         Ok(toml::to_string(self)?)
     }
 
-    pub fn theme(&self) -> impl Deref<Target = Theme> {
+    pub fn theme(&self) -> impl Deref<Target = LoadedTheme> {
         self.theme.read().unwrap()
     }
 
-    pub fn theme_mut(&self) -> impl DerefMut<Target = Theme> {
+    pub fn theme_mut(&self) -> impl DerefMut<Target = LoadedTheme> {
         self.theme.write().unwrap()
     }
 }
@@ -43,5 +47,15 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub fn store_config() {
+    if let Some(config_path) = config_path()
+        && let Some(parent) = config_path.parent()
+        && let Ok(_) = fs::create_dir_all(parent)
+        && let Ok(contents) = config().dump()
+    {
+        let _ = fs::write(config_path, contents);
     }
 }
