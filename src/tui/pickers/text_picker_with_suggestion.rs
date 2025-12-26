@@ -36,13 +36,6 @@ where
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        if self.cached_query != self.input.value() {
-            self.cached_query.clear();
-            self.cached_query.push_str(self.input.value());
-            self.cached_items.clear();
-            self.cached_items
-                .extend(self.provider.suggestions(self.input.value()));
-        }
         let list = List::default()
             .items(self.cached_items.iter().map(String::as_str))
             .highlight_style(theme().row_highlighted())
@@ -81,16 +74,27 @@ where
         StatefulWidget::render(list, list_area, buf, &mut self.list_state);
     }
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        match (event.code, event.modifiers) {
-            (KeyCode::Enter, KeyModifiers::NONE) => {
-                Message::AppDismissOverlay.enqueue();
-                true
+        if self.input.handle(event) {
+            if self.cached_query != self.input.value() {
+                self.cached_query.clear();
+                self.cached_query.push_str(self.input.value());
+                self.cached_items.clear();
+                self.cached_items
+                    .extend(self.provider.suggestions(self.input.value()));
             }
-            (KeyCode::Esc, KeyModifiers::NONE) => {
-                Message::AppDismissOverlay.enqueue();
-                true
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                _ => false,
             }
-            _ => false,
         }
     }
 }
