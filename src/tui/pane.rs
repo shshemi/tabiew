@@ -20,7 +20,7 @@ use crate::{
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             data_frame_info::DataFrameInfo,
-            export_wizard::{ExportWizard, State},
+            export_wizard::ExportWizard,
             go_to_line::GoToLine,
             histogram_wizard::{self, HistogramWizard},
             query_picker::{QueryPicker, QueryType},
