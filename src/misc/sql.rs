@@ -8,7 +8,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::misc::type_ext::SnakeCaseNameGenExt;
+use crate::misc::snake_case_name_gen::SnakeCaseNameGenExt;
 
 use super::{polars_ext::AnyValueExt, vec_map::VecMap};
 

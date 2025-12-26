@@ -26,28 +26,12 @@ pub trait AnyValueExt {
     fn width(self) -> usize;
     fn into_multi_line(self) -> String;
     fn into_cell(self, width: usize) -> Cell<'static>;
-}
-
-pub trait TuiWidths {
-    fn widths(&self) -> Vec<usize>;
-}
-
-pub trait FuzzyCmp {
     fn fuzzy_cmp(self, other: &str) -> bool;
 }
 
-pub trait GetSheetSections {
+pub trait DataFrameExt {
+    fn widths(&self) -> Vec<usize>;
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
-}
-
-pub trait TryMapAll {
-    fn try_map_all(
-        &self,
-        f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
-    ) -> Option<Series>;
-}
-
-pub trait PlotData {
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
     #[allow(clippy::type_complexity)]
     fn scatter_plot_data_grouped(
@@ -58,6 +42,15 @@ pub trait PlotData {
     ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)>;
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
+
+pub trait TryMapAll {
+    fn try_map_all(
+        &self,
+        f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
+    ) -> Option<Series>;
+}
+
+pub trait PlotData {}
 
 impl AnyValueExt for AnyValue<'_> {
     fn into_single_line(self) -> String {
@@ -116,6 +109,15 @@ impl AnyValueExt for AnyValue<'_> {
             _ => Cell::new(self.into_single_line()),
         }
     }
+
+    fn fuzzy_cmp(self, other: &str) -> bool {
+        match self {
+            AnyValue::Null => false,
+            AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other),
+            AnyValue::String(val) => val.has_subsequence(other),
+            _ => self.into_multi_line().has_subsequence(other),
+        }
+    }
 }
 
 fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
@@ -142,34 +144,10 @@ fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
     )
 }
 
-impl TuiWidths for DataFrame {
+impl DataFrameExt for DataFrame {
     fn widths(&self) -> Vec<usize> {
         self.iter().map(series_width).collect()
     }
-}
-
-fn series_width(series: &Series) -> usize {
-    series
-        .iter()
-        .par_bridge()
-        .map(|val| val.width())
-        .max()
-        .unwrap_or_default()
-        .max(series.name().as_str().width())
-}
-
-impl FuzzyCmp for AnyValue<'_> {
-    fn fuzzy_cmp(self, other: &str) -> bool {
-        match self {
-            AnyValue::Null => false,
-            AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other),
-            AnyValue::String(val) => val.has_subsequence(other),
-            _ => self.into_multi_line().has_subsequence(other),
-        }
-    }
-}
-
-impl GetSheetSections for DataFrame {
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection> {
         izip!(
             self.get_column_names().into_iter(),
@@ -182,46 +160,6 @@ impl GetSheetSections for DataFrame {
         .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
         .collect_vec()
     }
-}
-
-impl TryMapAll for Series {
-    fn try_map_all(
-        &self,
-        cast: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
-    ) -> Option<Series> {
-        let break_out = Arc::new(AtomicBool::new(false));
-        let mut new = vec![AnyValue::Null; self.len()];
-        std::thread::scope(|scope| {
-            let piece_len = if self.len() > num_cpus::get() {
-                self.len() / num_cpus::get()
-            } else {
-                1
-            };
-            for (idx, new_chunk) in new.chunks_mut(piece_len).enumerate() {
-                let offset = (idx * piece_len) as i64;
-                let break_out = break_out.clone();
-                let cast = &cast;
-                scope.spawn(move || {
-                    let series = self.slice(offset, piece_len);
-                    for (new_val, val) in new_chunk.iter_mut().zip(series.iter()) {
-                        if let Some(parsed) = cast(val) {
-                            *new_val = parsed;
-                        } else {
-                            break_out.store(true, Ordering::Relaxed);
-                            break;
-                        }
-                        if break_out.load(Ordering::Relaxed) {
-                            break;
-                        }
-                    }
-                });
-            }
-        });
-        (!break_out.load(Ordering::Relaxed)).then_some(Series::new(self.name().to_owned(), new))
-    }
-}
-
-impl PlotData for DataFrame {
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>> {
         Ok(self
             .column(x_label)?
@@ -300,6 +238,53 @@ impl PlotData for DataFrame {
             ),
             _ => Err(anyhow!("Unsupported column type"))?,
         }
+    }
+}
+
+fn series_width(series: &Series) -> usize {
+    series
+        .iter()
+        .par_bridge()
+        .map(|val| val.width())
+        .max()
+        .unwrap_or_default()
+        .max(series.name().as_str().width())
+}
+
+impl TryMapAll for Series {
+    fn try_map_all(
+        &self,
+        cast: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
+    ) -> Option<Series> {
+        let break_out = Arc::new(AtomicBool::new(false));
+        let mut new = vec![AnyValue::Null; self.len()];
+        std::thread::scope(|scope| {
+            let piece_len = if self.len() > num_cpus::get() {
+                self.len() / num_cpus::get()
+            } else {
+                1
+            };
+            for (idx, new_chunk) in new.chunks_mut(piece_len).enumerate() {
+                let offset = (idx * piece_len) as i64;
+                let break_out = break_out.clone();
+                let cast = &cast;
+                scope.spawn(move || {
+                    let series = self.slice(offset, piece_len);
+                    for (new_val, val) in new_chunk.iter_mut().zip(series.iter()) {
+                        if let Some(parsed) = cast(val) {
+                            *new_val = parsed;
+                        } else {
+                            break_out.store(true, Ordering::Relaxed);
+                            break;
+                        }
+                        if break_out.load(Ordering::Relaxed) {
+                            break;
+                        }
+                    }
+                });
+            }
+        });
+        (!break_out.load(Ordering::Relaxed)).then_some(Series::new(self.name().to_owned(), new))
     }
 }
 

@@ -3,7 +3,6 @@ use ratatui::widgets::{Borders, Widget};
 
 use crate::{
     handler::message::Message,
-    misc::type_ext::VecExt,
     tui::{
         TableType,
         component::{Component, FocusState},
@@ -51,7 +50,9 @@ impl Tabs {
     }
 
     fn remove_selected(&mut self) {
-        self.panes.take(self.idx);
+        if self.idx < self.panes.len() {
+            self.panes.remove(self.idx);
+        }
         if self.switcher.is_some() {
             self.show_tab_switcher();
         }

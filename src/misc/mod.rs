@@ -7,6 +7,7 @@ pub mod osc52;
 pub mod paths;
 pub mod polars_ext;
 pub mod search;
+pub mod snake_case_name_gen;
 pub mod sql;
 pub mod type_ext;
 pub mod type_inferer;

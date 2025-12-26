@@ -14,7 +14,7 @@ use crate::{
     misc::{
         globals::theme,
         iter_ext::ZipItersExt,
-        polars_ext::{AnyValueExt, TuiWidths},
+        polars_ext::{AnyValueExt, DataFrameExt},
     },
     tui::widgets::block::Block,
 };
