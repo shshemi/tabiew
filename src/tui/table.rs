@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
 use polars::{frame::DataFrame, series::Series};
 use ratatui::{
-    layout::{Constraint, Layout, Position, Rect, Size},
+    layout::{Constraint, Layout, Position, Rect},
     text::Text,
     widgets::{Cell, List, ListItem, ListState, Row, StatefulWidget, TableState},
 };
@@ -356,11 +356,12 @@ impl Component for Table {
                 );
                 let width = (self.col_offsets[col_end + 1] - self.col_offsets[col_start])
                     .max(table_area.width);
-                let mut scroll_area = ScrollView::new(Size {
+                let size = ratatui::layout::Size {
                     width,
                     height: table_area.height,
-                })
-                .scrollbars_visibility(ScrollbarVisibility::Never);
+                };
+                let mut scroll_area =
+                    ScrollView::new(size).scrollbars_visibility(ScrollbarVisibility::Never);
                 scroll_area.render_stateful_widget(
                     table,
                     scroll_area.area(),

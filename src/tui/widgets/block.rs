@@ -3,7 +3,7 @@ use ratatui::{
     style::Style,
     symbols::border::Set,
     text::Line,
-    widgets::{BorderType, Borders, Padding, Widget, block::Title},
+    widgets::{BorderType, Borders, Padding, Widget},
 };
 
 use crate::misc::globals::theme;
@@ -28,7 +28,7 @@ impl<'a> Block<'a> {
         self.inner.inner(area)
     }
 
-    pub fn title<T: Into<Title<'a>>>(mut self, title: T) -> Self {
+    pub fn title<T: Into<Line<'a>>>(mut self, title: T) -> Self {
         self.inner = self.inner.title(title);
         self
     }
