@@ -1,3 +1,4 @@
+use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
 use crate::{
     handler::message::Message,
     tui::{
@@ -8,10 +9,6 @@ use crate::{
         },
         schema::schema::Schema,
     },
-};
-use crate::{
-    misc::history::History,
-    tui::{error_popup::ErrorPopup, tabs::Tabs},
 };
 use crossterm::event::KeyCode;
 
@@ -39,16 +36,14 @@ impl Overlay {
 pub struct App {
     tabs: Tabs,
     overlay: Option<Overlay>,
-    history: History,
     schema: Option<Schema>,
     running: bool,
 }
 
 impl App {
-    pub fn new(tabs: Tabs, history: History) -> Self {
+    pub fn new(tabs: Tabs) -> Self {
         Self {
             tabs,
-            history,
             overlay: None,
             schema: None,
             running: true,

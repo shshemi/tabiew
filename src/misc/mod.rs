@@ -1,6 +1,5 @@
 pub mod config;
 pub mod globals;
-pub mod history;
 pub mod iter_ext;
 pub mod jagged_vec;
 pub mod non_empty_stack;

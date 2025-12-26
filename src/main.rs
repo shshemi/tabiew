@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use clap::{CommandFactory, Parser};
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
@@ -11,21 +10,17 @@ use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::message::Message;
-use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, sql};
 use tabiew::misc::osc52::flush_osc52_buffer;
-use tabiew::misc::paths::{config_path, history_path, theme_path};
+use tabiew::misc::paths::config_path;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
-use tabiew::tui::themes::custom::Custom;
 
 use tabiew::tui::{Pane, TableType};
 use tabiew::{AppResult, tui};
-
-use tabiew::misc::history::{History, enforce_line_limit};
 
 fn main() {
     // Parse CLI
@@ -38,53 +33,6 @@ fn main() {
             Args::parse_from(args_os)
         }
     };
-
-    // generate template file if needed
-    for item in args.generate.iter() {
-        let (name, path, contents) = match item {
-            tabiew::args::GenerateItem::Config => (
-                "config",
-                config_path()
-                    .ok_or(anyhow!("Home directory not found"))
-                    .unwrap_or_graceful_shutdown(),
-                toml::to_string(&Config::default()).unwrap_or_graceful_shutdown(),
-            ),
-            tabiew::args::GenerateItem::Theme => (
-                "theme",
-                theme_path()
-                    .ok_or(anyhow!("Home directory not found"))
-                    .unwrap_or_graceful_shutdown(),
-                toml::to_string(&Custom::default()).unwrap_or_graceful_shutdown(),
-            ),
-        };
-        fs::create_dir_all(
-            path.parent()
-                .ok_or(anyhow!("Unable to make config dir"))
-                .unwrap_or_graceful_shutdown(),
-        )
-        .unwrap_or_graceful_shutdown();
-        if path.exists() {
-            println!(
-                "{name} file already exists at {}, remove it first before retrying.",
-                path.to_str()
-                    .ok_or("Invalid path")
-                    .unwrap_or_graceful_shutdown()
-            )
-        } else {
-            fs::write(&path, contents).unwrap_or_graceful_shutdown();
-            println!(
-                "{name} generated at {}",
-                path.to_str()
-                    .ok_or("Invalid path")
-                    .unwrap_or_graceful_shutdown()
-            )
-        }
-    }
-
-    // exit if any template generation
-    if !args.generate.is_empty() {
-        return;
-    }
 
     if let Some(config_path) = config_path()
         && let Ok(text) = fs::read_to_string(config_path)
@@ -138,31 +86,14 @@ fn main() {
         }
     }
 
-    let script = args
-        .script
-        .map(fs::read_to_string)
-        .transpose()
-        .unwrap_or_graceful_shutdown()
-        .unwrap_or_default();
-
-    let history = history_path()
-        .as_ref()
-        .map(|path| History::from_file(path.clone()))
-        .unwrap_or(History::in_memory());
-
-    let _ = start_tui(name_dfs, script, history);
-    if let Some(history_path) = history_path() {
-        enforce_line_limit(history_path, 999);
-    }
+    let _ = start_tui(name_dfs);
 }
 
-fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -> AppResult<()> {
+fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(name, df)| Pane::new(df, TableType::Name(name)))
         .collect();
-    // let keybind = KeyHandler::default();
-    let mut app = App::new(tabs, history);
 
     // Initialize the terminal user interface.
     let mut tui = tui::Terminal::new(
@@ -171,15 +102,8 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
     );
     tui.init()?;
 
-    // Draw once before startup script
-    tui.draw(&mut app)?;
-    flush_osc52_buffer();
-
-    // Run startup script
-    // for line in script.lines().filter(|line| !line.is_empty()) {
-    //     let action = parse_into_action(line).unwrap_or_graceful_shutdown();
-    //     execute(action, &mut app).unwrap_or_graceful_shutdown();
-    // }
+    // Initialize the app
+    let mut app = App::new(tabs);
 
     // Main loop
     while app.running() {
