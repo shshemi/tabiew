@@ -9,10 +9,7 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        globals::sql,
-        non_empty_stack::NonEmptyStack,
-        polars_ext::{GetSheetSections, PlotData},
-        sql::Source,
+        globals::sql, non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt, sql::Source,
         type_ext::UnwrapOrEnqueueError,
     },
     tui::{
