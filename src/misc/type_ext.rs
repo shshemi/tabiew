@@ -1,4 +1,8 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    io::Write,
+    sync::{LazyLock, Mutex},
+};
 
 use ratatui::layout::Constraint;
 use unicode_width::UnicodeWidthChar;

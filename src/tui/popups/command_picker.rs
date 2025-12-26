@@ -71,7 +71,7 @@ impl Component for CommandPicker {
                             Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
                             Command::Scatter => Message::PaneShowScatterPlotWizard.enqueue(),
                             Command::Schema => Message::AppShowSchema.enqueue(),
-                            Command::Quit => Message::Quit.enqueue(),
+                            Command::Quit | Command::Q => Message::Quit.enqueue(),
                             Command::Register => Message::PaneShowTableRegisterer.enqueue(),
                         }
                     }
@@ -90,18 +90,19 @@ impl Component for CommandPicker {
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
     Export,
+    Filter,
+    Histogram,
     Import,
     Order,
-    Sort,
-    Filter,
-    Quit,
+    Q,
     Query,
-    Select,
-    ThemeSelector,
-    Histogram,
+    Quit,
+    Register,
     Scatter,
     Schema,
-    Register,
+    Select,
+    Sort,
+    ThemeSelector,
 }
 
 impl Command {

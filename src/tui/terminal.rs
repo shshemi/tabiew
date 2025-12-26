@@ -32,7 +32,6 @@ impl<B: Backend> Terminal<B> {
     pub fn init(&mut self) -> AppResult<()> {
         terminal::enable_raw_mode()?;
         crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
->>>>>>> component
 
         // Define a custom panic hook to reset the terminal properties.
         // This way, you won't have your terminal messed up if an unexpected error happens.

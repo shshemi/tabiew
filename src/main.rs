@@ -15,7 +15,7 @@ use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, sql};
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::paths::{config_path, history_path, theme_path};
-use tabiew::misc::type_ext::{UnwrapOrGracefulShutdown, flush_osc52_buffer};
+use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
