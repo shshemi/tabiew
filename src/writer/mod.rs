@@ -7,7 +7,7 @@ use polars::{
     prelude::{CsvWriter, IpcWriter, JsonWriter, ParquetWriter},
 };
 
-use crate::{AppResult, misc::type_ext::CopyToClipboardOsc52};
+use crate::{AppResult, misc::osc52::CopyToClipboardOsc52};
 
 #[derive(Debug, Clone)]
 pub enum Destination {
@@ -76,7 +76,8 @@ impl WriteToFile for WriteToCsv {
                     .with_quote_char(self.quote.try_into()?)
                     .include_header(self.header)
                     .finish(data_frame)?;
-                buf.copy_to_clipboard_via_osc52()
+                buf.copy_to_clipboard_via_osc52();
+                Ok(())
             }
         }
     }
@@ -95,7 +96,8 @@ impl WriteToFile for WriteToParquet {
             Destination::Clipboard => {
                 let mut buf = Vec::new();
                 ParquetWriter::new(&mut buf).finish(data_frame)?;
-                buf.copy_to_clipboard_via_osc52()
+                buf.copy_to_clipboard_via_osc52();
+                Ok(())
             }
         }
     }
@@ -140,7 +142,8 @@ impl WriteToFile for WriteToJson {
                 JsonWriter::new(&mut buf)
                     .with_json_format(self.fmt.into())
                     .finish(data_frame)?;
-                buf.copy_to_clipboard_via_osc52()
+                buf.copy_to_clipboard_via_osc52();
+                Ok(())
             }
         }
     }
@@ -156,7 +159,8 @@ impl WriteToFile for WriteToArrow {
             Destination::Clipboard => {
                 let mut buf = Vec::new();
                 IpcWriter::new(&mut buf).finish(data_frame)?;
-                buf.copy_to_clipboard_via_osc52()
+                buf.copy_to_clipboard_via_osc52();
+                Ok(())
             }
         }
     }

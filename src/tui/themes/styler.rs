@@ -14,6 +14,7 @@ pub trait Styler: Debug {
     fn subtext(&self) -> Style;
     fn error(&self) -> Style;
     fn graph(&self, idx: usize) -> Style;
+    fn gutter(&self, idx: usize) -> Style;
 }
 
 pub trait SixColorsTwoRowsStyler {
@@ -102,5 +103,11 @@ where
         Style::default()
             .fg(Self::DARK_COLORS[idx % Self::DARK_COLORS.len()])
             .bold()
+    }
+
+    fn gutter(&self, idx: usize) -> Style {
+        Style::new()
+            .bg(Self::ROW_BACKGROUNDS[idx % Self::ROW_BACKGROUNDS.len()])
+            .fg(Self::DARK_FOREGROUND)
     }
 }

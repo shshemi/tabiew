@@ -9,25 +9,36 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{globals::theme, sql, type_ext::human_readable_size},
-    tui::widgets::block::Block,
+    misc::{
+        globals::theme,
+        sql::{self, TableInfo},
+        type_ext::human_readable_size,
+    },
+    tui::{component::Component, widgets::block::Block},
 };
 
-pub struct DataFrameMetaInfo<'a> {
-    info: &'a sql::TableInfo,
+#[derive(Debug)]
+pub struct DataFrameMetaInfo {
+    info: sql::TableInfo,
 }
 
-impl<'a> DataFrameMetaInfo<'a> {
-    pub fn new(info: &'a sql::TableInfo) -> Self {
+impl DataFrameMetaInfo {
+    pub fn new(info: sql::TableInfo) -> Self {
         Self { info }
+    }
+
+    pub fn table_info(&self) -> &TableInfo {
+        &self.info
     }
 }
 
-impl Widget for DataFrameMetaInfo<'_> {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
-    where
-        Self: Sized,
-    {
+impl Component for DataFrameMetaInfo {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        _focus_state: crate::tui::component::FocusState,
+    ) {
         Widget::render(Clear, area, buf);
         Table::default()
             .rows([

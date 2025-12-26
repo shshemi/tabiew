@@ -1,58 +1,48 @@
-use ratatui::{
-    layout::{Constraint, Layout},
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui::layout::{Constraint, Layout};
 
 use crate::{
     misc::sql::TableInfo,
-    tui::schema::{
-        data_frame_field_info::{DataFrameFieldInfo, DataFrameFieldInfoState},
-        data_frame_meta_info::DataFrameMetaInfo,
+    tui::{
+        component::Component,
+        schema::{
+            data_frame_field_info::DataFrameFieldInfo, data_frame_meta_info::DataFrameMetaInfo,
+        },
     },
 };
 
-#[derive(Debug, Default)]
-pub struct DataFrameInfoState {
-    field_info: DataFrameFieldInfoState,
+#[derive(Debug)]
+pub struct DataFrameInfo {
+    meta_info: DataFrameMetaInfo,
+    field_info: DataFrameFieldInfo,
 }
 
-impl DataFrameInfoState {
-    pub fn fields_mut(&mut self) -> &mut DataFrameFieldInfoState {
-        &mut self.field_info
+impl DataFrameInfo {
+    pub fn new(table_info: TableInfo) -> Self {
+        Self {
+            field_info: DataFrameFieldInfo::new(table_info.schema().clone()),
+            meta_info: DataFrameMetaInfo::new(table_info),
+        }
     }
 
-    pub fn fields(&self) -> &DataFrameFieldInfoState {
-        &self.field_info
-    }
-}
-
-pub struct DataFrameInfo<'a> {
-    table_info: &'a TableInfo,
-}
-
-impl<'a> DataFrameInfo<'a> {
-    pub fn new(table_info: &'a TableInfo) -> Self {
-        Self { table_info }
+    pub fn table_info(&self) -> &TableInfo {
+        self.meta_info.table_info()
     }
 }
 
-impl<'a> StatefulWidget for DataFrameInfo<'a> {
-    type State = DataFrameInfoState;
-
+impl Component for DataFrameInfo {
     fn render(
-        self,
+        &mut self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
         let [area2, area3] =
             Layout::vertical([Constraint::Length(6), Constraint::Fill(1)]).areas(area);
-        Widget::render(DataFrameMetaInfo::new(self.table_info), area2, buf);
-        StatefulWidget::render(
-            DataFrameFieldInfo::new(self.table_info.schema()),
-            area3,
-            buf,
-            &mut state.field_info,
-        );
+        self.meta_info.render(area2, buf, focus_state);
+        self.field_info.render(area3, buf, focus_state);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.field_info.handle(event)
     }
 }

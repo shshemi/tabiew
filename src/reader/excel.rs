@@ -12,11 +12,12 @@ use crate::{AppResult, args::Args, misc::globals::stdin};
 
 use super::{NamedFrames, ReadToDataFrames, Source};
 
-pub struct ExcelToDataFarmes {}
+#[derive(Debug, Default)]
+pub struct ExcelToDataFarmes;
 
 impl ExcelToDataFarmes {
     pub fn from_args(_args: &Args) -> Self {
-        Self {}
+        Self
     }
 }
 

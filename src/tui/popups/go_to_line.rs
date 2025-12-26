@@ -1,24 +1,30 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Clear, StatefulWidget, Widget},
+    widgets::{Clear, Widget},
 };
 
-use crate::tui::widgets::{
-    block::Block,
-    input::{Input, InputState, InputType},
+use crate::{
+    handler::message::Message,
+    tui::{
+        component::Component,
+        widgets::{
+            block::Block,
+            input::{Input, InputType},
+        },
+    },
 };
 
 #[derive(Debug)]
-pub struct GoToLineState {
+pub struct GoToLine {
     rollback: usize,
-    input: InputState,
+    input: Input,
 }
 
-impl GoToLineState {
+impl GoToLine {
     pub fn new(rollback: usize) -> Self {
         Self {
-            input: InputState::default().with_input_type(InputType::Numeric),
+            input: Input::default().with_input_type(InputType::Numeric),
             rollback,
         }
     }
@@ -30,30 +36,17 @@ impl GoToLineState {
         }
     }
 
-    pub fn handle(&mut self, event: KeyEvent) {
-        self.input.handle(event);
-    }
-
-    pub fn rollback(&self) -> usize {
-        self.rollback
-    }
-
-    pub fn value(&self) -> usize {
+    fn value(&self) -> usize {
         self.input.value().parse().unwrap_or(1)
     }
 }
 
-#[derive(Debug, Default)]
-pub struct GoToLine {}
-
-impl StatefulWidget for GoToLine {
-    type State = GoToLineState;
-
+impl Component for GoToLine {
     fn render(
-        self,
-        _: ratatui::prelude::Rect,
+        &mut self,
+        _area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        focus_state: crate::tui::component::FocusState,
     ) {
         let [area, _] = Layout::horizontal([Constraint::Length(32), Constraint::Length(1)])
             .flex(Flex::End)
@@ -61,9 +54,56 @@ impl StatefulWidget for GoToLine {
         let [_, area] =
             Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
         Clear.render(area, buf);
-
-        Input::default()
-            .block(Block::default().title("Go to Line"))
-            .render(area, buf, &mut state.input);
+        let area = {
+            let block = Block::default().title("Go to Line");
+            let inner = block.inner(area);
+            block.render(area, buf);
+            inner
+        };
+        self.input.render(area, buf, focus_state);
+    }
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        if self.input.handle(event) {
+            Message::PaneTableSelect(self.value().saturating_sub(1)).enqueue();
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    true
+                }
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::PaneTableSelect(self.rollback).enqueue();
+                    true
+                }
+                _ => false,
+            }
+        }
     }
 }
+
+// #[derive(Debug, Default)]
+// pub struct GoToLine {}
+
+// impl StatefulWidget for GoToLine {
+//     type State = GoToLineState;
+
+//     fn render(
+//         self,
+//         _: ratatui::prelude::Rect,
+//         buf: &mut ratatui::prelude::Buffer,
+//         state: &mut Self::State,
+//     ) {
+//         let [area, _] = Layout::horizontal([Constraint::Length(32), Constraint::Length(1)])
+//             .flex(Flex::End)
+//             .areas(buf.area);
+//         let [_, area] =
+//             Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
+//         Clear.render(area, buf);
+
+//         Input::default()
+//             .block(Block::default().title("Go to Line"))
+//             .render(area, buf, &mut state.input);
+//     }
+// }

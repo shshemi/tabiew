@@ -1,65 +1,45 @@
-use std::path::PathBuf;
+use polars::frame::DataFrame;
 
-use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
-
-use crate::tui::popups::path_picker::{PathPicker, PathPickerState};
+use crate::{
+    handler::message::Message,
+    misc::type_ext::UnwrapOrEnqueueError,
+    tui::{
+        component::Component,
+        popups::{path_picker::PathPicker, wizard::WizardState},
+    },
+    writer::{Destination, WriteToFile, WriteToParquet},
+};
 
 #[derive(Debug)]
-pub enum ParquetExporterState {
-    PickOutputPath { picker: PathPickerState },
-    ExportToFile { path: PathBuf },
+pub enum State {
+    PickOutputPath { df: DataFrame, picker: PathPicker },
 }
 
-impl Default for ParquetExporterState {
-    fn default() -> Self {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
         Self::PickOutputPath {
+            df: value,
             picker: Default::default(),
         }
     }
 }
 
-// #[derive(Debug, Default)]
-// pub struct ParquetExporterState {
-//     inner: State,
-// }
-
-impl ParquetExporterState {
-    pub fn step(&mut self) {
-        *self = match std::mem::take(self) {
-            ParquetExporterState::PickOutputPath { picker } => ParquetExporterState::ExportToFile {
-                path: picker.path(),
-            },
-            ParquetExporterState::ExportToFile { path } => {
-                ParquetExporterState::ExportToFile { path }
+impl WizardState for State {
+    fn next(self) -> Self {
+        match self {
+            State::PickOutputPath { mut df, picker } => {
+                WriteToParquet
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                State::PickOutputPath { df, picker }
             }
-        };
-    }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        if let ParquetExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
         }
     }
-}
 
-#[derive(Debug, Default)]
-pub struct ParquetExporter {}
-
-impl StatefulWidget for ParquetExporter {
-    type State = ParquetExporterState;
-
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        match state {
-            ParquetExporterState::PickOutputPath { picker } => {
-                PathPicker::default().render(area, buf, picker)
-            }
-            ParquetExporterState::ExportToFile { path: _ } => (),
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            State::PickOutputPath { df: _, picker } => picker,
         }
     }
 }

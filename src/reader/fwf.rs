@@ -25,13 +25,13 @@ pub struct FwfToDataFrame {
 }
 
 impl FwfToDataFrame {
-    pub fn from_args(args: &Args) -> AppResult<Self> {
-        Ok(Self {
-            widths: parse_width(&args.widths)?,
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            widths: parse_width(&args.widths).unwrap_or_default(),
             has_header: !args.no_header,
             separator_length: args.separator_length,
             flexible_width: !args.no_flexible_width,
-        })
+        }
     }
 
     pub fn with_widths(mut self, widths: Vec<usize>) -> Self {
@@ -80,6 +80,8 @@ impl ReadToDataFrames for FwfToDataFrame {
         let widths = if self.widths.is_empty() {
             let common_space_indices = file_content
                 .lines()
+                .map(|line| line.trim())
+                .filter(|line| !line.is_empty())
                 .map(|line| {
                     let length = line.chars().count();
                     let spaces = line
@@ -96,7 +98,6 @@ impl ReadToDataFrames for FwfToDataFrame {
         } else {
             self.widths.clone()
         };
-
         let reader = Reader::new(
             Cursor::new(file_content),
             widths.clone(),

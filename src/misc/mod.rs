@@ -3,6 +3,8 @@ pub mod globals;
 pub mod history;
 pub mod iter_ext;
 pub mod jagged_vec;
+pub mod non_empty_stack;
+pub mod osc52;
 pub mod paths;
 pub mod polars_ext;
 pub mod search;

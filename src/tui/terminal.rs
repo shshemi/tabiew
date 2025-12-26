@@ -1,6 +1,8 @@
 use crate::AppResult;
 use crate::app::App;
 use crate::handler::event::EventHandler;
+use crate::tui::component::Component;
+use crate::tui::component::FocusState;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
 use std::io;
@@ -29,10 +31,8 @@ impl<B: Backend> Terminal<B> {
     /// It enables the raw mode and sets terminal properties.
     pub fn init(&mut self) -> AppResult<()> {
         terminal::enable_raw_mode()?;
-        #[cfg(target_os = "windows")]
         crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
-        #[cfg(not(target_os = "windows"))]
-        crossterm::execute!(io::stderr(), EnterAlternateScreen)?;
+>>>>>>> component
 
         // Define a custom panic hook to reset the terminal properties.
         // This way, you won't have your terminal messed up if an unexpected error happens.
@@ -53,7 +53,9 @@ impl<B: Backend> Terminal<B> {
     /// [`rendering`]: crate::ui::render
     pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
         self.terminal.draw(|frame| {
-            let _ = app.draw(frame);
+            let area = frame.area();
+            let buf = frame.buffer_mut();
+            app.render(area, buf, FocusState::Focused);
         })?;
         Ok(())
     }
@@ -64,10 +66,7 @@ impl<B: Backend> Terminal<B> {
     /// the terminal properties if unexpected errors occur.
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        #[cfg(target_os = "windows")]
         crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
-        #[cfg(not(target_os = "windows"))]
-        crossterm::execute!(io::stderr(), LeaveAlternateScreen)?;
         Ok(())
     }
 

@@ -9,20 +9,20 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
-use tabiew::handler::action::execute;
-use tabiew::handler::command::parse_into_action;
 use tabiew::handler::event::{Event, EventHandler};
-use tabiew::handler::key::KeyHandler;
+use tabiew::handler::message::Message;
 use tabiew::misc::config::Config;
 use tabiew::misc::globals::{config, sql};
+use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::paths::{config_path, history_path, theme_path};
 use tabiew::misc::type_ext::{UnwrapOrGracefulShutdown, flush_osc52_buffer};
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
+use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::themes::custom::Custom;
 
-use tabiew::tui::{PaneState, TableType};
+use tabiew::tui::{Pane, TableType};
 use tabiew::{AppResult, tui};
 
 use tabiew::misc::history::{History, enforce_line_limit};
@@ -159,19 +159,14 @@ fn main() {
 fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(name, df)| PaneState::new(df, TableType::Name(name)))
+        .map(|(name, df)| Pane::new(df, TableType::Name(name)))
         .collect();
-    let keybind = KeyHandler::default();
+    // let keybind = KeyHandler::default();
     let mut app = App::new(tabs, history);
 
     // Initialize the terminal user interface.
     let mut tui = tui::Terminal::new(
-        ratatui::Terminal::new(CrosstermBackend::new(
-            #[cfg(target_os = "windows")]
-            io::stdout(),
-            #[cfg(not(target_os = "windows"))]
-            io::stderr(),
-        ))?,
+        ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?,
         EventHandler::new(100),
     );
     tui.init()?;
@@ -181,10 +176,10 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
     flush_osc52_buffer();
 
     // Run startup script
-    for line in script.lines().filter(|line| !line.is_empty()) {
-        let action = parse_into_action(line).unwrap_or_graceful_shutdown();
-        execute(action, &mut app).unwrap_or_graceful_shutdown();
-    }
+    // for line in script.lines().filter(|line| !line.is_empty()) {
+    //     let action = parse_into_action(line).unwrap_or_graceful_shutdown();
+    //     execute(action, &mut app).unwrap_or_graceful_shutdown();
+    // }
 
     // Main loop
     while app.running() {
@@ -192,43 +187,28 @@ fn start_tui(tabs: Vec<(String, DataFrame)>, script: String, history: History) -
         flush_osc52_buffer();
 
         match tui.events.next()? {
-            Event::Tick => app.tick()?,
+            Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 #[cfg(target_os = "windows")]
                 {
                     use crossterm::event::KeyEventKind;
                     if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        let mut action = keybind.action(app.context(), key_event);
-                        loop {
-                            match execute(action, &mut app) {
-                                Ok(Some(next_action)) => action = next_action,
-                                Ok(_) => break,
-                                Err(err) => {
-                                    app.show_error(err);
-                                    break;
-                                }
-                            }
-                        }
+                        app.handle(key_event);
                     }
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
-                    let mut action = keybind.action(app.context(), key_event);
-                    loop {
-                        match execute(action, &mut app) {
-                            Ok(Some(next_action)) => action = next_action,
-                            Ok(_) => break,
-                            Err(err) => {
-                                app.show_error(err);
-                                break;
-                            }
-                        }
-                    }
+                    app.handle(key_event);
                 }
             }
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }
+
+        while let Some(action) = Message::dequeue() {
+            app.update(&action, FocusState::Focused);
+        }
+        flush_osc52_buffer();
     }
 
     // Exit the user interface.

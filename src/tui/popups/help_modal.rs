@@ -1,5 +1,5 @@
 use ratatui::{
-    layout::Alignment,
+    layout::{Alignment, Constraint, Flex, Layout},
     style::Stylize,
     text::{Line, Span},
     widgets::{Clear, Paragraph, Widget, Wrap},
@@ -8,22 +8,40 @@ use ratatui::{
 use crate::{
     misc::globals::theme,
     tui::{
+        component::Component,
         status_bar::{StatusBar, Tag},
         widgets::block::Block,
     },
 };
 
-#[derive(Debug, Default)]
-pub struct HelpModal;
+#[derive(Debug)]
+pub struct Help {}
 
-impl HelpModal {
+impl Help {
     pub fn new() -> Self {
-        Self
+        Self {}
     }
 }
 
-impl Widget for HelpModal {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+impl Default for Help {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Component for Help {
+    fn render(
+        &mut self,
+        _area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        _focus_state: crate::tui::component::FocusState,
+    ) {
+        let [area] = Layout::horizontal([Constraint::Length(90)])
+            .flex(Flex::Center)
+            .areas(buf.area);
+        let [_, area] =
+            Layout::vertical([Constraint::Length(2), Constraint::Length(50)]).areas(area);
+
         Clear.render(area, buf);
 
         let mut lines = vec![

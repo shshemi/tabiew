@@ -1,25 +1,22 @@
 use anyhow::anyhow;
+use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::{
-    layout::{Alignment, Constraint},
+    layout::{Alignment, Constraint, Margin},
     symbols::Marker,
     text::Span,
-    widgets::{
-        Axis, Chart, Clear, Dataset, GraphType, LegendPosition, Padding, StatefulWidget, Widget,
-    },
+    widgets::{Axis, Chart, Clear, Dataset, GraphType, LegendPosition, Padding, Widget},
 };
 
 use crate::{
     AppResult,
+    handler::message::Message,
     misc::{globals::theme, jagged_vec::JaggedVec},
-    tui::widgets::block::Block,
+    tui::{component::Component, widgets::block::Block},
 };
 
-#[derive(Debug, Default)]
-pub struct ScatterPlot {}
-
 #[derive(Debug)]
-pub struct ScatterPlotState {
+pub struct ScatterPlot {
     data: JaggedVec<(f64, f64)>,
     x_bounds: [f64; 2],
     y_bounds: [f64; 2],
@@ -28,7 +25,7 @@ pub struct ScatterPlotState {
     groups: Option<Vec<String>>,
 }
 
-impl ScatterPlotState {
+impl ScatterPlot {
     pub fn new(x_label: String, y_label: String, data: JaggedVec<(f64, f64)>) -> AppResult<Self> {
         let [x_bounds, y_bounds] = data
             .iter()
@@ -51,7 +48,7 @@ impl ScatterPlotState {
         })
     }
 
-    pub fn groups(self, groups: impl Into<Option<Vec<String>>>) -> Self {
+    pub fn with_groups(self, groups: impl Into<Option<Vec<String>>>) -> Self {
         Self {
             groups: groups.into(),
             ..self
@@ -59,17 +56,16 @@ impl ScatterPlotState {
     }
 }
 
-impl StatefulWidget for ScatterPlot {
-    type State = ScatterPlotState;
-
+impl Component for ScatterPlot {
     fn render(
-        self,
-        area: ratatui::prelude::Rect,
+        &mut self,
+        _area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        _focus_state: crate::tui::component::FocusState,
     ) {
+        let area = buf.area.inner(Margin::new(7, 3));
         Widget::render(Clear, area, buf);
-        let ds = state
+        let ds = self
             .data
             .iter()
             .enumerate()
@@ -79,7 +75,7 @@ impl StatefulWidget for ScatterPlot {
                     .graph_type(GraphType::Scatter)
                     .style(theme().graph(i))
                     .data(v);
-                if let Some(g) = &state.groups {
+                if let Some(g) = &self.groups {
                     ds.name(g[i].as_str())
                 } else {
                     ds
@@ -90,23 +86,21 @@ impl StatefulWidget for ScatterPlot {
         let chart = Chart::new(ds)
             .x_axis(
                 Axis::default()
-                    .title(Span::styled(&state.x_label, theme().text()))
-                    .bounds(state.x_bounds)
+                    .title(Span::styled(&self.x_label, theme().text()))
+                    .bounds(self.x_bounds)
                     .style(theme().text())
                     .labels(
-                        state
-                            .x_bounds
+                        self.x_bounds
                             .map(|f| Span::styled(format!("{f:.2}"), theme().text())),
                     ),
             )
             .y_axis(
                 Axis::default()
-                    .title(Span::styled(&state.y_label, theme().text()))
-                    .bounds(state.y_bounds)
+                    .title(Span::styled(&self.y_label, theme().text()))
+                    .bounds(self.y_bounds)
                     .style(theme().text())
                     .labels(
-                        state
-                            .y_bounds
+                        self.y_bounds
                             .map(|f| Span::styled(format!("{f:.2}"), theme().text())),
                     ),
             )
@@ -123,5 +117,15 @@ impl StatefulWidget for ScatterPlot {
         // .hidden_legend_constraints((Constraint::Min(0), Constraint::Ratio(1, 2)));
 
         chart.render(area, buf);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        match (event.code, event.modifiers) {
+            (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                Message::PaneDismissModal.enqueue();
+                true
+            }
+            _ => false,
+        }
     }
 }

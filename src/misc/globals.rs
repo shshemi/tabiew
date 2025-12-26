@@ -5,7 +5,7 @@ use std::{
     sync::{Mutex, MutexGuard, Once, OnceLock, RwLockReadGuard},
 };
 
-use crate::{misc::config::Config, tui::themes::theme::Theme};
+use crate::{misc::config::Config, tui::themes::theme::LoadedTheme};
 
 use super::sql::SqlBackend;
 
@@ -18,11 +18,11 @@ pub fn config() -> &'static Config {
     CONFIG.get_or_init(Config::new)
 }
 
-pub fn set_theme(theme: Theme) {
-    *config().theme_mut() = theme;
+pub fn set_theme(theme: impl Into<LoadedTheme>) {
+    *config().theme_mut() = theme.into();
 }
 
-pub fn theme() -> impl Deref<Target = Theme> {
+pub fn theme() -> impl Deref<Target = LoadedTheme> {
     config().theme()
 }
 

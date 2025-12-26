@@ -1,89 +1,77 @@
-use std::path::PathBuf;
+use polars::frame::DataFrame;
 
-use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
-
-use crate::tui::popups::{
-    output_target_picker::{OutputTargetPicker, OutputTargetPickerState, Target},
-    path_picker::{PathPicker, PathPickerState},
+use crate::{
+    handler::message::Message,
+    misc::type_ext::UnwrapOrEnqueueError,
+    tui::{
+        component::Component,
+        popups::{
+            output_target_picker::{OutputTargetPicker, Target},
+            path_picker::PathPicker,
+            wizard::WizardState,
+        },
+    },
+    writer::{Destination, WriteToCsv, WriteToFile},
 };
 
 #[derive(Debug)]
-pub enum TsvExporterState {
-    PickOutputTarget { picker: OutputTargetPickerState },
-    PickOutputPath { picker: PathPickerState },
-    ExportToFile { path: PathBuf },
-    ExportToClipboard,
+pub enum State {
+    PickOutputTarget {
+        df: DataFrame,
+        picker: OutputTargetPicker,
+    },
+    PickOutputPath {
+        df: DataFrame,
+        picker: PathPicker,
+    },
 }
 
-impl Default for TsvExporterState {
-    fn default() -> Self {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
         Self::PickOutputTarget {
+            df: value,
             picker: Default::default(),
         }
     }
 }
 
-impl TsvExporterState {
-    pub fn step(&mut self) {
-        *self = match std::mem::take(self) {
-            TsvExporterState::PickOutputTarget { picker } => match picker.selected() {
-                Some(Target::File) => TsvExporterState::PickOutputPath {
-                    picker: Default::default(),
+impl WizardState for State {
+    fn next(self) -> Self {
+        match self {
+            State::PickOutputTarget { mut df, picker } => match picker.selected() {
+                Some(Target::File) => State::PickOutputPath {
+                    df,
+                    picker: PathPicker::default(),
                 },
-                Some(Target::Clipboard) => TsvExporterState::ExportToClipboard,
-                None => TsvExporterState::PickOutputTarget { picker },
+                Some(Target::Clipboard) => {
+                    WriteToCsv::default()
+                        .with_separator_char('\t')
+                        .with_quote_char('"')
+                        .with_header(false)
+                        .write_to_file(Destination::Clipboard, &mut df)
+                        .unwrap_or_enqueue_error();
+                    Message::PaneDismissModal.enqueue();
+                    State::PickOutputTarget { df, picker }
+                }
+                None => State::PickOutputTarget { df, picker },
             },
-            TsvExporterState::PickOutputPath { picker } => TsvExporterState::ExportToFile {
-                path: picker.path(),
-            },
-            TsvExporterState::ExportToFile { path } => TsvExporterState::ExportToFile { path },
-            TsvExporterState::ExportToClipboard => TsvExporterState::ExportToClipboard,
-        };
-    }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        if let TsvExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
-        }
-    }
-
-    pub fn select_next(&mut self) {
-        match self {
-            TsvExporterState::PickOutputTarget { picker } => picker.select_next(),
-            _ => todo!(),
-        }
-    }
-
-    pub fn select_previous(&mut self) {
-        match self {
-            TsvExporterState::PickOutputTarget { picker } => picker.select_previous(),
-            _ => todo!(),
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct TsvExporter {}
-
-impl StatefulWidget for TsvExporter {
-    type State = TsvExporterState;
-
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        match state {
-            TsvExporterState::PickOutputTarget { picker } => {
-                OutputTargetPicker::default().render(area, buf, picker)
+            State::PickOutputPath { mut df, picker } => {
+                WriteToCsv::default()
+                    .with_separator_char('\t')
+                    .with_quote_char('"')
+                    .with_header(false)
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                State::PickOutputPath { df, picker }
             }
-            TsvExporterState::PickOutputPath { picker } => {
-                PathPicker::default().render(area, buf, picker)
-            }
-            TsvExporterState::ExportToFile { path: _ } => (),
-            TsvExporterState::ExportToClipboard => (),
+        }
+    }
+
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            State::PickOutputTarget { df: _, picker } => picker,
+            State::PickOutputPath { df: _, picker } => picker,
         }
     }
 }

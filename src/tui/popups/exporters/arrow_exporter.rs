@@ -1,57 +1,45 @@
-use std::path::PathBuf;
+use polars::frame::DataFrame;
 
-use crossterm::event::KeyEvent;
-use ratatui::widgets::StatefulWidget;
-
-use crate::tui::popups::path_picker::{PathPicker, PathPickerState};
+use crate::{
+    handler::message::Message,
+    misc::type_ext::UnwrapOrEnqueueError,
+    tui::{
+        component::Component,
+        popups::{path_picker::PathPicker, wizard::WizardState},
+    },
+    writer::{Destination, WriteToArrow, WriteToFile},
+};
 
 #[derive(Debug)]
-pub enum ArrowExporterState {
-    PickOutputPath { picker: PathPickerState },
-    ExportToFile { path: PathBuf },
+pub enum State {
+    PickOutputPath { df: DataFrame, picker: PathPicker },
 }
 
-impl Default for ArrowExporterState {
-    fn default() -> Self {
+impl From<DataFrame> for State {
+    fn from(value: DataFrame) -> Self {
         Self::PickOutputPath {
+            df: value,
             picker: Default::default(),
         }
     }
 }
 
-impl ArrowExporterState {
-    pub fn step(&mut self) {
-        if let ArrowExporterState::PickOutputPath { picker } = self {
-            *self = ArrowExporterState::ExportToFile {
-                path: picker.path(),
-            };
-        };
-    }
-
-    pub fn handle(&mut self, event: KeyEvent) {
-        if let ArrowExporterState::PickOutputPath { picker } = self {
-            picker.handle(event)
+impl WizardState for State {
+    fn next(self) -> Self {
+        match self {
+            State::PickOutputPath { mut df, picker } => {
+                WriteToArrow
+                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error();
+                Message::PaneDismissModal.enqueue();
+                Self::PickOutputPath { df, picker }
+            }
         }
     }
-}
 
-#[derive(Debug, Default)]
-pub struct ArrowExporter {}
-
-impl StatefulWidget for ArrowExporter {
-    type State = ArrowExporterState;
-
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        match state {
-            ArrowExporterState::PickOutputPath { picker } => {
-                PathPicker::default().render(area, buf, picker)
-            }
-            ArrowExporterState::ExportToFile { path: _ } => (),
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            State::PickOutputPath { df: _, picker } => picker,
         }
     }
 }
