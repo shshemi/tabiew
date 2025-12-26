@@ -12,9 +12,6 @@ pub struct Args {
         required = false)]
     pub multiparts: Vec<PathBuf>,
 
-    #[arg(short, long, help = "Path to the startup script.", required = false)]
-    pub script: Option<PathBuf>,
-
     #[arg(
         short,
         long,
@@ -103,13 +100,6 @@ pub struct Args {
         default_value_t = false
     )]
     pub truncate_ragged_lines: bool,
-
-    #[arg(
-        long,
-        help = "Generate a sample theme file in $HOME/.config/tabiew",
-        required = false
-    )]
-    pub generate: Vec<GenerateItem>,
 
     #[arg(
         long,
@@ -213,12 +203,6 @@ pub enum InferSchema {
     No,
     Fast,
     Safe,
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-pub enum GenerateItem {
-    Config,
-    Theme,
 }
 
 impl InferSchema {
