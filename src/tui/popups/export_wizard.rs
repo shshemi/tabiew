@@ -99,64 +99,6 @@ impl WizardState for State {
     }
 }
 
-// impl Component for ExportWizard {
-//     fn render(
-//         &mut self,
-//         area: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         focus_state: crate::tui::component::FocusState,
-//     ) {
-//         self.responder().render(area, buf, focus_state);
-//     }
-
-//     fn handle(&mut self, event: KeyEvent) -> bool {
-//         if let State::SelectFormat(search_picker) = &mut self.state {
-//             search_picker.handle(event)
-//                 || match (event.code, event.modifiers) {
-//                     (KeyCode::Esc, KeyModifiers::NONE) => {
-//                         Message::PaneDismissModal.enqueue();
-//                         false
-//                     }
-//                     (KeyCode::Enter, KeyModifiers::NONE) => {
-//                         if let Some(fmt) = search_picker.selected_item() {
-//                             self.state = match fmt {
-//                                 Format::Csv => State::Csv(CsvExporter::new(self.df.clone())),
-//                                 Format::Tsv => State::Tsv(TsvExporter::new(self.df.clone())),
-//                                 Format::Json => State::Json(JsonExporter::new(self.df.clone())),
-//                                 Format::JsonL => State::JsonL(JsonLExporter::new(self.df.clone())),
-//                                 Format::Parquet => {
-//                                     State::Parquet(ParquetExporter::new(self.df.clone()))
-//                                 }
-//                                 Format::Arrow => State::Arrow(ArrowExporter::new(self.df.clone())),
-//                             };
-//                         };
-//                         true
-//                     }
-//                     _ => false,
-//                 }
-//         } else {
-//             self.responder().handle(event)
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// pub enum State {
-//     SelectFormat(SearchPicker<Format>),
-//     Csv(CsvExporter),
-//     Tsv(TsvExporter),
-//     Json(JsonExporter),
-//     JsonL(JsonLExporter),
-//     Parquet(ParquetExporter),
-//     Arrow(ArrowExporter),
-// }
-
-// impl Default for State {
-//     fn default() -> Self {
-//         Self::SelectFormat(SearchPicker::new(Format::iter().collect()))
-//     }
-// }
-
 #[derive(Debug, IntoStaticStr, EnumIter, PartialEq)]
 pub enum Format {
     Csv,
