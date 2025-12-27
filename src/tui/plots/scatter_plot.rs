@@ -11,7 +11,7 @@ use ratatui::{
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::{globals::theme, jagged_vec::JaggedVec},
+    misc::{config::theme, jagged_vec::JaggedVec},
     tui::{component::Component, widgets::block::Block},
 };
 

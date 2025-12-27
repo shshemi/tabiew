@@ -15,7 +15,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::globals::theme,
+    misc::config::theme,
     tui::{
         component::Component,
         widgets::{block::Block, highlighted_line::HighlightedLine, input::Input},

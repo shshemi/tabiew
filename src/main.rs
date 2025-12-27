@@ -2,7 +2,6 @@ use clap::{CommandFactory, Parser};
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use ratatui::backend::CrosstermBackend;
-use std::fs::{self};
 use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -10,9 +9,9 @@ use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, EventHandler};
 use tabiew::handler::message::Message;
-use tabiew::misc::globals::{config, sql};
+use tabiew::misc::config::config;
+use tabiew::misc::globals::sql;
 use tabiew::misc::osc52::flush_osc52_buffer;
-use tabiew::misc::paths::config_path;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
@@ -34,11 +33,7 @@ fn main() {
         }
     };
 
-    if let Some(config_path) = config_path()
-        && let Ok(text) = fs::read_to_string(config_path)
-    {
-        config().load(&text).unwrap_or_graceful_shutdown();
-    }
+    let _ = config().reload();
 
     let type_infer = TypeInferer::from_args(&args);
 

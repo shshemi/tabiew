@@ -1,4 +1,4 @@
-use crate::{misc::globals::theme, tui::component::Component};
+use crate::{misc::config::theme, tui::component::Component};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,

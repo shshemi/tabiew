@@ -1,3 +1,4 @@
+use crate::misc::config::theme;
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
@@ -6,7 +7,6 @@ use ratatui::{
 
 use crate::{
     handler::message::Message,
-    misc::globals::theme,
     tui::{component::Component, widgets::block::Block},
 };
 

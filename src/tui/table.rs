@@ -12,7 +12,7 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
     misc::{
-        globals::theme,
+        config::theme,
         iter_ext::ZipItersExt,
         polars_ext::{AnyValueExt, DataFrameExt},
         type_ext::ConstraintExt,

@@ -1,61 +1,77 @@
 use std::{
     fs,
-    ops::{Deref, DerefMut},
-    sync::RwLock,
+    ops::Deref,
+    sync::{
+        OnceLock, RwLock,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    AppResult,
-    misc::{globals::config, paths::config_path},
-    tui::themes::theme::LoadedTheme,
-};
+use crate::{AppResult, misc::paths::config_path, tui::themes::theme::LoadedTheme};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     theme: RwLock<LoadedTheme>,
+    table_borders: AtomicBool,
 }
 
 impl Config {
-    pub fn new() -> Self {
-        Self {
-            theme: RwLock::new(LoadedTheme::default()),
-        }
-    }
-
-    pub fn load(&self, text: &str) -> AppResult<()> {
-        let Config { theme } = toml::from_str(text)?;
-        *self.theme_mut() = theme.into_inner()?;
+    pub fn reload(&self) -> AppResult<()> {
+        let path = config_path()?;
+        let contents = fs::read_to_string(path)?;
+        let Config {
+            theme,
+            table_borders,
+        } = toml::from_str(&contents)?;
+        self.set_theme(theme.into_inner()?);
+        self.table_borders
+            .swap(table_borders.into_inner(), Ordering::Relaxed);
         Ok(())
     }
 
-    pub fn dump(&self) -> AppResult<String> {
-        Ok(toml::to_string(self)?)
+    pub fn store(&self) -> AppResult<()> {
+        let config_path = config_path()?;
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let contents = toml::to_string_pretty(self)?;
+        Ok(fs::write(config_path, contents)?)
     }
 
     pub fn theme(&self) -> impl Deref<Target = LoadedTheme> {
         self.theme.read().unwrap()
     }
 
-    pub fn theme_mut(&self) -> impl DerefMut<Target = LoadedTheme> {
-        self.theme.write().unwrap()
+    pub fn set_theme(&self, theme: impl Into<LoadedTheme>) {
+        *self.theme.write().unwrap() = theme.into();
+    }
+
+    pub fn table_borders(&self) -> bool {
+        self.table_borders.load(Ordering::Relaxed)
+    }
+
+    pub fn toggle_table_borders(&self) {
+        self.table_borders.fetch_xor(true, Ordering::Relaxed);
     }
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self::new()
+        Self {
+            theme: RwLock::new(LoadedTheme::default()),
+            table_borders: AtomicBool::new(true),
+        }
     }
 }
 
-pub fn store_config() {
-    if let Some(config_path) = config_path()
-        && let Some(parent) = config_path.parent()
-        && let Ok(_) = fs::create_dir_all(parent)
-        && let Ok(contents) = config().dump()
-    {
-        let _ = fs::write(config_path, contents);
-    }
+pub fn config() -> &'static Config {
+    static CONFIG: OnceLock<Config> = OnceLock::new();
+    CONFIG.get_or_init(Config::default)
+}
+
+pub fn theme() -> impl Deref<Target = LoadedTheme> {
+    config().theme()
 }

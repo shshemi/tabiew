@@ -7,7 +7,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handler::message::Message,
-    misc::globals::theme,
+    misc::config::theme,
     tui::{component::Component, widgets::block::Block},
 };
 

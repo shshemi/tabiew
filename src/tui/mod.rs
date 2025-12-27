@@ -1,5 +1,4 @@
 pub mod component;
-pub mod data_frame_table;
 pub mod error_popup;
 pub mod pane;
 pub mod pickers;

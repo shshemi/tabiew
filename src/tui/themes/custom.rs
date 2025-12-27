@@ -1,6 +1,5 @@
 use std::fs;
 
-use anyhow::anyhow;
 use ratatui::style::{Color, Style};
 use serde::{Deserialize, Serialize};
 
@@ -26,13 +25,13 @@ pub struct Custom {
 
 impl Custom {
     fn load() -> AppResult<Self> {
-        let path = theme_path().ok_or(anyhow!("Home dir not found"))?;
+        let path = theme_path()?;
         let contents = fs::read_to_string(path)?;
         Ok(toml::from_str(&contents)?)
     }
 
     fn store(&self) -> AppResult<()> {
-        let path = theme_path().ok_or(anyhow!("Home dir not found"))?;
+        let path = theme_path()?;
         let contents = toml::to_string_pretty(self)?;
         fs::write(path, contents)?;
         Ok(())

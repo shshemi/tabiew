@@ -6,8 +6,8 @@ use strum::IntoEnumIterator;
 use crate::{
     handler::message::Message,
     misc::{
-        config::store_config,
-        globals::{config, set_theme, theme},
+        config::{config, theme},
+        type_ext::UnwrapOrEnqueueError,
     },
     tui::{
         component::Component,
@@ -51,7 +51,7 @@ impl Component for ThemeSelector {
         if let Some(t) = self.search_picker.selected_item()
             && t != theme().app_theme()
         {
-            set_theme(*t);
+            config().set_theme(*t);
         }
     }
 
@@ -59,13 +59,13 @@ impl Component for ThemeSelector {
         self.search_picker.handle(event)
             || match event.code {
                 KeyCode::Esc => {
-                    set_theme(self.rollback.clone());
                     Message::AppDismissOverlay.enqueue();
+                    config().set_theme(self.rollback.clone());
                     true
                 }
                 KeyCode::Enter => {
-                    store_config();
                     Message::AppDismissOverlay.enqueue();
+                    config().store().unwrap_or_enqueue_error();
                     true
                 }
                 _ => false,
