@@ -12,11 +12,10 @@ use unicode_width::UnicodeWidthChar;
 use crate::{
     AppResult,
     misc::{
-        globals::theme,
         iter_ext::ZipItersExt,
         polars_ext::{AnyValueExt, DataFrameExt},
     },
-    tui::widgets::block::Block,
+    tui::{themes::theme, widgets::block::Block},
 };
 
 #[derive(Debug, Default)]

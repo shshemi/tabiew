@@ -7,7 +7,7 @@ use ratatui::{
 
 use crate::{
     handler::message::Message,
-    misc::globals::theme,
+    misc::config::theme,
     tui::{
         component::Component,
         status_bar::{StatusBar, Tag},

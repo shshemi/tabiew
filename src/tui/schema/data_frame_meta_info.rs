@@ -10,7 +10,7 @@ use ratatui::{
 
 use crate::{
     misc::{
-        globals::theme,
+        config::theme,
         sql::{self, TableInfo},
         type_ext::human_readable_size,
     },

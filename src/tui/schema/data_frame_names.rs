@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::globals::{sql, theme},
+    misc::{config::theme, globals::sql},
     tui::{
         component::Component,
         status_bar::{StatusBar, Tag},

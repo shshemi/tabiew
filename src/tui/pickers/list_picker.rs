@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::globals::theme,
+    misc::config::theme,
     tui::{component::Component, widgets::block::Block},
 };
 
@@ -59,14 +59,6 @@ where
     pub fn select_down(&mut self) {
         self.list.select_next();
     }
-
-    // pub fn list(&self) -> &ListState {
-    //     &self.list
-    // }
-
-    // pub fn list_mut(&mut self) -> &mut ListState {
-    //     &mut self.list
-    // }
 }
 
 impl<T> Component for ListPicker<T> {

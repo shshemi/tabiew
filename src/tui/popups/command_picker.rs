@@ -6,6 +6,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
     handler::message::Message,
+    misc::{config::config, type_ext::UnwrapOrEnqueueError},
     tui::{component::Component, pickers::search_picker::SearchPicker},
 };
 
@@ -74,6 +75,10 @@ impl Component for CommandPicker {
                             Command::Select => Message::PaneShowInlineSelect.enqueue(),
                             Command::Sort => Message::PaneShowInlineOrder.enqueue(),
                             Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
+                            Command::ToggleBorders => {
+                                config().toggle_table_borders();
+                                config().store().unwrap_or_enqueue_error();
+                            }
                         }
                     }
                     true
@@ -105,6 +110,7 @@ enum Command {
     Select,
     Sort,
     ThemeSelector,
+    ToggleBorders,
 }
 
 impl Command {

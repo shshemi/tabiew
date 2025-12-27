@@ -3,6 +3,7 @@ use ratatui::widgets::{Borders, Widget};
 
 use crate::{
     handler::message::Message,
+    misc::config::config,
     tui::{
         TableType,
         component::{Component, FocusState},
@@ -21,7 +22,6 @@ pub struct Tabs {
     panes: Vec<Pane>,
     switcher: Option<TabSwitcher>,
     idx: usize,
-    borders: bool,
 }
 
 impl Tabs {
@@ -140,7 +140,7 @@ impl Component for Tabs {
         // render block with status bar
         let area = {
             let blk = Block::default()
-                .borders(if self.borders {
+                .borders(if config().table_borders() {
                     Borders::all()
                 } else {
                     Borders::empty()
@@ -250,7 +250,6 @@ impl FromIterator<Pane> for Tabs {
             panes: iter.into_iter().collect(),
             idx: 0,
             switcher: None,
-            borders: true,
         }
     }
 }
