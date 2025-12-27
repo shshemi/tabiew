@@ -15,7 +15,8 @@ use crate::{AppResult, misc::paths::config_path, tui::themes::theme::LoadedTheme
 #[serde(default)]
 pub struct Config {
     theme: RwLock<LoadedTheme>,
-    table_borders: AtomicBool,
+    show_table_borders: AtomicBool,
+    show_table_row_numbers: AtomicBool,
 }
 
 impl Config {
@@ -24,11 +25,14 @@ impl Config {
         let contents = fs::read_to_string(path)?;
         let Config {
             theme,
-            table_borders,
+            show_table_borders: table_borders,
+            show_table_row_numbers: table_row_numbers,
         } = toml::from_str(&contents)?;
         self.set_theme(theme.into_inner()?);
-        self.table_borders
+        self.show_table_borders
             .swap(table_borders.into_inner(), Ordering::Relaxed);
+        self.show_table_row_numbers
+            .swap(table_row_numbers.into_inner(), Ordering::Relaxed);
         Ok(())
     }
 
@@ -49,12 +53,21 @@ impl Config {
         *self.theme.write().unwrap() = theme.into();
     }
 
-    pub fn table_borders(&self) -> bool {
-        self.table_borders.load(Ordering::Relaxed)
+    pub fn show_table_borders(&self) -> bool {
+        self.show_table_borders.load(Ordering::Relaxed)
     }
 
-    pub fn toggle_table_borders(&self) {
-        self.table_borders.fetch_xor(true, Ordering::Relaxed);
+    pub fn toggle_show_table_borders(&self) {
+        self.show_table_borders.fetch_xor(true, Ordering::Relaxed);
+    }
+
+    pub fn show_table_row_numbers(&self) -> bool {
+        self.show_table_row_numbers.load(Ordering::Relaxed)
+    }
+
+    pub fn toggle_show_table_row_numbers(&self) {
+        self.show_table_row_numbers
+            .fetch_xor(true, Ordering::Relaxed);
     }
 }
 
@@ -62,7 +75,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             theme: RwLock::new(LoadedTheme::default()),
-            table_borders: AtomicBool::new(true),
+            show_table_borders: AtomicBool::new(true),
+            show_table_row_numbers: AtomicBool::new(true),
         }
     }
 }

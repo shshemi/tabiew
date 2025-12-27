@@ -9,8 +9,8 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        globals::sql, non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt, sql::Source,
-        type_ext::UnwrapOrEnqueueError,
+        config::config, globals::sql, non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt,
+        sql::Source, type_ext::UnwrapOrEnqueueError,
     },
     tui::{
         component::{Component, FocusState},
@@ -264,6 +264,9 @@ impl Component for Pane {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
+        self.tstack
+            .last_mut()
+            .set_gutter_visibility(config().show_table_row_numbers());
         match &mut self.modal {
             Some(Modal::Sheet(sheet_state)) => {
                 if let Some(row) = self.tstack.last().selected()
