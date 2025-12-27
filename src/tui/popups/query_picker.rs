@@ -5,7 +5,7 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::globals::sql,
-    tui::{component::Component, pickers::text_picker::TextPicker},
+    tui::{component::Component, pane::TableDescription, pickers::text_picker::TextPicker},
 };
 
 #[derive(Debug)]
@@ -62,9 +62,9 @@ impl Component for QueryPicker {
             || match (event.code, event.modifiers) {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     let result = match self.query_type {
-                        QueryType::InlineSelect => self.select(self.value()),
-                        QueryType::InlineFilter => self.filter(self.value()),
-                        QueryType::InlineOrder => self.order(self.value()),
+                        QueryType::Select => self.select(self.value()),
+                        QueryType::Filter => self.filter(self.value()),
+                        QueryType::Order => self.order(self.value()),
                         QueryType::Sql => self.sql_query(self.value()),
                     };
                     match (result, self.query_type) {
@@ -72,9 +72,29 @@ impl Component for QueryPicker {
                             Message::PaneDismissModal.enqueue();
                             Message::TabsAddQueryPane(df, self.value().to_owned()).enqueue();
                         }
-                        (Ok(df), _) => {
+                        (Ok(df), QueryType::Select) => {
                             Message::PaneDismissModal.enqueue();
-                            Message::PanePushDataFrame(df).enqueue();
+                            Message::PanePushDataFrame(
+                                df,
+                                TableDescription::Select(self.value().to_owned()),
+                            )
+                            .enqueue();
+                        }
+                        (Ok(df), QueryType::Order) => {
+                            Message::PaneDismissModal.enqueue();
+                            Message::PanePushDataFrame(
+                                df,
+                                TableDescription::Order(self.value().to_owned()),
+                            )
+                            .enqueue();
+                        }
+                        (Ok(df), QueryType::Filter) => {
+                            Message::PaneDismissModal.enqueue();
+                            Message::PanePushDataFrame(
+                                df,
+                                TableDescription::Filter(self.value().to_owned()),
+                            )
+                            .enqueue();
                         }
                         (Err(err), _) => {
                             Message::PaneDismissModal.enqueue();
@@ -94,18 +114,18 @@ impl Component for QueryPicker {
 
 #[derive(Debug, Clone, Copy)]
 pub enum QueryType {
-    InlineSelect,
-    InlineFilter,
-    InlineOrder,
+    Select,
+    Filter,
+    Order,
     Sql,
 }
 
 impl QueryType {
     fn title(&self) -> String {
         match self {
-            QueryType::InlineSelect => "Select",
-            QueryType::InlineFilter => "Filter",
-            QueryType::InlineOrder => "Order",
+            QueryType::Select => "Select",
+            QueryType::Filter => "Filter",
+            QueryType::Order => "Order",
             QueryType::Sql => "Query",
         }
         .to_owned()
