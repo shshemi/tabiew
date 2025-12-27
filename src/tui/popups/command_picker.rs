@@ -76,7 +76,11 @@ impl Component for CommandPicker {
                             Command::Sort => Message::PaneShowInlineOrder.enqueue(),
                             Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
                             Command::ToggleBorders => {
-                                config().toggle_table_borders();
+                                config().toggle_show_table_borders();
+                                config().store().unwrap_or_enqueue_error();
+                            }
+                            Command::ToggleRowNumbers => {
+                                config().toggle_show_table_row_numbers();
                                 config().store().unwrap_or_enqueue_error();
                             }
                         }
@@ -111,6 +115,7 @@ enum Command {
     Sort,
     ThemeSelector,
     ToggleBorders,
+    ToggleRowNumbers,
 }
 
 impl Command {

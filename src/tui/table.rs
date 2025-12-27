@@ -89,18 +89,14 @@ impl Table {
         }
     }
 
-    pub fn with_visible_gutter(self) -> Self {
-        Self {
-            gutter_mode: GutterMode::Visible(self.df.height().to_string().len() as u16),
-            ..self
-        }
+    pub fn with_visible_gutter(mut self) -> Self {
+        self.set_gutter_visibility(true);
+        self
     }
 
-    pub fn with_hidden_gutter(self) -> Self {
-        Self {
-            gutter_mode: GutterMode::Hidden,
-            ..self
-        }
+    pub fn with_hidden_gutter(mut self) -> Self {
+        self.set_gutter_visibility(false);
+        self
     }
 
     pub fn with_compaect_column(self) -> Self {
@@ -127,6 +123,14 @@ impl Table {
 
     pub fn set_data_frame(&mut self, df: DataFrame) {
         self.df = df;
+    }
+
+    pub fn set_gutter_visibility(&mut self, value: bool) {
+        if value {
+            self.gutter_mode = GutterMode::Visible(self.df.height().to_string().len() as u16)
+        } else {
+            self.gutter_mode = GutterMode::Hidden
+        }
     }
 
     pub fn selected(&self) -> Option<usize> {

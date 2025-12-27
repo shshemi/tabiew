@@ -140,7 +140,7 @@ impl Component for Tabs {
         // render block with status bar
         let area = {
             let blk = Block::default()
-                .borders(if config().table_borders() {
+                .borders(if config().show_table_borders() {
                     Borders::all()
                 } else {
                     Borders::empty()
