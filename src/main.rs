@@ -17,8 +17,9 @@ use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
+use tabiew::tui::pane::TableDescription;
 
-use tabiew::tui::{Pane, TableType};
+use tabiew::tui::Pane;
 use tabiew::{AppResult, tui};
 
 fn main() {
@@ -87,7 +88,7 @@ fn main() {
 fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
-        .map(|(name, df)| Pane::new(df, TableType::Name(name)))
+        .map(|(name, df)| Pane::new(df, TableDescription::Table(name)))
         .collect();
 
     // Initialize the terminal user interface.

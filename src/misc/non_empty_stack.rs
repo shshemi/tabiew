@@ -31,4 +31,8 @@ impl<T> NonEmptyStack<T> {
     pub fn len_without_base(&self) -> usize {
         self.stack.len()
     }
+
+    pub fn base(&self) -> &T {
+        &self.base
+    }
 }

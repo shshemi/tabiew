@@ -61,6 +61,7 @@ impl Component for CommandPicker {
                     Message::AppDismissOverlay.enqueue();
                     if let Some(item) = self.picker.selected_item() {
                         match item {
+                            Command::Cast => Message::PaneShowColumnCasterWizard.enqueue(),
                             Command::DataFrameInfo => Message::PaneShowTableInfo.enqueue(),
                             Command::Export => Message::PaneShowExportWizard.enqueue(),
                             Command::Filter => Message::PaneShowInlineFilter.enqueue(),
@@ -99,6 +100,7 @@ impl Component for CommandPicker {
 
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
+    Cast,
     DataFrameInfo,
     Export,
     Filter,

@@ -5,8 +5,8 @@ use crate::{
     handler::message::Message,
     misc::config::config,
     tui::{
-        TableType,
         component::{Component, FocusState},
+        pane::TableDescription,
         widgets::block::Block,
     },
 };
@@ -74,7 +74,7 @@ impl Tabs {
             "Tabs",
             self.panes
                 .iter()
-                .map(|pane| pane.table_type().title())
+                .map(|pane| pane.title().to_owned())
                 .collect(),
             self.idx,
         ));
@@ -105,10 +105,13 @@ impl Component for Tabs {
                         "Tab",
                         format!("{} / {}", self.idx + 1, self.len()),
                     ))
-                    .tag(match tabular.table_type() {
-                        super::TableType::Help => Tag::new("Table", "Help"),
-                        super::TableType::Name(name) => Tag::new("Table", name),
-                        super::TableType::Query(query) => Tag::new("Query", query),
+                    .tag(match tabular.description() {
+                        TableDescription::Table(desc) => Tag::new("Table", desc),
+                        TableDescription::Query(desc) => Tag::new("Query", desc),
+                        TableDescription::Filter(desc) => Tag::new("Filter", desc),
+                        TableDescription::Order(desc) => Tag::new("Order", desc),
+                        TableDescription::Select(desc) => Tag::new("Select", desc),
+                        TableDescription::Cast(desc) => Tag::new("Cast", desc),
                     })
                     .tag(Tag::new(
                         "Column Mode",
@@ -206,10 +209,16 @@ impl Component for Tabs {
     fn update(&mut self, action: &Message, focus_state: FocusState) {
         match action {
             Message::TabsAddNamePane(df, name) => {
-                self.add(Pane::new(df.clone(), TableType::Name(name.to_owned())));
+                self.add(Pane::new(
+                    df.clone(),
+                    TableDescription::Table(name.to_owned()),
+                ));
             }
             Message::TabsAddQueryPane(df, query) => {
-                self.add(Pane::new(df.clone(), TableType::Query(query.to_owned())));
+                self.add(Pane::new(
+                    df.clone(),
+                    TableDescription::Query(query.to_owned()),
+                ));
             }
             Message::TabsSelect(idx) if focus_state.is_focused() => self.select(*idx),
             Message::TabsDismissSwitcher if focus_state.is_focused() => self.dismiss_tab_switcher(),

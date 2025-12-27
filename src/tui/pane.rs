@@ -16,6 +16,7 @@ use crate::{
         component::{Component, FocusState},
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
+            column_caster_wizard::ColumnCastWizard,
             data_frame_info::DataFrameInfo,
             export_wizard::ExportWizard,
             go_to_line::GoToLine,
@@ -30,86 +31,19 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub enum Modal {
-    Sheet(Sheet),
-    SearchBar(SearchBar),
-    DataFrameInfo(DataFrameInfo),
-    ScatterPlot(ScatterPlot),
-    HistogramPlot(HistogramPlot),
-    QueryPicker(QueryPicker),
-    GoToLine(GoToLine),
-    ExportWizard(ExportWizard),
-    HistogramWizard(HistogramWizard),
-    ScatterPlotWizard(ScatterPlotWizard),
-    TableRegisterer(TableRegisterer),
-}
-
-impl Modal {
-    fn responder(&mut self) -> &mut dyn Component {
-        match self {
-            Modal::Sheet(sheet) => sheet,
-            Modal::SearchBar(search_bar) => search_bar,
-            Modal::DataFrameInfo(data_frame_info) => data_frame_info,
-            Modal::ScatterPlot(scatter_plot_state) => scatter_plot_state,
-            Modal::HistogramPlot(histogram_plot_state) => histogram_plot_state,
-            Modal::QueryPicker(query_picker) => query_picker,
-            Modal::GoToLine(go_to_line) => go_to_line,
-            Modal::ExportWizard(export_wizard) => export_wizard,
-            Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
-            Modal::ScatterPlotWizard(wizard) => wizard,
-            Modal::TableRegisterer(table_registerer) => table_registerer,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TableType {
-    Help,
-    Name(String),
-    Query(String),
-}
-
-impl TableType {
-    pub fn title(&self) -> String {
-        match self {
-            TableType::Help => "Help".to_owned(),
-            TableType::Name(s) => s.clone(),
-            TableType::Query(s) => s.clone(),
-        }
-    }
-}
-
-impl AsRef<str> for TableType {
-    fn as_ref(&self) -> &str {
-        match self {
-            TableType::Help => "Help",
-            TableType::Name(name) => name.as_str(),
-            TableType::Query(query) => query.as_str(),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct Pane {
     tstack: NonEmptyStack<Table>,
+    dstack: NonEmptyStack<TableDescription>,
     modal: Option<Modal>,
-    table_type: TableType,
 }
 
 impl Pane {
     /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame, table_type: TableType) -> Self {
+    pub fn new(data_frame: DataFrame, description: TableDescription) -> Self {
         Self {
-            tstack: NonEmptyStack::new(
-                Table::new(data_frame.clone())
-                    .striped()
-                    .with_selected(0)
-                    .with_show_header(true)
-                    .with_col_space(2)
-                    .with_extended_column(),
-            ),
+            tstack: NonEmptyStack::new(table(data_frame)),
+            dstack: NonEmptyStack::new(description),
             modal: None,
-            table_type,
         }
     }
 
@@ -117,8 +51,8 @@ impl Pane {
         self.tstack.last()
     }
 
-    pub fn table_type(&self) -> &TableType {
-        &self.table_type
+    pub fn description(&self) -> &TableDescription {
+        self.dstack.last()
     }
 
     pub fn show_sheet(&mut self) {
@@ -145,17 +79,20 @@ impl Pane {
     }
 
     fn show_data_frame_info(&mut self) {
-        match &self.table_type {
-            TableType::Help => (),
-            TableType::Name(name) => {
-                if let Some(input) = sql().schema().get(name).map(|info| info.source()).cloned() {
+        match &self.dstack.last() {
+            TableDescription::Table(desc) => {
+                if let Some(input) = sql().schema().get(desc).map(|info| info.source()).cloned() {
                     self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
                         self.tstack.last().data_frame(),
                         input,
                     )))
                 }
             }
-            TableType::Query(_) => {
+            TableDescription::Query(_)
+            | TableDescription::Filter(_)
+            | TableDescription::Order(_)
+            | TableDescription::Select(_)
+            | TableDescription::Cast(_) => {
                 self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
                     self.tstack.last().data_frame(),
                     Source::User,
@@ -229,19 +166,20 @@ impl Pane {
         )));
     }
 
-    fn push_data_frame(&mut self, df: DataFrame) {
-        self.tstack.push(
-            Table::new(df)
-                .striped()
-                .with_selected(0)
-                .with_show_header(true)
-                .with_col_space(2)
-                .with_extended_column(),
-        );
+    fn show_column_caster_wizard(&mut self) {
+        self.modal = Some(Modal::ColumnCasterWizard(ColumnCastWizard::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
+        self.tstack.push(table(df));
+        self.dstack.push(description);
     }
 
     fn pop_data_frame(&mut self) {
         self.tstack.pop();
+        self.dstack.pop();
     }
 
     fn select(&mut self, idx: usize) {
@@ -254,6 +192,10 @@ impl Pane {
 
     fn cancel_modal(&mut self) {
         self.modal.take();
+    }
+
+    pub fn title(&self) -> &str {
+        self.dstack.base().title()
     }
 }
 
@@ -337,6 +279,12 @@ impl Component for Pane {
                     .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
+            Some(Modal::ColumnCasterWizard(state)) => {
+                self.tstack
+                    .last_mut()
+                    .render(area, buf, FocusState::NotFocused);
+                state.render(area, buf, focus_state);
+            }
             None => self.tstack.last_mut().render(area, buf, focus_state),
         }
     }
@@ -362,7 +310,9 @@ impl Component for Pane {
             Some(Modal::ScatterPlotWizard(scatter_plot_wizard)) => {
                 scatter_plot_wizard.handle(event)
             }
-            _ => self.tstack.last_mut().handle(event),
+            Some(Modal::ColumnCasterWizard(wizard)) => wizard.handle(event),
+
+            None => self.tstack.last_mut().handle(event),
         }) || (match (event.code, event.modifiers) {
             (KeyCode::Enter, KeyModifiers::NONE) => {
                 self.show_sheet();
@@ -446,13 +396,13 @@ impl Component for Pane {
         self.tstack.last_mut().update(action, focus_state);
         match action {
             Message::PaneShowInlineSelect if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::InlineSelect)
+                self.show_query_picker(QueryType::Select)
             }
             Message::PaneShowInlineFilter if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::InlineFilter)
+                self.show_query_picker(QueryType::Filter)
             }
             Message::PaneShowInlineOrder if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::InlineOrder)
+                self.show_query_picker(QueryType::Order)
             }
             Message::PaneShowSqlQuery if focus_state.is_focused() => {
                 self.show_query_picker(QueryType::Sql)
@@ -474,12 +424,13 @@ impl Component for Pane {
                 self.show_table_registerer()
             }
             Message::PaneDismissModal if focus_state.is_focused() => self.cancel_modal(),
-            Message::PanePushDataFrame(df) if focus_state.is_focused() => {
-                self.push_data_frame(df.clone())
+            Message::PanePushDataFrame(df, desc) if focus_state.is_focused() => {
+                self.push_data_frame(df.clone(), desc.clone())
             }
             Message::PanePopDataFrame if focus_state.is_focused() => self.pop_data_frame(),
             Message::PaneTableSelect(idx) if focus_state.is_focused() => self.select(*idx),
             Message::PaneShowTableInfo => self.show_data_frame_info(),
+            Message::PaneShowColumnCasterWizard => self.show_column_caster_wizard(),
             _ => (),
         }
     }
@@ -501,7 +452,74 @@ impl Component for Pane {
             Some(Modal::HistogramWizard(_)) => (),
             Some(Modal::ScatterPlotWizard(_)) => (),
             Some(Modal::TableRegisterer(_)) => (),
+            Some(Modal::ColumnCasterWizard(_)) => (),
             None => (),
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Modal {
+    Sheet(Sheet),
+    SearchBar(SearchBar),
+    DataFrameInfo(DataFrameInfo),
+    ScatterPlot(ScatterPlot),
+    HistogramPlot(HistogramPlot),
+    QueryPicker(QueryPicker),
+    GoToLine(GoToLine),
+    ExportWizard(ExportWizard),
+    HistogramWizard(HistogramWizard),
+    ScatterPlotWizard(ScatterPlotWizard),
+    TableRegisterer(TableRegisterer),
+    ColumnCasterWizard(ColumnCastWizard),
+}
+
+impl Modal {
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            Modal::Sheet(sheet) => sheet,
+            Modal::SearchBar(search_bar) => search_bar,
+            Modal::DataFrameInfo(data_frame_info) => data_frame_info,
+            Modal::ScatterPlot(scatter_plot_state) => scatter_plot_state,
+            Modal::HistogramPlot(histogram_plot_state) => histogram_plot_state,
+            Modal::QueryPicker(query_picker) => query_picker,
+            Modal::GoToLine(go_to_line) => go_to_line,
+            Modal::ExportWizard(export_wizard) => export_wizard,
+            Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
+            Modal::ScatterPlotWizard(wizard) => wizard,
+            Modal::TableRegisterer(table_registerer) => table_registerer,
+            Modal::ColumnCasterWizard(wizard) => wizard,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum TableDescription {
+    Table(String),
+    Query(String),
+    Filter(String),
+    Order(String),
+    Select(String),
+    Cast(String),
+}
+impl TableDescription {
+    pub(crate) fn title(&self) -> &str {
+        match self {
+            TableDescription::Table(desc)
+            | TableDescription::Query(desc)
+            | TableDescription::Filter(desc)
+            | TableDescription::Order(desc)
+            | TableDescription::Select(desc)
+            | TableDescription::Cast(desc) => desc,
+        }
+    }
+}
+
+fn table(df: DataFrame) -> Table {
+    Table::new(df)
+        .striped()
+        .with_selected(0)
+        .with_show_header(true)
+        .with_col_space(2)
+        .with_extended_column()
 }

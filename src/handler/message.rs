@@ -5,6 +5,8 @@ use std::sync::{
 
 use polars::frame::DataFrame;
 
+use crate::tui::pane::TableDescription;
+
 #[derive(Debug)]
 pub enum Message {
     AppDismissOverlay,
@@ -27,12 +29,13 @@ pub enum Message {
     PaneShowScatterPlot(String, String, Option<String>),
     PaneShowScatterPlotWizard,
     PaneDismissModal,
-    PanePushDataFrame(DataFrame),
+    PanePushDataFrame(DataFrame, TableDescription),
     PanePopDataFrame,
     PaneTableSelect(usize),
     PaneShowInlineSelect,
     PaneShowTableRegisterer,
     PaneShowTableInfo,
+    PaneShowColumnCasterWizard,
     Quit,
 }
 
