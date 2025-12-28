@@ -114,14 +114,6 @@ impl Component for Tabs {
                         TableDescription::Cast(desc) => Tag::new("Cast", desc),
                     })
                     .tag(Tag::new(
-                        "Column Mode",
-                        if tabular.table().expended_column() {
-                            "Expanded"
-                        } else {
-                            " Compact"
-                        },
-                    ))
-                    .tag(Tag::new(
                         "Row",
                         format!(
                             "{:>width$}",
