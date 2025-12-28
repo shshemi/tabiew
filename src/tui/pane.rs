@@ -55,6 +55,10 @@ impl Pane {
         self.dstack.last()
     }
 
+    pub fn iter_descriptions(&self) -> impl Iterator<Item = &TableDescription> {
+        self.dstack.iter()
+    }
+
     pub fn show_sheet(&mut self) {
         if let Some(row) = self.tstack.last().selected() {
             let sections = self.tstack.last().data_frame().get_sheet_sections(row);
