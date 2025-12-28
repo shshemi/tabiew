@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-const DEFAULT_BUCKET_COUNT: &str = "38";
+const DEFAULT_BUCKET_COUNT: &str = "24";
 
 pub type HistogramWizard = Wizard<State>;
 
