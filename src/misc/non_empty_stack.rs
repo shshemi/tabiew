@@ -35,4 +35,8 @@ impl<T> NonEmptyStack<T> {
     pub fn base(&self) -> &T {
         &self.base
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        std::iter::once(&self.base).chain(self.stack.iter())
+    }
 }
