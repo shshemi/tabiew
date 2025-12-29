@@ -35,6 +35,7 @@ impl Component for DataFrameInfo {
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         self.data_frame_info.handle(event) || {
             match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => true,
                 (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                     Message::PaneDismissModal.enqueue();
                     true
