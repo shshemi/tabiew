@@ -17,10 +17,10 @@ pub type HistogramWizard = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
-    ColumnSelect {
+    PickColumn {
         picker: SearchPicker<ColumnNameType>,
     },
-    BucketCount {
+    PickBucketCount {
         column: String,
         picker: TextPicker,
     },
@@ -37,7 +37,7 @@ impl State {
             .map(|col| ColumnNameType(col.name().to_string(), col.dtype().to_owned()))
             .collect();
 
-        State::ColumnSelect {
+        State::PickColumn {
             picker: SearchPicker::new(items),
         }
     }
@@ -46,14 +46,14 @@ impl State {
 impl WizardState for State {
     fn next(self) -> Self {
         match self {
-            State::ColumnSelect { picker } => {
+            State::PickColumn { picker } => {
                 if let Some(ColumnNameType(name, dtype)) = picker.selected_item() {
                     if dtype.is_string() {
                         Message::PaneShowHistogram(name.clone(), 0).enqueue();
 
-                        State::ColumnSelect { picker }
+                        State::PickColumn { picker }
                     } else {
-                        State::BucketCount {
+                        State::PickBucketCount {
                             column: name.to_owned(),
                             picker: TextPicker::default()
                                 .with_input_type(InputType::Numeric)
@@ -61,21 +61,21 @@ impl WizardState for State {
                         }
                     }
                 } else {
-                    State::ColumnSelect { picker }
+                    State::PickColumn { picker }
                 }
             }
-            State::BucketCount { column, picker } => {
+            State::PickBucketCount { column, picker } => {
                 let buckets = picker.value().parse().unwrap_or(1);
                 Message::PaneShowHistogram(column.clone(), buckets).enqueue();
-                State::BucketCount { column, picker }
+                State::PickBucketCount { column, picker }
             }
         }
     }
 
     fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
         match self {
-            State::ColumnSelect { picker } => picker,
-            State::BucketCount { column: _, picker } => picker,
+            State::PickColumn { picker } => picker,
+            State::PickBucketCount { column: _, picker } => picker,
         }
     }
 }

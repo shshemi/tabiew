@@ -218,6 +218,10 @@ impl Component for Tabs {
         }
         if let Some(switcher) = self.switcher.as_mut() {
             switcher.update(action, focus_state);
+            for pane in self.panes.iter_mut() {
+                pane.update(action, FocusState::NotFocused);
+            }
+        } else {
             for (idx, pane) in self.panes.iter_mut().enumerate() {
                 pane.update(
                     action,
@@ -227,10 +231,6 @@ impl Component for Tabs {
                         FocusState::NotFocused
                     },
                 );
-            }
-        } else {
-            for pane in self.panes.iter_mut() {
-                pane.update(action, focus_state);
             }
         }
     }
