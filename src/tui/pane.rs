@@ -433,8 +433,10 @@ impl Component for Pane {
             }
             Message::PanePopDataFrame if focus_state.is_focused() => self.pop_data_frame(),
             Message::PaneTableSelect(idx) if focus_state.is_focused() => self.select(*idx),
-            Message::PaneShowTableInfo => self.show_data_frame_info(),
-            Message::PaneShowColumnCasterWizard => self.show_column_caster_wizard(),
+            Message::PaneShowTableInfo if focus_state.is_focused() => self.show_data_frame_info(),
+            Message::PaneShowColumnCasterWizard if focus_state.is_focused() => {
+                self.show_column_caster_wizard()
+            }
             _ => (),
         }
     }
