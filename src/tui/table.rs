@@ -268,6 +268,11 @@ impl Table {
             (None, area)
         }
     }
+
+    fn minimum_compact_width(&self) -> u16 {
+        let col_count = self.df.width() as u16;
+        col_count + (col_count.saturating_sub(1) * self.col_space)
+    }
 }
 
 impl Component for Table {
@@ -310,6 +315,12 @@ impl Component for Table {
                         None
                     }),
                 );
+        }
+
+        if table_area.width < self.minimum_compact_width()
+            && matches!(self.column_mode, ColumnMode::Compact)
+        {
+            self.column_mode = ColumnMode::Expanded(0);
         }
 
         match &mut self.column_mode {
