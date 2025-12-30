@@ -25,6 +25,10 @@ pub struct Tabs {
 }
 
 impl Tabs {
+    pub fn selected(&self) -> Option<&Pane> {
+        self.panes.get(self.idx)
+    }
+
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
         self.idx = self.panes.len().saturating_sub(1);

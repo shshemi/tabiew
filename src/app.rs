@@ -1,3 +1,6 @@
+use crate::tui::Pane;
+use crate::tui::popups::sql_query_picker::SqlQueryPicker;
+use crate::tui::table::Table;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
 use crate::{
     handler::message::Message,
@@ -11,27 +14,6 @@ use crate::{
     },
 };
 use crossterm::event::KeyCode;
-
-#[derive(Debug)]
-pub enum Overlay {
-    Error(ErrorPopup),
-    CommandPicker(CommandPicker),
-    ThemeSelector(ThemeSelector),
-    Import(ImportWizard),
-    Help(Help),
-}
-
-impl Overlay {
-    fn responder(&mut self) -> &mut dyn Component {
-        match self {
-            Overlay::Error(error) => error,
-            Overlay::CommandPicker(command_palette) => command_palette,
-            Overlay::ThemeSelector(theme_selector) => theme_selector,
-            Overlay::Help(help) => help,
-            Overlay::Import(wizard) => wizard,
-        }
-    }
-}
 
 pub struct App {
     tabs: Tabs,
@@ -58,7 +40,7 @@ impl App {
         self.overlay = Some(Overlay::ThemeSelector(Default::default()));
     }
 
-    fn show_palette(&mut self, _cmd: impl ToString) {
+    fn show_palette(&mut self) {
         self.overlay = Some(Overlay::CommandPicker(CommandPicker::default()));
     }
 
@@ -68,6 +50,16 @@ impl App {
 
     fn show_import_wizard(&mut self) {
         self.overlay = Some(Overlay::Import(ImportWizard::default()))
+    }
+
+    fn show_sql_query_picker(&mut self) {
+        self.overlay = Some(Overlay::SqlQueryPicker(SqlQueryPicker::new(
+            self.tabs
+                .selected()
+                .map(Pane::table)
+                .map(Table::data_frame)
+                .cloned(),
+        )));
     }
 
     fn dismiss_overlay(&mut self) {
@@ -125,7 +117,7 @@ impl Component for App {
             })
             || match event.code {
                 KeyCode::Char(':') => {
-                    self.show_palette("");
+                    self.show_palette();
                     true
                 }
                 KeyCode::Char('Q') => {
@@ -141,11 +133,12 @@ impl Component for App {
             Message::Quit => self.quit(),
             Message::AppDismissOverlay => self.dismiss_overlay(),
             Message::AppShowError(message) => self.show_error(message),
-            Message::AppShowCommandPicker => self.show_palette(""),
+            Message::AppShowCommandPicker => self.show_palette(),
             Message::AppShowThemeSelector => self.show_theme_selector(),
             Message::AppShowSchema => self.show_schema(),
             Message::AppShowImportWizard => self.show_import_wizard(),
             Message::AppDismissSchema => self.dismiss_schema(),
+            Message::AppShowSqlQuery => self.show_sql_query_picker(),
             _ => (),
         };
         match (self.overlay.as_mut(), self.schema.as_mut()) {
@@ -173,5 +166,28 @@ impl Component for App {
             overlay.responder().tick();
         }
         self.tabs.tick();
+    }
+}
+
+#[derive(Debug)]
+pub enum Overlay {
+    Error(ErrorPopup),
+    CommandPicker(CommandPicker),
+    ThemeSelector(ThemeSelector),
+    SqlQueryPicker(SqlQueryPicker),
+    Import(ImportWizard),
+    Help(Help),
+}
+
+impl Overlay {
+    fn responder(&mut self) -> &mut dyn Component {
+        match self {
+            Overlay::Error(error) => error,
+            Overlay::CommandPicker(command_palette) => command_palette,
+            Overlay::ThemeSelector(theme_selector) => theme_selector,
+            Overlay::Help(help) => help,
+            Overlay::Import(wizard) => wizard,
+            Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
+        }
     }
 }

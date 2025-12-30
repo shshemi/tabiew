@@ -50,7 +50,7 @@ impl Component for CommandPicker {
                 }
                 "q " => {
                     Message::AppDismissOverlay.enqueue();
-                    Message::PaneShowSqlQuery.enqueue();
+                    Message::AppShowSqlQuery.enqueue();
                 }
                 _ => (),
             }
@@ -68,7 +68,7 @@ impl Component for CommandPicker {
                             Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
                             Command::Import => Message::AppShowImportWizard.enqueue(),
                             Command::Order => Message::PaneShowInlineOrder.enqueue(),
-                            Command::Query => Message::PaneShowSqlQuery.enqueue(),
+                            Command::Query => Message::AppShowSqlQuery.enqueue(),
                             Command::Quit | Command::Q => Message::Quit.enqueue(),
                             Command::Register => Message::PaneShowTableRegisterer.enqueue(),
                             Command::ScatterPlot => Message::PaneShowScatterPlotWizard.enqueue(),

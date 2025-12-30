@@ -9,13 +9,13 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct QueryPicker {
+pub struct InlineQueryPicker {
     df: DataFrame,
     text_picker: TextPicker,
     query_type: QueryType,
 }
 
-impl QueryPicker {
+impl InlineQueryPicker {
     pub fn new(df: DataFrame, query_type: QueryType) -> Self {
         Self {
             text_picker: TextPicker::default().with_title(query_type.title()),
@@ -47,7 +47,7 @@ impl QueryPicker {
     }
 }
 
-impl Component for QueryPicker {
+impl Component for InlineQueryPicker {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
@@ -65,13 +65,8 @@ impl Component for QueryPicker {
                         QueryType::Select => self.select(self.value()),
                         QueryType::Filter => self.filter(self.value()),
                         QueryType::Order => self.order(self.value()),
-                        QueryType::Sql => self.sql_query(self.value()),
                     };
                     match (result, self.query_type) {
-                        (Ok(df), QueryType::Sql) => {
-                            Message::PaneDismissModal.enqueue();
-                            Message::TabsAddQueryPane(df, self.value().to_owned()).enqueue();
-                        }
                         (Ok(df), QueryType::Select) => {
                             Message::PaneDismissModal.enqueue();
                             Message::PanePushDataFrame(
@@ -117,7 +112,6 @@ pub enum QueryType {
     Select,
     Filter,
     Order,
-    Sql,
 }
 
 impl QueryType {
@@ -126,7 +120,6 @@ impl QueryType {
             QueryType::Select => "Select",
             QueryType::Filter => "Filter",
             QueryType::Order => "Order",
-            QueryType::Sql => "Query",
         }
         .to_owned()
     }

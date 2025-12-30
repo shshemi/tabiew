@@ -21,7 +21,7 @@ use crate::{
             export_wizard::ExportWizard,
             go_to_line::GoToLine,
             histogram_wizard::{self, HistogramWizard},
-            query_picker::{QueryPicker, QueryType},
+            inline_query_picker::{InlineQueryPicker, QueryType},
             scatter_plot_wizard::{self, ScatterPlotWizard},
             table_registerer::TableRegisterer,
             wizard::Wizard,
@@ -123,8 +123,8 @@ impl Pane {
         Ok(())
     }
 
-    fn show_query_picker(&mut self, query_type: QueryType) {
-        self.modal = Some(Modal::QueryPicker(QueryPicker::new(
+    fn show_inline_query_picker(&mut self, query_type: QueryType) {
+        self.modal = Some(Modal::InlineQueryPicker(InlineQueryPicker::new(
             self.tstack.last().data_frame().clone(),
             query_type,
         )));
@@ -253,7 +253,7 @@ impl Component for Pane {
                     .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
-            Some(Modal::QueryPicker(state)) => {
+            Some(Modal::InlineQueryPicker(state)) => {
                 self.tstack
                     .last_mut()
                     .render(area, buf, FocusState::NotFocused);
@@ -308,7 +308,7 @@ impl Component for Pane {
             Some(Modal::ExportWizard(export_wizard)) => export_wizard.handle(event),
             Some(Modal::HistogramPlot(histogram_plot)) => histogram_plot.handle(event),
             Some(Modal::HistogramWizard(histogram_wizard)) => histogram_wizard.handle(event),
-            Some(Modal::QueryPicker(query_picker)) => query_picker.handle(event),
+            Some(Modal::InlineQueryPicker(query_picker)) => query_picker.handle(event),
             Some(Modal::ScatterPlot(scatter_plot)) => scatter_plot.handle(event),
             Some(Modal::TableRegisterer(table_registerer)) => table_registerer.handle(event),
             Some(Modal::ScatterPlotWizard(scatter_plot_wizard)) => {
@@ -400,16 +400,13 @@ impl Component for Pane {
         self.tstack.last_mut().update(action, focus_state);
         match action {
             Message::PaneShowInlineSelect if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::Select)
+                self.show_inline_query_picker(QueryType::Select)
             }
             Message::PaneShowInlineFilter if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::Filter)
+                self.show_inline_query_picker(QueryType::Filter)
             }
             Message::PaneShowInlineOrder if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::Order)
-            }
-            Message::PaneShowSqlQuery if focus_state.is_focused() => {
-                self.show_query_picker(QueryType::Sql)
+                self.show_inline_query_picker(QueryType::Order)
             }
             Message::PaneShowExportWizard if focus_state.is_focused() => self.show_export_wizard(),
             Message::PaneShowScatterPlotWizard if focus_state.is_focused() => {
@@ -452,7 +449,7 @@ impl Component for Pane {
             Some(Modal::DataFrameInfo(_)) => (),
             Some(Modal::ScatterPlot(_)) => (),
             Some(Modal::HistogramPlot(_)) => (),
-            Some(Modal::QueryPicker(_)) => (),
+            Some(Modal::InlineQueryPicker(_)) => (),
             Some(Modal::GoToLine(_)) => (),
             Some(Modal::ExportWizard(_)) => (),
             Some(Modal::HistogramWizard(_)) => (),
@@ -471,7 +468,7 @@ pub enum Modal {
     DataFrameInfo(DataFrameInfo),
     ScatterPlot(ScatterPlot),
     HistogramPlot(HistogramPlot),
-    QueryPicker(QueryPicker),
+    InlineQueryPicker(InlineQueryPicker),
     GoToLine(GoToLine),
     ExportWizard(ExportWizard),
     HistogramWizard(HistogramWizard),
@@ -488,7 +485,7 @@ impl Modal {
             Modal::DataFrameInfo(data_frame_info) => data_frame_info,
             Modal::ScatterPlot(scatter_plot_state) => scatter_plot_state,
             Modal::HistogramPlot(histogram_plot_state) => histogram_plot_state,
-            Modal::QueryPicker(query_picker) => query_picker,
+            Modal::InlineQueryPicker(query_picker) => query_picker,
             Modal::GoToLine(go_to_line) => go_to_line,
             Modal::ExportWizard(export_wizard) => export_wizard,
             Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
