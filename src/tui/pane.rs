@@ -295,15 +295,13 @@ impl Component for Pane {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         (match &mut self.modal {
-            Some(Modal::GoToLine(go_to_line)) => {
-                go_to_line.handle(event) || self.tstack.last_mut().handle(event)
-            }
             Some(Modal::SearchBar(search_bar)) => {
                 search_bar.handle(event) || self.tstack.last_mut().handle(event)
             }
             Some(Modal::Sheet(sheet)) => {
                 sheet.handle(event) || self.tstack.last_mut().handle(event)
             }
+            Some(Modal::GoToLine(go_to_line)) => go_to_line.handle(event),
             Some(Modal::DataFrameInfo(data_frame_info)) => data_frame_info.handle(event),
             Some(Modal::ExportWizard(export_wizard)) => export_wizard.handle(event),
             Some(Modal::HistogramPlot(histogram_plot)) => histogram_plot.handle(event),
