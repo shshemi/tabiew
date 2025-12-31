@@ -23,34 +23,11 @@ use super::type_ext::HasSubsequence;
 
 pub trait AnyValueExt {
     fn into_single_line(self) -> String;
-    fn width(self) -> usize;
+    fn width(self, num_buffer: &mut NumBuffer) -> usize;
     fn into_multi_line(self) -> String;
     fn into_cell(self, width: usize) -> Cell<'static>;
     fn fuzzy_cmp(self, other: &str) -> bool;
 }
-
-pub trait DataFrameExt {
-    fn widths(&self) -> Vec<usize>;
-    fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
-    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
-    #[allow(clippy::type_complexity)]
-    fn scatter_plot_data_grouped(
-        &self,
-        x_label: &str,
-        y_label: &str,
-        group_by: &str,
-    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)>;
-    fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
-}
-
-pub trait TryMapAll {
-    fn try_map_all(
-        &self,
-        f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
-    ) -> Option<Series>;
-}
-
-pub trait PlotData {}
 
 impl AnyValueExt for AnyValue<'_> {
     fn into_single_line(self) -> String {
@@ -70,7 +47,7 @@ impl AnyValueExt for AnyValue<'_> {
         }
     }
 
-    fn width(self) -> usize {
+    fn width(self, num_buffer: &mut NumBuffer) -> usize {
         match self {
             AnyValue::Null => 0,
             AnyValue::Boolean(v) => {
@@ -80,8 +57,22 @@ impl AnyValueExt for AnyValue<'_> {
                     5 // false
                 }
             }
-            AnyValue::String(s) => s.width(),
-            _ => self.into_single_line().width(),
+            AnyValue::String(s) => s.lines().next().unwrap_or_default().width(),
+            AnyValue::UInt8(u) => num_buffer.itoa.format(u).len(),
+            AnyValue::UInt16(u) => num_buffer.itoa.format(u).len(),
+            AnyValue::UInt32(u) => num_buffer.itoa.format(u).len(),
+            AnyValue::UInt64(u) => num_buffer.itoa.format(u).len(),
+            AnyValue::UInt128(u) => num_buffer.itoa.format(u).len(),
+            AnyValue::Int8(i) => num_buffer.itoa.format(i).len(),
+            AnyValue::Int16(i) => num_buffer.itoa.format(i).len(),
+            AnyValue::Int32(i) => num_buffer.itoa.format(i).len(),
+            AnyValue::Int64(i) => num_buffer.itoa.format(i).len(),
+            AnyValue::Int128(i) => num_buffer.itoa.format(i).len(),
+            AnyValue::Float32(f) => num_buffer.ryu.format(f).len(),
+            AnyValue::Float64(f) => num_buffer.ryu.format(f).len(),
+            AnyValue::Date(_) => 10, // 1970-10-10
+            AnyValue::Datetime(_, _, _) | AnyValue::DatetimeOwned(_, _, _) => 23, // 1970-01-01 00:00:00.002
+            _ => self.to_string().width(),
         }
     }
 
@@ -118,6 +109,33 @@ impl AnyValueExt for AnyValue<'_> {
             _ => self.into_multi_line().has_subsequence(other),
         }
     }
+}
+
+#[derive(Default, Clone)]
+pub struct NumBuffer {
+    ryu: ryu::Buffer,
+    itoa: itoa::Buffer,
+}
+
+pub trait DataFrameExt {
+    fn widths(&self) -> Vec<usize>;
+    fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
+    #[allow(clippy::type_complexity)]
+    fn scatter_plot_data_grouped(
+        &self,
+        x_label: &str,
+        y_label: &str,
+        group_by: &str,
+    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)>;
+    fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
+}
+
+pub trait TryMapAll {
+    fn try_map_all(
+        &self,
+        f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
+    ) -> Option<Series>;
 }
 
 fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
@@ -245,10 +263,12 @@ fn series_width(series: &Series) -> usize {
     series
         .iter()
         .par_bridge()
-        .map(|val| val.width())
+        .fold_with((0_usize, NumBuffer::default()), |(width, mut buf), val| {
+            (width.max(val.width(&mut buf)), buf)
+        })
+        .map(|(w, _)| w)
         .max()
         .unwrap_or_default()
-        .max(series.name().as_str().width())
 }
 
 impl TryMapAll for Series {
