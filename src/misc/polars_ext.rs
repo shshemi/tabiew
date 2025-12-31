@@ -71,7 +71,7 @@ impl AnyValueExt for AnyValue<'_> {
             AnyValue::Float32(f) => num_buffer.ryu.format(f).len(),
             AnyValue::Float64(f) => num_buffer.ryu.format(f).len(),
             AnyValue::Date(_) => 10, // 1970-10-10
-            AnyValue::Datetime(_, _, _) | AnyValue::DatetimeOwned(_, _, _) => 23, // 1970-01-01 00:00:00.002
+            AnyValue::Datetime(_, _, _) | AnyValue::DatetimeOwned(_, _, _) => 19, // 2019-06-30 07:49:05
             _ => self.to_string().width(),
         }
     }
