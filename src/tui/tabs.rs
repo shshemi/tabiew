@@ -167,39 +167,71 @@ impl Component for Tabs {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.switcher
-            .as_mut()
-            .map(|switcher| switcher.handle(event))
-            .unwrap_or_default()
-            || self
-                .panes
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.handle(event)
+        } else {
+            self.panes
                 .get_mut(self.idx)
                 .map(|pane| pane.handle(event))
                 .unwrap_or_default()
-            || match (event.code, event.modifiers) {
-                (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                    self.remove_selected();
-                    if self.is_empty() {
-                        Message::Quit.enqueue();
+                || match (event.code, event.modifiers) {
+                    (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                        self.remove_selected();
+                        if self.is_empty() {
+                            Message::Quit.enqueue();
+                        }
+                        true
                     }
-                    true
+                    (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                        self.show_tab_switcher();
+                        true
+                    }
+                    (KeyCode::Char('H'), KeyModifiers::SHIFT)
+                    | (KeyCode::Left, KeyModifiers::SHIFT) => {
+                        self.select_prev();
+                        true
+                    }
+                    (KeyCode::Char('L'), KeyModifiers::SHIFT)
+                    | (KeyCode::Right, KeyModifiers::SHIFT) => {
+                        self.select_next();
+                        true
+                    }
+                    _ => false,
                 }
-                (KeyCode::Char('t'), KeyModifiers::NONE) => {
-                    self.show_tab_switcher();
-                    true
-                }
-                (KeyCode::Char('H'), KeyModifiers::SHIFT)
-                | (KeyCode::Left, KeyModifiers::SHIFT) => {
-                    self.select_prev();
-                    true
-                }
-                (KeyCode::Char('L'), KeyModifiers::SHIFT)
-                | (KeyCode::Right, KeyModifiers::SHIFT) => {
-                    self.select_next();
-                    true
-                }
-                _ => false,
-            }
+        }
+        // self.switcher
+        //     .as_mut()
+        //     .map(|switcher| switcher.handle(event))
+        //     .unwrap_or_default()
+        //     || self
+        //         .panes
+        //         .get_mut(self.idx)
+        //         .map(|pane| pane.handle(event))
+        //         .unwrap_or_default()
+        //     || match (event.code, event.modifiers) {
+        //         (KeyCode::Char('q'), KeyModifiers::NONE) => {
+        //             self.remove_selected();
+        //             if self.is_empty() {
+        //                 Message::Quit.enqueue();
+        //             }
+        //             true
+        //         }
+        //         (KeyCode::Char('t'), KeyModifiers::NONE) => {
+        //             self.show_tab_switcher();
+        //             true
+        //         }
+        //         (KeyCode::Char('H'), KeyModifiers::SHIFT)
+        //         | (KeyCode::Left, KeyModifiers::SHIFT) => {
+        //             self.select_prev();
+        //             true
+        //         }
+        //         (KeyCode::Char('L'), KeyModifiers::SHIFT)
+        //         | (KeyCode::Right, KeyModifiers::SHIFT) => {
+        //             self.select_next();
+        //             true
+        //         }
+        //         _ => false,
+        //     }
     }
 
     fn update(&mut self, action: &Message, focus_state: FocusState) {

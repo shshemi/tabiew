@@ -362,7 +362,7 @@ impl Component for Pane {
                 self.show_go_to_line_with_value(9);
                 true
             }
-            (KeyCode::Char('I'), KeyModifiers::SHIFT) => {
+            (KeyCode::Char('i'), KeyModifiers::NONE) => {
                 self.show_data_frame_info();
                 true
             }

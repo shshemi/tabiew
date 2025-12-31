@@ -105,27 +105,23 @@ impl Component for App {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.overlay
-            .as_mut()
-            .map(|overlay| overlay.responder().handle(event))
-            .unwrap_or_else(|| {
-                if let Some(schema) = self.schema.as_mut() {
-                    schema.handle(event)
-                } else {
-                    self.tabs.handle(event)
-                }
-            })
-            || match event.code {
-                KeyCode::Char(':') => {
-                    self.show_palette();
-                    true
-                }
-                KeyCode::Char('Q') => {
-                    self.quit();
-                    true
-                }
-                _ => false,
+        (if let Some(overlay) = self.overlay.as_mut() {
+            overlay.responder().handle(event)
+        } else if let Some(schema) = self.schema.as_mut() {
+            schema.handle(event)
+        } else {
+            self.tabs.handle(event)
+        }) || match event.code {
+            KeyCode::Char(':') => {
+                self.show_palette();
+                true
             }
+            KeyCode::Char('Q') => {
+                self.quit();
+                true
+            }
+            _ => false,
+        }
     }
 
     fn update(&mut self, action: &Message, _: FocusState) {
