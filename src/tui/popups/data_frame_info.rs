@@ -36,7 +36,9 @@ impl Component for DataFrameInfo {
         self.data_frame_info.handle(event) || {
             match (event.code, event.modifiers) {
                 (KeyCode::Enter, KeyModifiers::NONE) => true,
-                (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                (KeyCode::Esc, KeyModifiers::NONE)
+                | (KeyCode::Char('q'), KeyModifiers::NONE)
+                | (KeyCode::Char('i'), KeyModifiers::NONE) => {
                     Message::PaneDismissModal.enqueue();
                     true
                 }
