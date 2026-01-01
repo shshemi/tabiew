@@ -6,17 +6,17 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{component::Component, pickers::list_picker::ListPicker};
 
 #[derive(Debug)]
-pub struct OutputTargetPicker {
+pub struct ExportTargetPicker {
     list_picker: ListPicker<Target>,
 }
 
-impl OutputTargetPicker {
+impl ExportTargetPicker {
     pub fn selected(&self) -> Option<Target> {
         self.list_picker.selected_item().copied()
     }
 }
 
-impl Component for OutputTargetPicker {
+impl Component for ExportTargetPicker {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
@@ -31,7 +31,7 @@ impl Component for OutputTargetPicker {
     }
 }
 
-impl Default for OutputTargetPicker {
+impl Default for ExportTargetPicker {
     fn default() -> Self {
         Self {
             list_picker: ListPicker::new(Target::iter().to_owned().collect())

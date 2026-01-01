@@ -10,7 +10,7 @@ use crate::{
         component::Component,
         pickers::text_picker::TextPicker,
         popups::{
-            output_target_picker::{OutputTargetPicker, Target},
+            export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
             wizard::WizardState,
         },
@@ -33,7 +33,7 @@ pub enum State {
         df: DataFrame,
         separator: char,
         quote: char,
-        picker: OutputTargetPicker,
+        picker: ExportTargetPicker,
     },
     PickOutputPath {
         df: DataFrame,
@@ -82,7 +82,7 @@ impl WizardState for State {
                         df,
                         separator,
                         quote,
-                        picker: OutputTargetPicker::default(),
+                        picker: ExportTargetPicker::default(),
                     }
                 } else {
                     State::PickQuoteChar {
