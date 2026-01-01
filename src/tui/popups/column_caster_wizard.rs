@@ -1,8 +1,6 @@
-use anyhow::anyhow;
 use polars::{
     frame::DataFrame,
     prelude::{DataType, TimeUnit},
-    series::ChunkCompareEq,
 };
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
@@ -10,6 +8,9 @@ use strum_macros::{Display, EnumIter, IntoStaticStr};
 use crate::{
     AppResult,
     handler::message::Message,
+    misc::type_inferer::{
+        cast_boolean, cast_date, cast_datetime, cast_float, cast_int, cast_string,
+    },
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
@@ -56,7 +57,7 @@ impl WizardState for State {
                     match cast_column(&mut df, &col_name, *target_type) {
                         Ok(_) => Message::PanePushDataFrame(
                             df.clone(),
-                            TableDescription::Cast(format!("{col_name}: {target_type}")),
+                            TableDescription::Cast(format!("'{col_name}' as {target_type}")),
                         )
                         .enqueue(),
                         Err(err) => Message::AppShowError(err.to_string()).enqueue(),
@@ -100,6 +101,7 @@ impl From<DataFrame> for State {
 
 #[derive(Debug, Clone, Copy, IntoStaticStr, EnumIter, Display)]
 pub enum TargetType {
+    Boolean,
     Date,
     Datetime,
     Float,
@@ -110,6 +112,7 @@ pub enum TargetType {
 impl From<TargetType> for DataType {
     fn from(value: TargetType) -> Self {
         match value {
+            TargetType::Boolean => DataType::Boolean,
             TargetType::Date => DataType::Date,
             TargetType::Datetime => DataType::Datetime(TimeUnit::Milliseconds, None),
             TargetType::Float => DataType::Float64,
@@ -120,12 +123,15 @@ impl From<TargetType> for DataType {
 }
 
 fn cast_column(df: &mut DataFrame, name: &str, target_type: TargetType) -> AppResult<()> {
-    let col = df.column(name)?;
-    let new_col = col.cast(&target_type.into())?;
-    if col.is_null().equal(&new_col.is_null()).all() {
-        df.with_column(new_col)?;
-        Ok(())
-    } else {
-        Err(anyhow!("Column '{name}' cannot be casted to {target_type}"))
-    }
+    let series = df.column(name)?.as_materialized_series();
+    let casted = match target_type {
+        TargetType::Boolean => cast_boolean(series),
+        TargetType::Date => cast_date(series),
+        TargetType::Datetime => cast_datetime(series),
+        TargetType::Float => cast_float(series),
+        TargetType::Int => cast_int(series),
+        TargetType::String => cast_string(series),
+    }?;
+    df.replace(name, casted)?;
+    Ok(())
 }
