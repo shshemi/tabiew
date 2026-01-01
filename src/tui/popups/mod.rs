@@ -10,7 +10,7 @@ pub mod histogram_wizard;
 pub mod import_wizard;
 pub mod importers;
 pub mod inline_query_picker;
-pub mod input_source_picker;
+pub mod import_source_picker;
 pub mod path_picker;
 pub mod scatter_plot_wizard;
 pub mod sql_query_picker;

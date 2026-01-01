@@ -4,8 +4,8 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
+            import_source_picker::{self, ImportSourcePicker},
             importers::final_step,
-            input_source_picker::{self, InputSourcePicker},
             path_picker::PathPicker,
             wizard::WizardState,
         },
@@ -15,7 +15,7 @@ use crate::{
 #[derive(Debug)]
 pub enum State {
     PickSource {
-        picker: InputSourcePicker,
+        picker: ImportSourcePicker,
     },
     PickPath {
         picker: PathPicker,
@@ -35,14 +35,14 @@ impl WizardState for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(input_source_picker::Source::Stdin) => State::PickSeparator {
+                Some(import_source_picker::Source::Stdin) => State::PickSeparator {
                     source: Source::Stdin,
                     picker: TextPicker::default()
                         .with_title("Separator")
                         .with_max_len(1)
                         .with_value(",".to_owned()),
                 },
-                Some(input_source_picker::Source::File) => State::PickPath {
+                Some(import_source_picker::Source::File) => State::PickPath {
                     picker: Default::default(),
                 },
                 None => State::PickSource {

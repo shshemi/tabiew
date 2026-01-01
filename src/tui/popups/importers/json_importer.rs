@@ -1,8 +1,8 @@
 use crate::{
     reader::{JsonToDataFrame, Source},
     tui::popups::{
+        import_source_picker::{self, ImportSourcePicker},
         importers::final_step,
-        input_source_picker::{self, InputSourcePicker},
         path_picker::PathPicker,
         wizard::WizardState,
     },
@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Debug)]
 pub enum State {
-    PickSource { picker: InputSourcePicker },
+    PickSource { picker: ImportSourcePicker },
     PickPath { picker: PathPicker },
 }
 
@@ -18,11 +18,11 @@ impl WizardState for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(input_source_picker::Source::Stdin) => {
+                Some(import_source_picker::Source::Stdin) => {
                     final_step(Source::Stdin, JsonToDataFrame::default());
                     State::PickSource { picker }
                 }
-                Some(input_source_picker::Source::File) => State::PickPath {
+                Some(import_source_picker::Source::File) => State::PickPath {
                     picker: Default::default(),
                 },
                 None => State::PickSource { picker },
