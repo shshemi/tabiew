@@ -1,5 +1,5 @@
 pub mod column_caster_wizard;
-pub mod command_picker;
+pub mod command_palette;
 pub mod data_frame_info;
 pub mod export_wizard;
 pub mod exporters;
