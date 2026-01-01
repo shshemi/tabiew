@@ -166,6 +166,7 @@ impl DataFrameExt for DataFrame {
     fn widths(&self) -> Vec<usize> {
         self.iter().map(series_width).collect()
     }
+
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection> {
         izip!(
             self.get_column_names().into_iter(),
@@ -178,6 +179,7 @@ impl DataFrameExt for DataFrame {
         .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
         .collect_vec()
     }
+
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>> {
         Ok(self
             .column(x_label)?
@@ -260,15 +262,17 @@ impl DataFrameExt for DataFrame {
 }
 
 fn series_width(series: &Series) -> usize {
-    series
-        .iter()
-        .par_bridge()
-        .fold_with((0_usize, NumBuffer::default()), |(width, mut buf), val| {
-            (width.max(val.width(&mut buf)), buf)
-        })
-        .map(|(w, _)| w)
-        .max()
-        .unwrap_or_default()
+    series.name().width().max(
+        series
+            .iter()
+            .par_bridge()
+            .fold_with((0_usize, NumBuffer::default()), |(width, mut buf), val| {
+                (width.max(val.width(&mut buf)), buf)
+            })
+            .map(|(w, _)| w)
+            .max()
+            .unwrap_or_default(),
+    )
 }
 
 impl TryMapAll for Series {
