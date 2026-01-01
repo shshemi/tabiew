@@ -9,7 +9,7 @@ use crate::{
     tui::{
         component::Component,
         popups::{
-            output_target_picker::{OutputTargetPicker, Target},
+            export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
             wizard::WizardState,
         },
@@ -21,7 +21,7 @@ use crate::{
 pub enum State {
     PickOutputTarget {
         df: DataFrame,
-        picker: OutputTargetPicker,
+        picker: ExportTargetPicker,
     },
     PickOutputPath {
         df: DataFrame,
