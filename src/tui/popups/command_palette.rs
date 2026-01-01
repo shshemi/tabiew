@@ -38,7 +38,7 @@ impl Component for CommandPalette {
             match self.picker.text() {
                 "s " => {
                     Message::AppDismissOverlay.enqueue();
-                    Message::PaneShowInlineOrder.enqueue();
+                    Message::PaneShowInlineSelect.enqueue();
                 }
                 "o " => {
                     Message::AppDismissOverlay.enqueue();
