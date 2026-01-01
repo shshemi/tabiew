@@ -11,11 +11,11 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct CommandPicker {
+pub struct CommandPalette {
     picker: SearchPicker<Command>,
 }
 
-impl Default for CommandPicker {
+impl Default for CommandPalette {
     fn default() -> Self {
         Self {
             picker: SearchPicker::new(Command::all()),
@@ -23,7 +23,7 @@ impl Default for CommandPicker {
     }
 }
 
-impl Component for CommandPicker {
+impl Component for CommandPalette {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,

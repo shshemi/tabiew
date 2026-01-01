@@ -7,7 +7,7 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         popups::{
-            command_picker::CommandPicker, help_modal::Help, import_wizard::ImportWizard,
+            command_palette::CommandPalette, help_modal::Help, import_wizard::ImportWizard,
             theme_selector::ThemeSelector,
         },
         schema::schema::Schema,
@@ -41,7 +41,7 @@ impl App {
     }
 
     fn show_palette(&mut self) {
-        self.overlay = Some(Overlay::CommandPicker(CommandPicker::default()));
+        self.overlay = Some(Overlay::CommandPicker(CommandPalette::default()));
     }
 
     fn show_error(&mut self, message: impl Into<String>) {
@@ -168,7 +168,7 @@ impl Component for App {
 #[derive(Debug)]
 pub enum Overlay {
     Error(ErrorPopup),
-    CommandPicker(CommandPicker),
+    CommandPicker(CommandPalette),
     ThemeSelector(ThemeSelector),
     SqlQueryPicker(SqlQueryPicker),
     Import(ImportWizard),
