@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::anyhow;
 use chrono::{NaiveDate, NaiveDateTime};
 use polars::{
     frame::DataFrame,
@@ -8,6 +9,7 @@ use polars::{
 };
 
 use crate::{
+    AppResult,
     args::{Args, Type},
     misc::polars_ext::TryMapAll,
 };
@@ -43,7 +45,7 @@ impl TypeInferer {
 
     pub fn update(&self, data_frame: &mut DataFrame) {
         let cast_fns = {
-            let mut vec = Vec::<fn(&Series) -> Option<Series>>::new();
+            let mut vec = Vec::<fn(&Series) -> AppResult<Series>>::new();
             if self.int {
                 vec.push(cast_int);
             }
@@ -70,9 +72,11 @@ impl TypeInferer {
             .iter()
             .filter(|ser| matches!(ser.dtype(), DataType::String))
             .filter_map(|ser| {
-                cast_fns
-                    .iter()
-                    .find_map(|cast| cast(ser).map(|new_ser| (ser.name().to_owned(), new_ser)))
+                cast_fns.iter().find_map(|cast| {
+                    cast(ser)
+                        .map(|new_ser| (ser.name().to_owned(), new_ser))
+                        .ok()
+                })
             })
             .collect::<HashMap<PlSmallStr, Series>>();
 
@@ -107,44 +111,69 @@ impl TypeInferer {
     }
 }
 
-fn cast_int(ser: &Series) -> Option<Series> {
-    ser.cast(&DataType::Int64).ok().and_then(|casted| {
-        casted
-            .is_null()
-            .equal(&ser.is_null())
-            .all()
-            .then_some(casted)
-    })
+pub fn cast_string(series: &Series) -> AppResult<Series> {
+    let casted = series.cast(&DataType::String)?;
+    if casted.is_null().equal(&series.is_null()).all() {
+        Ok(casted)
+    } else {
+        Err(anyhow!(
+            "Column '{}' cannot be casted to {}",
+            series.name(),
+            DataType::String
+        ))
+    }
 }
 
-fn cast_float(ser: &Series) -> Option<Series> {
-    ser.cast(&DataType::Float64).ok().and_then(|casted| {
-        casted
-            .is_null()
-            .equal(&ser.is_null())
-            .all()
-            .then_some(casted)
-    })
+pub fn cast_int(series: &Series) -> AppResult<Series> {
+    let casted = series.cast(&DataType::Int64)?;
+    if casted.is_null().equal(&series.is_null()).all() {
+        Ok(casted)
+    } else {
+        Err(anyhow!(
+            "Column '{}' cannot be casted to {}",
+            series.name(),
+            DataType::Int64
+        ))
+    }
 }
 
-fn cast_boolean(ser: &Series) -> Option<Series> {
-    ser.try_map_all(|val| match val {
-        AnyValue::String(s) => parse_boolean(s),
-        AnyValue::StringOwned(s) => parse_boolean(s.as_str()),
-        AnyValue::Null => Some(AnyValue::Null),
-        _ => None,
-    })
+pub fn cast_float(series: &Series) -> AppResult<Series> {
+    let casted = series.cast(&DataType::Float64)?;
+    if casted.is_null().equal(&series.is_null()).all() {
+        Ok(casted)
+    } else {
+        Err(anyhow!(
+            "Column '{}' cannot be casted to {}",
+            series.name(),
+            DataType::Float64
+        ))
+    }
 }
 
-fn parse_boolean(s: &str) -> Option<AnyValue<'static>> {
-    match s {
+pub fn cast_boolean(series: &Series) -> AppResult<Series> {
+    series
+        .try_map_all(|val| match val {
+            AnyValue::String(s) => parse_boolean(s),
+            AnyValue::StringOwned(s) => parse_boolean(s.as_str()),
+            AnyValue::Null => Some(AnyValue::Null),
+            _ => None,
+        })
+        .ok_or(anyhow!(
+            "Column '{}' cannot be casted to {}",
+            series.name(),
+            DataType::Boolean
+        ))
+}
+
+fn parse_boolean(slice: &str) -> Option<AnyValue<'static>> {
+    match slice {
         "true" => Some(AnyValue::Boolean(true)),
         "false" => Some(AnyValue::Boolean(false)),
         _ => None,
     }
 }
 
-fn cast_date(series: &Series) -> Option<Series> {
+pub fn cast_date(series: &Series) -> AppResult<Series> {
     [
         "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y %m %d", "%Y%m%d", "%d-%m-%Y", "%d/%m/%Y",
         "%d.%m.%Y", "%d %m %Y", "%d%m%Y", "%m-%d-%Y", "%m/%d/%Y", "%m.%d.%Y", "%m %d %Y", "%m%d%Y",
@@ -152,9 +181,14 @@ fn cast_date(series: &Series) -> Option<Series> {
     ]
     .into_iter()
     .find_map(|fmt| cast_date_with_format(series, fmt))
+    .ok_or(anyhow!(
+        "Column '{}' cannot be casted to {}",
+        series.name(),
+        DataType::Date
+    ))
 }
 
-fn cast_datetime(series: &Series) -> Option<Series> {
+pub fn cast_datetime(series: &Series) -> AppResult<Series> {
     [
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%dT%H:%M:%S",
@@ -176,6 +210,11 @@ fn cast_datetime(series: &Series) -> Option<Series> {
     ]
     .into_iter()
     .find_map(|fmt| cast_datetime_with_format(series, fmt))
+    .ok_or(anyhow!(
+        "Column '{}' cannot be casted to {}",
+        series.name(),
+        DataType::Datetime(TimeUnit::Milliseconds, None)
+    ))
 }
 
 fn cast_date_with_format(series: &Series, fmt: &'static str) -> Option<Series> {
