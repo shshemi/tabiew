@@ -105,10 +105,6 @@ impl Component for Tabs {
             .get(self.idx)
             .map(|tabular| {
                 StatusBar::default()
-                    .tag(Tag::new(
-                        "Tab",
-                        format!("{} / {}", self.idx + 1, self.len()),
-                    ))
                     .tag(match tabular.description() {
                         TableDescription::Table(desc) => Tag::new("Table", desc),
                         TableDescription::Query(desc) => Tag::new("Query", desc),
@@ -117,6 +113,10 @@ impl Component for Tabs {
                         TableDescription::Select(desc) => Tag::new("Select", desc),
                         TableDescription::Cast(desc) => Tag::new("Cast", desc),
                     })
+                    .tag(Tag::new(
+                        "Tab",
+                        format!("{} / {}", self.idx + 1, self.len()),
+                    ))
                     .tag(Tag::new(
                         "Row",
                         format!(
