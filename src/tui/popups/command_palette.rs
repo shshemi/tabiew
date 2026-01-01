@@ -62,14 +62,14 @@ impl Component for CommandPalette {
                     if let Some(item) = self.picker.selected_item() {
                         match item {
                             Command::Cast => Message::PaneShowColumnCasterWizard.enqueue(),
-                            Command::DataFrameInfo => Message::PaneShowTableInfo.enqueue(),
+                            Command::Info => Message::PaneShowTableInfo.enqueue(),
                             Command::Export => Message::PaneShowExportWizard.enqueue(),
                             Command::Filter => Message::PaneShowInlineFilter.enqueue(),
                             Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
                             Command::Import => Message::AppShowImportWizard.enqueue(),
                             Command::Order => Message::PaneShowInlineOrder.enqueue(),
                             Command::Query => Message::AppShowSqlQuery.enqueue(),
-                            Command::Quit | Command::Q => Message::Quit.enqueue(),
+                            Command::Quit => Message::Quit.enqueue(),
                             Command::Register => Message::PaneShowTableRegisterer.enqueue(),
                             Command::ScatterPlot => Message::PaneShowScatterPlotWizard.enqueue(),
                             Command::Schema => Message::AppShowSchema.enqueue(),
@@ -101,13 +101,12 @@ impl Component for CommandPalette {
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
     Cast,
-    DataFrameInfo,
     Export,
     Filter,
     Histogram,
     Import,
+    Info,
     Order,
-    Q,
     Query,
     Quit,
     Register,
