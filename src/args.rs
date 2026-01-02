@@ -130,6 +130,7 @@ pub enum Format {
     Fwf,
     Sqlite,
     Excel,
+    Logfmt,
 }
 
 #[derive(Debug, Clone)]

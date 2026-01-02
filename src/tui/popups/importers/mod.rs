@@ -10,6 +10,7 @@ pub mod excel_importer;
 pub mod fwf_importer;
 pub mod json_importer;
 pub mod jsonl_importer;
+pub mod logfmt_importer;
 pub mod parquet_importer;
 pub mod sqlite_importer;
 pub mod tsv_importer;
