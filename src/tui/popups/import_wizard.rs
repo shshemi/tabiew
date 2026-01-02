@@ -8,7 +8,7 @@ use crate::tui::{
     popups::{
         importers::{
             arrow_importer, csv_importer, excel_importer, fwf_importer, json_importer,
-            jsonl_importer, parquet_importer, sqlite_importer, tsv_importer,
+            jsonl_importer, logfmt_importer, parquet_importer, sqlite_importer, tsv_importer,
         },
         wizard::{Wizard, WizardState},
     },
@@ -28,6 +28,7 @@ pub enum State {
     Parquet { parquet: parquet_importer::State },
     Sqlite { sqlite: sqlite_importer::State },
     Tsv { tsv: tsv_importer::State },
+    Logfmt { logfmt: logfmt_importer::State },
 }
 
 impl WizardState for State {
@@ -61,6 +62,9 @@ impl WizardState for State {
                 Some(Formats::Tsv) => Self::Tsv {
                     tsv: Default::default(),
                 },
+                Some(Formats::Logfmt) => Self::Logfmt {
+                    logfmt: Default::default(),
+                },
                 None => todo!(),
             },
             State::Arrow { arrow } => State::Arrow {
@@ -82,6 +86,9 @@ impl WizardState for State {
                 sqlite: sqlite.next(),
             },
             State::Tsv { tsv } => State::Tsv { tsv: tsv.next() },
+            State::Logfmt { logfmt } => State::Logfmt {
+                logfmt: logfmt.next(),
+            },
         }
     }
 
@@ -97,6 +104,7 @@ impl WizardState for State {
             State::Parquet { parquet } => parquet.responder(),
             State::Sqlite { sqlite } => sqlite.responder(),
             State::Tsv { tsv } => tsv.responder(),
+            State::Logfmt { logfmt } => logfmt.responder(),
         }
     }
 }
@@ -120,6 +128,7 @@ pub enum Formats {
     Fwf,
     Sqlite,
     Excel,
+    Logfmt,
 }
 
 impl Display for Formats {

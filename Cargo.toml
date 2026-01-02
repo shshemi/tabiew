@@ -98,6 +98,8 @@ strum = "0.27"
 strum_macros = "0.27"
 ryu = "1.0.22"
 itoa = "1.0.17"
+logfmt-zerocopy = "0.1.0"
+indexmap = "2.12.1"
 
 [build-dependencies]
 clap = { version = "4.5.53", features = ["derive"] }

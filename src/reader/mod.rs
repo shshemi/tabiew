@@ -1,10 +1,12 @@
 mod excel;
 mod fwf;
+mod logfmt;
 mod sqlite;
 
 use anyhow::{Ok, anyhow};
 pub use excel::ExcelToDataFarmes;
 pub use fwf::FwfToDataFrame;
+pub use logfmt::LogfmtToDataFrame;
 pub use sqlite::SqliteToDataFrames;
 
 use std::{
@@ -81,6 +83,7 @@ impl BuildReader for Args {
             Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(self))),
             Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames::from_args(self))),
             Some(Format::Excel) => Ok(Box::new(ExcelToDataFarmes::from_args(self))),
+            Some(Format::Logfmt) => Ok(Box::new(LogfmtToDataFrame::from_args(self))),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let mut reader = CsvToDataFrame::from_args(self);
