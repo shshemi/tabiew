@@ -31,6 +31,7 @@ pub struct Table {
     selected: Option<usize>,
     offset: usize,
     rendered_rows: usize,
+    rendered_width: u16,
     column_mode: ColumnMode,
     gutter_mode: GutterMode,
 }
@@ -51,6 +52,7 @@ impl Table {
             col_offsets,
             offset: 0,
             rendered_rows: 0,
+            rendered_width: 0,
             column_mode: ColumnMode::Compact,
             striped: false,
             show_header: false,
@@ -147,7 +149,13 @@ impl Table {
     pub fn toggle_view_mode(&mut self) {
         self.column_mode = match self.column_mode {
             ColumnMode::Compact => ColumnMode::Expanded(0),
-            ColumnMode::Expanded(_) => ColumnMode::Compact,
+            ColumnMode::Expanded(_) => {
+                if self.minimum_compact_width() <= self.rendered_width {
+                    ColumnMode::Compact
+                } else {
+                    self.column_mode
+                }
+            }
         }
     }
 
@@ -288,6 +296,7 @@ impl Component for Table {
             area.height
         } as usize;
         self.rendered_rows = height;
+        self.rendered_width = area.width;
 
         if let Some(selected) = self.selected {
             self.offset = self
