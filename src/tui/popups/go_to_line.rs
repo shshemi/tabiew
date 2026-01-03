@@ -82,28 +82,3 @@ impl Component for GoToLine {
         }
     }
 }
-
-// #[derive(Debug, Default)]
-// pub struct GoToLine {}
-
-// impl StatefulWidget for GoToLine {
-//     type State = GoToLineState;
-
-//     fn render(
-//         self,
-//         _: ratatui::prelude::Rect,
-//         buf: &mut ratatui::prelude::Buffer,
-//         state: &mut Self::State,
-//     ) {
-//         let [area, _] = Layout::horizontal([Constraint::Length(32), Constraint::Length(1)])
-//             .flex(Flex::End)
-//             .areas(buf.area);
-//         let [_, area] =
-//             Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
-//         Clear.render(area, buf);
-
-//         Input::default()
-//             .block(Block::default().title("Go to Line"))
-//             .render(area, buf, &mut state.input);
-//     }
-// }
