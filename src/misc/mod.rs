@@ -11,4 +11,3 @@ pub mod snake_case_name_gen;
 pub mod sql;
 pub mod type_ext;
 pub mod type_inferer;
-pub mod vec_map;

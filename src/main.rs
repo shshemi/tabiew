@@ -1,4 +1,5 @@
 use clap::{CommandFactory, Parser};
+use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use ratatui::backend::CrosstermBackend;
@@ -14,7 +15,6 @@ use tabiew::misc::globals::sql;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
-use tabiew::misc::vec_map::VecMap;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
@@ -42,7 +42,7 @@ fn main() {
     let mut name_dfs = Vec::new();
 
     // Load multiparts to data frames
-    let mut multiparts = VecMap::<Arc<Schema>, (String, DataFrame)>::new();
+    let mut multiparts = IndexMap::<Arc<Schema>, (String, DataFrame)>::new();
     for path in args.multiparts.iter() {
         for (name, new_df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
             let schema = new_df.schema().clone();

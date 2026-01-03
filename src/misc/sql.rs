@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use indexmap::IndexMap;
 use polars::{
     error::PolarsResult,
     frame::DataFrame,
@@ -10,7 +11,7 @@ use polars_sql::SQLContext;
 
 use crate::misc::snake_case_name_gen::SnakeCaseNameGenExt;
 
-use super::{polars_ext::AnyValueExt, vec_map::VecMap};
+use super::polars_ext::AnyValueExt;
 
 const DEFAULT_TABLE_NAME: &str = "_";
 
@@ -75,7 +76,7 @@ impl Default for SqlBackend {
 
 #[derive(Debug, Default)]
 pub struct BackendSchema {
-    schema: VecMap<String, TableInfo>,
+    schema: IndexMap<String, TableInfo>,
 }
 
 impl BackendSchema {
@@ -84,13 +85,13 @@ impl BackendSchema {
     }
 
     pub fn remove(&mut self, name: &str) {
-        self.schema.remove(name);
+        self.schema.shift_remove(name);
     }
 
     pub fn available_name(&self, preferred: &str) -> String {
         preferred
             .snake_case_names()
-            .find(|name| !self.schema.contains(name) && name != DEFAULT_TABLE_NAME)
+            .find(|name| !self.schema.contains_key(name) && name != DEFAULT_TABLE_NAME)
             .expect("Unable to find a name")
     }
 
@@ -99,7 +100,7 @@ impl BackendSchema {
     }
 
     pub fn get_by_index(&self, idx: usize) -> Option<(&String, &TableInfo)> {
-        self.schema.get_by_index(idx)
+        self.schema.get_index(idx)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&String, &TableInfo)> {
@@ -191,7 +192,7 @@ impl From<crate::reader::Source> for Source {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableSchema {
-    schema: VecMap<String, FieldInfo>,
+    schema: IndexMap<String, FieldInfo>,
 }
 
 impl TableSchema {
