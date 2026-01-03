@@ -65,7 +65,7 @@ impl WizardState for State {
                 Some(Formats::Logfmt) => Self::Logfmt {
                     logfmt: Default::default(),
                 },
-                None => todo!(),
+                None => State::PickFormat { picker },
             },
             State::Arrow { arrow } => State::Arrow {
                 arrow: arrow.next(),
