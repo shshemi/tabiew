@@ -18,7 +18,3 @@ pub mod widgets;
 
 pub use pane::Pane;
 pub use terminal::Terminal;
-
-// pub mod themes {
-//     pub use super::theme::{Argonaut, Catppuccin, Monokai, Nord, Terminal, TokyoNight};
-// }

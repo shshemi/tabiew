@@ -94,7 +94,6 @@ where
                             if value == pat {
                                 Some((idx, i64::MAX))
                             } else {
-                                // matcher.fuzzy_match(&value, &pat).map(|score| (idx, score))
                                 matcher.score(&value, &pat).map(|score| (idx, score))
                             }
                         })
