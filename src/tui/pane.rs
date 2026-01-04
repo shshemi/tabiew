@@ -432,6 +432,12 @@ impl Component for Pane {
             Message::PaneShowColumnCasterWizard if focus_state.is_focused() => {
                 self.show_column_caster_wizard()
             }
+            Message::PaneShowSearch if focus_state.is_focused() => {
+                self.show_exact_search();
+            }
+            Message::PaneShowFuzzySearch if focus_state.is_focused() => {
+                self.show_fuzzy_search();
+            }
             _ => (),
         }
     }

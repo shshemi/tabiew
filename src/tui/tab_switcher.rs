@@ -8,7 +8,11 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     handler::message::Message,
     misc::config::theme,
-    tui::{component::Component, widgets::block::Block},
+    tui::{
+        component::Component,
+        status_bar::{StatusBar, Tag},
+        widgets::block::Block,
+    },
 };
 
 #[derive(Debug)]
@@ -96,7 +100,12 @@ impl Component for TabSwitcher {
                 Constraint::Length(text_width),
             ])
             .column_spacing(1)
-            .block(Block::default().title(self.title.as_str()).into_widget());
+            .block(
+                Block::default()
+                    .title(self.title.as_str())
+                    .bottom(StatusBar::new().mono_color().tag(Tag::new("Open", "Enter")))
+                    .into_widget(),
+            );
         if focus_state.is_focused() {
             StatefulWidget::render(table, area, buf, &mut self.list_state);
         } else {
