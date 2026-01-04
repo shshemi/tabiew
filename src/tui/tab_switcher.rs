@@ -10,7 +10,7 @@ use crate::{
     misc::config::theme,
     tui::{
         component::Component,
-        status_bar::{StatusBar, Tag},
+        tag_line::{Tag, TagLine},
         widgets::block::Block,
     },
 };
@@ -103,7 +103,7 @@ impl Component for TabSwitcher {
             .block(
                 Block::default()
                     .title(self.title.as_str())
-                    .bottom(StatusBar::new().mono_color().tag(Tag::new("Open", "Enter")))
+                    .bottom(TagLine::new().mono_color().tag(Tag::new("Open", "Enter")))
                     .into_widget(),
             );
         if focus_state.is_focused() {

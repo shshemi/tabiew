@@ -9,7 +9,7 @@ use crate::{
     misc::{config::theme, globals::sql},
     tui::{
         component::Component,
-        status_bar::{StatusBar, Tag},
+        tag_line::{Tag, TagLine},
         widgets::block::Block,
     },
 };
@@ -76,7 +76,7 @@ impl Component for DataFrameNames {
                 Block::default()
                     .title("Tables")
                     .bottom(
-                        StatusBar::new()
+                        TagLine::new()
                             .mono_color()
                             .centered()
                             .tag(Tag::new(" Open ", " Enter"))

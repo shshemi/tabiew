@@ -1,4 +1,5 @@
 use crossterm::event::{KeyCode, KeyModifiers};
+use itertools::Itertools;
 use ratatui::widgets::{Borders, Widget};
 
 use crate::{
@@ -13,8 +14,8 @@ use crate::{
 
 use super::{
     pane::Pane,
-    status_bar::{StatusBar, Tag},
     tab_switcher::TabSwitcher,
+    tag_line::{Tag, TagLine},
 };
 
 #[derive(Debug)]
@@ -103,16 +104,23 @@ impl Component for Tabs {
         let status_bar = self
             .panes
             .get(self.idx)
-            .map(|tabular| {
-                StatusBar::default()
-                    .tag(match tabular.description() {
-                        TableDescription::Table(desc) => Tag::new("Table", desc),
-                        TableDescription::Query(desc) => Tag::new("Query", desc),
-                        TableDescription::Filter(desc) => Tag::new("Filter", desc),
-                        TableDescription::Order(desc) => Tag::new("Order", desc),
-                        TableDescription::Select(desc) => Tag::new("Select", desc),
-                        TableDescription::Cast(desc) => Tag::new("Cast", desc),
+            .map(|pane| {
+                let status_bar = TagLine::default();
+                let key = pane
+                    .iter_descriptions()
+                    .map(|desc| match desc {
+                        TableDescription::Table(_) => "Table",
+                        TableDescription::Query(_) => "Query",
+                        TableDescription::Filter(_) => "Filter",
+                        TableDescription::Order(_) => "Order",
+                        TableDescription::Select(_) => "Select",
+                        TableDescription::Cast(_) => "Cast",
                     })
+                    .join(" > ");
+                let value = pane.description().title();
+                status_bar
+                    .left_aligned()
+                    .tag(Tag::new(key, value))
                     .tag(Tag::new(
                         "Tab",
                         format!("{} / {}", self.idx + 1, self.len()),
@@ -121,16 +129,16 @@ impl Component for Tabs {
                         "Row",
                         format!(
                             "{:>width$}",
-                            tabular.table().selected().unwrap_or_default() + 1,
-                            width = tabular.table().data_frame().height().to_string().len()
+                            pane.table().selected().unwrap_or_default() + 1,
+                            width = pane.table().data_frame().height().to_string().len()
                         ),
                     ))
                     .tag(Tag::new(
                         "Shape",
                         format!(
                             "{} x {}",
-                            tabular.table().data_frame().height(),
-                            tabular.table().data_frame().width()
+                            pane.table().data_frame().height(),
+                            pane.table().data_frame().width()
                         ),
                     ))
             })

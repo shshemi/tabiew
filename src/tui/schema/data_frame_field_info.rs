@@ -9,7 +9,7 @@ use crate::{
     misc::{config::theme, sql::TableSchema, type_ext::human_readable_size},
     tui::{
         component::Component,
-        status_bar::{StatusBar, Tag},
+        tag_line::{Tag, TagLine},
         widgets::block::Block,
     },
 };
@@ -98,7 +98,7 @@ impl Component for DataFrameFieldInfo {
                     Block::default()
                         .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
                         .bottom(
-                            StatusBar::new()
+                            TagLine::new()
                                 .mono_color()
                                 .centered()
                                 .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))

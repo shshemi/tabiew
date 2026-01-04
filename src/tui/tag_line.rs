@@ -9,19 +9,13 @@ use ratatui::{
 use crate::misc::config::theme;
 
 #[derive(Debug)]
-pub enum StatusBarStyle {
-    MultiColor,
-    MonoColor,
-}
-
-#[derive(Debug)]
-pub struct StatusBar<'a, 'b> {
+pub struct TagLine<'a, 'b> {
     tags: Vec<Tag<'a, 'b>>,
     style: StatusBarStyle,
     alignment: Alignment,
 }
 
-impl<'a, 'b> StatusBar<'a, 'b> {
+impl<'a, 'b> TagLine<'a, 'b> {
     pub fn new() -> Self {
         Self {
             tags: Default::default(),
@@ -61,14 +55,14 @@ impl<'a, 'b> StatusBar<'a, 'b> {
     }
 }
 
-impl Default for StatusBar<'_, '_> {
+impl Default for TagLine<'_, '_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl From<StatusBar<'_, '_>> for Line<'_> {
-    fn from(value: StatusBar) -> Self {
+impl From<TagLine<'_, '_>> for Line<'_> {
+    fn from(value: TagLine) -> Self {
         Line::from_iter(
             itertools::intersperse(
                 value
@@ -85,6 +79,12 @@ impl From<StatusBar<'_, '_>> for Line<'_> {
         )
         .alignment(value.alignment)
     }
+}
+
+#[derive(Debug)]
+pub enum StatusBarStyle {
+    MultiColor,
+    MonoColor,
 }
 
 #[derive(Debug)]
