@@ -164,29 +164,6 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 |`reset`| `reset`| Reset the table to the original data frame|
 |`help`| `help`| Show command reference in a new tab|
 
-
-## Themes
-
-### Monokai (default):
-
-![Image Alt text](images/theme-monokai.png "Monokai")
-
-### Argonaut:
-
-![Image Alt text](images/theme-argonaut.png "Argonaut")
-
-### Nord:
-
-![Image Alt text](images/theme-nord.png "Nord")
-
-### Catppuccin:
-
-![Image Alt text](images/theme-catppuccin.png "Catppuccin")
-
-### Tokyo Night:
-
-![Image Alt text](images/theme-tokyo-night.png "Tokyo Night")
-
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit pull requests with your features and bug fixes.
