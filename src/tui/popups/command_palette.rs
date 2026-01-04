@@ -84,6 +84,8 @@ impl Component for CommandPalette {
                                 config().toggle_show_table_row_numbers();
                                 config().store().unwrap_or_enqueue_error();
                             }
+                            Command::FuzzySearch => Message::PaneShowFuzzySearch.enqueue(),
+                            Command::Search => Message::PaneShowSearch.enqueue(),
                         }
                     }
                     true
@@ -103,6 +105,7 @@ enum Command {
     Cast,
     Export,
     Filter,
+    FuzzySearch,
     Histogram,
     Import,
     Info,
@@ -111,6 +114,7 @@ enum Command {
     Quit,
     Register,
     ScatterPlot,
+    Search,
     Schema,
     Select,
     Sort,
