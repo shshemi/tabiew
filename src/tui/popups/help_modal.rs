@@ -9,7 +9,7 @@ use crate::{
     misc::config::theme,
     tui::{
         component::Component,
-        status_bar::{StatusBar, Tag},
+        tag_line::{Tag, TagLine},
         widgets::block::Block,
     },
 };
@@ -221,7 +221,7 @@ impl Component for Help {
                 Block::default()
                     .title("Help")
                     .bottom(
-                        StatusBar::new()
+                        TagLine::new()
                             .mono_color()
                             .centered()
                             .tag(Tag::new(" Close ", " ESC | q ")),

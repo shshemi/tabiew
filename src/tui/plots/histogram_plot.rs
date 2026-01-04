@@ -12,7 +12,7 @@ use crate::{
     misc::config::theme,
     tui::{
         component::Component,
-        status_bar::{StatusBar, Tag},
+        tag_line::{Tag, TagLine},
         widgets::block::Block,
     },
 };
@@ -56,7 +56,7 @@ impl Component for HistogramPlot {
                 .title("Histogram Plot")
                 .title_alignment(Alignment::Center)
                 .bottom(
-                    StatusBar::default()
+                    TagLine::default()
                         .mono_color()
                         .centered()
                         .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))

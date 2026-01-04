@@ -10,7 +10,7 @@ use crate::{
     misc::config::theme,
     tui::{
         component::Component,
-        status_bar::{StatusBar, Tag},
+        tag_line::{Tag, TagLine},
         utils::Scroll,
         widgets::block::Block,
     },
@@ -92,7 +92,7 @@ impl Component for Sheet {
         .block(
             Block::default()
                 .bottom(
-                    StatusBar::new()
+                    TagLine::new()
                         .mono_color()
                         .centered()
                         .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
