@@ -10,7 +10,11 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     handler::message::Message,
     misc::config::theme,
-    tui::{component::Component, widgets::block::Block},
+    tui::{
+        component::Component,
+        status_bar::{StatusBar, Tag},
+        widgets::block::Block,
+    },
 };
 
 #[derive(Debug)]
@@ -50,7 +54,14 @@ impl Component for HistogramPlot {
         let area = {
             let blk = Block::default()
                 .title("Histogram Plot")
-                .title_alignment(Alignment::Center);
+                .title_alignment(Alignment::Center)
+                .bottom(
+                    StatusBar::default()
+                        .mono_color()
+                        .centered()
+                        .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
+                        .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
+                );
             let new_area = blk.inner(area);
             blk.render(area, buf);
             new_area
@@ -77,15 +88,11 @@ impl Component for HistogramPlot {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
-            (KeyCode::Up, KeyModifiers::NONE)
-            | (KeyCode::Char('k'), KeyModifiers::NONE)
-            | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+            (KeyCode::Up, KeyModifiers::SHIFT) | (KeyCode::Char('K'), KeyModifiers::SHIFT) => {
                 self.scroll_up();
                 true
             }
-            (KeyCode::Down, KeyModifiers::NONE)
-            | (KeyCode::Char('j'), KeyModifiers::NONE)
-            | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+            (KeyCode::Down, KeyModifiers::SHIFT) | (KeyCode::Char('J'), KeyModifiers::SHIFT) => {
                 self.scroll_down();
                 true
             }
