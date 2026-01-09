@@ -158,7 +158,6 @@ fn parse_width(widths: impl AsRef<str>) -> AppResult<Vec<usize>> {
 fn infer_widths(space_indices: Vec<usize>) -> Vec<usize> {
     let mut indices = Vec::default();
     let mut start = 0;
-    // let chars = line.chars().collect_vec();
     for (i, idx) in space_indices.iter().enumerate() {
         if let Some(nidx) = space_indices.get(i + 1) {
             if nidx - idx > 1 {
