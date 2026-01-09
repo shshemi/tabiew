@@ -1,6 +1,7 @@
 use crate::tui::Pane;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
+use crate::tui::toast::Toast;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
 use crate::{
     handler::message::Message,
@@ -19,6 +20,7 @@ pub struct App {
     tabs: Tabs,
     overlay: Option<Overlay>,
     schema: Option<Schema>,
+    toast: Option<Toast>,
     running: bool,
 }
 
@@ -28,6 +30,7 @@ impl App {
             tabs,
             overlay: None,
             schema: None,
+            toast: None,
             running: true,
         }
     }
@@ -46,6 +49,10 @@ impl App {
 
     fn show_error(&mut self, message: impl Into<String>) {
         self.overlay = Some(Overlay::Error(ErrorPopup::new(message)));
+    }
+
+    fn show_toast(&mut self, message: impl Into<String>) {
+        self.toast = Some(Toast::new(message));
     }
 
     fn show_import_wizard(&mut self) {
@@ -102,6 +109,10 @@ impl Component for App {
                 self.tabs.render(area, buf, FocusState::Focused);
             }
         }
+
+        if let Some(toast) = self.toast.as_mut() {
+            toast.render(area, buf, FocusState::NotFocused);
+        }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
@@ -129,6 +140,7 @@ impl Component for App {
             Message::Quit => self.quit(),
             Message::AppDismissOverlay => self.dismiss_overlay(),
             Message::AppShowError(message) => self.show_error(message),
+            Message::AppShowToast(message) => self.show_toast(message),
             Message::AppShowCommandPicker => self.show_palette(),
             Message::AppShowThemeSelector => self.show_theme_selector(),
             Message::AppShowSchema => self.show_schema(),
@@ -160,6 +172,11 @@ impl Component for App {
     fn tick(&mut self) {
         if let Some(overlay) = self.overlay.as_mut() {
             overlay.responder().tick();
+        }
+        if let Some(toast) = self.toast.as_mut()
+            && toast.is_finished()
+        {
+            self.toast.take();
         }
         self.tabs.tick();
     }

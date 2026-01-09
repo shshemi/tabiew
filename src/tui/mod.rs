@@ -13,6 +13,7 @@ pub mod tabs;
 pub mod tag_line;
 pub mod terminal;
 pub mod themes;
+pub mod toast;
 mod utils;
 pub mod widgets;
 

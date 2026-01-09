@@ -12,6 +12,7 @@ pub enum Message {
     AppDismissOverlay,
     AppShowCommandPicker,
     AppShowError(String),
+    AppShowToast(String),
     AppShowThemeSelector,
     AppShowSchema,
     AppShowImportWizard,
