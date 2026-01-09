@@ -146,16 +146,19 @@ impl Table {
         }
     }
 
+    pub fn fits_in_page(&self) -> bool {
+        self.minimum_compact_width() <= self.rendered_width
+    }
+
     pub fn toggle_view_mode(&mut self) {
-        self.column_mode = match self.column_mode {
-            ColumnMode::Compact => ColumnMode::Expanded(0),
-            ColumnMode::Expanded(_) => {
-                if self.minimum_compact_width() <= self.rendered_width {
-                    ColumnMode::Compact
-                } else {
-                    self.column_mode
-                }
+        match self.column_mode {
+            ColumnMode::Compact => {
+                self.column_mode = ColumnMode::Expanded(0);
             }
+            ColumnMode::Expanded(_) if self.fits_in_page() => {
+                self.column_mode = ColumnMode::Compact;
+            }
+            _ => (),
         }
     }
 

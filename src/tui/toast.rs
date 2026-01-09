@@ -25,7 +25,7 @@ impl Toast {
     }
 
     pub fn is_finished(&self) -> bool {
-        self.start.elapsed() > Duration::from_secs(1)
+        self.start.elapsed() > Duration::from_secs(3)
     }
 }
 

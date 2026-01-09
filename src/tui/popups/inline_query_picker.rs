@@ -74,6 +74,11 @@ impl Component for InlineQueryPicker {
                                 TableDescription::Select(self.value().to_owned()),
                             )
                             .enqueue();
+                            Message::AppShowToast(format!(
+                                "Column selection '{}' occured",
+                                self.value()
+                            ))
+                            .enqueue();
                         }
                         (Ok(df), QueryType::Order) => {
                             Message::PaneDismissModal.enqueue();
@@ -81,6 +86,11 @@ impl Component for InlineQueryPicker {
                                 df,
                                 TableDescription::Order(self.value().to_owned()),
                             )
+                            .enqueue();
+                            Message::AppShowToast(format!(
+                                "Data frame ordered by '{}'",
+                                self.value()
+                            ))
                             .enqueue();
                         }
                         (Ok(df), QueryType::Filter) => {
@@ -90,6 +100,8 @@ impl Component for InlineQueryPicker {
                                 TableDescription::Filter(self.value().to_owned()),
                             )
                             .enqueue();
+                            Message::AppShowToast(format!("Filter '{}' applied", self.value()))
+                                .enqueue();
                         }
                         (Err(err), _) => {
                             Message::PaneDismissModal.enqueue();

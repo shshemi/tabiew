@@ -55,11 +55,18 @@ impl WizardState for State {
                 if let Some(target_type) = picker.selected_item() {
                     Message::PaneDismissModal.enqueue();
                     match cast_column(&mut df, &col_name, *target_type) {
-                        Ok(_) => Message::PanePushDataFrame(
-                            df.clone(),
-                            TableDescription::Cast(format!("'{col_name}' as {target_type}")),
-                        )
-                        .enqueue(),
+                        Ok(_) => {
+                            Message::PanePushDataFrame(
+                                df.clone(),
+                                TableDescription::Cast(format!("'{col_name}' as {target_type}")),
+                            )
+                            .enqueue();
+                            Message::AppShowToast(format!(
+                                "Column '{}' were casted to '{}'",
+                                col_name, target_type
+                            ))
+                            .enqueue();
+                        }
                         Err(err) => Message::AppShowError(err.to_string()).enqueue(),
                     }
                 }
