@@ -10,6 +10,7 @@ pub use logfmt::LogfmtToDataFrame;
 pub use sqlite::SqliteToDataFrames;
 
 use std::{
+    borrow::Cow,
     ffi::OsStr,
     fs::File,
     path::{Path, PathBuf},
@@ -46,6 +47,13 @@ impl Source {
                 .unwrap_or("unknown".into())
                 .into_owned(),
             Source::Stdin => String::from("Stdin"),
+        }
+    }
+
+    pub fn display_path(&self) -> Cow<'_, str> {
+        match self {
+            Source::File(path_buf) => path_buf.file_name().unwrap_or_default().to_string_lossy(),
+            Source::Stdin => Cow::Borrowed("Stdin"),
         }
     }
 }
