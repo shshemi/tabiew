@@ -32,6 +32,11 @@ impl WizardState for State {
                     .write_to_file(Destination::File(picker.path()), &mut df)
                     .unwrap_or_enqueue_error();
                 Message::PaneDismissModal.enqueue();
+                Message::AppShowToast(format!(
+                    "Data frame exported to '{}' in Arrow format",
+                    picker.path().to_string_lossy()
+                ))
+                .enqueue();
                 Self::PickOutputPath { df, picker }
             }
         }

@@ -51,6 +51,10 @@ impl WizardState for State {
                         .write_to_file(Destination::Clipboard, &mut df)
                         .unwrap_or_enqueue_error();
                     Message::PaneDismissModal.enqueue();
+                    Message::AppShowToast(
+                        "Data frame exported to clipboard in TSV format".to_owned(),
+                    )
+                    .enqueue();
                     State::PickOutputTarget { df, picker }
                 }
                 None => State::PickOutputTarget { df, picker },
@@ -63,6 +67,11 @@ impl WizardState for State {
                     .write_to_file(Destination::File(picker.path()), &mut df)
                     .unwrap_or_enqueue_error();
                 Message::PaneDismissModal.enqueue();
+                Message::AppShowToast(format!(
+                    "Data frame exported to '{}' in TSV format",
+                    picker.path().to_string_lossy()
+                ))
+                .enqueue();
                 State::PickOutputPath { df, picker }
             }
         }
