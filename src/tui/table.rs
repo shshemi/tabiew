@@ -62,6 +62,30 @@ impl Table {
         }
     }
 
+    pub fn clone_with_data_frame(&self, df: DataFrame) -> Self {
+        let col_widths = df
+            .widths()
+            .into_iter()
+            .map(|u| Constraint::Length(u as u16))
+            .collect_vec();
+        let col_offsets = col_offsets(&col_widths, self.col_space);
+        let gutter_width = df.height().to_string().len() as u16;
+        Self {
+            df,
+            col_widths,
+            col_offsets,
+            offset: 0,
+            selected: None,
+            rendered_rows: self.rendered_rows,
+            rendered_width: self.rendered_width,
+            column_mode: self.column_mode,
+            striped: self.striped,
+            show_header: self.show_header,
+            gutter_mode: GutterMode::Visible(gutter_width),
+            col_space: self.col_space,
+        }
+    }
+
     pub fn striped(self) -> Self {
         Self {
             striped: true,
