@@ -106,18 +106,8 @@ impl Component for Tabs {
             .get(self.idx)
             .map(|pane| {
                 let status_bar = TagLine::default();
-                let key = pane
-                    .iter_descriptions()
-                    .map(|desc| match desc {
-                        TableDescription::Table(_) => "Table",
-                        TableDescription::Query(_) => "Query",
-                        TableDescription::Filter(_) => "Filter",
-                        TableDescription::Order(_) => "Order",
-                        TableDescription::Select(_) => "Select",
-                        TableDescription::Cast(_) => "Cast",
-                    })
-                    .join(" > ");
-                let value = pane.description().title();
+                let key = pane.description().variant();
+                let value = pane.description().description();
                 status_bar
                     .left_aligned()
                     .tag(Tag::new(key, value))
@@ -142,7 +132,8 @@ impl Component for Tabs {
                         ),
                     ))
             })
-            .unwrap_or_default();
+            .unwrap_or_default()
+            .right_aligned();
 
         // render block with status bar
         let area = {

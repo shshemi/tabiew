@@ -199,7 +199,7 @@ impl Pane {
     }
 
     pub fn title(&self) -> &str {
-        self.dstack.base().title()
+        self.dstack.base().description()
     }
 }
 
@@ -510,7 +510,17 @@ pub enum TableDescription {
     Cast(String),
 }
 impl TableDescription {
-    pub(crate) fn title(&self) -> &str {
+    pub fn variant(&self) -> &str {
+        match self {
+            TableDescription::Table(_) => "Table",
+            TableDescription::Query(_) => "Query",
+            TableDescription::Filter(_) => "Filter",
+            TableDescription::Order(_) => "Order",
+            TableDescription::Select(_) => "Select",
+            TableDescription::Cast(_) => "Cast",
+        }
+    }
+    pub fn description(&self) -> &str {
         match self {
             TableDescription::Table(desc)
             | TableDescription::Query(desc)
