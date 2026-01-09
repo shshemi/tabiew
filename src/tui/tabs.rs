@@ -1,5 +1,5 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use itertools::Itertools;
+
 use ratatui::widgets::{Borders, Widget};
 
 use crate::{
