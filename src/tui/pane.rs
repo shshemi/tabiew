@@ -41,7 +41,14 @@ impl Pane {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, description: TableDescription) -> Self {
         Self {
-            tstack: NonEmptyStack::new(table(data_frame)),
+            tstack: NonEmptyStack::new(
+                Table::new(data_frame)
+                    .striped()
+                    .with_selected(0)
+                    .with_show_header(true)
+                    .with_col_space(2)
+                    .with_extended_column(),
+            ),
             dstack: NonEmptyStack::new(description),
             modal: None,
         }
@@ -177,7 +184,8 @@ impl Pane {
     }
 
     fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
-        self.tstack.push(table(df));
+        self.tstack
+            .push(self.tstack.last().clone_with_data_frame(df));
         self.dstack.push(description);
     }
 
@@ -530,13 +538,4 @@ impl TableDescription {
             | TableDescription::Cast(desc) => desc,
         }
     }
-}
-
-fn table(df: DataFrame) -> Table {
-    Table::new(df)
-        .striped()
-        .with_selected(0)
-        .with_show_header(true)
-        .with_col_space(2)
-        .with_extended_column()
 }
