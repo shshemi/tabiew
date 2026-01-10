@@ -58,15 +58,6 @@ impl Source {
     }
 }
 
-impl From<String> for Source {
-    fn from(value: String) -> Self {
-        match value.as_str() {
-            "$stdin" => Source::File(value.into()),
-            _ => Source::Stdin,
-        }
-    }
-}
-
 pub trait ReadToDataFrames {
     fn named_frames(&self, input: Source) -> AppResult<NamedFrames>;
 }
