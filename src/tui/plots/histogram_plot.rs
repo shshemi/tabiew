@@ -28,7 +28,7 @@ impl HistogramPlot {
     pub fn new(data: Vec<(String, u64)>) -> Self {
         Self {
             offset: 0,
-            max_value: data.first().map(|(_, v)| *v).unwrap_or_default(),
+            max_value: data.iter().map(|(_, v)| *v).max().unwrap_or_default(),
             bars: bars_from_data(data),
         }
     }
