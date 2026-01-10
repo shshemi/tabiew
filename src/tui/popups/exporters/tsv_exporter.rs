@@ -8,7 +8,7 @@ use crate::{
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
-            wizard::WizardState,
+            step_by_step::StepByStepState,
         },
     },
     writer::{Destination, WriteToCsv, WriteToFile},
@@ -35,7 +35,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickOutputTarget { mut df, picker } => match picker.selected() {

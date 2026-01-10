@@ -14,11 +14,11 @@ use crate::{
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::wizard::{Wizard, WizardState},
+        popups::step_by_step::{StepByStep, StepByStepState},
     },
 };
 
-pub type ColumnCastWizard = Wizard<State>;
+pub type ColumnCaster = StepByStep<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -33,7 +33,7 @@ pub enum State {
     },
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { df, picker } => {

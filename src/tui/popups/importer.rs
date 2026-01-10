@@ -10,11 +10,11 @@ use crate::tui::{
             arrow_importer, csv_importer, excel_importer, fwf_importer, json_importer,
             jsonl_importer, logfmt_importer, parquet_importer, sqlite_importer, tsv_importer,
         },
-        wizard::{Wizard, WizardState},
+        step_by_step::{StepByStep, StepByStepState},
     },
 };
 
-pub type ImportWizard = Wizard<State>;
+pub type Importer = StepByStep<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -31,7 +31,7 @@ pub enum State {
     Logfmt { logfmt: logfmt_importer::State },
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { picker } => match picker.selected_item() {

@@ -61,17 +61,17 @@ impl Component for CommandPalette {
                     Message::AppDismissOverlay.enqueue();
                     if let Some(item) = self.picker.selected_item() {
                         match item {
-                            Command::Cast => Message::PaneShowColumnCasterWizard.enqueue(),
+                            Command::Cast => Message::PaneShowColumnCaster.enqueue(),
                             Command::Info => Message::PaneShowTableInfo.enqueue(),
-                            Command::Export => Message::PaneShowExportWizard.enqueue(),
+                            Command::Export => Message::PaneShowExporter.enqueue(),
                             Command::Filter => Message::PaneShowInlineFilter.enqueue(),
-                            Command::Histogram => Message::PaneShowHistogramWizard.enqueue(),
-                            Command::Import => Message::AppShowImportWizard.enqueue(),
+                            Command::Histogram => Message::PaneShowHistogramBuilder.enqueue(),
+                            Command::Import => Message::AppShowImporter.enqueue(),
                             Command::Order => Message::PaneShowInlineOrder.enqueue(),
                             Command::Query => Message::AppShowSqlQuery.enqueue(),
                             Command::Quit => Message::Quit.enqueue(),
                             Command::Register => Message::PaneShowTableRegisterer.enqueue(),
-                            Command::ScatterPlot => Message::PaneShowScatterPlotWizard.enqueue(),
+                            Command::ScatterPlot => Message::PaneShowScatterPlotBuilder.enqueue(),
                             Command::Schema => Message::AppShowSchema.enqueue(),
                             Command::Select => Message::PaneShowInlineSelect.enqueue(),
                             Command::Sort => Message::PaneShowInlineOrder.enqueue(),

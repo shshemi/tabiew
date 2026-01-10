@@ -4,7 +4,7 @@ use crate::{
     reader::{Source, SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
-        popups::{importers::final_step, path_picker::PathPicker, wizard::WizardState},
+        popups::{importers::final_step, path_picker::PathPicker, step_by_step::StepByStepState},
     },
 };
 
@@ -14,7 +14,7 @@ pub enum State {
     PickPassword { path: PathBuf, picker: TextPicker },
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickPath { picker } => State::PickPassword {

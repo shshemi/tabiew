@@ -4,11 +4,11 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::search_picker::SearchPicker,
-        popups::wizard::{Wizard, WizardState},
+        popups::step_by_step::{StepByStep, StepByStepState},
     },
 };
 
-pub type ScatterPlotWizard = Wizard<State>;
+pub type ScatterPlotBuilder = StepByStep<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -42,7 +42,7 @@ impl State {
     }
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickX { df, picker } => {

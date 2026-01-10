@@ -6,14 +6,14 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::wizard::{Wizard, WizardState},
+        popups::step_by_step::{StepByStep, StepByStepState},
         widgets::input::InputType,
     },
 };
 
 const DEFAULT_BUCKET_COUNT: &str = "24";
 
-pub type HistogramWizard = Wizard<State>;
+pub type HistogramBuilder = StepByStep<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -43,7 +43,7 @@ impl State {
     }
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { picker } => {
