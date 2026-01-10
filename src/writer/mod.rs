@@ -15,18 +15,6 @@ pub enum Destination {
     Clipboard,
 }
 
-impl<T> From<T> for Destination
-where
-    T: AsRef<str>,
-{
-    fn from(value: T) -> Self {
-        match value.as_ref() {
-            "$clipboard" => Destination::Clipboard,
-            _ => Destination::File(value.as_ref().into()),
-        }
-    }
-}
-
 pub trait WriteToFile {
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()>;
 }
