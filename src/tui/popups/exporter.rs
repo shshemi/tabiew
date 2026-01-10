@@ -12,11 +12,11 @@ use crate::tui::{
             arrow_exporter, csv_exporter, json_exporter, jsonl_exporter, parquet_exporter,
             tsv_exporter,
         },
-        wizard::{Wizard, WizardState},
+        step_by_step::{StepByStep, StepByStepState},
     },
 };
 
-pub type ExportWizard = Wizard<State>;
+pub type Exporter = StepByStep<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -53,7 +53,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { df, picker } => match picker.selected_item() {

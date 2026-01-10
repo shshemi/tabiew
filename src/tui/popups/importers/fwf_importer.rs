@@ -6,7 +6,7 @@ use crate::{
             import_source_picker::{self, ImportSourcePicker},
             importers::final_step,
             path_picker::PathPicker,
-            wizard::WizardState,
+            step_by_step::StepByStepState,
             yes_no_picker::YesNoPicker,
         },
         widgets::input::InputType,
@@ -45,7 +45,7 @@ pub enum State {
     },
 }
 
-impl WizardState for State {
+impl StepByStepState for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {

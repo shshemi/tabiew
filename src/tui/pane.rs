@@ -16,15 +16,15 @@ use crate::{
         component::{Component, FocusState},
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
-            column_caster_wizard::ColumnCastWizard,
+            column_caster::ColumnCaster,
             data_frame_info::DataFrameInfo,
-            export_wizard::ExportWizard,
+            exporter::Exporter,
             go_to_line::GoToLine,
-            histogram_wizard::{self, HistogramWizard},
+            histogram_builder::{self, HistogramBuilder},
             inline_query_picker::{InlineQueryPicker, QueryType},
-            scatter_plot_wizard::{self, ScatterPlotWizard},
+            scatter_plot_builder::{self, ScatterPlotBuilder},
+            step_by_step::StepByStep,
             table_registerer::TableRegisterer,
-            wizard::Wizard,
         },
         search_bar::Searcher,
         table::Table,
@@ -154,8 +154,8 @@ impl Pane {
         }
     }
 
-    fn show_export_wizard(&mut self) {
-        self.modal = Some(Modal::ExportWizard(ExportWizard::new(
+    fn show_exporter(&mut self) {
+        self.modal = Some(Modal::Exporter(Exporter::new(
             self.tstack.last().data_frame().clone().into(),
         )))
     }
@@ -170,15 +170,15 @@ impl Pane {
         Ok(())
     }
 
-    fn show_histogram_wizard(&mut self) {
-        self.modal = Some(Modal::HistogramWizard(HistogramWizard::new(
-            histogram_wizard::State::new(self.tstack.last().data_frame()),
+    fn show_histogram_builder(&mut self) {
+        self.modal = Some(Modal::HistogramBuilder(HistogramBuilder::new(
+            histogram_builder::State::new(self.tstack.last().data_frame()),
         )))
     }
 
-    fn show_scatter_plot_wizard(&mut self) {
-        self.modal = Some(Modal::ScatterPlotWizard(Wizard::new(
-            scatter_plot_wizard::State::new(self.tstack.last().data_frame().clone()),
+    fn show_scatter_plot_builder(&mut self) {
+        self.modal = Some(Modal::ScatterPlotBuilder(StepByStep::new(
+            scatter_plot_builder::State::new(self.tstack.last().data_frame().clone()),
         )))
     }
 
@@ -188,8 +188,8 @@ impl Pane {
         )));
     }
 
-    fn show_column_caster_wizard(&mut self) {
-        self.modal = Some(Modal::ColumnCasterWizard(ColumnCastWizard::new(
+    fn show_column_caster(&mut self) {
+        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(
             self.tstack.last().data_frame().clone().into(),
         )))
     }
@@ -278,19 +278,19 @@ impl Component for Pane {
                     .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
-            Some(Modal::ExportWizard(state)) => {
+            Some(Modal::Exporter(state)) => {
                 self.tstack
                     .last_mut()
                     .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
-            Some(Modal::HistogramWizard(state)) => {
+            Some(Modal::HistogramBuilder(state)) => {
                 self.tstack
                     .last_mut()
                     .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
-            Some(Modal::ScatterPlotWizard(state)) => {
+            Some(Modal::ScatterPlotBuilder(state)) => {
                 self.tstack
                     .last_mut()
                     .render(area, buf, FocusState::NotFocused);
@@ -302,7 +302,7 @@ impl Component for Pane {
                     .render(area, buf, FocusState::NotFocused);
                 state.render(area, buf, focus_state);
             }
-            Some(Modal::ColumnCasterWizard(state)) => {
+            Some(Modal::ColumnCaster(state)) => {
                 self.tstack
                     .last_mut()
                     .render(area, buf, FocusState::NotFocused);
@@ -322,16 +322,16 @@ impl Component for Pane {
             }
             Some(Modal::GoToLine(go_to_line)) => go_to_line.handle(event),
             Some(Modal::DataFrameInfo(data_frame_info)) => data_frame_info.handle(event),
-            Some(Modal::ExportWizard(export_wizard)) => export_wizard.handle(event),
+            Some(Modal::Exporter(exporter)) => exporter.handle(event),
             Some(Modal::HistogramPlot(histogram_plot)) => histogram_plot.handle(event),
-            Some(Modal::HistogramWizard(histogram_wizard)) => histogram_wizard.handle(event),
+            Some(Modal::HistogramBuilder(histogram_builder)) => histogram_builder.handle(event),
             Some(Modal::InlineQueryPicker(query_picker)) => query_picker.handle(event),
             Some(Modal::ScatterPlot(scatter_plot)) => scatter_plot.handle(event),
             Some(Modal::TableRegisterer(table_registerer)) => table_registerer.handle(event),
-            Some(Modal::ScatterPlotWizard(scatter_plot_wizard)) => {
-                scatter_plot_wizard.handle(event)
+            Some(Modal::ScatterPlotBuilder(scatter_plot_builder)) => {
+                scatter_plot_builder.handle(event)
             }
-            Some(Modal::ColumnCasterWizard(wizard)) => wizard.handle(event),
+            Some(Modal::ColumnCaster(column_caster)) => column_caster.handle(event),
 
             None => self.tstack.last_mut().handle(event),
         }) || (match (event.code, event.modifiers) {
@@ -425,12 +425,12 @@ impl Component for Pane {
             Message::PaneShowInlineOrder if focus_state.is_focused() => {
                 self.show_inline_query_picker(QueryType::Order)
             }
-            Message::PaneShowExportWizard if focus_state.is_focused() => self.show_export_wizard(),
-            Message::PaneShowScatterPlotWizard if focus_state.is_focused() => {
-                self.show_scatter_plot_wizard()
+            Message::PaneShowExporter if focus_state.is_focused() => self.show_exporter(),
+            Message::PaneShowScatterPlotBuilder if focus_state.is_focused() => {
+                self.show_scatter_plot_builder()
             }
-            Message::PaneShowHistogramWizard if focus_state.is_focused() => {
-                self.show_histogram_wizard()
+            Message::PaneShowHistogramBuilder if focus_state.is_focused() => {
+                self.show_histogram_builder()
             }
             Message::PaneShowHistogram(col, buckets) if focus_state.is_focused() => {
                 self.show_histogram(col, *buckets).unwrap_or_enqueue_error()
@@ -448,9 +448,7 @@ impl Component for Pane {
             Message::PanePopDataFrame if focus_state.is_focused() => self.pop_data_frame(),
             Message::PaneTableSelect(idx) if focus_state.is_focused() => self.select(*idx),
             Message::PaneShowTableInfo if focus_state.is_focused() => self.show_data_frame_info(),
-            Message::PaneShowColumnCasterWizard if focus_state.is_focused() => {
-                self.show_column_caster_wizard()
-            }
+            Message::PaneShowColumnCaster if focus_state.is_focused() => self.show_column_caster(),
             Message::PaneShowSearch if focus_state.is_focused() => {
                 self.show_exact_search();
             }
@@ -482,11 +480,11 @@ impl Component for Pane {
             Some(Modal::HistogramPlot(_)) => (),
             Some(Modal::InlineQueryPicker(_)) => (),
             Some(Modal::GoToLine(_)) => (),
-            Some(Modal::ExportWizard(_)) => (),
-            Some(Modal::HistogramWizard(_)) => (),
-            Some(Modal::ScatterPlotWizard(_)) => (),
+            Some(Modal::Exporter(_)) => (),
+            Some(Modal::HistogramBuilder(_)) => (),
+            Some(Modal::ScatterPlotBuilder(_)) => (),
             Some(Modal::TableRegisterer(_)) => (),
-            Some(Modal::ColumnCasterWizard(_)) => (),
+            Some(Modal::ColumnCaster(_)) => (),
             None => (),
         }
     }
@@ -501,11 +499,11 @@ pub enum Modal {
     HistogramPlot(HistogramPlot),
     InlineQueryPicker(InlineQueryPicker),
     GoToLine(GoToLine),
-    ExportWizard(ExportWizard),
-    HistogramWizard(HistogramWizard),
-    ScatterPlotWizard(ScatterPlotWizard),
+    Exporter(Exporter),
+    HistogramBuilder(HistogramBuilder),
+    ScatterPlotBuilder(ScatterPlotBuilder),
     TableRegisterer(TableRegisterer),
-    ColumnCasterWizard(ColumnCastWizard),
+    ColumnCaster(ColumnCaster),
 }
 
 impl Modal {
@@ -518,11 +516,11 @@ impl Modal {
             Modal::HistogramPlot(histogram_plot_state) => histogram_plot_state,
             Modal::InlineQueryPicker(query_picker) => query_picker,
             Modal::GoToLine(go_to_line) => go_to_line,
-            Modal::ExportWizard(export_wizard) => export_wizard,
-            Modal::HistogramWizard(histogram_wizard) => histogram_wizard,
-            Modal::ScatterPlotWizard(wizard) => wizard,
+            Modal::Exporter(exporter) => exporter,
+            Modal::HistogramBuilder(histogram_builder) => histogram_builder,
+            Modal::ScatterPlotBuilder(scatter_plot_builder) => scatter_plot_builder,
             Modal::TableRegisterer(table_registerer) => table_registerer,
-            Modal::ColumnCasterWizard(wizard) => wizard,
+            Modal::ColumnCaster(column_caster) => column_caster,
         }
     }
 }

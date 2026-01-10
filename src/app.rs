@@ -8,7 +8,7 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         popups::{
-            command_palette::CommandPalette, help_modal::Help, import_wizard::ImportWizard,
+            command_palette::CommandPalette, help_modal::Help, importer::Importer,
             theme_selector::ThemeSelector,
         },
         schema::schema::Schema,
@@ -55,8 +55,8 @@ impl App {
         self.toast = Some(Toast::new(message));
     }
 
-    fn show_import_wizard(&mut self) {
-        self.overlay = Some(Overlay::Import(ImportWizard::default()))
+    fn show_importer(&mut self) {
+        self.overlay = Some(Overlay::Import(Importer::default()))
     }
 
     fn show_sql_query_picker(&mut self) {
@@ -144,7 +144,7 @@ impl Component for App {
             Message::AppShowCommandPicker => self.show_palette(),
             Message::AppShowThemeSelector => self.show_theme_selector(),
             Message::AppShowSchema => self.show_schema(),
-            Message::AppShowImportWizard => self.show_import_wizard(),
+            Message::AppShowImporter => self.show_importer(),
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             _ => (),
@@ -188,7 +188,7 @@ pub enum Overlay {
     CommandPicker(CommandPalette),
     ThemeSelector(ThemeSelector),
     SqlQueryPicker(SqlQueryPicker),
-    Import(ImportWizard),
+    Import(Importer),
     Help(Help),
 }
 
@@ -199,7 +199,7 @@ impl Overlay {
             Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,
             Overlay::Help(help) => help,
-            Overlay::Import(wizard) => wizard,
+            Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
         }
     }
