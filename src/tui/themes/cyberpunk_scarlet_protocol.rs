@@ -1,4 +1,3 @@
-
 use ratatui::style::Color;
 
 use crate::tui::themes::styler::SixColorsTwoRowsStyler;
