@@ -11,28 +11,6 @@ use crate::{
 use super::widgets::input::Input;
 
 #[derive(Debug)]
-pub enum Searcher {
-    Fuzzy(search::Search<Skim>),
-    Exact(search::Search<Contain>),
-}
-
-impl Searcher {
-    pub fn pattern(&self) -> &str {
-        match self {
-            Searcher::Fuzzy(search) => search.pattern(),
-            Searcher::Exact(search) => search.pattern(),
-        }
-    }
-
-    pub fn latest(&self) -> Option<DataFrame> {
-        match self {
-            Searcher::Fuzzy(search) => search.latest(),
-            Searcher::Exact(search) => search.latest(),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct SearchBar {
     input: Input,
     searcher: Searcher,
@@ -62,6 +40,10 @@ impl SearchBar {
 
     pub fn into_rollback_df(self) -> DataFrame {
         self.rollback_df
+    }
+
+    pub fn value(&self) -> &str {
+        self.input.value()
     }
 
     fn update_search(&mut self) {
@@ -119,17 +101,30 @@ impl Component for SearchBar {
                     Message::PaneDismissModal.enqueue();
                     true
                 }
-                // (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
-                //     Message::PaneTableSelectUp.enqueue();
-                //     true
-                // }
-                // (KeyCode::Down, KeyModifiers::NONE)
-                // | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-                //     Message::PaneTableSelectDown.enqueue();
-                //     true
-                // }
                 _ => false,
             }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Searcher {
+    Fuzzy(search::Search<Skim>),
+    Exact(search::Search<Contain>),
+}
+
+impl Searcher {
+    pub fn pattern(&self) -> &str {
+        match self {
+            Searcher::Fuzzy(search) => search.pattern(),
+            Searcher::Exact(search) => search.pattern(),
+        }
+    }
+
+    pub fn latest(&self) -> Option<DataFrame> {
+        match self {
+            Searcher::Fuzzy(search) => search.latest(),
+            Searcher::Exact(search) => search.latest(),
         }
     }
 }

@@ -26,6 +26,7 @@ use crate::{
             table_registerer::TableRegisterer,
             wizard::Wizard,
         },
+        search_bar::Searcher,
         table::Table,
     },
 };
@@ -62,6 +63,10 @@ impl Pane {
         self.dstack.last()
     }
 
+    pub fn description_mut(&mut self) -> &mut TableDescription {
+        self.dstack.last_mut()
+    }
+
     pub fn iter_descriptions(&self) -> impl Iterator<Item = &TableDescription> {
         self.dstack.iter()
     }
@@ -76,6 +81,8 @@ impl Pane {
     fn show_fuzzy_search(&mut self) {
         let tbl = self.tstack.last().to_owned();
         self.tstack.push(tbl);
+        self.dstack
+            .push(TableDescription::Search(Default::default()));
         self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(
             self.tstack.last().data_frame().clone(),
         )));
@@ -84,6 +91,8 @@ impl Pane {
     fn show_exact_search(&mut self) {
         let tbl = self.tstack.last().to_owned();
         self.tstack.push(tbl);
+        self.dstack
+            .push(TableDescription::Search(Default::default()));
         self.modal = Some(Modal::SearchBar(SearchBar::exact(
             self.tstack.last().data_frame().clone(),
         )));
@@ -103,7 +112,9 @@ impl Pane {
             | TableDescription::Filter(_)
             | TableDescription::Order(_)
             | TableDescription::Select(_)
-            | TableDescription::Cast(_) => {
+            | TableDescription::Cast(_)
+            | TableDescription::Search(_)
+            | TableDescription::FuzzySearch(_) => {
                 self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
                     self.tstack.last().data_frame(),
                     Source::User,
@@ -455,6 +466,14 @@ impl Component for Pane {
             Some(Modal::SearchBar(search_bar)) => {
                 if let Some(df) = search_bar.searcher().latest() {
                     self.tstack.last_mut().set_data_frame(df);
+                    *self.description_mut() = match search_bar.searcher() {
+                        Searcher::Fuzzy(_) => {
+                            TableDescription::FuzzySearch(search_bar.value().to_owned())
+                        }
+                        Searcher::Exact(_) => {
+                            TableDescription::Search(search_bar.value().to_owned())
+                        }
+                    };
                 }
             }
             Some(Modal::Sheet(_)) => (),
@@ -516,6 +535,8 @@ pub enum TableDescription {
     Order(String),
     Select(String),
     Cast(String),
+    Search(String),
+    FuzzySearch(String),
 }
 impl TableDescription {
     pub fn variant(&self) -> &str {
@@ -526,6 +547,8 @@ impl TableDescription {
             TableDescription::Order(_) => "Order",
             TableDescription::Select(_) => "Select",
             TableDescription::Cast(_) => "Cast",
+            TableDescription::Search(_) => "Search",
+            TableDescription::FuzzySearch(_) => "Fuzzy Search",
         }
     }
     pub fn description(&self) -> &str {
@@ -535,7 +558,9 @@ impl TableDescription {
             | TableDescription::Filter(desc)
             | TableDescription::Order(desc)
             | TableDescription::Select(desc)
-            | TableDescription::Cast(desc) => desc,
+            | TableDescription::Cast(desc)
+            | TableDescription::Search(desc)
+            | TableDescription::FuzzySearch(desc) => desc,
         }
     }
 }
