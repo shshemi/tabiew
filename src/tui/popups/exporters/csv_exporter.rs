@@ -145,7 +145,11 @@ impl StepByStepState for State {
                 Message::PaneDismissModal.enqueue();
                 Message::AppShowToast(format!(
                     "Data frame exported to '{}' in CSV format",
-                    picker.path().to_string_lossy()
+                    picker
+                        .path()
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
                 ))
                 .enqueue();
                 State::PickOutputPath {
