@@ -100,6 +100,7 @@ impl Component for HistogramPlot {
                 Message::PaneDismissModal.enqueue();
                 true
             }
+            (KeyCode::Enter, KeyModifiers::NONE) => true,
             _ => false,
         }
     }
