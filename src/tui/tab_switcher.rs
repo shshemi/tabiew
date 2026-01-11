@@ -8,11 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     handler::message::Message,
     misc::config::theme,
-    tui::{
-        component::Component,
-        tag_line::{Tag, TagLine},
-        widgets::block::Block,
-    },
+    tui::{component::Component, widgets::block::Block},
 };
 
 #[derive(Debug)]
