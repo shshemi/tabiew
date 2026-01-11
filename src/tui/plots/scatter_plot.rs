@@ -114,7 +114,6 @@ impl Component for ScatterPlot {
             )
             .legend_position(Some(LegendPosition::TopRight))
             .hidden_legend_constraints((Constraint::Min(0), Constraint::Min(0)));
-        // .hidden_legend_constraints((Constraint::Min(0), Constraint::Ratio(1, 2)));
 
         chart.render(area, buf);
     }
@@ -125,6 +124,7 @@ impl Component for ScatterPlot {
                 Message::PaneDismissModal.enqueue();
                 true
             }
+            (KeyCode::Enter, KeyModifiers::NONE) => true,
             _ => false,
         }
     }
