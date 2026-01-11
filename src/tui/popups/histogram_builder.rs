@@ -38,7 +38,7 @@ impl State {
             .collect();
 
         State::PickColumn {
-            picker: SearchPicker::new(items),
+            picker: SearchPicker::new(items).with_title("Column"),
         }
     }
 }
@@ -56,6 +56,7 @@ impl StepByStepState for State {
                         State::PickBucketCount {
                             column: name.to_owned(),
                             picker: TextPicker::default()
+                                .with_title("Buckets")
                                 .with_input_type(InputType::Numeric)
                                 .with_value(DEFAULT_BUCKET_COUNT.to_owned()),
                         }
