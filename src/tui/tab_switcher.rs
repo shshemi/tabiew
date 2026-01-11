@@ -100,12 +100,7 @@ impl Component for TabSwitcher {
                 Constraint::Length(text_width),
             ])
             .column_spacing(1)
-            .block(
-                Block::default()
-                    .title(self.title.as_str())
-                    .bottom(TagLine::new().mono_color().tag(Tag::new("Open", "Enter")))
-                    .into_widget(),
-            );
+            .block(Block::default().title(self.title.as_str()).into_widget());
         if focus_state.is_focused() {
             StatefulWidget::render(table, area, buf, &mut self.list_state);
         } else {
