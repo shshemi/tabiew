@@ -1,6 +1,5 @@
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
-    style::Stylize,
     text::{Line, Span},
     widgets::{Clear, Paragraph, Widget, Wrap},
 };

@@ -1,6 +1,7 @@
 use crate::AppResult;
 use crate::app::App;
 use crate::handler::event::EventHandler;
+use crate::misc::type_ext::UnwrapOrGracefulShutdown;
 use crate::tui::component::Component;
 use crate::tui::component::FocusState;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
@@ -29,9 +30,9 @@ impl<B: Backend> Terminal<B> {
     /// Initializes the terminal interface.
     ///
     /// It enables the raw mode and sets terminal properties.
-    pub fn init(&mut self) -> AppResult<()> {
-        terminal::enable_raw_mode()?;
-        crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
+    pub fn init(&mut self) {
+        terminal::enable_raw_mode().unwrap_or_graceful_shutdown();
+        crossterm::execute!(io::stdout(), EnterAlternateScreen).unwrap_or_graceful_shutdown();
 
         // Define a custom panic hook to reset the terminal properties.
         // This way, you won't have your terminal messed up if an unexpected error happens.
@@ -41,22 +42,22 @@ impl<B: Backend> Terminal<B> {
             panic_hook(panic);
         }));
 
-        self.terminal.hide_cursor()?;
-        self.terminal.clear()?;
-        Ok(())
+        self.terminal.hide_cursor().unwrap_or_graceful_shutdown();
+        self.terminal.clear().unwrap_or_graceful_shutdown();
     }
 
     /// [`Draw`] the terminal interface by [`rendering`] the widgets.
     ///
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
-    pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| {
-            let area = frame.area();
-            let buf = frame.buffer_mut();
-            app.render(area, buf, FocusState::Focused);
-        })?;
-        Ok(())
+    pub fn draw(&mut self, app: &mut App) {
+        self.terminal
+            .draw(|frame| {
+                let area = frame.area();
+                let buf = frame.buffer_mut();
+                app.render(area, buf, FocusState::Focused);
+            })
+            .unwrap_or_graceful_shutdown();
     }
 
     /// Resets the terminal interface.
@@ -72,9 +73,8 @@ impl<B: Backend> Terminal<B> {
     /// Exits the terminal interface.
     ///
     /// It disables the raw mode and reverts back the terminal properties.
-    pub fn exit(&mut self) -> AppResult<()> {
-        Self::reset()?;
-        self.terminal.show_cursor()?;
-        Ok(())
+    pub fn exit(&mut self) {
+        Self::reset().unwrap_or_graceful_shutdown();
+        self.terminal.show_cursor().unwrap_or_graceful_shutdown();
     }
 }

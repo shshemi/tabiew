@@ -96,14 +96,14 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?,
         EventHandler::new(100),
     );
-    tui.init()?;
+    tui.init();
 
     // Initialize the app
     let mut app = App::new(tabs);
 
     // Main loop
     while app.running() {
-        tui.draw(&mut app)?;
+        tui.draw(&mut app);
         flush_osc52_buffer();
 
         match tui.events.next()? {
@@ -132,7 +132,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     }
 
     // Exit the user interface.
-    tui.exit()?;
+    tui.exit();
     Ok(())
 }
 
