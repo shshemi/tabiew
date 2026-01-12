@@ -1,4 +1,4 @@
-use ratatui::style::{Color, Style, Stylize};
+use ratatui::style::{Color, Style };
 use std::fmt::Debug;
 
 pub trait Styler: Debug {

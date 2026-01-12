@@ -53,7 +53,7 @@ impl<'a> Block<'a> {
         self
     }
 
-    pub fn border_set(mut self, border_set: Set) -> Self {
+    pub fn border_set(mut self, border_set: Set<'static>) -> Self {
         self.inner = self.inner.border_set(border_set);
         self
     }

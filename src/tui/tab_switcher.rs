@@ -100,12 +100,7 @@ impl Component for TabSwitcher {
         if focus_state.is_focused() {
             StatefulWidget::render(table, area, buf, &mut self.list_state);
         } else {
-            StatefulWidget::render(
-                table,
-                area,
-                buf,
-                &mut self.list_state.clone().with_selected(None),
-            );
+            StatefulWidget::render(table, area, buf, &mut self.list_state.with_selected(None));
         }
     }
 

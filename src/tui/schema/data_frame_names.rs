@@ -88,7 +88,7 @@ impl Component for DataFrameNames {
         if focus_state.is_focused() {
             table.render(area, buf, &mut self.table);
         } else {
-            table.render(area, buf, &mut self.table.clone().with_selected(None));
+            table.render(area, buf, &mut self.table.with_selected(None));
         }
     }
 
