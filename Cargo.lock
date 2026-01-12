@@ -3851,7 +3851,7 @@ dependencies = [
 
 [[package]]
 name = "tabiew"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "base64",
