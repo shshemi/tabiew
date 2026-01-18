@@ -27,6 +27,10 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - os: ubuntu-latest
             target: armv7-unknown-linux-gnueabihf
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
           # MacOS
           - os: macos-latest
             target: x86_64-apple-darwin
@@ -80,20 +84,28 @@ jobs:
           cross test --release --verbose --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
 
+      - name: Verify musl binary is static (Linux)
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-musl')
+        run: |
+          if ! file tw-${{ matrix.target }} | grep -q "statically linked"; then
+            echo "Expected a statically linked musl binary: tw-${{ matrix.target }}"
+            exit 1
+          fi
+
       - name: Install Cargo Deb
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
         run: cargo install cargo-deb --version 2.11.1 --force
 
       - name: Generate Deb Package
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
         run: cargo deb --no-build --no-strip --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
 
       - name: Install Cargo RPM
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
         run: cargo install cargo-generate-rpm --version 0.16.0 --force
 
       - name: Generate RPM Packages
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
         run: cargo generate-rpm --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
 
       # MacOS build
@@ -132,14 +144,14 @@ jobs:
 
       # Upload Deb and RPM
       - name: Upload Deb Package to GitHub Artifact
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.deb
           path: tabiew-${{ matrix.target }}.deb
 
       - name: Upload RPM Package to GitHub Artifact
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.rpm
