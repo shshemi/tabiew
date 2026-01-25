@@ -40,3 +40,55 @@ impl<T> NonEmptyStack<T> {
         std::iter::once(&self.base).chain(self.stack.iter())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::NonEmptyStack;
+
+    #[test]
+    fn new_and_base() {
+        let s = NonEmptyStack::new(1);
+        assert_eq!(s.base(), &1);
+        assert_eq!(s.len_without_base(), 0);
+        assert_eq!(s.last(), &1);
+        let v: Vec<_> = s.iter().copied().collect();
+        assert_eq!(v, vec![1]);
+    }
+
+    #[test]
+    fn push_pop_and_last() {
+        let mut s = NonEmptyStack::new(1);
+        s.push(2);
+        s.push(3);
+        assert_eq!(s.len_without_base(), 2);
+        assert_eq!(s.last(), &3);
+        assert_eq!(s.pop(), Some(3));
+        assert_eq!(s.pop(), Some(2));
+        assert_eq!(s.pop(), None);
+        assert_eq!(s.last(), &1);
+    }
+
+    #[test]
+    fn last_mut_modifies_top_or_base() {
+        // modify base when stack is empty
+        let mut s = NonEmptyStack::new(0);
+        *s.last_mut() = 5;
+        assert_eq!(s.base(), &5);
+
+        // modify top when stack is non-empty
+        s.push(10);
+        s.push(20);
+        *s.last_mut() += 7;
+        assert_eq!(s.pop(), Some(27));
+        assert_eq!(s.last(), &10);
+    }
+
+    #[test]
+    fn iter_order() {
+        let mut s = NonEmptyStack::new(1);
+        s.push(2);
+        s.push(3);
+        let v: Vec<_> = s.iter().copied().collect();
+        assert_eq!(v, vec![1, 2, 3]);
+    }
+}
