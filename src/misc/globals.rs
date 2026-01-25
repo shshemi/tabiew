@@ -7,7 +7,6 @@ use std::{
 
 use super::sql::SqlBackend;
 
-// static CONFIG: Config = Config::new();
 static SQL_BACKEND: Mutex<Lazy<SqlBackend>> = Mutex::new(Lazy::new(SqlBackend::default));
 static STDIN_CONTENT: OnceLock<Vec<u8>> = OnceLock::new();
 
