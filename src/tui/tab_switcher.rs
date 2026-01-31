@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Rect},
@@ -67,16 +69,22 @@ impl Component for TabSwitcher {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        let num_width = (self.items.len().ilog10() + 1) as u16;
+        let num_width = (self.items.len().checked_ilog10().unwrap_or_default() + 1) as u16;
         let text_width = self
             .items
             .iter()
             .map(|s| s.width() as u16)
             .max()
-            .map(|w| w.clamp(34, area.width.saturating_div(2)))
-            .unwrap_or(34);
+            .unwrap_or_default()
+            .max(34)
+            .min(area.width.div(2));
         let width = num_width + text_width + 3;
-        let area = Rect::new(area.x + area.width - width, area.y, width, area.height);
+        let area = Rect::new(
+            area.x.saturating_add(area.width).saturating_sub(width),
+            area.y,
+            width,
+            area.height,
+        );
 
         Widget::render(Clear, area, buf);
 
