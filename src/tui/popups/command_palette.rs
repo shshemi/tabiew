@@ -86,6 +86,7 @@ impl Component for CommandPalette {
                             }
                             Command::FuzzySearch => Message::PaneShowFuzzySearch.enqueue(),
                             Command::Search => Message::PaneShowSearch.enqueue(),
+                            Command::Edit => Message::PaneEditInExternalEditor.enqueue(),
                         }
                     }
                     true
@@ -103,6 +104,7 @@ impl Component for CommandPalette {
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
     Cast,
+    Edit,
     Export,
     Filter,
     FuzzySearch,

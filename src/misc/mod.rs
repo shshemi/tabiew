@@ -1,4 +1,5 @@
 pub mod config;
+pub mod external_editor;
 pub mod globals;
 pub mod iter_ext;
 pub mod jagged_vec;
