@@ -1,6 +1,5 @@
 use crate::AppResult;
 use crate::app::App;
-use crate::handler::event::EventHandler;
 use crate::misc::type_ext::UnwrapOrGracefulShutdown;
 use crate::tui::component::Component;
 use crate::tui::component::FocusState;
@@ -21,14 +20,12 @@ pub static INVALIDATE_DRAW: AtomicBool = AtomicBool::new(false);
 pub struct Terminal<B: Backend> {
     /// Interface to the Terminal.
     terminal: ratatui::Terminal<B>,
-    /// Terminal event handler.
-    pub events: EventHandler,
 }
 
 impl<B: Backend> Terminal<B> {
     /// Constructs a new instance of [`Tui`].
-    pub fn new(terminal: ratatui::Terminal<B>, events: EventHandler) -> Self {
-        Self { terminal, events }
+    pub fn new(terminal: ratatui::Terminal<B>) -> Self {
+        Self { terminal }
     }
 
     /// Initializes the terminal interface.

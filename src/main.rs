@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
-use tabiew::handler::event::{Event, EventHandler};
+use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config::config;
 use tabiew::misc::globals::sql;
@@ -92,10 +92,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         .collect();
 
     // Initialize the terminal user interface.
-    let mut tui = tui::Terminal::new(
-        ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?,
-        EventHandler::new(100),
-    );
+    let mut tui = tui::Terminal::new(ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?);
     tui.init();
 
     // Initialize the app
@@ -106,7 +103,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         tui.draw(&mut app);
         flush_osc52_buffer();
 
-        match tui.events.next()? {
+        match read_event()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 #[cfg(target_os = "windows")]
