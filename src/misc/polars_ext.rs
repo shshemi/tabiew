@@ -234,20 +234,10 @@ impl DataFrameExt for DataFrame {
             | DataType::Int16
             | DataType::Int32
             | DataType::Int64
-            | DataType::Int128 => {
-                let counts = col.as_materialized_series().value_counts(
-                    true,
-                    true,
-                    format!("{col_name}_count").into(),
-                    false,
-                )?;
-                if counts.height() <= buckets {
-                    discrete_histogram(counts)
-                } else {
-                    continues_histogram(counts, buckets)
-                }
-            }
-            DataType::Float32 | DataType::Float64 | DataType::Decimal(_, _) => continues_histogram(
+            | DataType::Int128
+            | DataType::Float32
+            | DataType::Float64
+            | DataType::Decimal(_, _) => continues_histogram(
                 col.as_materialized_series()
                     .value_counts(true, true, "value".into(), false)?,
                 buckets,
