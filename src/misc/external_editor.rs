@@ -6,7 +6,7 @@ use polars::frame::DataFrame;
 
 use crate::{
     AppResult,
-    handler::event::EVENT_MUTEX,
+    handler::event::lock_event,
     misc::type_ext::UnwrapOrGracefulShutdown,
     reader::{CsvToDataFrame, ReadToDataFrames, Source},
     tui::terminal::INVALIDATE_DRAW,
@@ -34,7 +34,7 @@ impl ExternalEditor {
             .write_to_file(Destination::File(tempfile.path().to_owned()), &mut self.df)?;
 
         let editor_status = {
-            let _lock = EVENT_MUTEX.lock().unwrap_or_graceful_shutdown();
+            let _lock = lock_event();
             terminal::disable_raw_mode()?;
             crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
             let status = Command::new(editor).arg(tempfile.path()).status();
