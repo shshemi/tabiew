@@ -1,15 +1,13 @@
-use std::{env, io, process::Command, sync::atomic::Ordering};
+use std::{env, process::Command};
 
 use anyhow::anyhow;
-use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use polars::frame::DataFrame;
 
 use crate::{
     AppResult,
     handler::event::lock_event,
-    misc::type_ext::UnwrapOrGracefulShutdown,
     reader::{CsvToDataFrame, ReadToDataFrames, Source},
-    tui::terminal::INVALIDATE_DRAW,
+    tui::terminal::{invalidate_tui, start_tui, stop_tui},
     writer::{Destination, WriteToCsv, WriteToFile},
 };
 
@@ -35,12 +33,14 @@ impl ExternalEditor {
 
         let editor_status = {
             let _lock = lock_event();
-            terminal::disable_raw_mode()?;
-            crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
+            // terminal::disable_raw_mode()?;
+            // crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
+            stop_tui()?;
             let status = Command::new(editor).arg(tempfile.path()).status();
-            terminal::enable_raw_mode().unwrap_or_graceful_shutdown();
-            crossterm::execute!(io::stdout(), EnterAlternateScreen).unwrap_or_graceful_shutdown();
-            INVALIDATE_DRAW.store(true, Ordering::Relaxed);
+            // terminal::enable_raw_mode().unwrap_or_graceful_shutdown();
+            // crossterm::execute!(io::stdout(), EnterAlternateScreen).unwrap_or_graceful_shutdown();
+            start_tui()?;
+            invalidate_tui();
             status
         }?;
 
