@@ -6,6 +6,7 @@ use polars::frame::DataFrame;
 use crate::{
     AppResult,
     handler::event::lock_event,
+    misc::type_inferer::TypeInferer,
     reader::{CsvToDataFrame, ReadToDataFrames, Source},
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
     writer::{Destination, WriteToCsv, WriteToFile},
@@ -41,7 +42,7 @@ impl ExternalEditor {
         }?;
 
         if editor_status.success() {
-            let df = CsvToDataFrame::default()
+            let mut df = CsvToDataFrame::default()
                 .with_no_header(false)
                 .with_quote_char('"')
                 .with_separator(',')
@@ -50,6 +51,8 @@ impl ExternalEditor {
                 .next()
                 .map(|(_, df)| df)
                 .ok_or(anyhow!("Failed to load data frame back from the editor"))?;
+            let ti = TypeInferer::default().boolean().int().float();
+            ti.update(&mut df);
             Ok(df)
         } else {
             Err(anyhow!("Editor failed"))
