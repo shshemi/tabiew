@@ -2,8 +2,7 @@ use clap::{CommandFactory, Parser};
 use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
-use ratatui::backend::CrosstermBackend;
-use std::io::{self, IsTerminal};
+use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
@@ -19,8 +18,8 @@ use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
 
-use tabiew::tui::Pane;
-use tabiew::{AppResult, tui};
+use tabiew::AppResult;
+use tabiew::tui::{Pane, terminal};
 
 fn main() {
     // Parse CLI
@@ -92,15 +91,16 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         .collect();
 
     // Initialize the terminal user interface.
-    let mut tui = tui::Terminal::new(ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?);
-    tui.init();
+    // let mut tui = tui::Terminal::new(ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?);
+    // tui.init();
+    terminal::start_tui()?;
 
     // Initialize the app
     let mut app = App::new(tabs);
 
     // Main loop
     while app.running() {
-        tui.draw(&mut app);
+        terminal::draw(&mut app)?;
         flush_osc52_buffer();
 
         match read_event()? {
@@ -129,7 +129,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     }
 
     // Exit the user interface.
-    tui.exit();
+    terminal::stop_tui()?;
     Ok(())
 }
 

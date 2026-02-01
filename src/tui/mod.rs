@@ -18,4 +18,3 @@ mod utils;
 pub mod widgets;
 
 pub use pane::Pane;
-pub use terminal::Terminal;
