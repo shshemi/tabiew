@@ -75,7 +75,7 @@ impl Table {
             col_widths,
             col_offsets,
             offset: 0,
-            selected: None,
+            selected: self.selected,
             rendered_rows: self.rendered_rows,
             rendered_width: self.rendered_width,
             column_mode: self.column_mode,
