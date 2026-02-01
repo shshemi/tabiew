@@ -9,8 +9,9 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        config::config, globals::sql, non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt,
-        sql::Source, type_ext::UnwrapOrEnqueueError,
+        config::config, external_editor::ExternalEditor, globals::sql,
+        non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt, sql::Source,
+        type_ext::UnwrapOrEnqueueError,
     },
     tui::{
         component::{Component, FocusState},
@@ -454,6 +455,14 @@ impl Component for Pane {
             }
             Message::PaneShowFuzzySearch if focus_state.is_focused() => {
                 self.show_fuzzy_search();
+            }
+            Message::PaneEditInExternalEditor if focus_state.is_focused() => {
+                match ExternalEditor::new(self.tstack.last().data_frame().clone()).edit() {
+                    Ok(df) => {
+                        self.push_data_frame(df, TableDescription::Table("Edited !!!".to_owned()))
+                    }
+                    Err(err) => Message::AppShowError(err.to_string()).enqueue(),
+                }
             }
             _ => (),
         }

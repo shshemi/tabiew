@@ -8,11 +8,15 @@ use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
 use std::io;
 use std::panic;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 
 /// Representation of a terminal user interface.
 ///
 /// It is responsible for setting up the terminal,
 /// initializing the interface and handling the draw events.
+pub static INVALIDATE_DRAW: AtomicBool = AtomicBool::new(false);
+
 #[derive(Debug)]
 pub struct Terminal<B: Backend> {
     /// Interface to the Terminal.
@@ -51,6 +55,9 @@ impl<B: Backend> Terminal<B> {
     /// [`Draw`]: ratatui::Terminal::draw
     /// [`rendering`]: crate::ui::render
     pub fn draw(&mut self, app: &mut App) {
+        if INVALIDATE_DRAW.swap(false, Ordering::Relaxed) {
+            self.terminal.clear().unwrap_or_graceful_shutdown();
+        }
         self.terminal
             .draw(|frame| {
                 let area = frame.area();
