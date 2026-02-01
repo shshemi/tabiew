@@ -24,6 +24,7 @@ impl ExternalEditor {
     }
 
     pub fn edit(mut self) -> AppResult<DataFrame> {
+        let editor = env::var("EDITOR").map_err(|_| anyhow!("$EDITOR is not set"))?;
         let tempfile = tempfile::NamedTempFile::new()?;
 
         WriteToCsv::default()
@@ -36,9 +37,7 @@ impl ExternalEditor {
             let _lock = EVENT_MUTEX.lock().unwrap_or_graceful_shutdown();
             terminal::disable_raw_mode()?;
             crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
-            let status = Command::new(env::var("EDITOR")?)
-                .arg(tempfile.path())
-                .status();
+            let status = Command::new(editor).arg(tempfile.path()).status();
             terminal::enable_raw_mode().unwrap_or_graceful_shutdown();
             crossterm::execute!(io::stdout(), EnterAlternateScreen).unwrap_or_graceful_shutdown();
             INVALIDATE_DRAW.store(true, Ordering::Relaxed);
