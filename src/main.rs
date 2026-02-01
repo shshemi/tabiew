@@ -17,9 +17,10 @@ use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
+use tabiew::tui::terminal::{draw, start_tui, stop_tui};
 
 use tabiew::AppResult;
-use tabiew::tui::{Pane, terminal};
+use tabiew::tui::Pane;
 
 fn main() {
     // Parse CLI
@@ -81,26 +82,23 @@ fn main() {
         }
     }
 
-    let _ = start_tui(name_dfs);
+    let _ = start_app(name_dfs);
 }
 
-fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
+fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(name, df)| Pane::new(df, TableDescription::Table(name)))
         .collect();
 
-    // Initialize the terminal user interface.
-    // let mut tui = tui::Terminal::new(ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))?);
-    // tui.init();
-    terminal::start_tui()?;
+    start_tui()?;
 
     // Initialize the app
     let mut app = App::new(tabs);
 
     // Main loop
     while app.running() {
-        terminal::draw(&mut app)?;
+        draw(&mut app)?;
         flush_osc52_buffer();
 
         match read_event()? {
@@ -129,7 +127,7 @@ fn start_tui(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     }
 
     // Exit the user interface.
-    terminal::stop_tui()?;
+    stop_tui()?;
     Ok(())
 }
 

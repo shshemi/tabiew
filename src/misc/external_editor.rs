@@ -33,12 +33,8 @@ impl ExternalEditor {
 
         let editor_status = {
             let _lock = lock_event();
-            // terminal::disable_raw_mode()?;
-            // crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
             stop_tui()?;
             let status = Command::new(editor).arg(tempfile.path()).status();
-            // terminal::enable_raw_mode().unwrap_or_graceful_shutdown();
-            // crossterm::execute!(io::stdout(), EnterAlternateScreen).unwrap_or_graceful_shutdown();
             start_tui()?;
             invalidate_tui();
             status
