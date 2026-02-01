@@ -458,9 +458,10 @@ impl Component for Pane {
             }
             Message::PaneEditInExternalEditor if focus_state.is_focused() => {
                 match ExternalEditor::new(self.tstack.last().data_frame().clone()).edit() {
-                    Ok(df) => {
-                        self.push_data_frame(df, TableDescription::Table("Edited !!!".to_owned()))
-                    }
+                    Ok(df) => self.push_data_frame(
+                        df,
+                        TableDescription::Table("Manual edit using $EDITOR".to_owned()),
+                    ),
                     Err(err) => Message::AppShowError(err.to_string()).enqueue(),
                 }
             }
