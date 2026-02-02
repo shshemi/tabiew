@@ -5,7 +5,7 @@ use polars::frame::DataFrame;
 
 use crate::{
     AppResult,
-    handler::event::lock_event,
+    handler::event::{disable_event_read, enable_event_read},
     misc::type_inferer::TypeInferer,
     reader::{CsvToDataFrame, ReadToDataFrames, Source},
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
@@ -33,11 +33,12 @@ impl ExternalEditor {
             .write_to_file(Destination::File(tempfile.path().to_owned()), &mut self.df)?;
 
         let editor_status = {
-            let _lock = lock_event();
+            disable_event_read();
             stop_tui()?;
             let status = Command::new(editor).arg(tempfile.path()).status();
             start_tui()?;
             invalidate_tui();
+            enable_event_read();
             status
         }?;
 
