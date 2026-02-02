@@ -1,13 +1,17 @@
 use crate::AppResult;
 use crate::misc::type_ext::UnwrapOrGracefulShutdown;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
-use std::sync::{Mutex, MutexGuard, OnceLock, mpsc};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, OnceLock, mpsc};
 use std::thread;
 use std::time::{Duration, Instant};
 
-pub fn lock_event() -> MutexGuard<'static, ()> {
-    static EVENT_MUTEX: Mutex<()> = Mutex::new(());
-    EVENT_MUTEX.lock().unwrap_or_graceful_shutdown()
+static READ_EVENT: AtomicBool = AtomicBool::new(true);
+pub fn enable_event_read() {
+    READ_EVENT.store(true, Ordering::Relaxed);
+}
+pub fn disable_event_read() {
+    READ_EVENT.store(false, Ordering::Relaxed);
 }
 
 pub fn read_event() -> AppResult<Event> {
@@ -45,9 +49,11 @@ impl EventHandler {
                     .unwrap_or(tick_rate);
 
                 {
-                    let _lock = lock_event();
+                    // let _lock = lock_event();
 
-                    if event::poll(timeout).expect("failed to poll new events") {
+                    if event::poll(timeout).expect("failed to poll new events")
+                        && READ_EVENT.load(Ordering::Relaxed)
+                    {
                         match event::read().expect("unable to read event") {
                             CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
                             CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
