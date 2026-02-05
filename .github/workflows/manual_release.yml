@@ -12,6 +12,11 @@ on:
           - patch
           - minor
           - major
+      dry_run:
+        description: "Dry run (build only, no release)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -125,14 +130,14 @@ jobs:
 
       # Upload compiled binary to GitHub artifact
       - name: Upload Binary to GitHub Artifact (Linux and MacOS)
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}
           path: tw-${{ matrix.target }}
 
       - name: Upload Binary to GitHub Artifact (Windows)
-        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        if: (matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}.exe
@@ -140,14 +145,14 @@ jobs:
 
       # Upload Deb and RPM
       - name: Upload Deb Package to GitHub Artifact
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.deb
           path: tabiew-${{ matrix.target }}.deb
 
       - name: Upload RPM Package to GitHub Artifact
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.rpm
@@ -157,6 +162,7 @@ jobs:
     name: Release
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.dry_run != 'true' }}
     permissions:
       contents: write
     steps:
