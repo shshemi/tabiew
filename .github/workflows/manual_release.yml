@@ -89,17 +89,18 @@ jobs:
             sudo apt-get install -y musl-tools
           fi
 
-      - name: Build and Test (Linux)
+      - name: Build (Linux)
         if: startsWith(matrix.os, 'ubuntu-')
         run: |
           if [ "${{ matrix.target }}" = "armv7-unknown-linux-gnueabihf" ]; then
             export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
           fi
           cargo build --release --verbose --target ${{ matrix.target }}
-          if [ "${{ matrix.target }}" != "armv7-unknown-linux-gnueabihf" ]; then
-            cargo test --release --verbose --target ${{ matrix.target }}
-          fi
           cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
+
+      - name: Test (Linux)
+        if: startsWith(matrix.os, 'ubuntu-') && matrix.target != 'armv7-unknown-linux-gnueabihf'
+        run: cargo test --release --verbose --target ${{ matrix.target }}
 
       - name: Verify musl binary is static (Linux)
         if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
@@ -126,23 +127,29 @@ jobs:
         run: cargo generate-rpm --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
 
       # MacOS build
-      - name: Build and Test (MacOS)
+      - name: Build (MacOS)
         if: matrix.os == 'macos-latest'
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
-          cargo test --release --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
 
+      - name: Test (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: cargo test --release --target ${{ matrix.target }}
+
       # Windows build
-      - name: Build and Test (Windows)
+      - name: Build (Windows)
         if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
         run: |
           choco install -y strawberryperl nasm
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
-          cargo test --release --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw.exe tw-${{ matrix.target }}.exe
+
+      - name: Test (Windows)
+        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        run: cargo test --release --target ${{ matrix.target }}
 
       # Upload compiled binary to GitHub artifact
       - name: Upload Binary to GitHub Artifact (Linux and MacOS)
