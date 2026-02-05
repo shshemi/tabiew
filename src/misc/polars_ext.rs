@@ -33,8 +33,10 @@ impl AnyValueExt for AnyValue<'_> {
     fn into_single_line(self) -> String {
         match self {
             AnyValue::Null => "".to_owned(),
-            AnyValue::StringOwned(v) => v.to_string(),
-            AnyValue::String(v) => v.to_string(),
+            AnyValue::StringOwned(v) => {
+                v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect()
+            }
+            AnyValue::String(v) => v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect(),
             AnyValue::Categorical(idx, rev_map) => {
                 rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
             }
@@ -79,8 +81,10 @@ impl AnyValueExt for AnyValue<'_> {
     fn into_multi_line(self) -> String {
         match self {
             AnyValue::Null => "".to_owned(),
-            AnyValue::StringOwned(v) => v.to_string(),
-            AnyValue::String(v) => v.to_string(),
+            AnyValue::StringOwned(v) => {
+                v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect()
+            }
+            AnyValue::String(v) => v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect(),
             AnyValue::Categorical(idx, rev_map) => {
                 rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
             }
