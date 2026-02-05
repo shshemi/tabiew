@@ -330,7 +330,8 @@ impl Component for Table {
         if let Some(selected) = self.selected {
             self.offset = self
                 .offset
-                .clamp(selected.saturating_sub(height.saturating_sub(1)), selected);
+                .clamp(selected.saturating_sub(height.saturating_sub(1)), selected)
+                .min(self.df.height().saturating_sub(height));
         } else {
             self.offset = self.offset.min(self.df.height().saturating_sub(height))
         }
