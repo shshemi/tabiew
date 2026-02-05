@@ -89,6 +89,10 @@ jobs:
             sudo apt-get install -y musl-tools
           fi
 
+      - name: Configure musl static linking
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
+        run: echo "RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
+
       - name: Build (Linux)
         if: startsWith(matrix.os, 'ubuntu-')
         run: |
@@ -105,7 +109,8 @@ jobs:
       - name: Verify musl binary is static (Linux)
         if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
         run: |
-          if ! file tw-${{ matrix.target }} | grep -q "statically linked"; then
+          file tw-${{ matrix.target }}
+          if ! file tw-${{ matrix.target }} | grep -Eq "statically linked|static-pie linked"; then
             echo "Expected a statically linked musl binary: tw-${{ matrix.target }}"
             exit 1
           fi
@@ -127,10 +132,13 @@ jobs:
         run: cargo generate-rpm --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
 
       # MacOS build
+      - name: Add Rust Target (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: rustup target add ${{ matrix.target }}
+
       - name: Build (MacOS)
         if: matrix.os == 'macos-latest'
         run: |
-          rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
 
@@ -139,11 +147,15 @@ jobs:
         run: cargo test --release --target ${{ matrix.target }}
 
       # Windows build
-      - name: Build (Windows)
+      - name: Install Windows Toolchains
         if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
         run: |
           choco install -y strawberryperl nasm
           rustup target add ${{ matrix.target }}
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        run: |
           cargo build --release --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw.exe tw-${{ matrix.target }}.exe
 
