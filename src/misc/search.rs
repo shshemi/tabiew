@@ -108,15 +108,35 @@ where
                     let mut interval = Interval::new(Duration::from_millis(100));
                     let mut idx_score = HashMap::new();
                     let mut recv = ConnectionAware::new(rx);
+                    let mut updated = false;
                     while recv.connected() {
                         //do operations
+                        let mut should_update = false;
                         for (idx, new_score) in recv.by_ref() {
+                            should_update = true;
                             idx_score
                                 .entry(idx)
                                 .and_modify(|score| *score = new_score.max(*score))
                                 .or_insert(new_score);
                         }
 
+                        if should_update {
+                            sync_df.insert(
+                                df.take(&IdxCa::new_vec(
+                                    "name".into(),
+                                    idx_score
+                                        .iter()
+                                        .sorted_by_key(|(idx, score)| (-*score, *idx))
+                                        .map(|(idx, _)| *idx)
+                                        .collect(),
+                                ))
+                                .unwrap(),
+                            );
+                            updated = true;
+                        }
+                        interval.sleep();
+                    }
+                    if !updated {
                         sync_df.insert(
                             df.take(&IdxCa::new_vec(
                                 "name".into(),
@@ -128,7 +148,6 @@ where
                             ))
                             .unwrap(),
                         );
-                        interval.sleep();
                     }
                 }
             });
