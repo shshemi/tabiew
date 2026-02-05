@@ -15,11 +15,8 @@ on:
       dry_run:
         description: "Dry run (build only, no release)"
         required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
+        default: false
+        type: boolean
 
 jobs:
   build:
