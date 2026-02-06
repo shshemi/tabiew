@@ -1,4 +1,4 @@
-pub mod arrow_exporter;
+pub mod arrow;
 pub mod csv_exporter;
 pub mod json_exporter;
 pub mod jsonl_exporter;
