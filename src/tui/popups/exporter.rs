@@ -9,8 +9,7 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         exporters::{
-            arrow_exporter, csv_exporter, json_exporter, jsonl_exporter, parquet_exporter,
-            tsv_exporter,
+            arrow, csv_exporter, json_exporter, jsonl_exporter, parquet_exporter, tsv_exporter,
         },
         step_by_step::{StepByStep, StepByStepState},
     },
@@ -25,7 +24,7 @@ pub enum State {
         picker: SearchPicker<Format>,
     },
     Arrow {
-        state: arrow_exporter::State,
+        state: arrow::State,
     },
     Csv {
         state: csv_exporter::State,
