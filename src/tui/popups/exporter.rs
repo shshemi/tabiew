@@ -8,7 +8,7 @@ use crate::tui::{
     component::Component,
     pickers::search_picker::SearchPicker,
     popups::{
-        exporters::{arrow, csv, json_exporter, jsonl_exporter, parquet_exporter, tsv_exporter},
+        exporters::{arrow, csv, json, jsonl, parquet, tsv},
         step_by_step::{StepByStep, StepByStepState},
     },
 };
@@ -28,16 +28,16 @@ pub enum State {
         state: csv::State,
     },
     Json {
-        state: json_exporter::State,
+        state: json::State,
     },
     JsonL {
-        state: jsonl_exporter::State,
+        state: jsonl::State,
     },
     Parquet {
-        state: parquet_exporter::State,
+        state: parquet::State,
     },
     Tsv {
-        state: tsv_exporter::State,
+        state: tsv::State,
     },
 }
 
