@@ -106,6 +106,21 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-') && matrix.target != 'armv7-unknown-linux-gnueabihf'
         run: cargo test --release --verbose --target ${{ matrix.target }}
 
+      - name: Package Manual and Completions
+        if: matrix.os == 'ubuntu-22.04' && matrix.target == 'x86_64-unknown-linux-gnu' && github.event.inputs.dry_run != 'true'
+        run: |
+          mkdir -p release-assets
+          cp -a target/manual release-assets/
+          cp -a target/completion release-assets/
+          tar -czf tabiew-manual-and-completions.tar.gz -C release-assets manual completion
+
+      - name: Upload Manual and Completions to GitHub Artifact
+        if: matrix.os == 'ubuntu-22.04' && matrix.target == 'x86_64-unknown-linux-gnu' && github.event.inputs.dry_run != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tabiew-manual-and-completions
+          path: tabiew-manual-and-completions.tar.gz
+
       - name: Verify musl binary is static (Linux)
         if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
         run: |
