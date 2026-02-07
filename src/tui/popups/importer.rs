@@ -6,10 +6,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        importers::{
-            arrow_importer, csv_importer, excel_importer, fwf_importer, json_importer,
-            jsonl_importer, logfmt_importer, parquet_importer, sqlite_importer, tsv_importer,
-        },
+        importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
         step_by_step::{StepByStep, StepByStepState},
     },
 };
@@ -19,16 +16,16 @@ pub type Importer = StepByStep<State>;
 #[derive(Debug)]
 pub enum State {
     PickFormat { picker: SearchPicker<Formats> },
-    Arrow { arrow: arrow_importer::State },
-    Csv { csv: csv_importer::State },
-    Excel { excel: excel_importer::State },
-    Fwf { fwf: fwf_importer::State },
-    Json { json: json_importer::State },
-    JsonL { jsonl: jsonl_importer::State },
-    Parquet { parquet: parquet_importer::State },
-    Sqlite { sqlite: sqlite_importer::State },
-    Tsv { tsv: tsv_importer::State },
-    Logfmt { logfmt: logfmt_importer::State },
+    Arrow { arrow: arrow::State },
+    Csv { csv: csv::State },
+    Excel { excel: excel::State },
+    Fwf { fwf: fwf::State },
+    Json { json: json::State },
+    JsonL { jsonl: jsonl::State },
+    Parquet { parquet: parquet::State },
+    Sqlite { sqlite: sqlite::State },
+    Tsv { tsv: tsv::State },
+    Logfmt { logfmt: logfmt::State },
 }
 
 impl StepByStepState for State {
