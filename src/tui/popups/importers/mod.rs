@@ -4,16 +4,16 @@ use crate::{
     reader::{ReadToDataFrames, Source},
 };
 
-pub mod arrow_importer;
-pub mod csv_importer;
-pub mod excel_importer;
-pub mod fwf_importer;
-pub mod json_importer;
-pub mod jsonl_importer;
-pub mod logfmt_importer;
-pub mod parquet_importer;
-pub mod sqlite_importer;
-pub mod tsv_importer;
+pub mod arrow;
+pub mod csv;
+pub mod excel;
+pub mod fwf;
+pub mod json;
+pub mod jsonl;
+pub mod logfmt;
+pub mod parquet;
+pub mod sqlite;
+pub mod tsv;
 
 fn final_step(source: Source, rtdf: impl ReadToDataFrames) {
     Message::AppDismissOverlay.enqueue();
