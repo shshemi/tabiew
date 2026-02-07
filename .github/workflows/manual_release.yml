@@ -12,6 +12,11 @@ on:
           - patch
           - minor
           - major
+      dry_run:
+        description: "Dry run (build only, no release)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -21,15 +26,15 @@ jobs:
       matrix:
         include:
           # Linux
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
+          - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: armv7-unknown-linux-gnueabihf
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: x86_64-unknown-linux-musl
-          - os: ubuntu-latest
+          - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-musl
           # MacOS
           - os: macos-latest
@@ -73,70 +78,116 @@ jobs:
         run: cargo bump ${{ github.event.inputs.version_bump }}
 
       # Linux build
-      - name: Install Cross
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo install cross --git https://github.com/cross-rs/cross
-
-      - name: Build and Test (Linux)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install Linux Toolchains
+        if: startsWith(matrix.os, 'ubuntu-') && (endsWith(matrix.target, '-musl') || matrix.target == 'armv7-unknown-linux-gnueabihf')
         run: |
-          cross build --release --verbose --target ${{ matrix.target }}
-          cross test --release --verbose --target ${{ matrix.target }}
+          sudo apt-get update
+          if [ "${{ matrix.target }}" = "armv7-unknown-linux-gnueabihf" ]; then
+            sudo apt-get install -y gcc-arm-linux-gnueabihf
+          fi
+          if [[ "${{ matrix.target }}" == *-musl ]]; then
+            sudo apt-get install -y musl-tools
+          fi
+
+      - name: Configure musl static linking
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
+        run: echo "RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
+
+      - name: Build (Linux)
+        if: startsWith(matrix.os, 'ubuntu-')
+        run: |
+          if [ "${{ matrix.target }}" = "armv7-unknown-linux-gnueabihf" ]; then
+            export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
+          fi
+          cargo build --release --verbose --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
 
-      - name: Verify musl binary is static (Linux)
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-musl')
+      - name: Test (Linux)
+        if: startsWith(matrix.os, 'ubuntu-') && matrix.target != 'armv7-unknown-linux-gnueabihf'
+        run: cargo test --release --verbose --target ${{ matrix.target }}
+
+      - name: Package Manual and Completions
+        if: matrix.os == 'ubuntu-22.04' && matrix.target == 'x86_64-unknown-linux-gnu' && github.event.inputs.dry_run != 'true'
         run: |
-          if ! file tw-${{ matrix.target }} | grep -q "statically linked"; then
+          mkdir -p release-assets
+          cp -a target/manual release-assets/
+          cp -a target/completion release-assets/
+          tar -czf tabiew-manual-and-completions.tar.gz -C release-assets manual completion
+
+      - name: Upload Manual and Completions to GitHub Artifact
+        if: matrix.os == 'ubuntu-22.04' && matrix.target == 'x86_64-unknown-linux-gnu' && github.event.inputs.dry_run != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tabiew-manual-and-completions
+          path: tabiew-manual-and-completions.tar.gz
+
+      - name: Verify musl binary is static (Linux)
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
+        run: |
+          file tw-${{ matrix.target }}
+          if ! file tw-${{ matrix.target }} | grep -Eq "statically linked|static-pie linked"; then
             echo "Expected a statically linked musl binary: tw-${{ matrix.target }}"
             exit 1
           fi
 
       - name: Install Cargo Deb
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-gnu')
         run: cargo install cargo-deb --version 2.11.1 --force
 
       - name: Generate Deb Package
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-gnu')
         run: cargo deb --no-build --no-strip --output tabiew-${{ matrix.target }}.deb --target ${{ matrix.target }}
 
       - name: Install Cargo RPM
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-gnu')
         run: cargo install cargo-generate-rpm --version 0.16.0 --force
 
       - name: Generate RPM Packages
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-gnu')
         run: cargo generate-rpm --output tabiew-${{ matrix.target }}.rpm --target ${{ matrix.target }}
 
       # MacOS build
-      - name: Build and Test (MacOS)
+      - name: Add Rust Target (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build (MacOS)
         if: matrix.os == 'macos-latest'
         run: |
-          rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
-          cargo test --release --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw tw-${{ matrix.target }}
 
+      - name: Test (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: cargo test --release --target ${{ matrix.target }}
+
       # Windows build
-      - name: Build and Test (Windows)
+      - name: Install Windows Toolchains
         if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
         run: |
           choco install -y strawberryperl nasm
           rustup target add ${{ matrix.target }}
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        run: |
           cargo build --release --target ${{ matrix.target }}
-          cargo test --release --target ${{ matrix.target }}
           cp target/${{ matrix.target }}/release/tw.exe tw-${{ matrix.target }}.exe
+
+      - name: Test (Windows)
+        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        run: cargo test --release --target ${{ matrix.target }}
 
       # Upload compiled binary to GitHub artifact
       - name: Upload Binary to GitHub Artifact (Linux and MacOS)
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: (startsWith(matrix.os, 'ubuntu-') || matrix.os == 'macos-latest') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}
           path: tw-${{ matrix.target }}
 
       - name: Upload Binary to GitHub Artifact (Windows)
-        if: matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm'
+        if: (matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tw-${{ matrix.target }}.exe
@@ -144,14 +195,14 @@ jobs:
 
       # Upload Deb and RPM
       - name: Upload Deb Package to GitHub Artifact
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-gnu') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.deb
           path: tabiew-${{ matrix.target }}.deb
 
       - name: Upload RPM Package to GitHub Artifact
-        if: matrix.os == 'ubuntu-latest' && endsWith(matrix.target, '-gnu')
+        if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-gnu') && github.event.inputs.dry_run != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tabiew-${{ matrix.target }}.rpm
@@ -160,7 +211,8 @@ jobs:
   release:
     name: Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    if: ${{ github.event.inputs.dry_run != 'true' }}
     permissions:
       contents: write
     steps:
