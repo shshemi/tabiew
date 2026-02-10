@@ -63,20 +63,19 @@ impl Default for TagLine<'_, '_> {
 
 impl From<TagLine<'_, '_>> for Line<'_> {
     fn from(value: TagLine) -> Self {
-        Line::from_iter(
-            itertools::intersperse(
-                value
-                    .tags
-                    .into_iter()
-                    .enumerate()
-                    .map(|(idx, tag)| match value.style {
-                        StatusBarStyle::MultiColor => tag.into_multi_color_span(idx).into_iter(),
-                        StatusBarStyle::MonoColor => tag.into_mono_color_span().into_iter(),
-                    }),
-                [Span::raw(" "), Span::raw("")].into_iter(),
-            )
-            .flatten(),
+        itertools::intersperse(
+            value
+                .tags
+                .into_iter()
+                .enumerate()
+                .map(|(idx, tag)| match value.style {
+                    StatusBarStyle::MultiColor => tag.into_multi_color_span(idx).into_iter(),
+                    StatusBarStyle::MonoColor => tag.into_mono_color_span().into_iter(),
+                }),
+            [Span::raw(" "), Span::raw("")].into_iter(),
         )
+        .flatten()
+        .collect::<Line<'_>>()
         .alignment(value.alignment)
     }
 }
