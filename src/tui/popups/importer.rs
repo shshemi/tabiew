@@ -7,7 +7,7 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
-        step_by_step::{ComponentSequence, ComponentSequenceContainer},
+        component_sequence::{ComponentSequence, ComponentSequenceContainer},
     },
 };
 

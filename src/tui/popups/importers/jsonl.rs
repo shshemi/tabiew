@@ -4,7 +4,7 @@ use crate::{
         import_source_picker::{self, ImportSourcePicker},
         importers::final_step,
         path_picker::PathPicker,
-        step_by_step::ComponentSequence,
+        component_sequence::ComponentSequence,
     },
 };
 

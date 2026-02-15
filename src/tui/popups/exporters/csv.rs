@@ -10,9 +10,9 @@ use crate::{
         component::Component,
         pickers::text_picker::TextPicker,
         popups::{
+            component_sequence::ComponentSequence,
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
-            step_by_step::ComponentSequence,
         },
     },
     writer::WriteToCsv,

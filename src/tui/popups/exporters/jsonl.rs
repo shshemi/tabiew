@@ -11,7 +11,7 @@ use crate::{
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
-            step_by_step::ComponentSequence,
+            component_sequence::ComponentSequence,
         },
     },
     writer::{JsonFormat, WriteToJson},

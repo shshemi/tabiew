@@ -5,7 +5,7 @@ use crate::{
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
-        popups::{path_picker::PathPicker, step_by_step::ComponentSequence},
+        popups::{component_sequence::ComponentSequence, path_picker::PathPicker},
     },
     writer::{Destination, WriteToArrow, WriteToFile},
 };

@@ -9,9 +9,9 @@ use crate::{
     tui::{
         component::Component,
         popups::{
+            component_sequence::ComponentSequence,
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
-            step_by_step::ComponentSequence,
         },
     },
     writer::{JsonFormat, WriteToJson},

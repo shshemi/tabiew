@@ -1,5 +1,6 @@
 pub mod column_caster;
 pub mod command_palette;
+pub mod component_sequence;
 pub mod data_frame_info;
 pub mod export_target_picker;
 pub mod exporter;
@@ -14,7 +15,6 @@ pub mod inline_query_picker;
 pub mod path_picker;
 pub mod scatter_plot_builder;
 pub mod sql_query_picker;
-pub mod step_by_step;
 pub mod table_registerer;
 pub mod theme_selector;
 pub mod yes_no_picker;
