@@ -9,7 +9,7 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         exporters::{arrow, csv, json, jsonl, parquet, tsv},
-        step_by_step::{StepByStep, StepByStepState},
+        step_by_step::{ComponentSequence, StepByStep},
     },
 };
 
@@ -50,7 +50,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { df, picker } => match picker.selected_item() {

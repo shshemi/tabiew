@@ -12,7 +12,7 @@ use crate::{
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
-            step_by_step::StepByStepState,
+            step_by_step::ComponentSequence,
         },
     },
     writer::WriteToCsv,
@@ -55,7 +55,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickSeparator { df, picker } => {

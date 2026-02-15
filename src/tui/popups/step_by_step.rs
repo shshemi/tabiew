@@ -2,19 +2,19 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::{handler::message::Message, tui::component::Component};
 
-pub trait StepByStepState {
+pub trait ComponentSequence {
     fn next(self) -> Self;
     fn responder(&mut self) -> &mut dyn Component;
 }
 
 #[derive(Debug)]
-pub struct StepByStep<W: StepByStepState> {
+pub struct StepByStep<W: ComponentSequence> {
     state: Option<W>,
 }
 
 impl<W> StepByStep<W>
 where
-    W: StepByStepState,
+    W: ComponentSequence,
 {
     pub fn new(state: W) -> Self {
         Self { state: Some(state) }
@@ -23,7 +23,7 @@ where
 
 impl<W> Component for StepByStep<W>
 where
-    W: StepByStepState,
+    W: ComponentSequence,
 {
     fn render(
         &mut self,
@@ -58,7 +58,7 @@ where
 
 impl<State> Default for StepByStep<State>
 where
-    State: Default + StepByStepState,
+    State: Default + ComponentSequence,
 {
     fn default() -> Self {
         Self::new(Default::default())
