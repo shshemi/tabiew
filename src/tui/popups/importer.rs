@@ -7,11 +7,11 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
-        step_by_step::{ComponentSequence, StepByStep},
+        step_by_step::{ComponentSequence, ComponentSequenceContainer},
     },
 };
 
-pub type Importer = StepByStep<State>;
+pub type Importer = ComponentSequenceContainer<State>;
 
 #[derive(Debug)]
 pub enum State {

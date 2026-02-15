@@ -24,7 +24,7 @@ use crate::{
             histogram_builder::{self, HistogramBuilder},
             inline_query_picker::{InlineQueryPicker, QueryType},
             scatter_plot_builder::{self, ScatterPlotBuilder},
-            step_by_step::StepByStep,
+            step_by_step::ComponentSequenceContainer,
             table_registerer::TableRegisterer,
         },
         search_bar::Searcher,
@@ -178,7 +178,7 @@ impl Pane {
     }
 
     fn show_scatter_plot_builder(&mut self) {
-        self.modal = Some(Modal::ScatterPlotBuilder(StepByStep::new(
+        self.modal = Some(Modal::ScatterPlotBuilder(ComponentSequenceContainer::new(
             scatter_plot_builder::State::new(self.tstack.last().data_frame().clone()),
         )))
     }

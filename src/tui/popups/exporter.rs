@@ -9,11 +9,11 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         exporters::{arrow, csv, json, jsonl, parquet, tsv},
-        step_by_step::{ComponentSequence, StepByStep},
+        step_by_step::{ComponentSequence, ComponentSequenceContainer},
     },
 };
 
-pub type Exporter = StepByStep<State>;
+pub type Exporter = ComponentSequenceContainer<State>;
 
 #[derive(Debug)]
 pub enum State {

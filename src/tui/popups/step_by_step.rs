@@ -8,11 +8,11 @@ pub trait ComponentSequence {
 }
 
 #[derive(Debug)]
-pub struct StepByStep<W: ComponentSequence> {
+pub struct ComponentSequenceContainer<W: ComponentSequence> {
     state: Option<W>,
 }
 
-impl<W> StepByStep<W>
+impl<W> ComponentSequenceContainer<W>
 where
     W: ComponentSequence,
 {
@@ -21,7 +21,7 @@ where
     }
 }
 
-impl<W> Component for StepByStep<W>
+impl<W> Component for ComponentSequenceContainer<W>
 where
     W: ComponentSequence,
 {
@@ -56,7 +56,7 @@ where
     }
 }
 
-impl<State> Default for StepByStep<State>
+impl<State> Default for ComponentSequenceContainer<State>
 where
     State: Default + ComponentSequence,
 {
