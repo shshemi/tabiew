@@ -14,7 +14,7 @@ use crate::{
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::step_by_step::{StepByStep, StepByStepState},
+        popups::step_by_step::{ComponentSequence, StepByStep},
     },
 };
 
@@ -33,7 +33,7 @@ pub enum State {
     },
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { df, picker } => {

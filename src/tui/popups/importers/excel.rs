@@ -1,6 +1,6 @@
 use crate::{
     reader::{ExcelToDataFarmes, Source},
-    tui::popups::{importers::final_step, path_picker::PathPicker, step_by_step::StepByStepState},
+    tui::popups::{importers::final_step, path_picker::PathPicker, step_by_step::ComponentSequence},
 };
 
 #[derive(Debug)]
@@ -8,7 +8,7 @@ pub enum State {
     PickPath { picker: PathPicker },
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickPath { picker } => {

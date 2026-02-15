@@ -1,6 +1,6 @@
 use crate::{
     reader::{ArrowIpcToDataFrame, Source},
-    tui::popups::{importers::final_step, path_picker::PathPicker, step_by_step::StepByStepState},
+    tui::popups::{importers::final_step, path_picker::PathPicker, step_by_step::ComponentSequence},
 };
 
 #[derive(Debug)]
@@ -8,7 +8,7 @@ pub enum State {
     PickImportPath { picker: PathPicker },
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickImportPath { picker } => {

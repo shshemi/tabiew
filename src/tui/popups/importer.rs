@@ -7,7 +7,7 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
-        step_by_step::{StepByStep, StepByStepState},
+        step_by_step::{StepByStep, ComponentSequence},
     },
 };
 
@@ -28,7 +28,7 @@ pub enum State {
     Logfmt { logfmt: logfmt::State },
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { picker } => match picker.selected_item() {

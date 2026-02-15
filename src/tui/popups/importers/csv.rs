@@ -7,7 +7,7 @@ use crate::{
             import_source_picker::{self, ImportSourcePicker},
             importers::final_step,
             path_picker::PathPicker,
-            step_by_step::StepByStepState,
+            step_by_step::ComponentSequence,
             yes_no_picker::YesNoPicker,
         },
     },
@@ -38,7 +38,7 @@ pub enum State {
     },
 }
 
-impl StepByStepState for State {
+impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
