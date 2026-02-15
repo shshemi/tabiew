@@ -11,7 +11,7 @@ use crate::misc::config::theme;
 #[derive(Debug)]
 pub struct TagLine<'a, 'b> {
     tags: Vec<Tag<'a, 'b>>,
-    style: StatusBarStyle,
+    style: TagLineStyle,
     alignment: Alignment,
 }
 
@@ -19,7 +19,7 @@ impl<'a, 'b> TagLine<'a, 'b> {
     pub fn new() -> Self {
         Self {
             tags: Default::default(),
-            style: StatusBarStyle::MultiColor,
+            style: TagLineStyle::MultiColor,
             alignment: Alignment::Right,
         }
     }
@@ -30,12 +30,12 @@ impl<'a, 'b> TagLine<'a, 'b> {
     }
 
     pub fn multi_color(mut self) -> Self {
-        self.style = StatusBarStyle::MultiColor;
+        self.style = TagLineStyle::MultiColor;
         self
     }
 
     pub fn mono_color(mut self) -> Self {
-        self.style = StatusBarStyle::MonoColor;
+        self.style = TagLineStyle::MonoColor;
         self
     }
 
@@ -69,8 +69,8 @@ impl From<TagLine<'_, '_>> for Line<'_> {
                 .into_iter()
                 .enumerate()
                 .map(|(idx, tag)| match value.style {
-                    StatusBarStyle::MultiColor => tag.into_multi_color_span(idx).into_iter(),
-                    StatusBarStyle::MonoColor => tag.into_mono_color_span().into_iter(),
+                    TagLineStyle::MultiColor => tag.into_multi_color_span(idx).into_iter(),
+                    TagLineStyle::MonoColor => tag.into_mono_color_span().into_iter(),
                 }),
             [Span::raw(" "), Span::raw("")].into_iter(),
         )
@@ -81,7 +81,7 @@ impl From<TagLine<'_, '_>> for Line<'_> {
 }
 
 #[derive(Debug)]
-pub enum StatusBarStyle {
+pub enum TagLineStyle {
     MultiColor,
     MonoColor,
 }
