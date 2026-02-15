@@ -4,7 +4,7 @@ use crate::{
     reader::{Source, SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
-        popups::{importers::final_step, path_picker::PathPicker, step_by_step::ComponentSequence},
+        popups::{importers::final_step, path_picker::PathPicker, component_sequence::ComponentSequence},
     },
 };
 

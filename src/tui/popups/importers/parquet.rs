@@ -1,7 +1,7 @@
 use crate::{
     reader::{ParquetToDataFrame, Source},
     tui::popups::{
-        importers::final_step, path_picker::PathPicker, step_by_step::ComponentSequence,
+        importers::final_step, path_picker::PathPicker, component_sequence::ComponentSequence,
     },
 };
 

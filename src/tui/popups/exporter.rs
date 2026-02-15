@@ -8,8 +8,8 @@ use crate::tui::{
     component::Component,
     pickers::search_picker::SearchPicker,
     popups::{
+        component_sequence::{ComponentSequence, ComponentSequenceContainer},
         exporters::{arrow, csv, json, jsonl, parquet, tsv},
-        step_by_step::{ComponentSequence, ComponentSequenceContainer},
     },
 };
 

@@ -14,7 +14,7 @@ use crate::{
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::step_by_step::{ComponentSequence, ComponentSequenceContainer},
+        popups::component_sequence::{ComponentSequence, ComponentSequenceContainer},
     },
 };
 
