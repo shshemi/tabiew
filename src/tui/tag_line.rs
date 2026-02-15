@@ -81,7 +81,7 @@ impl From<TagLine<'_, '_>> for Line<'_> {
 }
 
 #[derive(Debug)]
-pub enum TagLineStyle {
+enum TagLineStyle {
     MultiColor,
     MonoColor,
 }
