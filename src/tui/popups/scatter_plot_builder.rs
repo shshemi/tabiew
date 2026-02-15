@@ -4,11 +4,11 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::search_picker::SearchPicker,
-        popups::step_by_step::{ComponentSequence, StepByStep},
+        popups::step_by_step::{ComponentSequence, ComponentSequenceContainer},
     },
 };
 
-pub type ScatterPlotBuilder = StepByStep<State>;
+pub type ScatterPlotBuilder = ComponentSequenceContainer<State>;
 
 #[derive(Debug)]
 pub enum State {
