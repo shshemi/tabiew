@@ -1,6 +1,8 @@
 use crate::{
     reader::{ExcelToDataFarmes, Source},
-    tui::popups::{importers::final_step, path_picker::PathPicker, step_by_step::ComponentSequence},
+    tui::popups::{
+        importers::final_step, path_picker::PathPicker, step_by_step::ComponentSequence,
+    },
 };
 
 #[derive(Debug)]

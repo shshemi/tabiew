@@ -4,7 +4,7 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::search_picker::SearchPicker,
-        popups::step_by_step::{StepByStep, ComponentSequence},
+        popups::step_by_step::{ComponentSequence, StepByStep},
     },
 };
 

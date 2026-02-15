@@ -6,7 +6,7 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::step_by_step::{StepByStep, ComponentSequence},
+        popups::step_by_step::{ComponentSequence, StepByStep},
         widgets::input::InputType,
     },
 };
