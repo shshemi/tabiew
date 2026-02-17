@@ -10,7 +10,7 @@ use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config::config;
-use tabiew::misc::globals::sql;
+use tabiew::misc::sql::sql;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
