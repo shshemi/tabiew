@@ -8,7 +8,7 @@ use polars::{
     series::Series,
 };
 
-use crate::{AppResult, args::Args, misc::globals::stdin};
+use crate::{AppResult, args::Args, misc::stdin::stdin};
 
 use super::{NamedFrames, ReadToDataFrames, Source};
 
