@@ -1,6 +1,5 @@
 pub mod config;
 pub mod external_editor;
-pub mod globals;
 pub mod iter_ext;
 pub mod jagged_vec;
 pub mod non_empty_stack;
@@ -10,5 +9,6 @@ pub mod polars_ext;
 pub mod search;
 pub mod snake_case_name_gen;
 pub mod sql;
+pub mod stdin;
 pub mod type_ext;
 pub mod type_inferer;

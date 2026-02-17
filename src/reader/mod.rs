@@ -27,7 +27,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Format, InferSchema},
-    misc::{globals::stdin, type_ext::ToAscii},
+    misc::{stdin::stdin, type_ext::ToAscii},
 };
 
 type NamedFrames = Box<[(String, DataFrame)]>;

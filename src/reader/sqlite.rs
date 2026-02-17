@@ -8,7 +8,7 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::{AppResult, args::Args, misc::globals::stdin, reader::Source};
+use crate::{AppResult, args::Args, misc::stdin::stdin, reader::Source};
 
 use super::{NamedFrames, ReadToDataFrames};
 
