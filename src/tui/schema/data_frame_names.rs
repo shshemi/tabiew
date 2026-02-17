@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{config::theme, globals::sql},
+    misc::{config::theme, sql::sql},
     tui::{
         component::Component,
         tag_line::{Tag, TagLine},

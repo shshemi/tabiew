@@ -9,7 +9,7 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        config::config, external_editor::ExternalEditor, globals::sql,
+        config::config, external_editor::ExternalEditor, sql::sql,
         non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt, sql::Source,
         type_ext::UnwrapOrEnqueueError,
     },

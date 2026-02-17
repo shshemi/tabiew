@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    misc::globals::sql,
+    misc::sql::sql,
     reader::{ReadToDataFrames, Source},
 };
 

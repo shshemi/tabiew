@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     handler::message::Message,
-    misc::{config::theme, globals::sql},
+    misc::{config::theme, sql::sql},
     tui::{
         component::Component,
         schema::{data_frame_info::DataFrameInfo, data_frame_names::DataFrameNames},

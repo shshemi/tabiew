@@ -1,16 +1,7 @@
 use std::{
     io::{Cursor, Read},
-    ops::DerefMut,
-    sync::{LazyLock, Mutex},
+    sync::LazyLock,
 };
-
-use super::sql::SqlBackend;
-
-pub fn sql() -> impl DerefMut<Target = SqlBackend> {
-    static SQL_BACKEND: LazyLock<Mutex<SqlBackend>> =
-        LazyLock::new(|| Mutex::new(SqlBackend::default()));
-    SQL_BACKEND.lock().unwrap()
-}
 
 pub fn stdin() -> Cursor<&'static Vec<u8>> {
     static STDIN_CONTENT: LazyLock<Vec<u8>> = LazyLock::new(|| {

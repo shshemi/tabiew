@@ -3,7 +3,7 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    misc::globals::sql,
+    misc::sql::sql,
     tui::{component::Component, pickers::text_picker::TextPicker},
 };
 

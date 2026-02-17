@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use std::{
+    ops::DerefMut,
+    path::PathBuf,
+    sync::{LazyLock, Mutex},
+};
 
 use indexmap::IndexMap;
 use polars::{
@@ -257,6 +261,12 @@ impl FieldInfo {
     pub fn max(&self) -> &str {
         &self.max
     }
+}
+
+pub fn sql() -> impl DerefMut<Target = SqlBackend> {
+    static SQL_BACKEND: LazyLock<Mutex<SqlBackend>> =
+        LazyLock::new(|| Mutex::new(SqlBackend::default()));
+    SQL_BACKEND.lock().unwrap()
 }
 
 fn min_max(series: &Series) -> (String, String) {
