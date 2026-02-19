@@ -86,6 +86,7 @@ impl SqlQueryPicker {
                 let cursor = self.input.cursor();
                 let value = self.input.value().to_owned();
                 let before_cursor = &value[..cursor];
+                let at_cursor = value[cursor..].chars().next();
 
                 let token_start = before_cursor
                     .char_indices()
@@ -102,6 +103,9 @@ impl SqlQueryPicker {
 
                 for c in suggestion.chars() {
                     self.input.insert(c);
+                }
+                if !at_cursor.is_some_and(|c| c.is_whitespace()) {
+                    self.input.insert(' ');
                 }
 
                 self.suggestions.clear();
