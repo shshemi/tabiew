@@ -102,6 +102,9 @@ itoa = "1.0.17"
 logfmt-zerocopy = "0.1.0"
 indexmap = "2.13.0"
 
+[dev-dependencies]
+rstest = "0.26"
+
 [build-dependencies]
 clap = { version = "4.5.54", features = ["derive"] }
 clap_mangen = { version = "0.2.31" }

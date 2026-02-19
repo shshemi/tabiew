@@ -107,3 +107,73 @@ fn find_clause_for_comma(tokens: &[&Token]) -> CompletionContext {
     }
     CompletionContext::None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    // Empty / whitespace-only input.
+    #[case::empty("", CompletionContext::None)]
+    #[case::whitespace_only("   ", CompletionContext::None)]
+    // Qualified column via trailing dot.
+    #[case::qualified_column("SELECT t.", CompletionContext::QualifiedColumn("t".to_string()))]
+    #[case::qualified_column_with_schema("SELECT schema.t.", CompletionContext::QualifiedColumn("schema.t".to_string()))]
+    // Keywords that yield Column context.
+    #[case::select("SELECT", CompletionContext::Column)]
+    #[case::select_distinct("SELECT DISTINCT", CompletionContext::Column)]
+    #[case::where_clause("SELECT * FROM t WHERE", CompletionContext::Column)]
+    #[case::and("SELECT * FROM t WHERE a = 1 AND", CompletionContext::Column)]
+    #[case::or("SELECT * FROM t WHERE a = 1 OR", CompletionContext::Column)]
+    #[case::having("SELECT a FROM t GROUP BY a HAVING", CompletionContext::Column)]
+    #[case::between("SELECT * FROM t WHERE a BETWEEN", CompletionContext::Column)]
+    #[case::case_keyword("SELECT CASE", CompletionContext::Column)]
+    #[case::when_keyword("SELECT CASE WHEN", CompletionContext::Column)]
+    #[case::then_keyword("SELECT CASE WHEN a THEN", CompletionContext::Column)]
+    #[case::else_keyword("SELECT CASE WHEN a THEN b ELSE", CompletionContext::Column)]
+    #[case::in_keyword("SELECT * FROM t WHERE a IN", CompletionContext::Column)]
+    #[case::like_keyword("SELECT * FROM t WHERE a LIKE", CompletionContext::Column)]
+    #[case::is_keyword("SELECT * FROM t WHERE a IS", CompletionContext::Column)]
+    #[case::not_keyword("SELECT * FROM t WHERE NOT", CompletionContext::Column)]
+    #[case::set_keyword("UPDATE t SET", CompletionContext::Column)]
+    #[case::on_keyword("SELECT * FROM a JOIN b ON", CompletionContext::Column)]
+    // Keywords that yield Table context.
+    #[case::from("SELECT * FROM", CompletionContext::Table)]
+    #[case::join("SELECT * FROM a JOIN", CompletionContext::Table)]
+    #[case::into("INSERT INTO", CompletionContext::Table)]
+    // ORDER BY / GROUP BY.
+    #[case::order_by("SELECT * FROM t ORDER BY", CompletionContext::Column)]
+    #[case::group_by("SELECT a FROM t GROUP BY", CompletionContext::Column)]
+    // BY without ORDER/GROUP preceding it.
+    #[case::bare_by("BY", CompletionContext::None)]
+    // ASC / DESC.
+    #[case::asc("SELECT * FROM t ORDER BY a ASC,", CompletionContext::Column)]
+    #[case::desc("SELECT * FROM t ORDER BY a DESC", CompletionContext::Column)]
+    // Keywords that yield None.
+    #[case::as_keyword("SELECT a AS", CompletionContext::None)]
+    #[case::limit("SELECT * FROM t LIMIT", CompletionContext::None)]
+    #[case::offset("SELECT * FROM t LIMIT 10 OFFSET", CompletionContext::None)]
+    // Comparison operators.
+    #[case::eq("SELECT * FROM t WHERE a =", CompletionContext::Column)]
+    #[case::neq("SELECT * FROM t WHERE a !=", CompletionContext::Column)]
+    #[case::lt("SELECT * FROM t WHERE a <", CompletionContext::Column)]
+    #[case::gt("SELECT * FROM t WHERE a >", CompletionContext::Column)]
+    #[case::lte("SELECT * FROM t WHERE a <=", CompletionContext::Column)]
+    #[case::gte("SELECT * FROM t WHERE a >=", CompletionContext::Column)]
+    // Left paren.
+    #[case::lparen("SELECT COUNT(", CompletionContext::Column)]
+    // Comma context (scans back to enclosing clause).
+    #[case::comma_in_select("SELECT a,", CompletionContext::Column)]
+    #[case::comma_in_from("SELECT * FROM a,", CompletionContext::Table)]
+    #[case::comma_in_where("SELECT * FROM t WHERE a = 1 AND b IN (1,", CompletionContext::Column)]
+    #[case::comma_in_order_by("SELECT * FROM t ORDER BY a,", CompletionContext::Column)]
+    // Identifier (not a keyword) yields None.
+    #[case::plain_identifier("SELECT a", CompletionContext::None)]
+    fn test_detect_sql_context(
+        #[case] before_token: &str,
+        #[case] expected: CompletionContext,
+    ) {
+        assert_eq!(detect_sql_context(before_token), expected);
+    }
+}

@@ -45,3 +45,31 @@ pub fn extract_token_and_context(
 
     (token, context)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case::empty_input("", 0, "", "", CompletionContext::None)]
+    #[case::simple_column_after_select("col", 3, "SELECT ", "col", CompletionContext::Column)]
+    #[case::cursor_in_middle_of_word("column_name", 3, "SELECT ", "col", CompletionContext::Column)]
+    #[case::after_comma_in_select("a, b", 4, "SELECT ", "b", CompletionContext::Column)]
+    #[case::table_after_from("tab", 3, "SELECT * FROM ", "tab", CompletionContext::Table)]
+    #[case::qualified_column("t.col", 5, "SELECT ", "col", CompletionContext::QualifiedColumn("t".to_string()))]
+    #[case::after_where("x", 1, "SELECT * FROM _ WHERE ", "x", CompletionContext::Column)]
+    #[case::cursor_beyond_length("ab", 100, "SELECT ", "ab", CompletionContext::Column)]
+    #[case::at_separator_boundary("a ", 2, "SELECT ", "", CompletionContext::None)]
+    fn test_extract_token_and_context(
+        #[case] value: &str,
+        #[case] cursor: usize,
+        #[case] sql_prefix: &str,
+        #[case] expected_token: &str,
+        #[case] expected_context: CompletionContext,
+    ) {
+        let (token, context) = extract_token_and_context(value, cursor, sql_prefix);
+        assert_eq!(token, expected_token);
+        assert_eq!(context, expected_context);
+    }
+}
