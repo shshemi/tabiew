@@ -102,6 +102,10 @@ impl Input {
     pub fn value(&self) -> &str {
         self.input.value()
     }
+
+    pub fn cursor(&self) -> usize {
+        self.input.cursor()
+    }
 }
 
 impl Component for Input {
