@@ -14,6 +14,7 @@ pub mod importers;
 pub mod inline_query_picker;
 pub mod path_picker;
 pub mod scatter_plot_builder;
+pub mod sql_completion;
 pub mod sql_query_picker;
 pub mod table_registerer;
 pub mod theme_selector;

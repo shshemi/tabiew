@@ -94,6 +94,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.11"
 shell-words = "1.1.1"
 tui-scrollview = "0.6.2"
+sqlparser = "0.53"
 strum = "0.27"
 strum_macros = "0.27"
 ryu = "1.0.22"
