@@ -130,6 +130,7 @@ mod tests {
     #[case::between("SELECT * FROM t WHERE a BETWEEN", CompletionContext::Column)]
     #[case::case_keyword("SELECT CASE", CompletionContext::Column)]
     #[case::when_keyword("SELECT CASE WHEN", CompletionContext::Column)]
+    #[case::when_keyword("SELECT CASE WHEN a", CompletionContext::None)]
     #[case::then_keyword("SELECT CASE WHEN a THEN", CompletionContext::Column)]
     #[case::else_keyword("SELECT CASE WHEN a THEN b ELSE", CompletionContext::Column)]
     #[case::in_keyword("SELECT * FROM t WHERE a IN", CompletionContext::Column)]
