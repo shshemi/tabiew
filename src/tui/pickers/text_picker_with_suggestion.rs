@@ -1,4 +1,6 @@
-use crossterm::event::{KeyCode, KeyModifiers};
+use std::fmt;
+
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     symbols::{
@@ -9,7 +11,6 @@ use ratatui::{
 };
 
 use crate::{
-    handler::message::Message,
     misc::config::theme,
     tui::{
         component::Component,
@@ -17,13 +18,104 @@ use crate::{
     },
 };
 
+const MAX_VISIBLE_SUGGESTIONS: usize = 10;
+
+/// A text input picker that shows a suggestion list below the input.
+///
+/// The `Provider` trait generates suggestions based on the current input and
+/// cursor position. The `on_submit` and `on_dismiss` callbacks handle
+/// domain-specific logic when the user presses Enter or Esc.
 pub struct TextPickerWithSuggestion<P> {
     title: String,
     input: Input,
-    list_state: ListState,
-    cached_query: String,
-    cached_items: Vec<String>,
+    suggestions: Vec<String>,
+    selected_suggestion: Option<usize>,
     provider: P,
+    on_submit: Box<dyn Fn(&str)>,
+    on_dismiss: Box<dyn Fn()>,
+}
+
+impl<P: fmt::Debug> fmt::Debug for TextPickerWithSuggestion<P> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("TextPickerWithSuggestion")
+            .field("title", &self.title)
+            .field("suggestions", &self.suggestions)
+            .field("selected_suggestion", &self.selected_suggestion)
+            .field("provider", &self.provider)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<P> TextPickerWithSuggestion<P>
+where
+    P: Provider,
+{
+    pub fn new(
+        title: impl Into<String>,
+        provider: P,
+        on_submit: Box<dyn Fn(&str)>,
+        on_dismiss: Box<dyn Fn()>,
+    ) -> Self {
+        Self {
+            title: title.into(),
+            input: Input::default(),
+            suggestions: Vec::new(),
+            selected_suggestion: None,
+            provider,
+            on_submit,
+            on_dismiss,
+        }
+    }
+
+    pub fn value(&self) -> &str {
+        self.input.value()
+    }
+
+    fn update_suggestions(&mut self) {
+        self.suggestions = self
+            .provider
+            .suggestions(self.input.value(), self.input.cursor());
+        self.selected_suggestion = if self.suggestions.is_empty() {
+            None
+        } else {
+            Some(0)
+        };
+    }
+
+    fn accept_suggestion(&mut self) {
+        if let Some(index) = self.selected_suggestion {
+            if let Some(suggestion) = self.suggestions.get(index).cloned() {
+                let cursor = self.input.cursor();
+                let value = self.input.value().to_owned();
+                let before_cursor = &value[..cursor];
+                let at_cursor = value[cursor..].chars().next();
+
+                let token_start = before_cursor
+                    .char_indices()
+                    .rev()
+                    .find(|(_, character)| self.provider.is_separator(*character))
+                    .map(|(index, character)| index + character.len_utf8())
+                    .unwrap_or(0);
+
+                let token_character_length = before_cursor[token_start..].chars().count();
+
+                for _ in 0..token_character_length {
+                    self.input.delete_prev();
+                }
+
+                for character in suggestion.chars() {
+                    self.input.insert(character);
+                }
+                if !at_cursor.is_some_and(|character| character.is_whitespace()) {
+                    self.input.insert(' ');
+                }
+
+                self.suggestions.clear();
+                self.selected_suggestion = None;
+            }
+        }
+    }
 }
 
 impl<P> Component for TextPickerWithSuggestion<P>
@@ -36,69 +128,138 @@ where
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        let list = List::default()
-            .items(self.cached_items.iter().map(String::as_str))
-            .highlight_style(theme().row_highlighted())
-            .block(
-                Block::default()
-                    .border_set(Set {
-                        top_left: VERTICAL_RIGHT,
-                        top_right: VERTICAL_LEFT,
-                        ..ROUNDED
-                    })
-                    .into_widget(),
-            );
+        let has_suggestions = !self.suggestions.is_empty();
+        let width = 80u16;
 
-        let width = 80;
-        let height = list.len().saturating_add(4).min(25) as u16;
+        if has_suggestions {
+            let visible = self.suggestions.len().min(MAX_VISIBLE_SUGGESTIONS);
+            let total_height = 3 + visible as u16 + 1;
 
-        let [area] = Layout::horizontal([Constraint::Length(width)])
-            .flex(Flex::Center)
-            .areas(buf.area);
-        let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
+            let [area] = Layout::horizontal([Constraint::Length(width)])
+                .flex(Flex::Center)
+                .areas(buf.area);
+            let [_, area] = Layout::vertical([
+                Constraint::Length(3),
+                Constraint::Length(total_height),
+            ])
+            .areas(area);
 
-        Widget::render(Clear, area, buf);
-        let [input_area, list_area] =
-            Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
+            Widget::render(Clear, area, buf);
 
-        let input_area = {
-            let block = Block::default()
-                .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
-                .title(self.title.as_str());
-            let input_inner = block.inner(input_area);
-            Widget::render(block, area, buf);
-            input_inner
-        };
-        self.input.render(input_area, buf, focus_state);
-        StatefulWidget::render(list, list_area, buf, &mut self.list_state);
-    }
-    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        if self.input.handle(event) {
-            if self.cached_query != self.input.value() {
-                self.cached_query.clear();
-                self.cached_query.push_str(self.input.value());
-                self.cached_items.clear();
-                self.cached_items
-                    .extend(self.provider.suggestions(self.input.value()));
-            }
-            true
+            let [input_area, list_area] =
+                Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
+
+            let input_area_inner = {
+                let block = Block::default()
+                    .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
+                    .title(self.title.as_str());
+                let inner = block.inner(input_area);
+                Widget::render(block, input_area, buf);
+                inner
+            };
+            self.input.render(input_area_inner, buf, focus_state);
+
+            let mut list_state = ListState::default();
+            list_state.select(self.selected_suggestion);
+
+            let list = List::default()
+                .items(
+                    self.suggestions
+                        .iter()
+                        .take(MAX_VISIBLE_SUGGESTIONS)
+                        .map(String::as_str),
+                )
+                .highlight_style(theme().row_highlighted())
+                .block(
+                    Block::default()
+                        .border_set(Set {
+                            top_left: VERTICAL_RIGHT,
+                            top_right: VERTICAL_LEFT,
+                            ..ROUNDED
+                        })
+                        .into_widget(),
+                );
+
+            StatefulWidget::render(list, list_area, buf, &mut list_state);
         } else {
-            match (event.code, event.modifiers) {
-                (KeyCode::Enter, KeyModifiers::NONE) => {
-                    Message::AppDismissOverlay.enqueue();
-                    true
+            let [area] = Layout::horizontal([Constraint::Length(width)])
+                .flex(Flex::Center)
+                .areas(buf.area);
+            let [_, area] =
+                Layout::vertical([Constraint::Length(3), Constraint::Length(3)]).areas(area);
+
+            Widget::render(Clear, area, buf);
+
+            let area_inner = {
+                let block = Block::default().title(self.title.as_str());
+                let inner = block.inner(area);
+                block.render(area, buf);
+                inner
+            };
+
+            self.input.render(area_inner, buf, focus_state);
+        }
+    }
+
+    fn handle(&mut self, event: KeyEvent) -> bool {
+        let has_suggestions = !self.suggestions.is_empty();
+
+        match (event.code, event.modifiers) {
+            // Accept the highlighted suggestion.
+            (KeyCode::Tab | KeyCode::Enter, KeyModifiers::NONE) if has_suggestions => {
+                self.accept_suggestion();
+                true
+            }
+            // Next suggestion.
+            (KeyCode::Down, KeyModifiers::NONE) | (KeyCode::Char('n'), KeyModifiers::CONTROL)
+                if has_suggestions =>
+            {
+                let max = self.suggestions.len().min(MAX_VISIBLE_SUGGESTIONS);
+                self.selected_suggestion =
+                    Some(self.selected_suggestion.map(|index| (index + 1) % max).unwrap_or(0));
+                true
+            }
+            // Previous suggestion.
+            (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL)
+                if has_suggestions =>
+            {
+                let max = self.suggestions.len().min(MAX_VISIBLE_SUGGESTIONS);
+                self.selected_suggestion = Some(
+                    self.selected_suggestion
+                        .map(|index| if index == 0 { max - 1 } else { index - 1 })
+                        .unwrap_or(max - 1),
+                );
+                true
+            }
+            // Submit.
+            (KeyCode::Enter, KeyModifiers::NONE) => {
+                (self.on_submit)(self.input.value());
+                true
+            }
+            // Dismiss.
+            (KeyCode::Esc, KeyModifiers::NONE) => {
+                (self.on_dismiss)();
+                true
+            }
+            // Delegate to input, then refresh suggestions.
+            _ => {
+                let handled = self.input.handle(event);
+                if handled {
+                    self.update_suggestions();
                 }
-                (KeyCode::Esc, KeyModifiers::NONE) => {
-                    Message::AppDismissOverlay.enqueue();
-                    true
-                }
-                _ => false,
+                handled
             }
         }
     }
 }
 
+/// Provides completion suggestions for `TextPickerWithSuggestion`.
 pub trait Provider {
-    fn suggestions(&self, query: &str) -> impl Iterator<Item = String>;
+    /// Return completion suggestions for the given input value at the given
+    /// cursor position.
+    fn suggestions(&self, value: &str, cursor: usize) -> Vec<String>;
+
+    /// Whether the given character is a word separator for suggestion
+    /// acceptance.
+    fn is_separator(&self, character: char) -> bool;
 }
