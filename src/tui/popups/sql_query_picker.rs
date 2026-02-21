@@ -1,23 +1,41 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
     misc::sql::sql,
-    tui::{component::Component, pickers::text_picker::TextPicker},
+    tui::{
+        component::Component,
+        pickers::text_picker_with_suggestion::TextPickerWithSuggestion,
+        popups::sql_completion_provider::SqlCompletionProvider,
+    },
 };
 
 #[derive(Debug)]
 pub struct SqlQueryPicker {
-    df: Option<DataFrame>,
-    text_picker: TextPicker,
+    picker: TextPickerWithSuggestion<SqlCompletionProvider>,
 }
 
 impl SqlQueryPicker {
-    pub fn new(df: Option<DataFrame>) -> Self {
+    pub fn new(dataframe: Option<DataFrame>) -> Self {
+        let provider = SqlCompletionProvider::new("", dataframe.clone());
+
+        let captured_dataframe = dataframe;
+        let on_submit = Box::new(move |value: &str| {
+            Message::AppDismissOverlay.enqueue();
+            match sql().execute(value, captured_dataframe.clone()) {
+                Ok(result) => {
+                    Message::TabsAddQueryPane(result, value.to_owned()).enqueue();
+                }
+                Err(error) => Message::AppShowError(error.to_string()).enqueue(),
+            }
+        });
+
+        let on_dismiss = Box::new(|| {
+            Message::AppDismissOverlay.enqueue();
+        });
+
         Self {
-            df,
-            text_picker: TextPicker::default().with_title("Sql"),
+            picker: TextPickerWithSuggestion::new("SQL", provider, on_submit, on_dismiss),
         }
     }
 }
@@ -29,28 +47,10 @@ impl Component for SqlQueryPicker {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        self.text_picker.render(area, buf, focus_state);
+        self.picker.render(area, buf, focus_state);
     }
 
-    fn handle(&mut self, event: KeyEvent) -> bool {
-        self.text_picker.handle(event)
-            || match (event.code, event.modifiers) {
-                (KeyCode::Enter, KeyModifiers::NONE) => {
-                    Message::AppDismissOverlay.enqueue();
-                    match sql().execute(self.text_picker.value(), self.df.clone()) {
-                        Ok(df) => {
-                            Message::TabsAddQueryPane(df, self.text_picker.value().to_owned())
-                                .enqueue();
-                        }
-                        Err(err) => Message::AppShowError(err.to_string()).enqueue(),
-                    }
-                    true
-                }
-                (KeyCode::Esc, KeyModifiers::NONE) => {
-                    Message::AppDismissOverlay.enqueue();
-                    true
-                }
-                _ => false,
-            }
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.picker.handle(event)
     }
 }
