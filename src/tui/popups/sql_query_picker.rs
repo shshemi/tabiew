@@ -12,12 +12,12 @@ use ratatui::{
 use crate::{
     handler::message::Message,
     misc::{config::theme, sql::sql},
+    sql_completion::{
+        self, CompletionContext, collect_all_columns, filter_by_prefix, get_table_columns,
+        get_table_names,
+    },
     tui::{
         component::Component,
-        popups::sql_completion::{
-            self, CompletionContext, collect_all_columns, filter_by_prefix, get_table_columns,
-            get_table_names,
-        },
         widgets::{block::Block, input::Input},
     },
 };
