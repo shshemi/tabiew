@@ -1,6 +1,9 @@
 /// User interface.
 pub mod tui;
 
+/// SQL autocompletion logic.
+pub mod sql_completion;
+
 /// Utils
 pub mod misc;
 
