@@ -6,7 +6,7 @@ use crate::{
     sql_completion,
     tui::{
         component::Component,
-        pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
+        pickers::text_picker_with_suggestion::{SuggestionProvider, TextPickerWithSuggestion},
     },
 };
 
@@ -49,7 +49,7 @@ struct SqlQueryProvider {
     all_columns: Vec<String>,
 }
 
-impl Provider for SqlQueryProvider {
+impl SuggestionProvider for SqlQueryProvider {
     fn suggestions(&self, value: &str, cursor: usize) -> Vec<String> {
         sql_completion::suggestions(value, cursor, "", &self.all_columns, self.dataframe.as_ref())
     }

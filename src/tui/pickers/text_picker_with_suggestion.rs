@@ -34,7 +34,7 @@ pub struct TextPickerWithSuggestion<P> {
 
 impl<P> TextPickerWithSuggestion<P>
 where
-    P: Provider,
+    P: SuggestionProvider,
 {
     pub fn new(title: impl Into<String>, provider: P) -> Self {
         Self {
@@ -98,7 +98,7 @@ where
 
 impl<P> Component for TextPickerWithSuggestion<P>
 where
-    P: Provider,
+    P: SuggestionProvider,
 {
     fn render(
         &mut self,
@@ -116,11 +116,9 @@ where
             let [area] = Layout::horizontal([Constraint::Length(width)])
                 .flex(Flex::Center)
                 .areas(buf.area);
-            let [_, area] = Layout::vertical([
-                Constraint::Length(3),
-                Constraint::Length(total_height),
-            ])
-            .areas(area);
+            let [_, area] =
+                Layout::vertical([Constraint::Length(3), Constraint::Length(total_height)])
+                    .areas(area);
 
             Widget::render(Clear, area, buf);
 
@@ -193,8 +191,11 @@ where
                 if has_suggestions =>
             {
                 let max = self.suggestions.len().min(MAX_VISIBLE_SUGGESTIONS);
-                self.selected_suggestion =
-                    Some(self.selected_suggestion.map(|index| (index + 1) % max).unwrap_or(0));
+                self.selected_suggestion = Some(
+                    self.selected_suggestion
+                        .map(|index| (index + 1) % max)
+                        .unwrap_or(0),
+                );
                 true
             }
             // Previous suggestion.
@@ -232,7 +233,7 @@ where
 }
 
 /// Drives the behaviour of a `TextPickerWithSuggestion`.
-pub trait Provider {
+pub trait SuggestionProvider {
     /// Return completion suggestions for the given input value at the given
     /// cursor position.
     fn suggestions(&self, value: &str, cursor: usize) -> Vec<String>;
