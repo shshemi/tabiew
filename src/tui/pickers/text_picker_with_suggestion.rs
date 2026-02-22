@@ -1,5 +1,3 @@
-use std::fmt;
-
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
@@ -22,49 +20,29 @@ const MAX_VISIBLE_SUGGESTIONS: usize = 10;
 
 /// A text input picker that shows a suggestion list below the input.
 ///
-/// The `Provider` trait generates suggestions based on the current input and
-/// cursor position. The `on_submit` and `on_dismiss` callbacks handle
-/// domain-specific logic when the user presses Enter or Esc.
+/// All behaviour is configured via the `Provider` trait: completion logic
+/// (`suggestions` / `is_separator`) and domain-specific actions (`on_submit` /
+/// `on_dismiss`).
+#[derive(Debug)]
 pub struct TextPickerWithSuggestion<P> {
     title: String,
     input: Input,
     suggestions: Vec<String>,
     selected_suggestion: Option<usize>,
     provider: P,
-    on_submit: Box<dyn Fn(&str)>,
-    on_dismiss: Box<dyn Fn()>,
-}
-
-impl<P: fmt::Debug> fmt::Debug for TextPickerWithSuggestion<P> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("TextPickerWithSuggestion")
-            .field("title", &self.title)
-            .field("suggestions", &self.suggestions)
-            .field("selected_suggestion", &self.selected_suggestion)
-            .field("provider", &self.provider)
-            .finish_non_exhaustive()
-    }
 }
 
 impl<P> TextPickerWithSuggestion<P>
 where
     P: Provider,
 {
-    pub fn new(
-        title: impl Into<String>,
-        provider: P,
-        on_submit: Box<dyn Fn(&str)>,
-        on_dismiss: Box<dyn Fn()>,
-    ) -> Self {
+    pub fn new(title: impl Into<String>, provider: P) -> Self {
         Self {
             title: title.into(),
             input: Input::default(),
             suggestions: Vec::new(),
             selected_suggestion: None,
             provider,
-            on_submit,
-            on_dismiss,
         }
     }
 
@@ -233,12 +211,12 @@ where
             }
             // Submit.
             (KeyCode::Enter, KeyModifiers::NONE) => {
-                (self.on_submit)(self.input.value());
+                self.provider.on_submit(self.input.value());
                 true
             }
             // Dismiss.
             (KeyCode::Esc, KeyModifiers::NONE) => {
-                (self.on_dismiss)();
+                self.provider.on_dismiss();
                 true
             }
             // Delegate to input, then refresh suggestions.
@@ -253,7 +231,7 @@ where
     }
 }
 
-/// Provides completion suggestions for `TextPickerWithSuggestion`.
+/// Drives the behaviour of a `TextPickerWithSuggestion`.
 pub trait Provider {
     /// Return completion suggestions for the given input value at the given
     /// cursor position.
@@ -262,4 +240,10 @@ pub trait Provider {
     /// Whether the given character is a word separator for suggestion
     /// acceptance.
     fn is_separator(&self, character: char) -> bool;
+
+    /// Called when the user presses Enter with no active suggestion.
+    fn on_submit(&self, value: &str);
+
+    /// Called when the user presses Esc.
+    fn on_dismiss(&self);
 }
