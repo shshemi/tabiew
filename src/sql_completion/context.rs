@@ -27,8 +27,7 @@ pub(super) fn detect_sql_context(before_token: &str) -> CompletionContext {
     }
 
     // Qualified column: the character immediately before the token is `.`.
-    if trimmed.ends_with('.') {
-        let before_dot = &trimmed[..trimmed.len() - 1];
+    if let Some(before_dot) = trimmed.strip_suffix('.') {
         let table_name = before_dot
             .rsplit(|c: char| is_separator(c) && c != '.')
             .next()
@@ -69,13 +68,11 @@ fn classify_last_token(last: &Token, tokens: &[&Token]) -> CompletionContext {
             | Keyword::SET => CompletionContext::Column,
             Keyword::BY => {
                 // ORDER BY / GROUP BY → columns.
-                if tokens.len() >= 2 {
-                    if let Token::Word(prev) = tokens[tokens.len() - 2] {
-                        if matches!(prev.keyword, Keyword::ORDER | Keyword::GROUP) {
+                if tokens.len() >= 2
+                    && let Token::Word(prev) = tokens[tokens.len() - 2]
+                        && matches!(prev.keyword, Keyword::ORDER | Keyword::GROUP) {
                             return CompletionContext::Column;
                         }
-                    }
-                }
                 CompletionContext::None
             }
             Keyword::ASC | Keyword::DESC => CompletionContext::Column,

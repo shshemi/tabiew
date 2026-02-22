@@ -62,8 +62,8 @@ where
     }
 
     fn accept_suggestion(&mut self) {
-        if let Some(index) = self.selected_suggestion {
-            if let Some(suggestion) = self.suggestions.get(index).cloned() {
+        if let Some(index) = self.selected_suggestion
+            && let Some(suggestion) = self.suggestions.get(index).cloned() {
                 let cursor = self.input.cursor();
                 let value = self.input.value().to_owned();
                 let before_cursor = &value[..cursor];
@@ -92,7 +92,6 @@ where
                 self.suggestions.clear();
                 self.selected_suggestion = None;
             }
-        }
     }
 }
 
