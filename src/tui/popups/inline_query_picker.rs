@@ -7,7 +7,7 @@ use crate::{
     tui::{
         component::Component,
         pane::TableDescription,
-        pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
+        pickers::text_picker_with_suggestion::{SuggestionProvider, TextPickerWithSuggestion},
     },
 };
 
@@ -52,7 +52,7 @@ struct InlineQueryProvider {
     all_columns: Vec<String>,
 }
 
-impl Provider for InlineQueryProvider {
+impl SuggestionProvider for InlineQueryProvider {
     fn suggestions(&self, value: &str, cursor: usize) -> Vec<String> {
         sql_completion::suggestions(
             value,
