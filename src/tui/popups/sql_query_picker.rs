@@ -49,13 +49,17 @@ impl Component for SqlQueryPicker {
                     true
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
-                    let value = self.picker.value();
-                    Message::AppDismissOverlay.enqueue();
-                    match sql().execute(value, self.dataframe.clone()) {
-                        Ok(result) => {
-                            Message::TabsAddQueryPane(result, value.to_owned()).enqueue();
+                    if self.picker.has_suggestions() {
+                        self.picker.apply_selected();
+                    } else {
+                        let value = self.picker.value();
+                        Message::AppDismissOverlay.enqueue();
+                        match sql().execute(value, self.dataframe.clone()) {
+                            Ok(result) => {
+                                Message::TabsAddQueryPane(result, value.to_owned()).enqueue();
+                            }
+                            Err(error) => Message::AppShowError(error.to_string()).enqueue(),
                         }
-                        Err(error) => Message::AppShowError(error.to_string()).enqueue(),
                     }
                     true
                 }
