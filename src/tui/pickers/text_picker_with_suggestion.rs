@@ -45,6 +45,10 @@ where
         self.input.value()
     }
 
+    pub fn has_suggestions(&self) -> bool {
+        !self.items.is_empty()
+    }
+
     pub fn apply_selected(&mut self) {
         if let Some(suggestion) = self.list.selected().and_then(|idx| self.items.get(idx)) {
             suggestion.apply_to(&mut self.input);

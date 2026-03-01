@@ -103,7 +103,11 @@ impl Component for InlineQueryPicker {
                     true
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
-                    self.submit();
+                    if self.picker.has_suggestions() {
+                        self.picker.apply_selected();
+                    } else {
+                        self.submit();
+                    }
                     true
                 }
                 (KeyCode::Esc, KeyModifiers::NONE) => {
