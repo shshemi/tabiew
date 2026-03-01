@@ -1,12 +1,14 @@
 mod context;
 mod data;
 mod extraction;
+mod suggestion;
 
 use polars::frame::DataFrame;
 
 pub use context::CompletionContext;
 pub use data::{collect_all_columns, filter_by_prefix, get_table_columns, get_table_names};
-pub use extraction::{extract_token_and_context, is_separator};
+pub use extraction::extract_token_and_context;
+pub use suggestion::SqlSuggestion;
 
 /// Return completion suggestions for the given input value at the given cursor
 /// position, using `sql_prefix` for tokenizer context.
@@ -16,7 +18,7 @@ pub fn suggestions(
     sql_prefix: &str,
     all_columns: &[String],
     dataframe: Option<&DataFrame>,
-) -> Vec<String> {
+) -> Vec<SqlSuggestion> {
     let (token, context) = extract_token_and_context(value, cursor, sql_prefix);
 
     if token.is_empty() {
@@ -25,7 +27,7 @@ pub fn suggestions(
 
     let token_lower = token.to_lowercase();
 
-    match &context {
+    let strings = match &context {
         CompletionContext::Column => filter_by_prefix(all_columns.iter(), &token_lower),
         CompletionContext::QualifiedColumn(table) => {
             let columns = get_table_columns(table, dataframe);
@@ -36,5 +38,7 @@ pub fn suggestions(
             filter_by_prefix(tables.iter(), &token_lower)
         }
         CompletionContext::None => Vec::new(),
-    }
+    };
+
+    strings.into_iter().map(SqlSuggestion::new).collect()
 }

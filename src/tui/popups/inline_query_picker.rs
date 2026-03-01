@@ -1,73 +1,41 @@
+use crossterm::event::{KeyCode, KeyModifiers};
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
     misc::sql::sql,
-    sql_completion,
+    sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
         pane::TableDescription,
-        pickers::text_picker_with_suggestion::{SuggestionProvider, TextPickerWithSuggestion},
+        pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
     },
 };
 
 #[derive(Debug)]
 pub struct InlineQueryPicker {
     picker: TextPickerWithSuggestion<InlineQueryProvider>,
+    dataframe: DataFrame,
+    query_type: QueryType,
 }
 
 impl InlineQueryPicker {
     pub fn new(dataframe: DataFrame, query_type: QueryType) -> Self {
         let all_columns = sql_completion::collect_all_columns(Some(&dataframe));
         let provider = InlineQueryProvider {
-            dataframe,
+            dataframe: dataframe.clone(),
             query_type,
             all_columns,
         };
         Self {
             picker: TextPickerWithSuggestion::new(query_type.title(), provider),
+            dataframe,
+            query_type,
         }
     }
-}
 
-impl Component for InlineQueryPicker {
-    fn render(
-        &mut self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        focus_state: crate::tui::component::FocusState,
-    ) {
-        self.picker.render(area, buf, focus_state);
-    }
-
-    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        self.picker.handle(event)
-    }
-}
-
-#[derive(Debug)]
-struct InlineQueryProvider {
-    dataframe: DataFrame,
-    query_type: QueryType,
-    all_columns: Vec<String>,
-}
-
-impl SuggestionProvider for InlineQueryProvider {
-    fn suggestions(&self, value: &str, cursor: usize) -> Vec<String> {
-        sql_completion::suggestions(
-            value,
-            cursor,
-            self.query_type.sql_prefix(),
-            &self.all_columns,
-            Some(&self.dataframe),
-        )
-    }
-
-    fn is_separator(&self, character: char) -> bool {
-        sql_completion::is_separator(character)
-    }
-
-    fn on_submit(&self, value: &str) {
+    fn submit(&self) {
+        let value = self.picker.value();
         let result = match self.query_type {
             QueryType::Select => {
                 sql().execute(&format!("SELECT {value} FROM _"), self.dataframe.clone())
@@ -115,9 +83,56 @@ impl SuggestionProvider for InlineQueryProvider {
             }
         }
     }
+}
 
-    fn on_dismiss(&self) {
-        Message::PaneDismissModal.enqueue();
+impl Component for InlineQueryPicker {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        focus_state: crate::tui::component::FocusState,
+    ) {
+        self.picker.render(area, buf, focus_state);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.picker.handle(event)
+            || match (event.code, event.modifiers) {
+                (KeyCode::Tab, KeyModifiers::NONE) => {
+                    self.picker.apply_selected();
+                    true
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    self.submit();
+                    true
+                }
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    true
+                }
+                _ => false,
+            }
+    }
+}
+
+#[derive(Debug)]
+struct InlineQueryProvider {
+    dataframe: DataFrame,
+    query_type: QueryType,
+    all_columns: Vec<String>,
+}
+
+impl Provider for InlineQueryProvider {
+    type Suggestion = SqlSuggestion;
+
+    fn suggestions(&self, value: &str, cursor: usize) -> Vec<SqlSuggestion> {
+        sql_completion::suggestions(
+            value,
+            cursor,
+            self.query_type.sql_prefix(),
+            &self.all_columns,
+            Some(&self.dataframe),
+        )
     }
 }
 
