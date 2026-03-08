@@ -1,23 +1,32 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyModifiers};
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
     misc::sql::sql,
-    tui::{component::Component, pickers::text_picker::TextPicker},
+    sql_completion::{self, SqlSuggestion},
+    tui::{
+        component::Component,
+        pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
+    },
 };
 
 #[derive(Debug)]
 pub struct SqlQueryPicker {
-    df: Option<DataFrame>,
-    text_picker: TextPicker,
+    picker: TextPickerWithSuggestion<SqlQueryProvider>,
+    dataframe: Option<DataFrame>,
 }
 
 impl SqlQueryPicker {
-    pub fn new(df: Option<DataFrame>) -> Self {
+    pub fn new(dataframe: Option<DataFrame>) -> Self {
+        let all_columns = sql_completion::collect_all_columns(dataframe.as_ref());
+        let provider = SqlQueryProvider {
+            dataframe: dataframe.clone(),
+            all_columns,
+        };
         Self {
-            df,
-            text_picker: TextPicker::default().with_title("Sql"),
+            picker: TextPickerWithSuggestion::new("SQL", provider),
+            dataframe,
         }
     }
 }
@@ -29,20 +38,28 @@ impl Component for SqlQueryPicker {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        self.text_picker.render(area, buf, focus_state);
+        self.picker.render(area, buf, focus_state);
     }
 
-    fn handle(&mut self, event: KeyEvent) -> bool {
-        self.text_picker.handle(event)
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.picker.handle(event)
             || match (event.code, event.modifiers) {
+                (KeyCode::Tab, KeyModifiers::NONE) => {
+                    self.picker.apply_selected();
+                    true
+                }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
-                    Message::AppDismissOverlay.enqueue();
-                    match sql().execute(self.text_picker.value(), self.df.clone()) {
-                        Ok(df) => {
-                            Message::TabsAddQueryPane(df, self.text_picker.value().to_owned())
-                                .enqueue();
+                    if self.picker.has_suggestions() {
+                        self.picker.apply_selected();
+                    } else {
+                        let value = self.picker.value();
+                        Message::AppDismissOverlay.enqueue();
+                        match sql().execute(value, self.dataframe.clone()) {
+                            Ok(result) => {
+                                Message::TabsAddQueryPane(result, value.to_owned()).enqueue();
+                            }
+                            Err(error) => Message::AppShowError(error.to_string()).enqueue(),
                         }
-                        Err(err) => Message::AppShowError(err.to_string()).enqueue(),
                     }
                     true
                 }
@@ -52,5 +69,19 @@ impl Component for SqlQueryPicker {
                 }
                 _ => false,
             }
+    }
+}
+
+#[derive(Debug)]
+struct SqlQueryProvider {
+    dataframe: Option<DataFrame>,
+    all_columns: Vec<String>,
+}
+
+impl Provider for SqlQueryProvider {
+    type Suggestion = SqlSuggestion;
+
+    fn suggestions(&self, value: &str, cursor: usize) -> Vec<SqlSuggestion> {
+        sql_completion::suggestions(value, cursor, "", &self.all_columns, self.dataframe.as_ref())
     }
 }
