@@ -11,7 +11,7 @@ use crate::{
 pub struct ArrowIpcToDataFrame;
 
 impl ReadToDataFrames for ArrowIpcToDataFrame {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
             Source::File(path) => IpcReader::new(File::open(path)?)
                 .set_rechunk(true)

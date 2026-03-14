@@ -30,7 +30,7 @@ impl Default for JsonToDataFrame {
 }
 
 impl ReadToDataFrames for JsonToDataFrame {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
             Source::File(path) => JsonReader::new(File::open(path)?)
                 .set_rechunk(true)

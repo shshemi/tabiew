@@ -30,7 +30,7 @@ impl Default for JsonLineToDataFrame {
 }
 
 impl ReadToDataFrames for JsonLineToDataFrame {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
             Source::File(path) => JsonLineReader::new(File::open(path)?)
                 .with_rechunk(true)

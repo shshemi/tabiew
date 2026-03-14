@@ -30,7 +30,7 @@ impl SqliteToDataFrames {
 }
 
 impl ReadToDataFrames for SqliteToDataFrames {
-    fn named_frames(&self, input: super::Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: super::Source) -> AppResult<NamedFrames> {
         match input {
             Source::File(path) => path_to_name_frames(path, self.key.as_deref()),
             Source::Stdin => {

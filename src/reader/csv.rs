@@ -86,7 +86,7 @@ impl Default for CsvToDataFrame {
 }
 
 impl ReadToDataFrames for CsvToDataFrame {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
             Source::File(path) => self.try_into_frame(File::open(path)?),
             Source::Stdin => self.try_into_frame(stdin()),
