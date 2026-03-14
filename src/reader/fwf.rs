@@ -67,7 +67,7 @@ impl Default for FwfToDataFrame {
 }
 
 impl ReadToDataFrames for FwfToDataFrame {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let file_content = match &input {
             Source::File(path) => read_to_string(path)?,
             Source::Stdin => {

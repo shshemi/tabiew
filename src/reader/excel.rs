@@ -22,7 +22,7 @@ impl ExcelToDataFarmes {
 }
 
 impl ReadToDataFrames for ExcelToDataFarmes {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let buffer = match input {
             Source::File(path) => Cursor::new(std::fs::read(path)?),
             Source::Stdin => {

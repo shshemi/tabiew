@@ -61,7 +61,7 @@ impl Source {
 }
 
 pub trait ReadToDataFrames {
-    fn named_frames(&self, input: Source) -> AppResult<NamedFrames>;
+    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames>;
 }
 
 pub trait ReaderBuilder {

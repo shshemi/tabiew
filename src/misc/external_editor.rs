@@ -47,7 +47,7 @@ impl ExternalEditor {
                 .with_no_header(false)
                 .with_quote_char('"')
                 .with_separator(',')
-                .named_frames(Source::File(tempfile.path().to_owned()))?
+                .read_to_data_frames(Source::File(tempfile.path().to_owned()))?
                 .into_iter()
                 .next()
                 .map(|(_, df)| df)

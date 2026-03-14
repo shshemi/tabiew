@@ -73,7 +73,7 @@ fn main() {
         for (name, mut df) in args
             .build_reader("")
             .unwrap_or_graceful_shutdown()
-            .named_frames(Source::Stdin)
+            .read_to_data_frames(Source::Stdin)
             .unwrap_or_graceful_shutdown()
         {
             type_infer.update(&mut df);
@@ -134,5 +134,5 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
 fn try_read_path(args: &Args, path: &PathBuf) -> AppResult<Box<[(String, DataFrame)]>> {
     let source = Source::File(path.clone());
     let reader = args.build_reader(path)?;
-    reader.named_frames(source.clone())
+    reader.read_to_data_frames(source.clone())
 }

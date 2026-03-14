@@ -17,7 +17,7 @@ pub mod tsv;
 
 fn final_step(source: Source, rtdf: impl ReadToDataFrames) {
     Message::AppDismissOverlay.enqueue();
-    match rtdf.named_frames(source.clone()) {
+    match rtdf.read_to_data_frames(source.clone()) {
         Ok(named_frames) => {
             let count = named_frames.len();
             for (name, df) in named_frames {
