@@ -23,6 +23,12 @@ Tabiew started as a humble hobby TUI project for viewing CSV data but has evolve
 
 There are various ways to install Tabiew:
 
+### Shell (Linux / macOS)
+
+```bash
+curl -sS https://raw.githubusercontent.com/shshemi/tabiew/main/install.sh | sh
+```
+
 ### Arch Linux
 
 You can install from the [official repositories](https://archlinux.org/packages/extra/x86_64/tabiew/) using [pacman](https://wiki.archlinux.org/title/pacman):
