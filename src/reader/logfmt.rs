@@ -1,5 +1,6 @@
 use std::{fs, io::Read};
 
+use anyhow::anyhow;
 use indexmap::IndexMap;
 use logfmt_zerocopy::Logfmt;
 use polars::{
@@ -38,10 +39,7 @@ impl ReadToDataFrames for LogfmtToDataFrame {
 
         for (row, line) in contents.lines().enumerate() {
             for (col, value) in line.logfmt() {
-                if !data.contains_key(col) {
-                    data.insert(col, vec![AnyValue::Null; row_count]);
-                }
-                data.get_mut(col).unwrap()[row] = AnyValue::String(value);
+                insert(&mut data, col, row, row_count, value);
             }
         }
 
@@ -51,5 +49,21 @@ impl ReadToDataFrames for LogfmtToDataFrame {
                 .collect(),
         )?;
         Ok([(input.table_name(), df)].into())
+    }
+}
+
+fn insert<'k, 'v>(
+    data: &mut IndexMap<&'k str, Vec<AnyValue<'v>>>,
+    col: &'k str,
+    row: usize,
+    row_count: usize,
+    value: &'v str,
+) {
+    if let Some(col) = data.get_mut(col) {
+        col[row] = AnyValue::String(value);
+    } else {
+        let mut new_col = vec![AnyValue::Null; row_count];
+        new_col[row] = AnyValue::String(value);
+        data.insert(col, new_col);
     }
 }
