@@ -64,11 +64,11 @@ pub trait ReadToDataFrames {
     fn named_frames(&self, input: Source) -> AppResult<NamedFrames>;
 }
 
-pub trait BuildReader {
+pub trait ReaderBuilder {
     fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>>;
 }
 
-impl BuildReader for Args {
+impl ReaderBuilder for Args {
     fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>> {
         match self.format {
             Some(Format::Dsv) | Some(Format::Csv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
