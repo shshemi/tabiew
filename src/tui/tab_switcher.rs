@@ -15,17 +15,17 @@ use crate::{
 
 #[derive(Debug)]
 pub struct TabSwitcher {
-    items: Vec<String>,
+    tabs: Vec<String>,
     title: String,
     list_state: TableState,
     rollback: usize,
 }
 
 impl TabSwitcher {
-    pub fn new(title: impl Into<String>, items: Vec<String>, idx: usize) -> TabSwitcher {
+    pub fn new(title: impl Into<String>, tabs: Vec<String>, idx: usize) -> TabSwitcher {
         Self {
             list_state: TableState::default().with_selected(idx),
-            items,
+            tabs,
             title: title.into(),
             rollback: idx,
         }
@@ -49,7 +49,7 @@ impl TabSwitcher {
             .selected()
             .unwrap_or_default()
             .saturating_add(1)
-            .min(self.items.len().saturating_sub(1));
+            .min(self.tabs.len().saturating_sub(1));
         self.list_state.select(Some(idx));
     }
 
@@ -58,7 +58,7 @@ impl TabSwitcher {
     }
     pub fn select_last(&mut self) {
         self.list_state
-            .select(Some(self.items.len().saturating_sub(1)));
+            .select(Some(self.tabs.len().saturating_sub(1)));
     }
 }
 
@@ -69,9 +69,9 @@ impl Component for TabSwitcher {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        let num_width = (self.items.len().checked_ilog10().unwrap_or_default() + 1) as u16;
+        let num_width = (self.tabs.len().checked_ilog10().unwrap_or_default() + 1) as u16;
         let text_width = self
-            .items
+            .tabs
             .iter()
             .map(|s| s.width() as u16)
             .max()
@@ -88,7 +88,7 @@ impl Component for TabSwitcher {
 
         Widget::render(Clear, area, buf);
 
-        let rows = self.items.iter().enumerate().map(|(i, s)| {
+        let rows = self.tabs.iter().enumerate().map(|(i, s)| {
             Row::new([
                 Cell::new(format!(" {:>width$}", i + 1, width = num_width as usize))
                     .style(theme().subtext()),
