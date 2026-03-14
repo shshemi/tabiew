@@ -1,6 +1,5 @@
 use std::{fs, io::Read};
 
-use anyhow::anyhow;
 use indexmap::IndexMap;
 use logfmt_zerocopy::Logfmt;
 use polars::{
