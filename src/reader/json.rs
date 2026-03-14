@@ -1,0 +1,48 @@
+use std::fs::File;
+
+use polars::{io::SerReader, prelude::JsonReader};
+
+use crate::{
+    AppResult,
+    args::Args,
+    misc::stdin::stdin,
+    reader::{NamedFrames, ReadToDataFrames, Source},
+};
+
+pub struct JsonToDataFrame {
+    ignore_errors: bool,
+}
+
+impl JsonToDataFrame {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            ignore_errors: args.ignore_errors,
+        }
+    }
+}
+
+impl Default for JsonToDataFrame {
+    fn default() -> Self {
+        Self {
+            ignore_errors: true,
+        }
+    }
+}
+
+impl ReadToDataFrames for JsonToDataFrame {
+    fn named_frames(&self, input: Source) -> AppResult<NamedFrames> {
+        let df = match &input {
+            Source::File(path) => JsonReader::new(File::open(path)?)
+                .set_rechunk(true)
+                .infer_schema_len(None)
+                .with_ignore_errors(self.ignore_errors)
+                .finish()?,
+            Source::Stdin => JsonReader::new(stdin())
+                .set_rechunk(true)
+                .infer_schema_len(None)
+                .with_ignore_errors(self.ignore_errors)
+                .finish()?,
+        };
+        Ok([(input.table_name(), df)].into())
+    }
+}
