@@ -67,7 +67,7 @@ impl SqlBackend {
             self.sql.register("_", data_frame.lazy());
         }
         let mut df = self.sql.execute(query).and_then(LazyFrame::collect)?;
-        df.as_single_chunk_par();
+        df.rechunk_mut_par();
         Ok(df)
     }
 }
@@ -203,8 +203,14 @@ impl TableSchema {
     pub fn new(df: &DataFrame) -> Self {
         Self {
             schema: df
+                .columns()
                 .iter()
-                .map(|ser| (ser.name().to_string(), FieldInfo::new(ser)))
+                .map(|col| {
+                    (
+                        col.name().to_string(),
+                        FieldInfo::new(col.as_materialized_series()),
+                    )
+                })
                 .collect(),
         }
     }

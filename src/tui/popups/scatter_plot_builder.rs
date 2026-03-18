@@ -31,7 +31,8 @@ pub enum State {
 impl State {
     pub fn new(df: DataFrame) -> Self {
         let items = df
-            .column_iter()
+            .columns()
+            .iter()
             .filter(|col| col.dtype().is_numeric())
             .map(|col| col.name().to_string())
             .collect();
@@ -69,7 +70,8 @@ impl ComponentSequence for State {
                         picker: SearchPicker::new(
                             std::iter::once("None".to_owned())
                                 .chain(
-                                    df.column_iter()
+                                    df.columns()
+                                        .iter()
                                         .filter(|col| {
                                             let dtype = col.dtype();
                                             dtype.is_string()

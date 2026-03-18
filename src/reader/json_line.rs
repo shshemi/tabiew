@@ -1,6 +1,9 @@
 use std::fs::File;
 
-use polars::{io::SerReader, prelude::JsonLineReader};
+use polars::{
+    io::SerReader,
+    prelude::{JsonFormat, JsonReader},
+};
 
 use crate::{
     AppResult,
@@ -32,15 +35,17 @@ impl Default for JsonLineToDataFrame {
 impl ReadToDataFrames for JsonLineToDataFrame {
     fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         let df = match &input {
-            Source::File(path) => JsonLineReader::new(File::open(path)?)
-                .with_rechunk(true)
+            Source::File(path) => JsonReader::new(File::open(path)?)
+                .with_json_format(JsonFormat::JsonLines)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
+                .set_rechunk(true)
                 .finish()?,
-            Source::Stdin => JsonLineReader::new(stdin())
-                .with_rechunk(true)
+            Source::Stdin => JsonReader::new(stdin())
+                .with_json_format(JsonFormat::JsonLines)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
+                .set_rechunk(true)
                 .finish()?,
         };
         Ok([(input.table_name(), df)].into())

@@ -42,7 +42,7 @@ impl ReadToDataFrames for LogfmtToDataFrame {
             }
         }
 
-        let df = DataFrame::new(
+        let df = DataFrame::new_infer_height(
             data.into_iter()
                 .map(|(name, values)| Column::new(name.into(), values))
                 .collect(),

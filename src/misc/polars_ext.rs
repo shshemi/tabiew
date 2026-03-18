@@ -168,7 +168,10 @@ fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
 
 impl DataFrameExt for DataFrame {
     fn widths(&self) -> Vec<usize> {
-        self.iter().map(series_width).collect()
+        self.columns()
+            .iter()
+            .map(|col| series_width(col.as_materialized_series()))
+            .collect()
     }
 
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection> {

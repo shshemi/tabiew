@@ -54,7 +54,7 @@ fn main() {
         }
     }
     for (_, (name, mut df)) in multiparts {
-        df.as_single_chunk_par();
+        df.rechunk_mut_par();
         type_infer.update(&mut df);
         let name = sql().register(&name, df.clone(), Source::File(name.clone().into()));
         name_dfs.push((name, df));

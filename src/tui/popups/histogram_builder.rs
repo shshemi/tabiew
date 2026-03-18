@@ -29,7 +29,8 @@ pub enum State {
 impl State {
     pub fn new(df: &DataFrame) -> Self {
         let items = df
-            .column_iter()
+            .columns()
+            .iter()
             .filter(|col| {
                 let dtype = col.dtype();
                 dtype.is_numeric() || dtype.is_string() || dtype.is_bool()

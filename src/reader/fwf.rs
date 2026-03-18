@@ -7,7 +7,7 @@ use std::{
 
 use fwf_rs::Reader;
 use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
+use polars::{frame::DataFrame, prelude::Column};
 
 use crate::{
     AppResult,
@@ -137,11 +137,13 @@ impl ReadToDataFrames for FwfToDataFrame {
             .zip_iters()
             .collect_vec();
 
-        let df: DataFrame = header
-            .into_iter()
-            .zip(columns)
-            .map(|(name, vals)| Series::new(name.into(), vals))
-            .collect();
+        let df = DataFrame::new_infer_height(
+            header
+                .into_iter()
+                .zip(columns)
+                .map(|(name, vals)| Column::new(name.into(), vals))
+                .collect(),
+        )?;
 
         Ok([(input.table_name(), df)].into())
     }
