@@ -85,8 +85,9 @@ where
                 let pat = pat.clone();
                 move || {
                     let _ = df
+                        .columns()
                         .iter()
-                        .flat_map(|series| series.iter().enumerate())
+                        .flat_map(|column| column.as_materialized_series().iter().enumerate())
                         .par_bridge()
                         .take_any_while(|_| alive.load(Ordering::Relaxed))
                         .filter_map(|(idx, value)| {

@@ -1,6 +1,6 @@
 use polars::{
     frame::DataFrame,
-    prelude::{DataType, TimeUnit},
+    prelude::{Column, DataType, TimeUnit},
 };
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
@@ -96,7 +96,8 @@ impl From<DataFrame> for State {
         State::PickColumn {
             picker: SearchPicker::new(
                 value
-                    .column_iter()
+                    .columns()
+                    .iter()
                     .map(|col| col.name().as_str().to_owned())
                     .collect(),
             )
@@ -131,14 +132,14 @@ impl From<TargetType> for DataType {
 
 fn cast_column(df: &mut DataFrame, name: &str, target_type: TargetType) -> AppResult<()> {
     let series = df.column(name)?.as_materialized_series();
-    let casted = match target_type {
+    let casted = Column::from(match target_type {
         TargetType::Boolean => cast_boolean(series),
         TargetType::Date => cast_date(series),
         TargetType::Datetime => cast_datetime(series),
         TargetType::Float => cast_float(series),
         TargetType::Int => cast_int(series),
         TargetType::String => cast_string(series),
-    }?;
+    }?);
     df.replace(name, casted)?;
     Ok(())
 }

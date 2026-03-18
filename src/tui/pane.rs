@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
 use polars::frame::DataFrame;
-use rand::Rng;
+use rand::RngExt;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 
 use super::{search_bar::SearchBar, sheet::Sheet};
@@ -9,9 +9,8 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        config::config, external_editor::ExternalEditor, sql::sql,
-        non_empty_stack::NonEmptyStack, polars_ext::DataFrameExt, sql::Source,
-        type_ext::UnwrapOrEnqueueError,
+        config::config, external_editor::ExternalEditor, non_empty_stack::NonEmptyStack,
+        polars_ext::DataFrameExt, sql::Source, sql::sql, type_ext::UnwrapOrEnqueueError,
     },
     tui::{
         component::{Component, FocusState},

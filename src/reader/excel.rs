@@ -4,8 +4,7 @@ use calamine::{Data, Range, Reader, open_workbook_auto_from_rs};
 use itertools::Itertools;
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, NamedFrom},
-    series::Series,
+    prelude::{AnyValue, Column},
 };
 
 use crate::{AppResult, args::Args, misc::stdin::stdin};
@@ -35,15 +34,15 @@ impl ReadToDataFrames for ExcelToDataFarmes {
             .worksheets()
             .into_iter()
             .map(|(name, sheet)| {
-                let df = sheet_to_data_frame(sheet);
-                (name, df)
+                let df = sheet_to_data_frame(sheet)?;
+                Ok((name, df))
             })
-            .collect_vec()
+            .collect::<AppResult<Vec<_>>>()?
             .into_boxed_slice())
     }
 }
 
-fn sheet_to_data_frame(sheet: Range<Data>) -> DataFrame {
+fn sheet_to_data_frame(sheet: Range<Data>) -> AppResult<DataFrame> {
     let col_offset = sheet.start().unwrap_or_default().1 as usize;
     let mut columns = vec![Vec::new(); sheet.width()];
     for row in sheet.rows() {
@@ -54,12 +53,13 @@ fn sheet_to_data_frame(sheet: Range<Data>) -> DataFrame {
             });
         }
     }
-    DataFrame::from_iter(
+    Ok(DataFrame::new_infer_height(
         columns
             .into_iter()
             .enumerate()
-            .map(|(idx, column)| Series::new(col_letter(col_offset + idx).into(), column)),
-    )
+            .map(|(idx, column)| Column::new(col_letter(col_offset + idx).into(), column))
+            .collect_vec(),
+    )?)
 }
 
 fn col_letter(mut col_index: usize) -> String {

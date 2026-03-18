@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use chrono::{NaiveDate, NaiveDateTime};
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, DataType, PlSmallStr, TimeUnit},
+    prelude::{AnyValue, Column, DataType, PlSmallStr, TimeUnit},
     series::{ChunkCompareEq, Series},
 };
 
@@ -69,19 +69,20 @@ impl TypeInferer {
         };
 
         let updates = data_frame
+            .columns()
             .iter()
             .filter(|ser| matches!(ser.dtype(), DataType::String))
-            .filter_map(|ser| {
+            .filter_map(|col| {
                 cast_fns.iter().find_map(|cast| {
-                    cast(ser)
-                        .map(|new_ser| (ser.name().to_owned(), new_ser))
+                    cast(col.as_materialized_series())
+                        .map(|new_ser| (col.name().to_owned(), Column::from(new_ser)))
                         .ok()
                 })
             })
-            .collect::<HashMap<PlSmallStr, Series>>();
+            .collect::<HashMap<PlSmallStr, Column>>();
 
-        for (col, ser) in updates.into_iter() {
-            data_frame.replace(&col, ser).unwrap();
+        for (name, col) in updates.into_iter() {
+            data_frame.replace(&name, col).unwrap();
         }
     }
 

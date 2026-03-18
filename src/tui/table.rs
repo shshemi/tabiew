@@ -2,7 +2,7 @@ use std::ops::{Add, Div};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
-use polars::{frame::DataFrame, series::Series};
+use polars::frame::DataFrame;
 use ratatui::{
     layout::{Constraint, Layout, Position, Rect},
     text::Text,
@@ -396,7 +396,7 @@ impl Component for Table {
                 let col_end = column_index(&self.col_offsets, &x.add(table_area.width));
                 let df = self
                     .df
-                    .select_by_range(col_start..=col_end)
+                    .select(&self.df.get_column_names()[col_start..=col_end])
                     .unwrap()
                     .slice(self.offset as i64, height);
                 let table = build_table(
@@ -588,8 +588,9 @@ fn build_table<'a>(
         .row_highlight_style(theme().row_highlighted())
         .column_spacing(col_space)
         .rows(
-            df.iter()
-                .map(Series::iter)
+            df.columns()
+                .iter()
+                .map(|col| col.as_materialized_series().iter())
                 .zip_iters()
                 .enumerate()
                 .map(|(idx, vals)| {
@@ -607,8 +608,8 @@ fn build_table<'a>(
     if show_header {
         table =
             table.header(
-                Row::new(df.iter().enumerate().map(|(i, d)| {
-                    Cell::new(d.name().as_str()).style(theme().header(offset_col + i))
+                Row::new(df.columns().iter().enumerate().map(|(i, c)| {
+                    Cell::new(c.name().as_str()).style(theme().header(offset_col + i))
                 }))
                 .style(theme().table_header()),
             )
