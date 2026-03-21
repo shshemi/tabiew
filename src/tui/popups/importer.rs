@@ -6,8 +6,8 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
         component_sequence::{ComponentSequence, ComponentSequenceContainer},
+        importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
     },
 };
 

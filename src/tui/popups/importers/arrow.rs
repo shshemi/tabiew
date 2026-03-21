@@ -1,7 +1,7 @@
 use crate::{
     reader::{ArrowIpcToDataFrame, Source},
     tui::popups::{
-        importers::final_step, path_picker::PathPicker, component_sequence::ComponentSequence,
+        component_sequence::ComponentSequence, importers::final_step, path_picker::PathPicker,
     },
 };
 

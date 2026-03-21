@@ -6,9 +6,9 @@ use crate::{
     tui::{
         component::Component,
         popups::{
+            component_sequence::ComponentSequence,
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
-            component_sequence::ComponentSequence,
         },
     },
     writer::{Destination, WriteToCsv, WriteToFile},

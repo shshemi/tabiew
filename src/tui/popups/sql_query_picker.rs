@@ -82,6 +82,12 @@ impl Provider for SqlQueryProvider {
     type Suggestion = SqlSuggestion;
 
     fn suggestions(&self, value: &str, cursor: usize) -> Vec<SqlSuggestion> {
-        sql_completion::suggestions(value, cursor, "", &self.all_columns, self.dataframe.as_ref())
+        sql_completion::suggestions(
+            value,
+            cursor,
+            "",
+            &self.all_columns,
+            self.dataframe.as_ref(),
+        )
     }
 }
