@@ -14,7 +14,7 @@ use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::sql;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
-use tabiew::reader::{ReaderBuilder, Source};
+use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
