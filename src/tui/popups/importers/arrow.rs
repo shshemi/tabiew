@@ -1,7 +1,8 @@
 use crate::{
     reader::{ArrowIpcToDataFrame, Source},
     tui::popups::{
-        component_sequence::ComponentSequence, importers::final_step, path_picker::PathPicker,
+        component_sequence::ComponentSequence, importers::dismiss_overlay_and_load_data_frame,
+        path_picker::PathPicker,
     },
 };
 
@@ -14,7 +15,10 @@ impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickImportPath { picker } => {
-                final_step(Source::File(picker.path()), ArrowIpcToDataFrame);
+                dismiss_overlay_and_load_data_frame(
+                    Source::File(picker.path()),
+                    ArrowIpcToDataFrame,
+                );
                 Default::default()
             }
         }

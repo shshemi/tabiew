@@ -5,7 +5,8 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            component_sequence::ComponentSequence, importers::final_step, path_picker::PathPicker,
+            component_sequence::ComponentSequence, importers::dismiss_overlay_and_load_data_frame,
+            path_picker::PathPicker,
         },
     },
 };
@@ -26,7 +27,7 @@ impl ComponentSequence for State {
                     .with_hint("Leave empty for no password"),
             },
             State::PickPassword { path, picker } => {
-                final_step(
+                dismiss_overlay_and_load_data_frame(
                     Source::File(path),
                     if picker.value().is_empty() {
                         SqliteToDataFrames::default()

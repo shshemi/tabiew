@@ -5,7 +5,7 @@ use crate::{
         popups::{
             component_sequence::ComponentSequence,
             import_source_picker::{self, ImportSourcePicker},
-            importers::final_step,
+            importers::dismiss_overlay_and_load_data_frame,
             path_picker::PathPicker,
             yes_no_picker::YesNoPicker,
         },
@@ -128,7 +128,7 @@ impl ComponentSequence for State {
                     .with_has_header(has_header)
                     .with_separator_length(separator_length)
                     .with_widths(widths);
-                final_step(source, rtdf);
+                dismiss_overlay_and_load_data_frame(source, rtdf);
                 Default::default()
             }
         }
