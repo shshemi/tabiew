@@ -6,7 +6,7 @@ use crate::{
         popups::{
             component_sequence::ComponentSequence,
             import_source_picker::{self, ImportSourcePicker},
-            importers::final_step,
+            importers::dismiss_overlay_and_load_data_frame,
             path_picker::PathPicker,
             yes_no_picker::YesNoPicker,
         },
@@ -96,7 +96,7 @@ impl ComponentSequence for State {
             } => {
                 Message::AppDismissOverlay.enqueue();
                 if let Some(quote) = picker.value().chars().next() {
-                    final_step(
+                    dismiss_overlay_and_load_data_frame(
                         source,
                         CsvToDataFrame::default()
                             .with_no_header(!has_header)

@@ -1,7 +1,8 @@
 use crate::{
     reader::{ParquetToDataFrame, Source},
     tui::popups::{
-        component_sequence::ComponentSequence, importers::final_step, path_picker::PathPicker,
+        component_sequence::ComponentSequence, importers::dismiss_overlay_and_load_data_frame,
+        path_picker::PathPicker,
     },
 };
 
@@ -14,7 +15,10 @@ impl ComponentSequence for State {
     fn next(self) -> Self {
         match self {
             State::PickPath { picker } => {
-                final_step(Source::File(picker.path()), ParquetToDataFrame);
+                dismiss_overlay_and_load_data_frame(
+                    Source::File(picker.path()),
+                    ParquetToDataFrame,
+                );
                 Default::default()
             }
         }

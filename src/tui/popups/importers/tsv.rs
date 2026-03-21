@@ -3,7 +3,7 @@ use crate::{
     tui::popups::{
         component_sequence::ComponentSequence,
         import_source_picker::{self, ImportSourcePicker},
-        importers::final_step,
+        importers::dismiss_overlay_and_load_data_frame,
         path_picker::PathPicker,
     },
 };
@@ -19,7 +19,7 @@ impl ComponentSequence for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(import_source_picker::Source::Stdin) => {
-                    final_step(
+                    dismiss_overlay_and_load_data_frame(
                         Source::Stdin,
                         CsvToDataFrame::default()
                             .with_no_header(true)
@@ -34,7 +34,7 @@ impl ComponentSequence for State {
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => {
-                final_step(
+                dismiss_overlay_and_load_data_frame(
                     Source::File(picker.path()),
                     CsvToDataFrame::default()
                         .with_no_header(true)
