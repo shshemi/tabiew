@@ -13,7 +13,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::misc::snake_case_name_gen::SnakeCaseNameGenExt;
+use crate::misc::table_name_generator::TableNameGeneratorExt;
 
 use super::polars_ext::AnyValueExt;
 

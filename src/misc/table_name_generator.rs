@@ -1,15 +1,15 @@
-pub struct SnakeCaseNameGen<'a> {
+pub struct TableNameGenerator<'a> {
     base: &'a str,
     stage: u32,
 }
 
-impl<'a> SnakeCaseNameGen<'a> {
+impl<'a> TableNameGenerator<'a> {
     pub fn with(base: &'a str) -> Self {
         Self { base, stage: 0 }
     }
 }
 
-impl Iterator for SnakeCaseNameGen<'_> {
+impl Iterator for TableNameGenerator<'_> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -22,12 +22,12 @@ impl Iterator for SnakeCaseNameGen<'_> {
     }
 }
 
-pub trait SnakeCaseNameGenExt {
-    fn snake_case_names(&self) -> SnakeCaseNameGen<'_>;
+pub trait TableNameGeneratorExt {
+    fn snake_case_names(&self) -> TableNameGenerator<'_>;
 }
 
-impl SnakeCaseNameGenExt for str {
-    fn snake_case_names(&self) -> SnakeCaseNameGen<'_> {
-        SnakeCaseNameGen::with(self)
+impl TableNameGeneratorExt for str {
+    fn snake_case_names(&self) -> TableNameGenerator<'_> {
+        TableNameGenerator::with(self)
     }
 }
