@@ -62,17 +62,29 @@ fn classify_last_token(last: &Token, tokens: &[&Token]) -> CompletionContext {
         Token::Word(word) => match word.keyword {
             Keyword::SELECT | Keyword::DISTINCT => CompletionContext::Column,
             Keyword::FROM | Keyword::JOIN | Keyword::INTO => CompletionContext::Table,
-            Keyword::WHERE | Keyword::AND | Keyword::OR | Keyword::NOT | Keyword::ON
-            | Keyword::HAVING | Keyword::BETWEEN | Keyword::CASE | Keyword::WHEN
-            | Keyword::THEN | Keyword::ELSE | Keyword::IN | Keyword::LIKE | Keyword::IS
+            Keyword::WHERE
+            | Keyword::AND
+            | Keyword::OR
+            | Keyword::NOT
+            | Keyword::ON
+            | Keyword::HAVING
+            | Keyword::BETWEEN
+            | Keyword::CASE
+            | Keyword::WHEN
+            | Keyword::THEN
+            | Keyword::ELSE
+            | Keyword::IN
+            | Keyword::LIKE
+            | Keyword::IS
             | Keyword::SET => CompletionContext::Column,
             Keyword::BY => {
                 // ORDER BY / GROUP BY → columns.
                 if tokens.len() >= 2
                     && let Token::Word(prev) = tokens[tokens.len() - 2]
-                        && matches!(prev.keyword, Keyword::ORDER | Keyword::GROUP) {
-                            return CompletionContext::Column;
-                        }
+                    && matches!(prev.keyword, Keyword::ORDER | Keyword::GROUP)
+                {
+                    return CompletionContext::Column;
+                }
                 CompletionContext::None
             }
             Keyword::ASC | Keyword::DESC => CompletionContext::Column,
@@ -168,10 +180,7 @@ mod tests {
     #[case::comma_in_order_by("SELECT * FROM t ORDER BY a,", CompletionContext::Column)]
     // Identifier (not a keyword) yields None.
     #[case::plain_identifier("SELECT a", CompletionContext::None)]
-    fn test_detect_sql_context(
-        #[case] before_token: &str,
-        #[case] expected: CompletionContext,
-    ) {
+    fn test_detect_sql_context(#[case] before_token: &str, #[case] expected: CompletionContext) {
         assert_eq!(detect_sql_context(before_token), expected);
     }
 }

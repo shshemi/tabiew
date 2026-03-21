@@ -1,4 +1,4 @@
-use super::context::{detect_sql_context, CompletionContext};
+use super::context::{CompletionContext, detect_sql_context};
 
 /// Characters that delimit the "current word" being typed.
 pub fn is_separator(character: char) -> bool {

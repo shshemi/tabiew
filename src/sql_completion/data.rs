@@ -34,13 +34,14 @@ pub fn collect_all_columns(dataframe: Option<&DataFrame>) -> Vec<String> {
 /// Return column names for a specific table.
 pub fn get_table_columns(table: &str, default_dataframe: Option<&DataFrame>) -> Vec<String> {
     if table == "_"
-        && let Some(dataframe) = default_dataframe {
-            return dataframe
-                .get_column_names()
-                .into_iter()
-                .map(|s| s.to_string())
-                .collect();
-        }
+        && let Some(dataframe) = default_dataframe
+    {
+        return dataframe
+            .get_column_names()
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
+    }
 
     let backend = sql();
     if let Some(info) = backend.schema().get(table) {

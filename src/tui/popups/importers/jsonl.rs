@@ -1,10 +1,10 @@
 use crate::{
     reader::{JsonLineToDataFrame, Source},
     tui::popups::{
+        component_sequence::ComponentSequence,
         import_source_picker::{self, ImportSourcePicker},
         importers::final_step,
         path_picker::PathPicker,
-        component_sequence::ComponentSequence,
     },
 };
 
