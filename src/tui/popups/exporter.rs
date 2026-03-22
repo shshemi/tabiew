@@ -8,12 +8,12 @@ use crate::tui::{
     component::Component,
     pickers::search_picker::SearchPicker,
     popups::{
-        component_sequence::{ComponentSequence, ComponentSequenceContainer},
+        component_sequence::{ComponentSequence, MultiStepOverlay},
         exporters::{arrow, csv, json, jsonl, parquet, tsv},
     },
 };
 
-pub type Exporter = ComponentSequenceContainer<State>;
+pub type Exporter = MultiStepOverlay<State>;
 
 #[derive(Debug)]
 pub enum State {

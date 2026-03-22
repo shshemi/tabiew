@@ -14,11 +14,11 @@ use crate::{
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::component_sequence::{ComponentSequence, ComponentSequenceContainer},
+        popups::component_sequence::{ComponentSequence, MultiStepOverlay},
     },
 };
 
-pub type ColumnCaster = ComponentSequenceContainer<State>;
+pub type ColumnCaster = MultiStepOverlay<State>;
 
 #[derive(Debug)]
 pub enum State {
