@@ -6,7 +6,7 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::component_sequence::{OverlayStep, MultiStepOverlay},
+        popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
         widgets::input::InputType,
     },
 };

@@ -9,7 +9,7 @@ use crate::{
     tui::{
         component::Component,
         popups::{
-            component_sequence::OverlayStep,
+            multi_step_overlay::OverlayStep,
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
         },

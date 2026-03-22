@@ -17,12 +17,12 @@ use crate::{
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             column_caster::ColumnCaster,
-            component_sequence::MultiStepOverlay,
             data_frame_info::DataFrameInfo,
             exporter::Exporter,
             go_to_line::GoToLine,
             histogram_builder::{self, HistogramBuilder},
             inline_query_picker::{InlineQueryPicker, QueryType},
+            multi_step_overlay::MultiStepOverlay,
             scatter_plot_builder::{self, ScatterPlotBuilder},
             table_registerer::TableRegisterer,
         },

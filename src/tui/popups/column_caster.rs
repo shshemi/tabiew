@@ -14,7 +14,7 @@ use crate::{
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::component_sequence::{MultiStepOverlay, OverlayStep},
+        popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
 };
 

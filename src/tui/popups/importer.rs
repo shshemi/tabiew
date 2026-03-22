@@ -6,7 +6,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        component_sequence::{OverlayStep, MultiStepOverlay},
+        multi_step_overlay::{MultiStepOverlay, OverlayStep},
         importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
     },
 };
