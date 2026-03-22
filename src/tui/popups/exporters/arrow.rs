@@ -5,7 +5,7 @@ use crate::{
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
-        popups::{component_sequence::ComponentSequence, path_picker::PathPicker},
+        popups::{component_sequence::OverlayStep, path_picker::PathPicker},
     },
     writer::{Destination, WriteToArrow, WriteToFile},
 };
@@ -24,7 +24,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickOutputPath { mut df, picker } => {

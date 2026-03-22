@@ -14,7 +14,7 @@ use crate::{
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::component_sequence::{ComponentSequence, MultiStepOverlay},
+        popups::component_sequence::{MultiStepOverlay, OverlayStep},
     },
 };
 
@@ -33,7 +33,7 @@ pub enum State {
     },
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { df, picker } => {

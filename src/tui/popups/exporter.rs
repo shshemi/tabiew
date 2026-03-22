@@ -8,7 +8,7 @@ use crate::tui::{
     component::Component,
     pickers::search_picker::SearchPicker,
     popups::{
-        component_sequence::{ComponentSequence, MultiStepOverlay},
+        component_sequence::{OverlayStep, MultiStepOverlay},
         exporters::{arrow, csv, json, jsonl, parquet, tsv},
     },
 };
@@ -50,7 +50,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { df, picker } => match picker.selected_item() {

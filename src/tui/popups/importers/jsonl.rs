@@ -1,7 +1,7 @@
 use crate::{
     reader::{JsonLineToDataFrame, Source},
     tui::popups::{
-        component_sequence::ComponentSequence,
+        component_sequence::OverlayStep,
         import_source_picker::{self, ImportSourcePicker},
         importers::dismiss_overlay_and_load_data_frame,
         path_picker::PathPicker,
@@ -14,12 +14,15 @@ pub enum State {
     PickPath { picker: PathPicker },
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(import_source_picker::Source::Stdin) => {
-                    dismiss_overlay_and_load_data_frame(Source::Stdin, JsonLineToDataFrame::default());
+                    dismiss_overlay_and_load_data_frame(
+                        Source::Stdin,
+                        JsonLineToDataFrame::default(),
+                    );
                     State::PickSource { picker }
                 }
                 Some(import_source_picker::Source::File) => State::PickPath {
@@ -28,7 +31,10 @@ impl ComponentSequence for State {
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => {
-                dismiss_overlay_and_load_data_frame(Source::File(picker.path()), JsonLineToDataFrame::default());
+                dismiss_overlay_and_load_data_frame(
+                    Source::File(picker.path()),
+                    JsonLineToDataFrame::default(),
+                );
                 Default::default()
             }
         }

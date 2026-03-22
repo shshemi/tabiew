@@ -6,7 +6,7 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::component_sequence::{ComponentSequence, MultiStepOverlay},
+        popups::component_sequence::{OverlayStep, MultiStepOverlay},
         widgets::input::InputType,
     },
 };
@@ -44,7 +44,7 @@ impl State {
     }
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { picker } => {

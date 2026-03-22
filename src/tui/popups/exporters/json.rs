@@ -9,7 +9,7 @@ use crate::{
     tui::{
         component::Component,
         popups::{
-            component_sequence::ComponentSequence,
+            component_sequence::OverlayStep,
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
         },
@@ -38,7 +38,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> State {
         match self {
             State::PickOutputTarget { mut df, picker } => match picker.selected() {

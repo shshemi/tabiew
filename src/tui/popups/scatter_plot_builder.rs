@@ -4,7 +4,7 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::search_picker::SearchPicker,
-        popups::component_sequence::{ComponentSequence, MultiStepOverlay},
+        popups::component_sequence::{OverlayStep, MultiStepOverlay},
     },
 };
 
@@ -43,7 +43,7 @@ impl State {
     }
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickX { df, picker } => {

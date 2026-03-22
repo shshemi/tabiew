@@ -6,7 +6,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        component_sequence::{ComponentSequence, MultiStepOverlay},
+        component_sequence::{OverlayStep, MultiStepOverlay},
         importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
     },
 };
@@ -28,7 +28,7 @@ pub enum State {
     Logfmt { logfmt: logfmt::State },
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { picker } => match picker.selected_item() {

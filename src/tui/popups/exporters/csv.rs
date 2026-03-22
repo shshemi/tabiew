@@ -10,7 +10,7 @@ use crate::{
         component::Component,
         pickers::text_picker::TextPicker,
         popups::{
-            component_sequence::ComponentSequence,
+            component_sequence::OverlayStep,
             export_target_picker::{ExportTargetPicker, Target},
             path_picker::PathPicker,
         },
@@ -55,7 +55,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSeparator { df, picker } => {
