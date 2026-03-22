@@ -6,14 +6,14 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::component_sequence::{ComponentSequence, ComponentSequenceContainer},
+        popups::component_sequence::{ComponentSequence, MultiStepOverlay},
         widgets::input::InputType,
     },
 };
 
 const DEFAULT_BUCKET_COUNT: &str = "24";
 
-pub type HistogramBuilder = ComponentSequenceContainer<State>;
+pub type HistogramBuilder = MultiStepOverlay<State>;
 
 #[derive(Debug)]
 pub enum State {

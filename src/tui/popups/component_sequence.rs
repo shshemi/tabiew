@@ -8,11 +8,11 @@ pub trait ComponentSequence {
 }
 
 #[derive(Debug)]
-pub struct ComponentSequenceContainer<W: ComponentSequence> {
+pub struct MultiStepOverlay<W: ComponentSequence> {
     state: Option<W>,
 }
 
-impl<W> ComponentSequenceContainer<W>
+impl<W> MultiStepOverlay<W>
 where
     W: ComponentSequence,
 {
@@ -21,7 +21,7 @@ where
     }
 }
 
-impl<W> Component for ComponentSequenceContainer<W>
+impl<W> Component for MultiStepOverlay<W>
 where
     W: ComponentSequence,
 {
@@ -56,7 +56,7 @@ where
     }
 }
 
-impl<State> Default for ComponentSequenceContainer<State>
+impl<State> Default for MultiStepOverlay<State>
 where
     State: Default + ComponentSequence,
 {

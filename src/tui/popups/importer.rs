@@ -6,12 +6,12 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        component_sequence::{ComponentSequence, ComponentSequenceContainer},
+        component_sequence::{ComponentSequence, MultiStepOverlay},
         importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
     },
 };
 
-pub type Importer = ComponentSequenceContainer<State>;
+pub type Importer = MultiStepOverlay<State>;
 
 #[derive(Debug)]
 pub enum State {

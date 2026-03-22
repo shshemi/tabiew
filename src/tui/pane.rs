@@ -17,7 +17,7 @@ use crate::{
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             column_caster::ColumnCaster,
-            component_sequence::ComponentSequenceContainer,
+            component_sequence::MultiStepOverlay,
             data_frame_info::DataFrameInfo,
             exporter::Exporter,
             go_to_line::GoToLine,
@@ -177,7 +177,7 @@ impl Pane {
     }
 
     fn show_scatter_plot_builder(&mut self) {
-        self.modal = Some(Modal::ScatterPlotBuilder(ComponentSequenceContainer::new(
+        self.modal = Some(Modal::ScatterPlotBuilder(MultiStepOverlay::new(
             scatter_plot_builder::State::new(self.tstack.last().data_frame().clone()),
         )))
     }
