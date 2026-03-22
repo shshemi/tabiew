@@ -3,7 +3,7 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            component_sequence::ComponentSequence,
+            component_sequence::OverlayStep,
             import_source_picker::{self, ImportSourcePicker},
             importers::dismiss_overlay_and_load_data_frame,
             path_picker::PathPicker,
@@ -45,7 +45,7 @@ pub enum State {
     },
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {

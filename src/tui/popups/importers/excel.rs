@@ -1,7 +1,7 @@
 use crate::{
     reader::{ExcelToDataFarmes, Source},
     tui::popups::{
-        component_sequence::ComponentSequence, importers::dismiss_overlay_and_load_data_frame,
+        component_sequence::OverlayStep, importers::dismiss_overlay_and_load_data_frame,
         path_picker::PathPicker,
     },
 };
@@ -11,7 +11,7 @@ pub enum State {
     PickPath { picker: PathPicker },
 }
 
-impl ComponentSequence for State {
+impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickPath { picker } => {
