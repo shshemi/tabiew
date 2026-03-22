@@ -1,7 +1,7 @@
 use crate::{
     reader::{JsonLineToDataFrame, Source},
     tui::popups::{
-        component_sequence::OverlayStep,
+        multi_step_overlay::OverlayStep,
         import_source_picker::{self, ImportSourcePicker},
         importers::dismiss_overlay_and_load_data_frame,
         path_picker::PathPicker,

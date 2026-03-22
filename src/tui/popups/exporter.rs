@@ -8,8 +8,8 @@ use crate::tui::{
     component::Component,
     pickers::search_picker::SearchPicker,
     popups::{
-        component_sequence::{OverlayStep, MultiStepOverlay},
         exporters::{arrow, csv, json, jsonl, parquet, tsv},
+        multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
 };
 

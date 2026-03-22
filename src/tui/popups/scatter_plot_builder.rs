@@ -4,7 +4,7 @@ use crate::{
     handler::message::Message,
     tui::{
         pickers::search_picker::SearchPicker,
-        popups::component_sequence::{OverlayStep, MultiStepOverlay},
+        popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
 };
 

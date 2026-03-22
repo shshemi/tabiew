@@ -1,9 +1,9 @@
 use crate::{
     reader::{LogfmtToDataFrame, Source},
     tui::popups::{
-        component_sequence::OverlayStep,
         import_source_picker::{self, ImportSourcePicker},
         importers::dismiss_overlay_and_load_data_frame,
+        multi_step_overlay::OverlayStep,
         path_picker::PathPicker,
     },
 };

@@ -1,6 +1,6 @@
 pub mod column_caster;
 pub mod command_palette;
-pub mod component_sequence;
+pub mod multi_step_overlay;
 pub mod data_frame_info;
 pub mod export_target_picker;
 pub mod exporter;
