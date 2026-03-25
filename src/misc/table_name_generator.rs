@@ -17,7 +17,7 @@ impl Iterator for TableNameGenerator<'_> {
         match self.stage {
             1 => self.base.to_owned().into(),
             2.. => format!("{}_{}", self.base, self.stage).into(),
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
