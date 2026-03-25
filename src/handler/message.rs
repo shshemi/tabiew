@@ -45,7 +45,7 @@ pub enum Message {
 
 impl Message {
     pub fn enqueue(self) {
-        SHARED_CHANNEL.0.send(self).unwrap();
+        let _ = SHARED_CHANNEL.0.send(self);
     }
     pub fn dequeue() -> Option<Message> {
         SHARED_CHANNEL.1.try_lock().ok()?.try_recv().ok()?.into()
