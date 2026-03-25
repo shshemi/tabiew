@@ -48,16 +48,23 @@ impl EventHandler {
                     .checked_sub(last_tick.elapsed())
                     .unwrap_or(tick_rate);
                 if READ_EVENT.load(Ordering::Relaxed) {
-                    if event::poll(timeout).expect("failed to poll new events") {
-                        match event::read().expect("unable to read event") {
-                            CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
-                            CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
-                            CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
-                            CrosstermEvent::FocusGained => Ok(()),
-                            CrosstermEvent::FocusLost => Ok(()),
-                            CrosstermEvent::Paste(_) => unimplemented!(),
-                        }
-                        .expect("failed to send terminal event")
+                    let Ok(true) = event::poll(timeout) else {
+                        continue;
+                    };
+                    let event = match event::read() {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    let result = match event {
+                        CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
+                        CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
+                        CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
+                        CrosstermEvent::FocusGained
+                        | CrosstermEvent::FocusLost
+                        | CrosstermEvent::Paste(_) => Ok(()),
+                    };
+                    if result.is_err() {
+                        break;
                     }
                 } else {
                     std::thread::sleep(timeout);
