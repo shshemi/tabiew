@@ -112,7 +112,7 @@ impl ReadToDataFrames for FwfToDataFrame {
                     if let Some(name) = slice.snake_case_names().find(|name| !vec.contains(name)) {
                         vec.push(name);
                     } else {
-                        panic!("Not implemented")
+                        vec.push(format!("column_{}", vec.len() + 1));
                     }
                     vec
                 })
