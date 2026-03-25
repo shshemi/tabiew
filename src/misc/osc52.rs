@@ -5,15 +5,17 @@ use std::{
 
 use base64::Engine;
 
+use super::type_ext::UnwrapOrGracefulShutdown;
+
 static OSC52_BUFFER: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::default()));
 
 pub fn flush_osc52_buffer() {
-    let mut buffer = OSC52_BUFFER.lock().unwrap();
+    let mut buffer = OSC52_BUFFER.lock().unwrap_or_graceful_shutdown();
     if !buffer.is_empty() {
         for seq in buffer.drain(..) {
             print!("{}", seq);
         }
-        std::io::stdout().flush().unwrap();
+        let _ = std::io::stdout().flush();
     }
 }
 
@@ -28,7 +30,7 @@ where
     fn copy_to_clipboard_via_osc52(&self) {
         let encoded = base64::engine::general_purpose::STANDARD.encode(self);
         let sequence = format!("\x1b]52;c;{encoded}\x07");
-        let mut buffer = OSC52_BUFFER.lock().unwrap();
+        let mut buffer = OSC52_BUFFER.lock().unwrap_or_graceful_shutdown();
         buffer.clear();
         buffer.push_str(&sequence);
     }
