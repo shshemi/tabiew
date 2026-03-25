@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AppResult, misc::paths::config_path, tui::themes::theme::LoadedTheme};
 
+use super::type_ext::UnwrapOrGracefulShutdown;
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -46,11 +48,11 @@ impl Config {
     }
 
     pub fn theme(&self) -> impl Deref<Target = LoadedTheme> {
-        self.theme.read().unwrap()
+        self.theme.read().unwrap_or_graceful_shutdown()
     }
 
     pub fn set_theme(&self, theme: impl Into<LoadedTheme>) {
-        *self.theme.write().unwrap() = theme.into();
+        *self.theme.write().unwrap_or_graceful_shutdown() = theme.into();
     }
 
     pub fn show_table_borders(&self) -> bool {
