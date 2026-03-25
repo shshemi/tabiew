@@ -16,6 +16,7 @@ use polars_sql::SQLContext;
 use crate::misc::table_name_generator::TableNameGeneratorExt;
 
 use super::polars_ext::AnyValueExt;
+use super::type_ext::UnwrapOrGracefulShutdown;
 
 const DEFAULT_TABLE_NAME: &str = "_";
 
@@ -272,7 +273,7 @@ impl FieldInfo {
 pub fn sql() -> impl DerefMut<Target = SqlBackend> {
     static SQL_BACKEND: LazyLock<Mutex<SqlBackend>> =
         LazyLock::new(|| Mutex::new(SqlBackend::default()));
-    SQL_BACKEND.lock().unwrap()
+    SQL_BACKEND.lock().unwrap_or_graceful_shutdown()
 }
 
 fn min_max(series: &Series) -> (String, String) {
@@ -287,9 +288,13 @@ fn min_max(series: &Series) -> (String, String) {
             series
                 .iter()
                 .fold((AnyValue::Null, AnyValue::Null), |(mut min, mut max), a| {
-                    if a < min || matches!(min, AnyValue::Null) {
-                        min = a;
-                    } else if a > max || matches!(max, AnyValue::Null) {
+                    if matches!(a, AnyValue::Null) {
+                        return (min, max);
+                    }
+                    if matches!(min, AnyValue::Null) || a < min {
+                        min = a.clone();
+                    }
+                    if matches!(max, AnyValue::Null) || a > max {
                         max = a;
                     }
                     (min, max)
