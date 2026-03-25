@@ -36,8 +36,8 @@ impl ReadToDataFrames for SqliteToDataFrames {
             Source::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
-                stdin().read_to_end(&mut buf).unwrap();
-                std::fs::write(temp_file.path(), buf).unwrap();
+                stdin().read_to_end(&mut buf)?;
+                std::fs::write(temp_file.path(), buf)?;
                 path_to_name_frames(temp_file.path(), self.key.as_deref())
             }
         }
