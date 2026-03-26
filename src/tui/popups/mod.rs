@@ -1,5 +1,6 @@
 pub mod column_caster;
 pub mod command_palette;
+pub mod multi_step_overlay;
 pub mod data_frame_info;
 pub mod export_target_picker;
 pub mod exporter;
@@ -11,7 +12,6 @@ pub mod import_source_picker;
 pub mod importer;
 pub mod importers;
 pub mod inline_query_picker;
-pub mod multi_step_overlay;
 pub mod path_picker;
 pub mod scatter_plot_builder;
 pub mod sql_query_picker;
