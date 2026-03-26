@@ -41,7 +41,11 @@ pub fn extract_token_and_context(
     // clause.
     let full_before = format!("{sql_prefix}{before_token}");
 
-    let context = detect_sql_context(&full_before);
+    let context = if !token.is_empty() && full_before.trim_end().is_empty() {
+        CompletionContext::Keyword
+    } else {
+        detect_sql_context(&full_before)
+    };
 
     (token, context)
 }
@@ -53,14 +57,22 @@ mod tests {
 
     #[rstest]
     #[case::empty_input("", 0, "", "", CompletionContext::None)]
+    #[case::keyword_at_statement_start("sel", 3, "", "sel", CompletionContext::Keyword)]
     #[case::simple_column_after_select("col", 3, "SELECT ", "col", CompletionContext::Column)]
     #[case::cursor_in_middle_of_word("column_name", 3, "SELECT ", "col", CompletionContext::Column)]
     #[case::after_comma_in_select("a, b", 4, "SELECT ", "b", CompletionContext::Column)]
+    #[case::keyword_after_completed_select_item(
+        "a fr",
+        4,
+        "SELECT ",
+        "fr",
+        CompletionContext::Keyword
+    )]
     #[case::table_after_from("tab", 3, "SELECT * FROM ", "tab", CompletionContext::Table)]
     #[case::qualified_column("t.col", 5, "SELECT ", "col", CompletionContext::QualifiedColumn("t".to_string()))]
     #[case::after_where("x", 1, "SELECT * FROM _ WHERE ", "x", CompletionContext::Column)]
     #[case::cursor_beyond_length("ab", 100, "SELECT ", "ab", CompletionContext::Column)]
-    #[case::at_separator_boundary("a ", 2, "SELECT ", "", CompletionContext::None)]
+    #[case::at_separator_boundary("a ", 2, "SELECT ", "", CompletionContext::Keyword)]
     fn test_extract_token_and_context(
         #[case] value: &str,
         #[case] cursor: usize,

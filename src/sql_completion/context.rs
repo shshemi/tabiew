@@ -10,6 +10,8 @@ use super::extraction::is_separator;
 pub enum CompletionContext {
     /// Suggest column names.
     Column,
+    /// Suggest SQL keywords.
+    Keyword,
     /// Suggest column names from a specific table (after `table.`).
     QualifiedColumn(String),
     /// Suggest registered table names.
@@ -53,13 +55,22 @@ pub(super) fn detect_sql_context(before_token: &str) -> CompletionContext {
         return CompletionContext::None;
     }
 
-    classify_last_token(significant.last().unwrap(), &significant)
+    classify_last_token(
+        significant.last().unwrap(),
+        &significant,
+        trimmed.len() != before_token.len(),
+    )
 }
 
 /// Given the last significant SQL token, decide the completion context.
-fn classify_last_token(last: &Token, tokens: &[&Token]) -> CompletionContext {
+fn classify_last_token(
+    last: &Token,
+    tokens: &[&Token],
+    has_trailing_separator: bool,
+) -> CompletionContext {
     match last {
         Token::Word(word) => match word.keyword {
+            Keyword::NoKeyword => classify_identifier_context(tokens, has_trailing_separator),
             Keyword::SELECT | Keyword::DISTINCT => CompletionContext::Column,
             Keyword::FROM | Keyword::JOIN | Keyword::INTO => CompletionContext::Table,
             Keyword::WHERE
@@ -97,6 +108,26 @@ fn classify_last_token(last: &Token, tokens: &[&Token]) -> CompletionContext {
         Token::LParen => CompletionContext::Column,
         Token::Comma => find_clause_for_comma(tokens),
         _ => CompletionContext::None,
+    }
+}
+
+/// Decide whether a plain identifier is followed by another identifier-like
+/// value or by a SQL clause keyword.
+fn classify_identifier_context(
+    tokens: &[&Token],
+    has_trailing_separator: bool,
+) -> CompletionContext {
+    if !has_trailing_separator {
+        return CompletionContext::None;
+    }
+
+    if tokens.len() < 2 {
+        return CompletionContext::Keyword;
+    }
+
+    match tokens[tokens.len() - 2] {
+        Token::Word(word) if matches!(word.keyword, Keyword::AS) => CompletionContext::None,
+        _ => CompletionContext::Keyword,
     }
 }
 
@@ -178,8 +209,12 @@ mod tests {
     #[case::comma_in_from("SELECT * FROM a,", CompletionContext::Table)]
     #[case::comma_in_where("SELECT * FROM t WHERE a = 1 AND b IN (1,", CompletionContext::Column)]
     #[case::comma_in_order_by("SELECT * FROM t ORDER BY a,", CompletionContext::Column)]
-    // Identifier (not a keyword) yields None.
+    // Identifier (not a keyword) can yield keyword completion after a separator.
     #[case::plain_identifier("SELECT a", CompletionContext::None)]
+    #[case::completed_select_item("SELECT a ", CompletionContext::Keyword)]
+    #[case::table_identifier("SELECT * FROM t", CompletionContext::None)]
+    #[case::completed_table_identifier("SELECT * FROM t ", CompletionContext::Keyword)]
+    #[case::alias_after_as("SELECT a AS alias", CompletionContext::None)]
     fn test_detect_sql_context(#[case] before_token: &str, #[case] expected: CompletionContext) {
         assert_eq!(detect_sql_context(before_token), expected);
     }
