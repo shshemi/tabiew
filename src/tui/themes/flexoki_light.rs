@@ -29,8 +29,8 @@ impl SixColorsTwoRowsStyler for FlexokiLight {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFF6), Color::from_u32(0x00FFFFFC)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00000000);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00205ea6);
+    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00ffffff);
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007F0000);
 }

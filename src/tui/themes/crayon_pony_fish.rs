@@ -8,7 +8,7 @@ pub struct CrayonPonyFish;
 impl SixColorsTwoRowsStyler for CrayonPonyFish {
     const BACKGROUND: Color = Color::from_u32(0x00150707);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00352727);
-    const FOREGROUND: Color = Color::from_u32(0x0068525a);
+    const FOREGROUND: Color = Color::from_u32(0x008a7078);
     const DARK_FOREGROUND: Color = Color::from_u32(0x002b1b1d);
 
     const COLORS: [Color; 6] = [
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for CrayonPonyFish {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001B0D0D), Color::from_u32(0x00211313)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0048323A);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00b0949c);
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B87836);
 }

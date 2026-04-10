@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Broadcast {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00313131), Color::from_u32(0x00373737)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA21A);
 }

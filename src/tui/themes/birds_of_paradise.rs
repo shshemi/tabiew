@@ -29,7 +29,7 @@ impl SixColorsTwoRowsStyler for BirdsOfParadise {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00302523), Color::from_u32(0x00362B29)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00371D06);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x005c3d1a);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B96D00);

@@ -8,7 +8,7 @@ pub struct Shaman;
 impl SixColorsTwoRowsStyler for Shaman {
     const BACKGROUND: Color = Color::from_u32(0x00001015);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00203035);
-    const FOREGROUND: Color = Color::from_u32(0x00405555);
+    const FOREGROUND: Color = Color::from_u32(0x006a8888);
     const DARK_FOREGROUND: Color = Color::from_u32(0x00012026);
 
     const COLORS: [Color; 6] = [
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Shaman {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0006161B), Color::from_u32(0x000C1C21)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x002ADCB6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00820000);
 }

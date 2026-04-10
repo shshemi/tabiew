@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for BlulocoDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E323A), Color::from_u32(0x00343840)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFAC00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF633A);
 }

@@ -29,7 +29,7 @@ impl SixColorsTwoRowsStyler for Django {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00113526), Color::from_u32(0x00173B2C)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00134422);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x002d6844);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB832);

@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for OperatorMonoDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001F1F1F), Color::from_u32(0x00252525)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DCBC00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A4A667);
 }

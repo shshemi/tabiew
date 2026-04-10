@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Earthsong {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002F2B26), Color::from_u32(0x0035312C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D6D7CC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C57E00);
 }

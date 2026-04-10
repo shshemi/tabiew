@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Slate {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00282828), Color::from_u32(0x002E2E2E)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0067B3A4);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B2788F);
 }

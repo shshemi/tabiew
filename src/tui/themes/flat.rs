@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Flat {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00062846), Color::from_u32(0x000C2E4C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C59E00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B55D00);
 }
