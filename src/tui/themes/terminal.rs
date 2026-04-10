@@ -1,68 +1,91 @@
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Modifier, Style};
 
 use crate::tui::themes::styler::Styler;
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Terminal;
 
+const COLORS: [Color; 6] = [
+    Color::Red,
+    Color::Yellow,
+    Color::Green,
+    Color::Cyan,
+    Color::Blue,
+    Color::Magenta,
+];
+
 impl Styler for Terminal {
     fn table_header(&self) -> Style {
-        Style::default().bg(Color::DarkGray).fg(Color::White)
+        Style::default()
+            .bg(Color::Reset)
+            .add_modifier(Modifier::BOLD)
     }
 
     fn row(&self, _row: usize) -> Style {
-        Style::default().bg(Color::Black).fg(Color::White)
+        Style::default().bg(Color::Reset).fg(Color::Reset)
     }
 
     fn row_highlighted(&self) -> Style {
-        Style::default().bg(Color::LightYellow).fg(Color::Black)
+        Style::default()
+            .bg(Color::Reset)
+            .fg(Color::Reset)
+            .add_modifier(Modifier::REVERSED)
     }
 
-    fn header(&self, _col: usize) -> Style {
-        Style::default().fg(Color::White)
+    fn header(&self, idx: usize) -> Style {
+        Style::default().fg(COLORS[idx % COLORS.len()]).bold()
     }
 
     fn tag(&self, idx: usize) -> Style {
         Style::default()
-            .bg([
-                Color::Red,
-                Color::Magenta,
-                Color::Blue,
-                Color::Cyan,
-                Color::Green,
-            ][idx % 5])
-            .fg(Color::Gray)
+            .bg(COLORS[idx % COLORS.len()])
+            .fg(Color::Black)
     }
 
     fn block_tag(&self) -> Style {
-        Style::default().bg(Color::LightYellow).fg(Color::Gray)
+        Style::default()
+            .bg(Color::Reset)
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::REVERSED)
     }
 
     fn block(&self) -> Style {
-        Style::default().bg(Color::Black).fg(Color::White)
+        Style::default().bg(Color::Reset).fg(Color::Yellow)
     }
 
     fn text(&self) -> Style {
-        Style::default().bg(Color::Black).fg(Color::White)
+        Style::default().bg(Color::Reset).fg(Color::Reset)
     }
 
     fn subtext(&self) -> Style {
-        Style::default().bg(Color::Black).fg(Color::DarkGray)
+        Style::default()
+            .bg(Color::Reset)
+            .fg(Color::Reset)
+            .add_modifier(Modifier::DIM)
     }
 
     fn error(&self) -> Style {
-        Style::default().bg(Color::Red).fg(Color::White)
+        Style::default()
+            .bg(Color::Red)
+            .fg(Color::Reset)
+            .add_modifier(Modifier::REVERSED)
     }
 
-    fn graph(&self, _idx: usize) -> Style {
-        Style::default().fg(Color::White)
+    fn graph(&self, idx: usize) -> Style {
+        Style::default().fg(COLORS[idx % COLORS.len()]).bold()
     }
 
     fn text_highlighted(&self) -> Style {
-        Style::default().fg(Color::Yellow)
+        Style::default()
+            .bg(Color::Reset)
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
     }
 
     fn gutter(&self, _: usize) -> Style {
-        Style::default().bg(Color::Black).fg(Color::White)
+        Style::default()
+            .bg(Color::Reset)
+            .fg(Color::Reset)
+            .add_modifier(Modifier::DIM)
     }
 }
