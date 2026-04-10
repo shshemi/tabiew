@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+use std::io::IsTerminal;
 use std::{num::NonZero, path::PathBuf};
 
 #[derive(Parser, Debug)]
@@ -116,6 +117,71 @@ pub struct Args {
         default_value_t = false
     )]
     pub no_type_inference: bool,
+
+    #[arg(
+        short = 'F',
+        long,
+        help = "Stream rows progressively from stdin instead of waiting for EOF. Only valid for line-oriented formats (csv, tsv, dsv, jsonl, logfmt, fwf).",
+        default_value_t = false
+    )]
+    pub follow: bool,
+
+    #[arg(
+        long = "key",
+        help = "Comma-separated 0-based column indexes that form the composite primary key for streamed upserts. Defaults to the first column. Requires --follow.",
+        required = false,
+        default_value_t = KeyColumns::default(),
+    )]
+    pub key: KeyColumns,
+
+    #[arg(
+        long,
+        help = "Maximum rows to buffer before flushing a streaming batch to the UI.",
+        required = false,
+        default_value_t = 1000
+    )]
+    pub stream_batch_rows: usize,
+
+    #[arg(
+        long,
+        help = "Maximum milliseconds to buffer before flushing a streaming batch to the UI.",
+        required = false,
+        default_value_t = 250
+    )]
+    pub stream_batch_ms: u64,
+}
+
+impl Args {
+    /// Validate cross-field constraints that clap cannot express directly.
+    /// Returns a plain string error so this file remains self-contained
+    /// (it is `include!`d by `build.rs` which has no access to crate items).
+    pub fn validate(&self) -> Result<(), String> {
+        if !self.key.is_default() && !self.follow {
+            return Err("--key requires --follow".to_string());
+        }
+        if self.follow {
+            if std::io::stdin().is_terminal() {
+                return Err(
+                    "--follow requires data to be piped on stdin (e.g. `tail -f file | tw --follow -f jsonl`)"
+                        .to_string(),
+                );
+            }
+            let resolved = self.format.clone().unwrap_or(Format::Csv);
+            if !resolved.is_streamable() {
+                return Err(format!(
+                    "format `{}` cannot be streamed; --follow only works with csv, tsv, dsv, jsonl, logfmt, or fwf",
+                    resolved.as_str()
+                ));
+            }
+            if self.stream_batch_rows == 0 {
+                return Err("--stream-batch-rows must be > 0".to_string());
+            }
+            if self.stream_batch_ms == 0 {
+                return Err("--stream-batch-ms must be > 0".to_string());
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -131,6 +197,97 @@ pub enum Format {
     Sqlite,
     Excel,
     Logfmt,
+}
+
+impl Format {
+    pub fn is_streamable(&self) -> bool {
+        matches!(
+            self,
+            Format::Dsv
+                | Format::Csv
+                | Format::Tsv
+                | Format::Jsonl
+                | Format::Logfmt
+                | Format::Fwf
+        )
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Format::Dsv => "dsv",
+            Format::Csv => "csv",
+            Format::Tsv => "tsv",
+            Format::Parquet => "parquet",
+            Format::Jsonl => "jsonl",
+            Format::Json => "json",
+            Format::Arrow => "arrow",
+            Format::Fwf => "fwf",
+            Format::Sqlite => "sqlite",
+            Format::Excel => "excel",
+            Format::Logfmt => "logfmt",
+        }
+    }
+}
+
+/// Comma-separated 0-based column indexes used as a composite primary key
+/// when upserting streamed rows. Mirrors the `TypeVec` newtype pattern below.
+#[derive(Debug, Clone)]
+pub struct KeyColumns {
+    indexes: Vec<usize>,
+    is_default: bool,
+}
+
+impl KeyColumns {
+    pub fn indexes(&self) -> &[usize] {
+        &self.indexes
+    }
+
+    pub fn is_default(&self) -> bool {
+        self.is_default
+    }
+}
+
+impl Default for KeyColumns {
+    fn default() -> Self {
+        Self {
+            indexes: vec![0],
+            is_default: true,
+        }
+    }
+}
+
+impl std::fmt::Display for KeyColumns {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let parts: Vec<String> = self.indexes.iter().map(|i| i.to_string()).collect();
+        write!(f, "{}", parts.join(","))
+    }
+}
+
+impl std::str::FromStr for KeyColumns {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed = s.trim();
+        if trimmed.is_empty() {
+            return Err("--key must contain at least one column index".to_string());
+        }
+        let mut indexes = Vec::new();
+        for part in trimmed.split(',') {
+            let p = part.trim();
+            if p.is_empty() {
+                return Err("--key entries must not be empty".to_string());
+            }
+            let idx: usize = p
+                .parse()
+                .map_err(|_| format!("--key index `{p}` is not a non-negative integer"))?;
+            if indexes.contains(&idx) {
+                return Err(format!("--key index `{idx}` is duplicated"));
+            }
+            indexes.push(idx);
+        }
+        let is_default = indexes == vec![0];
+        Ok(KeyColumns { indexes, is_default })
+    }
 }
 
 #[derive(Debug, Clone)]

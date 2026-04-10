@@ -33,6 +33,7 @@ fn main() {
             Args::parse_from(args_os)
         }
     };
+    args.validate().unwrap_or_graceful_shutdown();
 
     let _ = config().reload();
 
