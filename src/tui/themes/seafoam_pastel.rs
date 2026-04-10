@@ -29,7 +29,7 @@ impl SixColorsTwoRowsStyler for SeafoamPastel {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A3A3B), Color::from_u32(0x00304041)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0037445A);
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x004a5a74);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007D713D);

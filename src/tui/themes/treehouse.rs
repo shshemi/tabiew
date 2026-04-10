@@ -8,7 +8,7 @@ pub struct Treehouse;
 impl SixColorsTwoRowsStyler for Treehouse {
     const BACKGROUND: Color = Color::from_u32(0x00191919);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00393939);
-    const FOREGROUND: Color = Color::from_u32(0x00786b53);
+    const FOREGROUND: Color = Color::from_u32(0x00958568);
     const DARK_FOREGROUND: Color = Color::from_u32(0x00321300);
 
     const COLORS: [Color; 6] = [
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Treehouse {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001F1F1F), Color::from_u32(0x00252525)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DAA800);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00820000);
 }

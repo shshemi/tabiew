@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for ToyChest {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A3C51), Color::from_u32(0x00304257)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B5B5B5);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AB5E00);
 }

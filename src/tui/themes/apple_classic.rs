@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for AppleClassic {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00323131), Color::from_u32(0x00383737)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009A0097);
 }

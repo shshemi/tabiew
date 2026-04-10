@@ -8,7 +8,7 @@ pub struct Darkmatrix;
 impl SixColorsTwoRowsStyler for Darkmatrix {
     const BACKGROUND: Color = Color::from_u32(0x00070c0e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00272C2E);
-    const FOREGROUND: Color = Color::from_u32(0x003e5715);
+    const FOREGROUND: Color = Color::from_u32(0x005a7a30);
     const DARK_FOREGROUND: Color = Color::from_u32(0x00091013);
 
     const COLORS: [Color; 6] = [
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Darkmatrix {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000D1214), Color::from_u32(0x0013181A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007F884E);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x004E5000);
 }
