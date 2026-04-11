@@ -38,8 +38,8 @@ impl Styler for Terminal {
 
     fn tag(&self, idx: usize) -> Style {
         Style::default()
-            .bg(COLORS[idx % COLORS.len()])
-            .fg(Color::Black)
+            .bg(Color::Indexed(236))
+            .fg(COLORS[idx % COLORS.len()])
     }
 
     fn block_tag(&self) -> Style {
@@ -83,9 +83,6 @@ impl Styler for Terminal {
     }
 
     fn gutter(&self, _: usize) -> Style {
-        Style::default()
-            .bg(Color::Reset)
-            .fg(Color::Reset)
-            .add_modifier(Modifier::DIM)
+        Style::default().bg(Color::Reset).fg(Color::Reset)
     }
 }
