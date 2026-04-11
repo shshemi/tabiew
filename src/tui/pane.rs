@@ -37,6 +37,8 @@ use crate::{
 pub struct StreamStatus {
     pub open: bool,
     pub rows_received: u64,
+    pub rows_inserted: u64,
+    pub rows_updated: u64,
 }
 
 #[derive(Debug)]

@@ -3,6 +3,7 @@ use std::sync::mpsc::{Receiver, TryRecvError};
 use polars::frame::DataFrame;
 
 use crate::misc::sql::{Source as SqlSource, sql};
+use crate::misc::upsert_index::UpsertIndex;
 use crate::reader::StreamEvent;
 use crate::tui::Pane;
 use crate::tui::pane::StreamStatus;
@@ -31,16 +32,27 @@ pub struct StreamSink {
     pub table_name: String,
     pub open: bool,
     pub rows_received: u64,
+    pub rows_inserted: u64,
+    pub rows_updated: u64,
+    pub upsert: UpsertIndex,
 }
 
 impl StreamSink {
-    pub fn new(rx: Receiver<StreamEvent>, tab_index: usize, table_name: String) -> Self {
+    pub fn new(
+        rx: Receiver<StreamEvent>,
+        tab_index: usize,
+        table_name: String,
+        upsert: UpsertIndex,
+    ) -> Self {
         Self {
             rx,
             tab_index,
             table_name,
             open: true,
             rows_received: 0,
+            rows_inserted: 0,
+            rows_updated: 0,
+            upsert,
         }
     }
 }
@@ -71,6 +83,8 @@ impl App {
             pane.set_stream_status(StreamStatus {
                 open: stream.open,
                 rows_received: stream.rows_received,
+                rows_inserted: stream.rows_inserted,
+                rows_updated: stream.rows_updated,
             });
         }
         self.stream = Some(stream);
@@ -110,19 +124,27 @@ impl App {
                     if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
                         let df = pane.base_table_mut().data_frame_mut();
                         let new_rows = rows.height() as u64;
-                        if df.width() == 0 {
-                            *df = rows;
-                        } else if let Err(err) = df.vstack_mut_owned(rows) {
-                            Message::AppShowError(format!("stream append failed: {err}"))
-                                .enqueue();
-                            stream.open = false;
-                            Self::publish_stream_status(pane, stream);
-                            return;
+                        match stream.upsert.apply_batch(df, rows) {
+                            Ok(stats) => {
+                                stream.rows_received += new_rows;
+                                stream.rows_inserted += stats.inserted as u64;
+                                stream.rows_updated += stats.updated as u64;
+                                let refreshed = df.clone();
+                                sql().refresh_frame(
+                                    &stream.table_name,
+                                    refreshed,
+                                    SqlSource::Stdin,
+                                );
+                                Self::publish_stream_status(pane, stream);
+                            }
+                            Err(err) => {
+                                Message::AppShowError(format!("stream upsert failed: {err}"))
+                                    .enqueue();
+                                stream.open = false;
+                                Self::publish_stream_status(pane, stream);
+                                return;
+                            }
                         }
-                        stream.rows_received += new_rows;
-                        let refreshed = df.clone();
-                        sql().refresh_frame(&stream.table_name, refreshed, SqlSource::Stdin);
-                        Self::publish_stream_status(pane, stream);
                     }
                 }
                 Ok(StreamEvent::Eof { .. }) => {
@@ -168,6 +190,8 @@ impl App {
         pane.set_stream_status(StreamStatus {
             open: stream.open,
             rows_received: stream.rows_received,
+            rows_inserted: stream.rows_inserted,
+            rows_updated: stream.rows_updated,
         });
     }
 

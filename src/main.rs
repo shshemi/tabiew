@@ -15,6 +15,7 @@ use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::sql;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
+use tabiew::misc::upsert_index::UpsertIndex;
 use tabiew::reader::{BuildReader, BuildStreamReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
@@ -95,7 +96,8 @@ fn main() {
             );
             reader.stream_to_data_frames(Source::Stdin, tx);
             name_dfs.push((table_name.clone(), empty_df));
-            stream_sink = Some(StreamSink::new(rx, 0, table_name));
+            let upsert = UpsertIndex::new(args.key.indexes().to_vec());
+            stream_sink = Some(StreamSink::new(rx, 0, table_name, upsert));
         } else {
             for (name, mut df) in args
                 .build_reader("")

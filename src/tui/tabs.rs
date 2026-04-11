@@ -139,7 +139,9 @@ impl Component for Tabs {
                     let indicator = if stream.open { "live" } else { "closed" };
                     status_bar = status_bar
                         .tag(Tag::new("Stream", indicator))
-                        .tag(Tag::new("StreamRows", stream.rows_received.to_string()));
+                        .tag(Tag::new("StreamRows", stream.rows_received.to_string()))
+                        .tag(Tag::new("Ins", stream.rows_inserted.to_string()))
+                        .tag(Tag::new("Upd", stream.rows_updated.to_string()));
                     if let Some(pending) = pane.pending_rows() {
                         status_bar = status_bar.tag(Tag::new("Pending", pending.to_string()));
                     }
