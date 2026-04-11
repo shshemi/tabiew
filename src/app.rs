@@ -110,11 +110,7 @@ impl App {
                             // empty frame that has the right columns so the
                             // header row renders immediately.
                             let df = DataFrame::empty_with_schema(&schema);
-                            sql().refresh_frame(
-                                &stream.table_name,
-                                df.clone(),
-                                SqlSource::Stdin,
-                            );
+                            sql().refresh_frame(&stream.table_name, df.clone(), SqlSource::Stdin);
                             pane.base_table_mut().set_data_frame(df);
                         }
                         Self::publish_stream_status(pane, stream);
@@ -152,11 +148,8 @@ impl App {
                     if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
                         Self::publish_stream_status(pane, stream);
                     }
-                    Message::AppShowToast(format!(
-                        "stream closed: {} rows",
-                        stream.rows_received
-                    ))
-                    .enqueue();
+                    Message::AppShowToast(format!("stream closed: {} rows", stream.rows_received))
+                        .enqueue();
                     return;
                 }
                 Ok(StreamEvent::Error { error, .. }) => {

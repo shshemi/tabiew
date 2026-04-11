@@ -311,7 +311,13 @@ mod tests {
         assert_eq!(stats.inserted, 0);
         assert_eq!(stats.updated, 1);
         assert_eq!(live.height(), 3);
-        let vs: Vec<_> = live.column("v").unwrap().str().unwrap().into_iter().collect();
+        let vs: Vec<_> = live
+            .column("v")
+            .unwrap()
+            .str()
+            .unwrap()
+            .into_iter()
+            .collect();
         assert_eq!(vs, vec![Some("a"), Some("Z"), Some("c")]);
     }
 
@@ -326,7 +332,13 @@ mod tests {
         assert_eq!(stats.inserted, 1);
         assert_eq!(stats.updated, 0);
         assert_eq!(live.height(), 1);
-        let vs: Vec<_> = live.column("v").unwrap().str().unwrap().into_iter().collect();
+        let vs: Vec<_> = live
+            .column("v")
+            .unwrap()
+            .str()
+            .unwrap()
+            .into_iter()
+            .collect();
         assert_eq!(vs, vec![Some("last")]);
     }
 
@@ -343,7 +355,13 @@ mod tests {
         assert_eq!(stats.inserted, 1);
         assert_eq!(stats.updated, 2);
         assert_eq!(live.height(), 3);
-        let vs: Vec<_> = live.column("v").unwrap().str().unwrap().into_iter().collect();
+        let vs: Vec<_> = live
+            .column("v")
+            .unwrap()
+            .str()
+            .unwrap()
+            .into_iter()
+            .collect();
         assert_eq!(vs, vec![Some("A"), Some("B"), Some("c")]);
     }
 
@@ -362,7 +380,13 @@ mod tests {
         assert_eq!(stats.inserted, 2);
         assert_eq!(stats.updated, 0);
         assert_eq!(live.height(), 2);
-        let vs: Vec<_> = live.column("v").unwrap().str().unwrap().into_iter().collect();
+        let vs: Vec<_> = live
+            .column("v")
+            .unwrap()
+            .str()
+            .unwrap()
+            .into_iter()
+            .collect();
         // Inserts are emitted in batch order, skipping rows dominated by a
         // later occurrence of the same key. Batch row 0 (1,1)=x is dominated
         // by row 2 (1,1)=z, so row 1 (1,2)=y is emitted first, then row 2.

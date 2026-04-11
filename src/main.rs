@@ -89,11 +89,8 @@ fn main() {
             // Register the placeholder in the SQL context under a stable
             // name so the tab and future batch refreshes agree.
             let empty_df = DataFrame::empty();
-            let table_name = sql().register(
-                &Source::Stdin.table_name(),
-                empty_df.clone(),
-                Source::Stdin,
-            );
+            let table_name =
+                sql().register(&Source::Stdin.table_name(), empty_df.clone(), Source::Stdin);
             reader.stream_to_data_frames(Source::Stdin, tx);
             name_dfs.push((table_name.clone(), empty_df));
             let upsert = UpsertIndex::new(args.key.indexes().to_vec());
@@ -115,10 +112,7 @@ fn main() {
     let _ = start_app(name_dfs, stream_sink);
 }
 
-fn start_app(
-    tabs: Vec<(String, DataFrame)>,
-    stream_sink: Option<StreamSink>,
-) -> AppResult<()> {
+fn start_app(tabs: Vec<(String, DataFrame)>, stream_sink: Option<StreamSink>) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(name, df)| Pane::new(df, TableDescription::Table(name)))

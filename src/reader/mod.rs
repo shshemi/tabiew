@@ -11,7 +11,7 @@ mod sqlite;
 mod traits;
 
 pub use arrow::ArrowIpcToDataFrame;
-pub use csv::CsvToDataFrame;
+pub use csv::{CsvStreamReader, CsvToDataFrame};
 pub use excel::ExcelToDataFarmes;
 pub use fwf::FwfToDataFrame;
 pub use json::JsonToDataFrame;

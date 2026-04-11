@@ -9,7 +9,7 @@ use crate::{
     AppResult,
     args::{Args, Format},
     reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFarmes, FwfToDataFrame,
+        ArrowIpcToDataFrame, CsvStreamReader, CsvToDataFrame, ExcelToDataFarmes, FwfToDataFrame,
         JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame, Source,
         SqliteToDataFrames,
     },
@@ -46,19 +46,13 @@ pub trait BuildReader {
 #[derive(Debug)]
 pub enum StreamEvent {
     /// Initial schema or schema update (e.g. logfmt growing a new column).
-    Schema {
-        name: String,
-        schema: Arc<Schema>,
-    },
+    Schema { name: String, schema: Arc<Schema> },
     /// A batch of new rows. Schema must match the most recent `Schema` event.
     Batch { name: String, rows: DataFrame },
     /// Producer reached end-of-stream cleanly.
     Eof { name: String },
     /// Fatal error; the producer thread will exit after sending this.
-    Error {
-        name: String,
-        error: anyhow::Error,
-    },
+    Error { name: String, error: anyhow::Error },
 }
 
 /// A reader capable of incrementally producing dataframe batches from a
@@ -81,7 +75,16 @@ impl BuildStreamReader for Args {
             Format::Jsonl => Some(Box::new(
                 crate::reader::json_line::JsonLineStreamReader::from_args(self),
             )),
-            // Other streamable formats are wired in Phase 5.
+            Format::Csv | Format::Dsv => Some(Box::new(CsvStreamReader::from_args(self))),
+            Format::Tsv => Some(Box::new(
+                CsvStreamReader::from_args(self).with_separator('\t'),
+            )),
+            Format::Logfmt => Some(Box::new(
+                crate::reader::logfmt::LogfmtStreamReader::from_args(self),
+            )),
+            Format::Fwf => Some(Box::new(crate::reader::fwf::FwfStreamReader::from_args(
+                self,
+            ))),
             _ => None,
         }
     }

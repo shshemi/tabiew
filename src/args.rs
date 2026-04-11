@@ -203,12 +203,7 @@ impl Format {
     pub fn is_streamable(&self) -> bool {
         matches!(
             self,
-            Format::Dsv
-                | Format::Csv
-                | Format::Tsv
-                | Format::Jsonl
-                | Format::Logfmt
-                | Format::Fwf
+            Format::Dsv | Format::Csv | Format::Tsv | Format::Jsonl | Format::Logfmt | Format::Fwf
         )
     }
 
@@ -286,7 +281,10 @@ impl std::str::FromStr for KeyColumns {
             indexes.push(idx);
         }
         let is_default = indexes == vec![0];
-        Ok(KeyColumns { indexes, is_default })
+        Ok(KeyColumns {
+            indexes,
+            is_default,
+        })
     }
 }
 
