@@ -137,6 +137,35 @@ Open a URL using curl:
 curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 ```
 
+### Live streaming from stdin
+
+Use `--follow` (`-F`) to tail a line-oriented stream without waiting for EOF.
+Rows are appended to the table as they arrive, so Tabiew stays responsive
+while data is still being produced. Supported formats: CSV, TSV, DSV, JSONL,
+Logfmt, and FWF (FWF requires `--widths`).
+
+Tail a log in JSON-lines format:
+```bash
+tail -F app.log | tw -f jsonl --follow
+```
+
+Combine with `--key` to treat one or more columns as a composite primary
+key. When a later row repeats an existing key, Tabiew updates the matching
+row **in place** instead of appending; new keys still append as usual.
+`--key` takes comma-separated 0-based column indexes (default `0`):
+
+```bash
+# single-column key on column 0
+kubectl logs -f my-pod | tw -f logfmt --follow --key 0
+
+# composite key on (region, host)
+stream-metrics | tw -f jsonl --follow --key 1,3
+```
+
+Tuning knobs (optional):
+- `--stream-batch-rows N` — flush a batch after N rows (default 1000)
+- `--stream-batch-ms M`  — flush a batch every M milliseconds (default 250)
+
 ## Useful Keybindings️
 
 |Key Combination|Functionality|

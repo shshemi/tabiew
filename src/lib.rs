@@ -22,4 +22,7 @@ pub mod reader;
 /// Writers
 pub mod writer;
 
+#[cfg(test)]
+mod streaming_tests;
+
 pub type AppResult<T> = anyhow::Result<T>;

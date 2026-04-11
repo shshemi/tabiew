@@ -1,14 +1,14 @@
 mod arrow;
-mod csv;
+pub(crate) mod csv;
 mod excel;
-mod fwf;
+pub(crate) mod fwf;
 mod json;
-mod json_line;
-mod logfmt;
+pub(crate) mod json_line;
+pub(crate) mod logfmt;
 mod parquet;
 mod source;
 mod sqlite;
-mod traits;
+pub(crate) mod traits;
 
 pub use arrow::ArrowIpcToDataFrame;
 pub use csv::{CsvStreamReader, CsvToDataFrame};
