@@ -59,6 +59,10 @@ impl Pane {
         self.tstack.last()
     }
 
+    pub fn table_mut(&mut self) -> &mut Table {
+        self.tstack.last_mut()
+    }
+
     pub fn description(&self) -> &TableDescription {
         self.dstack.last()
     }

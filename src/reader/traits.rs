@@ -18,6 +18,22 @@ use crate::{
 pub type NamedFrame = (String, DataFrame);
 pub type NamedFrames = Box<[NamedFrame]>;
 
+/// Shared batching knobs for streaming readers.
+#[derive(Debug, Clone, Copy)]
+pub struct StreamingConfig {
+    pub batch_rows: usize,
+    pub batch_ms: u64,
+}
+
+impl StreamingConfig {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            batch_rows: args.stream_batch_rows.max(1),
+            batch_ms: args.stream_batch_ms.max(1),
+        }
+    }
+}
+
 pub trait ReadToDataFrames {
     fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames>;
 }
@@ -60,10 +76,14 @@ pub trait BuildStreamReader {
 
 impl BuildStreamReader for Args {
     fn build_stream_reader(&self) -> Option<Box<dyn StreamToDataFrames>> {
-        // Phase 1 scaffolding: no streaming readers wired yet.
-        // Phase 2 will return a JSONL streamer; later phases add the rest.
-        let _ = self;
-        None
+        let resolved = self.format.clone().unwrap_or(Format::Csv);
+        match resolved {
+            Format::Jsonl => Some(Box::new(
+                crate::reader::json_line::JsonLineStreamReader::from_args(self),
+            )),
+            // Other streamable formats are wired in Phase 5.
+            _ => None,
+        }
     }
 }
 

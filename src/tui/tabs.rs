@@ -30,6 +30,10 @@ impl Tabs {
         self.panes.get(self.idx)
     }
 
+    pub fn pane_mut(&mut self, idx: usize) -> Option<&mut Pane> {
+        self.panes.get_mut(idx)
+    }
+
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
         self.idx = self.panes.len().saturating_sub(1);

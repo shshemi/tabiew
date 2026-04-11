@@ -5,7 +5,8 @@ use polars::prelude::Schema;
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tabiew::app::App;
+use std::sync::mpsc::sync_channel;
+use tabiew::app::{App, StreamSink};
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
@@ -14,7 +15,7 @@ use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::sql;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
-use tabiew::reader::{BuildReader, Source};
+use tabiew::reader::{BuildReader, BuildStreamReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
@@ -70,23 +71,52 @@ fn main() {
         }
     }
 
+    let mut stream_sink: Option<StreamSink> = None;
+
     if name_dfs.is_empty() {
-        for (name, mut df) in args
-            .build_reader("")
-            .unwrap_or_graceful_shutdown()
-            .read_to_data_frames(Source::Stdin)
-            .unwrap_or_graceful_shutdown()
-        {
-            type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), Source::Stdin);
-            name_dfs.push((name, df))
+        if args.follow {
+            // Streaming stdin path: build a streaming reader, spawn the
+            // producer thread, and hand the receiver to the App so batches
+            // are drained on each tick.
+            let reader = args.build_stream_reader().unwrap_or_else(|| {
+                eprintln!(
+                    "Error: format is not streamable; this should have been caught by validate()"
+                );
+                std::process::exit(1);
+            });
+            let (tx, rx) = sync_channel(64);
+            // Register the placeholder in the SQL context under a stable
+            // name so the tab and future batch refreshes agree.
+            let empty_df = DataFrame::empty();
+            let table_name = sql().register(
+                &Source::Stdin.table_name(),
+                empty_df.clone(),
+                Source::Stdin,
+            );
+            reader.stream_to_data_frames(Source::Stdin, tx);
+            name_dfs.push((table_name.clone(), empty_df));
+            stream_sink = Some(StreamSink::new(rx, 0, table_name));
+        } else {
+            for (name, mut df) in args
+                .build_reader("")
+                .unwrap_or_graceful_shutdown()
+                .read_to_data_frames(Source::Stdin)
+                .unwrap_or_graceful_shutdown()
+            {
+                type_infer.update(&mut df);
+                let name = sql().register(&name, df.clone(), Source::Stdin);
+                name_dfs.push((name, df))
+            }
         }
     }
 
-    let _ = start_app(name_dfs);
+    let _ = start_app(name_dfs, stream_sink);
 }
 
-fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
+fn start_app(
+    tabs: Vec<(String, DataFrame)>,
+    stream_sink: Option<StreamSink>,
+) -> AppResult<()> {
     let tabs = tabs
         .into_iter()
         .map(|(name, df)| Pane::new(df, TableDescription::Table(name)))
@@ -96,6 +126,9 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
 
     // Initialize the app
     let mut app = App::new(tabs);
+    if let Some(sink) = stream_sink {
+        app = app.with_stream(sink);
+    }
 
     // Main loop
     while app.running() {

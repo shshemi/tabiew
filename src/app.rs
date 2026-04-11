@@ -1,3 +1,9 @@
+use std::sync::mpsc::{Receiver, TryRecvError};
+
+use polars::frame::DataFrame;
+
+use crate::misc::sql::{Source as SqlSource, sql};
+use crate::reader::StreamEvent;
 use crate::tui::Pane;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
@@ -16,11 +22,34 @@ use crate::{
 };
 use crossterm::event::KeyCode;
 
+/// State for a single streaming tab: receives `StreamEvent`s from a background
+/// reader thread and knows which pane index they feed.
+pub struct StreamSink {
+    pub rx: Receiver<StreamEvent>,
+    pub tab_index: usize,
+    pub table_name: String,
+    pub open: bool,
+    pub rows_received: u64,
+}
+
+impl StreamSink {
+    pub fn new(rx: Receiver<StreamEvent>, tab_index: usize, table_name: String) -> Self {
+        Self {
+            rx,
+            tab_index,
+            table_name,
+            open: true,
+            rows_received: 0,
+        }
+    }
+}
+
 pub struct App {
     tabs: Tabs,
     overlay: Option<Overlay>,
     schema: Option<Schema>,
     toast: Option<Toast>,
+    stream: Option<StreamSink>,
     running: bool,
 }
 
@@ -31,7 +60,88 @@ impl App {
             overlay: None,
             schema: None,
             toast: None,
+            stream: None,
             running: true,
+        }
+    }
+
+    pub fn with_stream(mut self, stream: StreamSink) -> Self {
+        self.stream = Some(stream);
+        self
+    }
+
+    /// Drain any pending events from the stream channel and apply them to the
+    /// live DataFrame backing the streaming pane. Called from `tick()`.
+    fn drain_stream(&mut self) {
+        let Some(stream) = self.stream.as_mut() else {
+            return;
+        };
+        if !stream.open {
+            return;
+        }
+        loop {
+            match stream.rx.try_recv() {
+                Ok(StreamEvent::Schema { schema, .. }) => {
+                    if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
+                        let current = pane.table().data_frame();
+                        if current.width() == 0 {
+                            // Initial schema: replace the placeholder with an
+                            // empty frame that has the right columns so the
+                            // header row renders immediately.
+                            let df = DataFrame::empty_with_schema(&schema);
+                            sql().refresh_frame(
+                                &stream.table_name,
+                                df.clone(),
+                                SqlSource::Stdin,
+                            );
+                            pane.table_mut().set_data_frame(df);
+                        }
+                    }
+                }
+                Ok(StreamEvent::Batch { rows, .. }) => {
+                    if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
+                        let df = pane.table_mut().data_frame_mut();
+                        let new_rows = rows.height() as u64;
+                        if df.width() == 0 {
+                            *df = rows;
+                        } else if let Err(err) = df.vstack_mut_owned(rows) {
+                            Message::AppShowError(format!("stream append failed: {err}"))
+                                .enqueue();
+                            stream.open = false;
+                            return;
+                        }
+                        stream.rows_received += new_rows;
+                        let refreshed = df.clone();
+                        sql().refresh_frame(&stream.table_name, refreshed, SqlSource::Stdin);
+                    }
+                }
+                Ok(StreamEvent::Eof { .. }) => {
+                    stream.open = false;
+                    Message::AppShowToast(format!(
+                        "stream closed: {} rows",
+                        stream.rows_received
+                    ))
+                    .enqueue();
+                    return;
+                }
+                Ok(StreamEvent::Error { error, .. }) => {
+                    stream.open = false;
+                    Message::AppShowError(format!("stream error: {error}")).enqueue();
+                    return;
+                }
+                Err(TryRecvError::Empty) => return,
+                Err(TryRecvError::Disconnected) => {
+                    if stream.open {
+                        stream.open = false;
+                        Message::AppShowToast(format!(
+                            "stream closed: {} rows",
+                            stream.rows_received
+                        ))
+                        .enqueue();
+                    }
+                    return;
+                }
+            }
         }
     }
 
@@ -170,6 +280,7 @@ impl Component for App {
     }
 
     fn tick(&mut self) {
+        self.drain_stream();
         if let Some(overlay) = self.overlay.as_mut() {
             overlay.responder().tick();
         }

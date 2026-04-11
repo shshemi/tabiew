@@ -55,6 +55,15 @@ impl SqlBackend {
         self.sql.unregister(name);
     }
 
+    /// Replace the lazy frame registered under `name` without allocating a new
+    /// table name. Used by streaming tabs to refresh the SQL context as new
+    /// batches arrive.
+    pub fn refresh_frame(&mut self, name: &str, data_frame: DataFrame, input: impl Into<Source>) {
+        self.schema
+            .insert(name.to_string(), TableInfo::new(input.into(), &data_frame));
+        self.sql.register(name, data_frame.lazy());
+    }
+
     pub fn unset_default(&mut self) {
         self.sql.unregister("_");
     }
