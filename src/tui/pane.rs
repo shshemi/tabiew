@@ -31,11 +31,24 @@ use crate::{
     },
 };
 
+/// Snapshot of streaming state for a pane whose base table is being fed by a
+/// background reader thread. Cloned into the tag line each frame.
+#[derive(Debug, Clone, Copy)]
+pub struct StreamStatus {
+    pub open: bool,
+    pub rows_received: u64,
+}
+
 #[derive(Debug)]
 pub struct Pane {
     tstack: NonEmptyStack<Table>,
     dstack: NonEmptyStack<TableDescription>,
     modal: Option<Modal>,
+    stream_status: Option<StreamStatus>,
+    /// For each derived view pushed on top of the base table, the
+    /// `rows_received` watermark at the moment it was frozen. Parallel to
+    /// `tstack.len_without_base()`.
+    freeze_watermarks: Vec<u64>,
 }
 
 impl Pane {
@@ -52,6 +65,8 @@ impl Pane {
             ),
             dstack: NonEmptyStack::new(description),
             modal: None,
+            stream_status: None,
+            freeze_watermarks: Vec::new(),
         }
     }
 
@@ -61,6 +76,29 @@ impl Pane {
 
     pub fn table_mut(&mut self) -> &mut Table {
         self.tstack.last_mut()
+    }
+
+    /// Returns a mutable reference to the base (streaming) table, bypassing
+    /// any derived views currently pushed on top. Used by the streaming drain
+    /// pump so a frozen derived view on top does not get clobbered.
+    pub fn base_table_mut(&mut self) -> &mut Table {
+        self.tstack.base_mut()
+    }
+
+    pub fn stream_status(&self) -> Option<StreamStatus> {
+        self.stream_status
+    }
+
+    pub fn set_stream_status(&mut self, status: StreamStatus) {
+        self.stream_status = Some(status);
+    }
+
+    /// Rows received while the current top-of-stack derived view was frozen.
+    /// `None` when no derived view is active or the pane is not streaming.
+    pub fn pending_rows(&self) -> Option<u64> {
+        let status = self.stream_status?;
+        let watermark = self.freeze_watermarks.last().copied()?;
+        Some(status.rows_received.saturating_sub(watermark))
     }
 
     pub fn description(&self) -> &TableDescription {
@@ -202,11 +240,15 @@ impl Pane {
         self.tstack
             .push(self.tstack.last().clone_with_data_frame(df));
         self.dstack.push(description);
+        if let Some(status) = self.stream_status {
+            self.freeze_watermarks.push(status.rows_received);
+        }
     }
 
     fn pop_data_frame(&mut self) {
         self.tstack.pop();
         self.dstack.pop();
+        self.freeze_watermarks.pop();
     }
 
     fn select(&mut self, idx: usize) {

@@ -109,10 +109,10 @@ impl Component for Tabs {
             .panes
             .get(self.idx)
             .map(|pane| {
-                let status_bar = TagLine::default();
+                let mut status_bar = TagLine::default();
                 let key = pane.description().variant();
                 let value = pane.description().description();
-                status_bar
+                status_bar = status_bar
                     .left_aligned()
                     .tag(Tag::new(key, value))
                     .tag(Tag::new(
@@ -134,7 +134,17 @@ impl Component for Tabs {
                             pane.table().data_frame().height(),
                             pane.table().data_frame().width()
                         ),
-                    ))
+                    ));
+                if let Some(stream) = pane.stream_status() {
+                    let indicator = if stream.open { "live" } else { "closed" };
+                    status_bar = status_bar
+                        .tag(Tag::new("Stream", indicator))
+                        .tag(Tag::new("StreamRows", stream.rows_received.to_string()));
+                    if let Some(pending) = pane.pending_rows() {
+                        status_bar = status_bar.tag(Tag::new("Pending", pending.to_string()));
+                    }
+                }
+                status_bar
             })
             .unwrap_or_default()
             .right_aligned();

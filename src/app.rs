@@ -5,6 +5,7 @@ use polars::frame::DataFrame;
 use crate::misc::sql::{Source as SqlSource, sql};
 use crate::reader::StreamEvent;
 use crate::tui::Pane;
+use crate::tui::pane::StreamStatus;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
@@ -66,6 +67,12 @@ impl App {
     }
 
     pub fn with_stream(mut self, stream: StreamSink) -> Self {
+        if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
+            pane.set_stream_status(StreamStatus {
+                open: stream.open,
+                rows_received: stream.rows_received,
+            });
+        }
         self.stream = Some(stream);
         self
     }
@@ -83,7 +90,7 @@ impl App {
             match stream.rx.try_recv() {
                 Ok(StreamEvent::Schema { schema, .. }) => {
                     if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
-                        let current = pane.table().data_frame();
+                        let current = pane.base_table_mut().data_frame();
                         if current.width() == 0 {
                             // Initial schema: replace the placeholder with an
                             // empty frame that has the right columns so the
@@ -94,13 +101,14 @@ impl App {
                                 df.clone(),
                                 SqlSource::Stdin,
                             );
-                            pane.table_mut().set_data_frame(df);
+                            pane.base_table_mut().set_data_frame(df);
                         }
+                        Self::publish_stream_status(pane, stream);
                     }
                 }
                 Ok(StreamEvent::Batch { rows, .. }) => {
                     if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
-                        let df = pane.table_mut().data_frame_mut();
+                        let df = pane.base_table_mut().data_frame_mut();
                         let new_rows = rows.height() as u64;
                         if df.width() == 0 {
                             *df = rows;
@@ -108,15 +116,20 @@ impl App {
                             Message::AppShowError(format!("stream append failed: {err}"))
                                 .enqueue();
                             stream.open = false;
+                            Self::publish_stream_status(pane, stream);
                             return;
                         }
                         stream.rows_received += new_rows;
                         let refreshed = df.clone();
                         sql().refresh_frame(&stream.table_name, refreshed, SqlSource::Stdin);
+                        Self::publish_stream_status(pane, stream);
                     }
                 }
                 Ok(StreamEvent::Eof { .. }) => {
                     stream.open = false;
+                    if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
+                        Self::publish_stream_status(pane, stream);
+                    }
                     Message::AppShowToast(format!(
                         "stream closed: {} rows",
                         stream.rows_received
@@ -126,6 +139,9 @@ impl App {
                 }
                 Ok(StreamEvent::Error { error, .. }) => {
                     stream.open = false;
+                    if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
+                        Self::publish_stream_status(pane, stream);
+                    }
                     Message::AppShowError(format!("stream error: {error}")).enqueue();
                     return;
                 }
@@ -133,6 +149,9 @@ impl App {
                 Err(TryRecvError::Disconnected) => {
                     if stream.open {
                         stream.open = false;
+                        if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
+                            Self::publish_stream_status(pane, stream);
+                        }
                         Message::AppShowToast(format!(
                             "stream closed: {} rows",
                             stream.rows_received
@@ -143,6 +162,13 @@ impl App {
                 }
             }
         }
+    }
+
+    fn publish_stream_status(pane: &mut Pane, stream: &StreamSink) {
+        pane.set_stream_status(StreamStatus {
+            open: stream.open,
+            rows_received: stream.rows_received,
+        });
     }
 
     pub fn running(&self) -> bool {
