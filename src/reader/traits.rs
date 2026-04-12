@@ -6,7 +6,7 @@ use crate::{
     AppResult,
     args::{Args, Format},
     reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFarmes, FwfToDataFrame,
+        ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
         JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame, Source,
         SqliteToDataFrames,
     },
@@ -36,7 +36,7 @@ impl BuildReader for Args {
             Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame)),
             Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(self))),
             Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames::from_args(self))),
-            Some(Format::Excel) => Ok(Box::new(ExcelToDataFarmes::from_args(self))),
+            Some(Format::Excel) => Ok(Box::new(ExcelToDataFrames::from_args(self))),
             Some(Format::Logfmt) => Ok(Box::new(LogfmtToDataFrame::from_args(self))),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
@@ -50,7 +50,7 @@ impl BuildReader for Args {
                 Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(self))),
                 Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames::from_args(self))),
                 Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
-                    Ok(Box::new(ExcelToDataFarmes::from_args(self)))
+                    Ok(Box::new(ExcelToDataFrames::from_args(self)))
                 }
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },

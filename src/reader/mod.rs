@@ -12,7 +12,7 @@ mod traits;
 
 pub use arrow::ArrowIpcToDataFrame;
 pub use csv::CsvToDataFrame;
-pub use excel::ExcelToDataFarmes;
+pub use excel::ExcelToDataFrames;
 pub use fwf::FwfToDataFrame;
 pub use json::JsonToDataFrame;
 pub use json_line::JsonLineToDataFrame;

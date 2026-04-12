@@ -12,15 +12,15 @@ use crate::{AppResult, args::Args, misc::stdin::stdin};
 use super::{NamedFrames, ReadToDataFrames, Source};
 
 #[derive(Debug, Default)]
-pub struct ExcelToDataFarmes;
+pub struct ExcelToDataFrames;
 
-impl ExcelToDataFarmes {
+impl ExcelToDataFrames {
     pub fn from_args(_args: &Args) -> Self {
         Self
     }
 }
 
-impl ReadToDataFrames for ExcelToDataFarmes {
+impl ReadToDataFrames for ExcelToDataFrames {
     fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
         Ok(match input {
             //
