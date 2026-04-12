@@ -16,7 +16,7 @@ use polars::{frame::DataFrame, prelude::IdxCa};
 
 use rayon::prelude::*;
 
-use crate::misc::polars_ext::AnyValueExt;
+use crate::misc::{polars_ext::AnyValueExt, type_ext::UnwrapOrGracefulShutdown};
 
 pub trait Score {
     fn score(&self, a: &str, b: &str) -> Option<i64>;
@@ -131,7 +131,7 @@ where
                                         .map(|(idx, _)| *idx)
                                         .collect(),
                                 ))
-                                .unwrap(),
+                                .unwrap_or_graceful_shutdown(),
                             );
                             updated = true;
                         }
@@ -147,7 +147,7 @@ where
                                     .map(|(idx, _)| *idx)
                                     .collect(),
                             ))
-                            .unwrap(),
+                            .unwrap_or_graceful_shutdown(),
                         );
                     }
                 }

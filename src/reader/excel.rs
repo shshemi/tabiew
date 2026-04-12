@@ -1,4 +1,4 @@
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 
 use calamine::{Data, Range, Reader, open_workbook_auto_from_rs};
 use itertools::Itertools;
@@ -22,23 +22,30 @@ impl ExcelToDataFarmes {
 
 impl ReadToDataFrames for ExcelToDataFarmes {
     fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
-        let buffer = match input {
-            Source::File(path) => Cursor::new(std::fs::read(path)?),
+        Ok(match input {
+            //
+            Source::File(path) => open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
+                .worksheets()
+                .into_iter()
+                .map(|(name, sheet)| {
+                    let df = sheet_to_data_frame(sheet)?;
+                    Ok((name, df))
+                })
+                .collect::<AppResult<Vec<_>>>()?
+                .into_boxed_slice(),
             Source::Stdin => {
-                let mut buf = Vec::new();
-                stdin().read_to_end(&mut buf).unwrap();
-                Cursor::new(buf)
+                //
+                open_workbook_auto_from_rs(stdin())?
+                    .worksheets()
+                    .into_iter()
+                    .map(|(name, sheet)| {
+                        let df = sheet_to_data_frame(sheet)?;
+                        Ok((name, df))
+                    })
+                    .collect::<AppResult<Vec<_>>>()?
+                    .into_boxed_slice()
             }
-        };
-        Ok(open_workbook_auto_from_rs(buffer)?
-            .worksheets()
-            .into_iter()
-            .map(|(name, sheet)| {
-                let df = sheet_to_data_frame(sheet)?;
-                Ok((name, df))
-            })
-            .collect::<AppResult<Vec<_>>>()?
-            .into_boxed_slice())
+        })
     }
 }
 
