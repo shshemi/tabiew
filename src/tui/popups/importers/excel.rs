@@ -1,5 +1,5 @@
 use crate::{
-    reader::{ExcelToDataFarmes, Source},
+    reader::{ExcelToDataFrames, Source},
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame, multi_step_overlay::OverlayStep,
         path_picker::PathPicker,
@@ -15,7 +15,7 @@ impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickPath { picker } => {
-                dismiss_overlay_and_load_data_frame(Source::File(picker.path()), ExcelToDataFarmes);
+                dismiss_overlay_and_load_data_frame(Source::File(picker.path()), ExcelToDataFrames);
                 State::PickPath { picker }
             }
         }
