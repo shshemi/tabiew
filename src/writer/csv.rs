@@ -1,6 +1,5 @@
 use std::fs::File;
 
-use anyhow::Ok;
 use polars::{frame::DataFrame, io::SerWriter, prelude::CsvWriter};
 
 use crate::{AppResult, misc::osc52::CopyToClipboardOsc52};
