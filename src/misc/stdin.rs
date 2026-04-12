@@ -5,7 +5,7 @@ use std::{
 
 use super::type_ext::UnwrapOrGracefulShutdown;
 
-pub fn stdin() -> Cursor<&'static Vec<u8>> {
+pub fn stdin() -> Cursor<&'static [u8]> {
     static STDIN_CONTENT: LazyLock<Vec<u8>> = LazyLock::new(|| {
         let mut buf = Vec::new();
         std::io::stdin()
