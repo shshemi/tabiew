@@ -7,7 +7,7 @@ use ratatui::{
 
 use crate::{
     handler::message::Message,
-    misc::config::theme,
+    misc::{config::theme, osc52::CopyToClipboardOsc52},
     tui::{
         component::Component,
         tag_line::{Tag, TagLine},
@@ -96,7 +96,8 @@ impl Component for Sheet {
                         .mono_color()
                         .centered()
                         .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
-                        .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
+                        .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} "))
+                        .tag(Tag::new(" Copy ", " C ")),
                 )
                 .title_alignment(Alignment::Center)
                 .into_widget(),
@@ -116,6 +117,17 @@ impl Component for Sheet {
             }
             (KeyCode::Char('J'), KeyModifiers::SHIFT) | (KeyCode::Down, KeyModifiers::SHIFT) => {
                 self.scroll.down();
+                true
+            }
+            (KeyCode::Char('c'), KeyModifiers::NONE) => {
+                let text = self
+                    .sections
+                    .iter()
+                    .map(|s| format!("{}\n{}", s.header, s.content))
+                    .collect::<Vec<_>>()
+                    .join("\n\n");
+                text.copy_to_clipboard_via_osc52();
+                Message::AppShowToast(format!("Row #{} copied to clipboard", self.row)).enqueue();
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
