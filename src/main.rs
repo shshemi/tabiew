@@ -93,7 +93,11 @@ fn main() {
                 sql().register(&Source::Stdin.table_name(), empty_df.clone(), Source::Stdin);
             reader.stream_to_data_frames(Source::Stdin, tx);
             name_dfs.push((table_name.clone(), empty_df));
-            let upsert = UpsertIndex::new(args.key.indexes().to_vec());
+            let upsert = if args.no_key {
+                None
+            } else {
+                Some(UpsertIndex::new(args.key.indexes().to_vec()))
+            };
             stream_sink = Some(StreamSink::new(rx, 0, table_name, upsert));
         } else {
             for (name, mut df) in args

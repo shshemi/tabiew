@@ -223,3 +223,37 @@ fn fwf_stream_requires_widths_and_streams_with_schema_lock() {
     assert_eq!(by_name.get("alice"), Some(&"9".to_string()));
     assert_eq!(by_name.get("bob"), Some(&"2".to_string()));
 }
+
+#[test]
+fn append_only_no_upsert_keeps_all_rows() {
+    // Without UpsertIndex, duplicate keys should all be appended.
+    let input = r#"{"id":1,"v":"a"}
+{"id":2,"v":"b"}
+{"id":1,"v":"c"}
+{"id":1,"v":"d"}
+"#;
+
+    let (tx, rx) = sync_channel(64);
+    run_jsonl_stream(Cursor::new(input.as_bytes().to_vec()), "stdin", false, tight_config(), &tx);
+    drop(tx);
+    let (_schema, batches, eof) = collect(rx);
+    assert!(eof);
+
+    // Apply batches with pure vstack (no upsert).
+    let mut live = DataFrame::empty();
+    for b in batches {
+        if live.width() == 0 {
+            live = b;
+        } else {
+            live.vstack_mut_owned(b).unwrap();
+        }
+    }
+
+    // All 4 rows present — no dedup.
+    assert_eq!(live.height(), 4);
+    let id_col = live.column("id").unwrap();
+    assert_eq!(id_col.get(0).unwrap().to_string(), "1");
+    assert_eq!(id_col.get(1).unwrap().to_string(), "2");
+    assert_eq!(id_col.get(2).unwrap().to_string(), "1");
+    assert_eq!(id_col.get(3).unwrap().to_string(), "1");
+}

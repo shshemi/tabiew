@@ -128,11 +128,19 @@ pub struct Args {
 
     #[arg(
         long = "key",
-        help = "Comma-separated 0-based column indexes that form the composite primary key for streamed upserts. Defaults to the first column. Requires --follow.",
+        help = "Comma-separated 0-based column indexes that form the composite primary key for streamed upserts. Defaults to the first column. Requires --follow. Mutually exclusive with --no-key.",
         required = false,
         default_value_t = KeyColumns::default(),
     )]
     pub key: KeyColumns,
+
+    #[arg(
+        long = "no-key",
+        help = "Append-only streaming: skip upsert, just insert every row. Requires --follow. Mutually exclusive with --key.",
+        required = false,
+        default_value_t = false,
+    )]
+    pub no_key: bool,
 
     #[arg(
         long,
@@ -158,6 +166,12 @@ impl Args {
     pub fn validate(&self) -> Result<(), String> {
         if !self.key.is_default() && !self.follow {
             return Err("--key requires --follow".to_string());
+        }
+        if self.no_key && !self.follow {
+            return Err("--no-key requires --follow".to_string());
+        }
+        if self.no_key && !self.key.is_default() {
+            return Err("--no-key and --key are mutually exclusive".to_string());
         }
         if self.follow {
             if std::io::stdin().is_terminal() {

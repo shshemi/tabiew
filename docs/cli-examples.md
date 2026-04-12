@@ -220,15 +220,32 @@ Guard rails (clap will reject invalid combinations at startup):
 - Streaming FWF requires `--widths` — width inference needs the whole
   file up front.
 
+### `--no-key` — append-only streaming (no upserts)
+
+By default `--follow` upserts on column 0. Pass `--no-key` to disable
+upsert logic entirely — every incoming row is appended, even if it
+shares a key with an existing row. Useful for log tailing or
+append-only event streams.
+
+```bash
+# Append every row, no deduplication
+tail -F access.log | tw -f csv --follow --no-key
+
+# JSONL event stream — keep all events
+producer | tw -f jsonl --follow --no-key
+```
+
+`--no-key` is mutually exclusive with `--key` and requires `--follow`.
+
 ### `--key` — composite primary key for in-place upserts
 
-Without `--key`, streamed rows simply append. With `--key`, rows are
-keyed on one or more columns; when a later row repeats an existing key
-Tabiew **updates the matching row in place** (last-write-wins) instead
-of appending. New keys still append as usual.
+With `--key`, rows are keyed on one or more columns; when a later row
+repeats an existing key Tabiew **updates the matching row in place**
+(last-write-wins) instead of appending. New keys still append as usual.
 
 `--key` takes comma-separated 0-based column indexes and defaults to
-`0` (first column). It requires `--follow`.
+`0` (first column). It requires `--follow` and is mutually exclusive
+with `--no-key`.
 
 ```bash
 # Default: key on column 0

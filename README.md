@@ -149,10 +149,18 @@ Tail a log in JSON-lines format:
 tail -F app.log | tw -f jsonl --follow
 ```
 
+By default, streamed rows are upserted on column 0. Use `--no-key` for
+pure append-only streaming (no deduplication):
+
+```bash
+tail -F access.log | tw -f csv --follow --no-key
+```
+
 Combine with `--key` to treat one or more columns as a composite primary
 key. When a later row repeats an existing key, Tabiew updates the matching
 row **in place** instead of appending; new keys still append as usual.
-`--key` takes comma-separated 0-based column indexes (default `0`):
+`--key` takes comma-separated 0-based column indexes (default `0`);
+`--key` and `--no-key` are mutually exclusive:
 
 ```bash
 # single-column key on column 0

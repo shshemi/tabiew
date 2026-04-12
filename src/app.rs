@@ -34,7 +34,7 @@ pub struct StreamSink {
     pub rows_received: u64,
     pub rows_inserted: u64,
     pub rows_updated: u64,
-    pub upsert: UpsertIndex,
+    pub upsert: Option<UpsertIndex>,
 }
 
 impl StreamSink {
@@ -42,7 +42,7 @@ impl StreamSink {
         rx: Receiver<StreamEvent>,
         tab_index: usize,
         table_name: String,
-        upsert: UpsertIndex,
+        upsert: Option<UpsertIndex>,
     ) -> Self {
         Self {
             rx,
@@ -119,16 +119,27 @@ impl App {
                 Ok(StreamEvent::Batch { rows, .. }) => {
                     if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
                         let new_rows = rows.height() as u64;
-                        let batch_result = {
+                        let batch_result = if let Some(ref mut upsert) = stream.upsert {
+                            // Upsert mode: deduplicate by key columns.
                             let df = pane.base_table_mut().data_frame_mut();
-                            stream.upsert.apply_batch(df, rows)
-                                .map(|stats| (df.clone(), stats))
+                            upsert.apply_batch(df, rows)
+                                .map(|stats| (df.clone(), stats.inserted, stats.updated))
+                        } else {
+                            // Append-only mode: just vstack.
+                            let df = pane.base_table_mut().data_frame_mut();
+                            let res = if df.width() == 0 {
+                                *df = rows;
+                                Ok(())
+                            } else {
+                                df.vstack_mut_owned(rows).map(|_| ()).map_err(Into::into)
+                            };
+                            res.map(|()| (df.clone(), new_rows as usize, 0usize))
                         };
                         match batch_result {
-                            Ok((refreshed, stats)) => {
+                            Ok((refreshed, inserted, updated)) => {
                                 stream.rows_received += new_rows;
-                                stream.rows_inserted += stats.inserted as u64;
-                                stream.rows_updated += stats.updated as u64;
+                                stream.rows_inserted += inserted as u64;
+                                stream.rows_updated += updated as u64;
                                 pane.base_table_mut().refresh_layout();
                                 sql().refresh_frame(
                                     &stream.table_name,
@@ -138,7 +149,7 @@ impl App {
                                 Self::publish_stream_status(pane, stream);
                             }
                             Err(err) => {
-                                Message::AppShowError(format!("stream upsert failed: {err}"))
+                                Message::AppShowError(format!("stream batch failed: {err}"))
                                     .enqueue();
                                 stream.open = false;
                                 Self::publish_stream_status(pane, stream);
