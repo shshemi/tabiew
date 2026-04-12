@@ -127,7 +127,8 @@ impl Component for Sheet {
                     .collect::<Vec<_>>()
                     .join("\n\n");
                 text.copy_to_clipboard_via_osc52();
-                Message::AppShowToast(format!("Row #{} copied to clipboard", self.row)).enqueue();
+                Message::AppShowToast(format!("Row #{} copied to clipboard", self.row + 1))
+                    .enqueue();
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
