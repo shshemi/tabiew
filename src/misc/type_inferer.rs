@@ -11,7 +11,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Type},
-    misc::polars_ext::TryMapAll,
+    misc::{polars_ext::TryMapAll, type_ext::UnwrapOrGracefulShutdown},
 };
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -82,7 +82,7 @@ impl TypeInferer {
             .collect::<HashMap<PlSmallStr, Column>>();
 
         for (name, col) in updates.into_iter() {
-            data_frame.replace(&name, col).unwrap();
+            data_frame.replace(&name, col).unwrap_or_graceful_shutdown();
         }
     }
 
@@ -230,10 +230,11 @@ fn cast_date_with_format(series: &Series, fmt: &'static str) -> Option<Series> {
 fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
     NaiveDate::parse_from_str(slice, fmt)
         .map(|date| {
-            AnyValue::Date(
-                date.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap())
-                    .num_days() as i32,
-            )
+            const UNIX_EPOCH: NaiveDate = match NaiveDate::from_ymd_opt(1970, 1, 1) {
+                Some(date) => date,
+                None => unreachable!(),
+            };
+            AnyValue::Date(date.signed_duration_since(UNIX_EPOCH).num_days() as i32)
         })
         .ok()
 }
