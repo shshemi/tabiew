@@ -2,6 +2,7 @@ use crate::AppResult;
 use crate::misc::type_ext::UnwrapOrGracefulShutdown;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::RecvTimeoutError;
 use std::sync::{Mutex, OnceLock, mpsc};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -48,24 +49,21 @@ impl EventHandler {
                     .checked_sub(last_tick.elapsed())
                     .unwrap_or(tick_rate);
                 if READ_EVENT.load(Ordering::Relaxed) {
-                    let Ok(true) = event::poll(timeout) else {
-                        continue;
+                    if matches!(event::poll(timeout), Ok(true))
+                        && let Ok(event) = event::read()
+                    {
+                        let result = match event {
+                            CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
+                            CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
+                            CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
+                            CrosstermEvent::FocusGained
+                            | CrosstermEvent::FocusLost
+                            | CrosstermEvent::Paste(_) => Ok(()),
+                        };
+                        if result.is_err() {
+                            break;
+                        }
                     };
-                    let event = match event::read() {
-                        Ok(e) => e,
-                        Err(_) => continue,
-                    };
-                    let result = match event {
-                        CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
-                        CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
-                        CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
-                        CrosstermEvent::FocusGained
-                        | CrosstermEvent::FocusLost
-                        | CrosstermEvent::Paste(_) => Ok(()),
-                    };
-                    if result.is_err() {
-                        break;
-                    }
                 } else {
                     std::thread::sleep(timeout);
                 }
