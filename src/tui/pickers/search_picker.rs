@@ -254,23 +254,14 @@ impl CachedFilter {
 }
 
 fn subsequence_pos(larger: &str, other: &str) -> Option<Vec<usize>> {
-    if other.is_empty() {
-        return Some(Vec::new());
-    }
-
-    let mut want_iter = other.chars();
-    let mut want = want_iter.next().unwrap();
     let mut idxs = Vec::with_capacity(other.chars().count());
-
-    for (char_pos, c) in larger.chars().enumerate() {
-        if c.eq_ignore_ascii_case(&want) {
-            idxs.push(char_pos);
-            if let Some(nxt) = want_iter.next() {
-                want = nxt;
-            } else {
-                return Some(idxs);
-            }
+    let mut larger_iter = larger.chars().enumerate();
+    for oc in other.chars() {
+        if let Some((pos, _)) = larger_iter.find(|(_, lc)| lc.eq_ignore_ascii_case(&oc)) {
+            idxs.push(pos);
+        } else {
+            return None;
         }
     }
-    None
+    Some(idxs)
 }
