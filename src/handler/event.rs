@@ -2,7 +2,6 @@ use crate::AppResult;
 use crate::misc::type_ext::UnwrapOrGracefulShutdown;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::RecvTimeoutError;
 use std::sync::{Mutex, OnceLock, mpsc};
 use std::thread;
 use std::time::{Duration, Instant};
