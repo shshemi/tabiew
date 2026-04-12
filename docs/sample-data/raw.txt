@@ -1,0 +1,8 @@
+1|widget|10|warehouse-a|in_stock
+2|gadget|5|warehouse-b|low_stock
+3|sprocket|0|warehouse-a|out_of_stock
+4|gizmo|25|warehouse-c|in_stock
+5|doodad|invalid|warehouse-b|in_stock
+6|widget|15|warehouse-c|in_stock
+7|gadget|3|warehouse-a|low_stock
+8|sprocket|12|warehouse-b|in_stock

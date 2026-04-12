@@ -1,0 +1,7 @@
+id,product,price,in_stock
+101,Mechanical Keyboard,89.99,true
+102,Wireless Mouse,24.50,true
+103,USB-C Hub,45.00,false
+104,Monitor Stand,32.75,true
+105,Webcam 1080p,55.00,true
+106,Desk Mat,19.99,false

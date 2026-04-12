@@ -118,14 +118,18 @@ impl App {
                 }
                 Ok(StreamEvent::Batch { rows, .. }) => {
                     if let Some(pane) = self.tabs.pane_mut(stream.tab_index) {
-                        let df = pane.base_table_mut().data_frame_mut();
                         let new_rows = rows.height() as u64;
-                        match stream.upsert.apply_batch(df, rows) {
-                            Ok(stats) => {
+                        let batch_result = {
+                            let df = pane.base_table_mut().data_frame_mut();
+                            stream.upsert.apply_batch(df, rows)
+                                .map(|stats| (df.clone(), stats))
+                        };
+                        match batch_result {
+                            Ok((refreshed, stats)) => {
                                 stream.rows_received += new_rows;
                                 stream.rows_inserted += stats.inserted as u64;
                                 stream.rows_updated += stats.updated as u64;
-                                let refreshed = df.clone();
+                                pane.base_table_mut().refresh_layout();
                                 sql().refresh_frame(
                                     &stream.table_name,
                                     refreshed,
@@ -160,7 +164,9 @@ impl App {
                     Message::AppShowError(format!("stream error: {error}")).enqueue();
                     return;
                 }
-                Err(TryRecvError::Empty) => return,
+                Err(TryRecvError::Empty) => {
+                    return;
+                }
                 Err(TryRecvError::Disconnected) => {
                     if stream.open {
                         stream.open = false;

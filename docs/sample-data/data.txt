@@ -1,0 +1,9 @@
+id|name|department|salary
+1|Alice|Engineering|95000
+2|Bob|Marketing|72000
+3|Charlie|Engineering|105000
+4|Diana|Sales|68000
+5|Eve|Engineering|110000
+6|Frank|Marketing|75000
+7|Grace|Sales|71500
+8|Henry|Engineering|98000

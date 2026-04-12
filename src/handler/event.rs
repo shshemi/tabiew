@@ -48,23 +48,20 @@ impl EventHandler {
                     .checked_sub(last_tick.elapsed())
                     .unwrap_or(tick_rate);
                 if READ_EVENT.load(Ordering::Relaxed) {
-                    let Ok(true) = event::poll(timeout) else {
-                        continue;
-                    };
-                    let event = match event::read() {
-                        Ok(e) => e,
-                        Err(_) => continue,
-                    };
-                    let result = match event {
-                        CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
-                        CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
-                        CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
-                        CrosstermEvent::FocusGained
-                        | CrosstermEvent::FocusLost
-                        | CrosstermEvent::Paste(_) => Ok(()),
-                    };
-                    if result.is_err() {
-                        break;
+                    if let Ok(true) = event::poll(timeout)
+                        && let Ok(event) = event::read()
+                    {
+                        let result = match event {
+                            CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
+                            CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
+                            CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
+                            CrosstermEvent::FocusGained
+                            | CrosstermEvent::FocusLost
+                            | CrosstermEvent::Paste(_) => Ok(()),
+                        };
+                        if result.is_err() {
+                            break;
+                        }
                     }
                 } else {
                     std::thread::sleep(timeout);

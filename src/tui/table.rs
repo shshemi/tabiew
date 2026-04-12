@@ -149,6 +149,20 @@ impl Table {
 
     pub fn set_data_frame(&mut self, df: DataFrame) {
         self.df = df;
+        self.refresh_layout();
+    }
+
+    /// Recalculate column widths and offsets from the current DataFrame.
+    /// Call this after mutating the DataFrame in place (e.g. via streaming
+    /// upserts) so the rendered table reflects the new schema/content.
+    pub fn refresh_layout(&mut self) {
+        self.col_widths = self.df
+            .widths()
+            .into_iter()
+            .map(|u| Constraint::Length(u as u16))
+            .collect_vec();
+        self.col_offsets = col_offsets(&self.col_widths, self.col_space);
+        self.gutter_mode = GutterMode::Visible(self.df.height().to_string().len() as u16);
     }
 
     pub fn set_gutter_visibility(&mut self, value: bool) {
@@ -317,6 +331,12 @@ impl Component for Table {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
+        // Nothing to render for an empty placeholder (e.g. streaming tab
+        // before the first schema event arrives).
+        if self.df.width() == 0 {
+            return;
+        }
+
         let height = if self.show_header {
             area.height.saturating_sub(1)
         } else {
