@@ -148,7 +148,6 @@ impl Component for TabSwitcher {
             }
             (KeyCode::Enter, KeyModifiers::NONE) => {
                 Message::TabsDismissSwitcher.enqueue();
-                Message::TabsDismissSwitcher.enqueue();
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE)
