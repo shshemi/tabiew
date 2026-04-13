@@ -47,7 +47,6 @@ impl From<CrosstermEvent> for Event {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct EventHandler {
     receiver: mpsc::Receiver<Event>,
