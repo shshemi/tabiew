@@ -118,6 +118,9 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
             }
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
+            Event::FocusGained => {}
+            Event::FocusLost => {}
+            Event::Paste(_) => {}
         }
 
         while let Some(action) = Message::dequeue() {
