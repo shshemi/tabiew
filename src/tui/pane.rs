@@ -9,8 +9,12 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{
-        config::config, external_editor::ExternalEditor, non_empty_stack::NonEmptyStack,
-        polars_ext::DataFrameExt, sql::Source, sql::sql, type_ext::UnwrapOrEnqueueError,
+        config::config,
+        external_editor::edit_in_external_editor,
+        non_empty_stack::NonEmptyStack,
+        polars_ext::DataFrameExt,
+        sql::{Source, sql},
+        type_ext::UnwrapOrEnqueueError,
     },
     tui::{
         component::{Component, FocusState},
@@ -456,7 +460,7 @@ impl Component for Pane {
                 self.show_fuzzy_search();
             }
             Message::PaneEditInExternalEditor if focus_state.is_focused() => {
-                match ExternalEditor::new(self.tstack.last().data_frame().clone()).edit() {
+                match edit_in_external_editor(self.tstack.last().data_frame().clone()) {
                     Ok(df) => self.push_data_frame(
                         df,
                         TableDescription::Table("Manual edit using $EDITOR".to_owned()),
