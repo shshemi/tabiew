@@ -1,11 +1,11 @@
 pub mod config;
 pub mod external_editor;
 pub mod iter_ext;
-pub mod jagged_vec;
 pub mod non_empty_stack;
 pub mod osc52;
 pub mod paths;
 pub mod polars_ext;
+pub mod ragged_vec;
 pub mod search;
 pub mod sql;
 pub mod stdin;

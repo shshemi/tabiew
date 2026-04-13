@@ -17,7 +17,7 @@ use ratatui::widgets::Cell;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AppResult, misc::jagged_vec::JaggedVec, tui::sheet::SheetSection};
+use crate::{AppResult, misc::ragged_vec::RaggedVec, tui::sheet::SheetSection};
 
 use super::type_ext::HasSubsequence;
 
@@ -124,14 +124,14 @@ pub struct NumBuffer {
 pub trait DataFrameExt {
     fn widths(&self) -> Vec<usize>;
     fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
-    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>>;
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>>;
     #[allow(clippy::type_complexity)]
     fn scatter_plot_data_grouped(
         &self,
         x_label: &str,
         y_label: &str,
         group_by: &str,
-    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)>;
+    ) -> AppResult<(RaggedVec<(f64, f64)>, Vec<String>)>;
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
@@ -187,7 +187,7 @@ impl DataFrameExt for DataFrame {
         .collect_vec()
     }
 
-    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<JaggedVec<(f64, f64)>> {
+    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>> {
         Ok(self
             .column(x_label)?
             .cast(&DataType::Float64)?
@@ -208,9 +208,9 @@ impl DataFrameExt for DataFrame {
         x_label: &str,
         y_label: &str,
         group_by: &str,
-    ) -> AppResult<(JaggedVec<(f64, f64)>, Vec<String>)> {
+    ) -> AppResult<(RaggedVec<(f64, f64)>, Vec<String>)> {
         let mut groups = Vec::new();
-        let mut data = JaggedVec::new();
+        let mut data = RaggedVec::new();
         for (name, df) in self
             .partition_by(vec![group_by], true)?
             .into_iter()

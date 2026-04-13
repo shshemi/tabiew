@@ -11,13 +11,13 @@ use ratatui::{
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::{config::theme, jagged_vec::JaggedVec},
+    misc::{config::theme, ragged_vec::RaggedVec},
     tui::{component::Component, widgets::block::Block},
 };
 
 #[derive(Debug)]
 pub struct ScatterPlot {
-    data: JaggedVec<(f64, f64)>,
+    data: RaggedVec<(f64, f64)>,
     x_bounds: [f64; 2],
     y_bounds: [f64; 2],
     x_label: String,
@@ -26,7 +26,7 @@ pub struct ScatterPlot {
 }
 
 impl ScatterPlot {
-    pub fn new(x_label: String, y_label: String, data: JaggedVec<(f64, f64)>) -> AppResult<Self> {
+    pub fn new(x_label: String, y_label: String, data: RaggedVec<(f64, f64)>) -> AppResult<Self> {
         let [x_bounds, y_bounds] = data
             .iter()
             .flat_map(|v| v.iter())
