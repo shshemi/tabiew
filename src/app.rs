@@ -1,3 +1,4 @@
+use crate::misc::config::config;
 use crate::tui::Pane;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
@@ -67,6 +68,12 @@ impl App {
                 .map(Table::data_frame)
                 .cloned(),
         )));
+    }
+
+    fn reload_app_config(&mut self) {
+        if let Err(err) = config().reload() {
+            self.show_error(err.to_string());
+        }
     }
 
     fn dismiss_overlay(&mut self) {
@@ -147,6 +154,7 @@ impl Component for App {
             Message::AppShowImporter => self.show_importer(),
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
+            Message::AppReloadConfig => self.reload_app_config(),
             _ => (),
         };
         match (self.overlay.as_mut(), self.schema.as_mut()) {

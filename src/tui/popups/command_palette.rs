@@ -87,6 +87,7 @@ impl Component for CommandPalette {
                             Command::FuzzySearch => Message::PaneShowFuzzySearch.enqueue(),
                             Command::Search => Message::PaneShowSearch.enqueue(),
                             Command::Edit => Message::PaneEditInExternalEditor.enqueue(),
+                            Command::ReloadConfig => Message::AppReloadConfig.enqueue(),
                         }
                     }
                     true
@@ -115,6 +116,7 @@ enum Command {
     Query,
     Quit,
     Register,
+    ReloadConfig,
     ScatterPlot,
     Search,
     Schema,
