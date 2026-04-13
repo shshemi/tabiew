@@ -18,6 +18,7 @@ pub enum Message {
     AppShowImporter,
     AppDismissSchema,
     AppShowSqlQuery,
+    AppReloadConfig,
     TabsSelect(usize),
     TabsDismissSwitcher,
     TabsAddNamePane(DataFrame, String),
