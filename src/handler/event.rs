@@ -23,12 +23,28 @@ pub fn read_event() -> AppResult<Event> {
 }
 
 /// Terminal events.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     Tick,
     Key(KeyEvent),
     Mouse(MouseEvent),
     Resize(u16, u16),
+    FocusGained,
+    FocusLost,
+    Paste(String),
+}
+
+impl From<CrosstermEvent> for Event {
+    fn from(value: CrosstermEvent) -> Self {
+        match value {
+            CrosstermEvent::FocusGained => Event::FocusGained,
+            CrosstermEvent::FocusLost => Event::FocusLost,
+            CrosstermEvent::Key(e) => Event::Key(e),
+            CrosstermEvent::Mouse(e) => Event::Mouse(e),
+            CrosstermEvent::Paste(s) => Event::Paste(s),
+            CrosstermEvent::Resize(c, r) => Event::Resize(c, r),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -50,19 +66,10 @@ impl EventHandler {
                 if READ_EVENT.load(Ordering::Relaxed) {
                     if matches!(event::poll(timeout), Ok(true))
                         && let Ok(event) = event::read()
+                        && sender.send(event.into()).is_err()
                     {
-                        let result = match event {
-                            CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
-                            CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
-                            CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
-                            CrosstermEvent::FocusGained
-                            | CrosstermEvent::FocusLost
-                            | CrosstermEvent::Paste(_) => Ok(()),
-                        };
-                        if result.is_err() {
-                            break;
-                        }
-                    };
+                        break;
+                    }
                 } else {
                     std::thread::sleep(timeout);
                 }
