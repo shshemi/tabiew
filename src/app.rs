@@ -1,4 +1,5 @@
 use std::sync::mpsc::{Receiver, TryRecvError};
+use std::time::Duration;
 
 use polars::frame::DataFrame;
 
@@ -8,7 +9,8 @@ use crate::reader::StreamEvent;
 use crate::tui::Pane;
 use crate::tui::pane::StreamStatus;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
-use crate::tui::table::Table;
+use crate::tui::table::{FlashKind, Table};
+use ratatui::style::Color;
 use crate::tui::toast::Toast;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
 use crate::{
@@ -35,6 +37,8 @@ pub struct StreamSink {
     pub rows_inserted: u64,
     pub rows_updated: u64,
     pub upsert: Option<UpsertIndex>,
+    pub flash_duration: Duration,
+    pub flash_update_color: Color,
 }
 
 impl StreamSink {
@@ -43,6 +47,8 @@ impl StreamSink {
         tab_index: usize,
         table_name: String,
         upsert: Option<UpsertIndex>,
+        flash_duration: Duration,
+        flash_update_color: Color,
     ) -> Self {
         Self {
             rx,
@@ -53,6 +59,8 @@ impl StreamSink {
             rows_inserted: 0,
             rows_updated: 0,
             upsert,
+            flash_duration,
+            flash_update_color,
         }
     }
 }
@@ -112,6 +120,8 @@ impl App {
                             let df = DataFrame::empty_with_schema(&schema);
                             sql().refresh_frame(&stream.table_name, df.clone(), SqlSource::Stdin);
                             pane.base_table_mut().set_data_frame(df);
+                            pane.base_table_mut().set_flash_duration(stream.flash_duration);
+                            pane.base_table_mut().set_flash_update_color(stream.flash_update_color);
                         }
                         Self::publish_stream_status(pane, stream);
                     }
@@ -123,7 +133,7 @@ impl App {
                             // Upsert mode: deduplicate by key columns.
                             let df = pane.base_table_mut().data_frame_mut();
                             upsert.apply_batch(df, rows)
-                                .map(|stats| (df.clone(), stats.inserted, stats.updated))
+                                .map(|stats| (df.clone(), stats))
                         } else {
                             // Append-only mode: just vstack.
                             let df = pane.base_table_mut().data_frame_mut();
@@ -133,13 +143,36 @@ impl App {
                             } else {
                                 df.vstack_mut_owned(rows).map(|_| ()).map_err(Into::into)
                             };
-                            res.map(|()| (df.clone(), new_rows as usize, 0usize))
+                            use crate::misc::upsert_index::UpsertStats;
+                            res.map(|()| (df.clone(), UpsertStats {
+                                inserted: new_rows as usize,
+                                updated: 0,
+                                inserted_rows: Vec::new(),
+                                updated_cells: Vec::new(),
+                            }))
                         };
                         match batch_result {
-                            Ok((refreshed, inserted, updated)) => {
+                            Ok((refreshed, stats)) => {
                                 stream.rows_received += new_rows;
-                                stream.rows_inserted += inserted as u64;
-                                stream.rows_updated += updated as u64;
+                                stream.rows_inserted += stats.inserted as u64;
+                                stream.rows_updated += stats.updated as u64;
+
+                                // Flash changed cells (only in upsert mode).
+                                if stream.upsert.is_some() {
+                                    let width = refreshed.width();
+                                    if !stats.inserted_rows.is_empty() {
+                                        let cells = stats.inserted_rows.iter()
+                                            .flat_map(|&row| (0..width).map(move |col| (row, col)));
+                                        pane.base_table_mut().flash_cells(FlashKind::Insert, cells);
+                                    }
+                                    if !stats.updated_cells.is_empty() {
+                                        pane.base_table_mut().flash_cells(
+                                            FlashKind::Update,
+                                            stats.updated_cells.into_iter(),
+                                        );
+                                    }
+                                }
+
                                 pane.base_table_mut().refresh_layout();
                                 sql().refresh_frame(
                                     &stream.table_name,
@@ -341,6 +374,12 @@ impl Component for App {
 
     fn tick(&mut self) {
         self.drain_stream();
+        // Expire flash highlights on the streaming pane.
+        if let Some(stream) = self.stream.as_ref()
+            && let Some(pane) = self.tabs.pane_mut(stream.tab_index)
+        {
+            pane.base_table_mut().expire_flashes();
+        }
         if let Some(overlay) = self.overlay.as_mut() {
             overlay.responder().tick();
         }

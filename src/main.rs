@@ -21,8 +21,35 @@ use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
 
+use ratatui::style::Color;
 use tabiew::AppResult;
 use tabiew::tui::Pane;
+
+fn parse_color(s: Option<&str>) -> Color {
+    match s {
+        None => Color::Yellow,
+        Some(name) => match name.to_lowercase().as_str() {
+            "black" => Color::Black,
+            "red" => Color::Red,
+            "green" => Color::Green,
+            "yellow" => Color::Yellow,
+            "blue" => Color::Blue,
+            "magenta" => Color::Magenta,
+            "cyan" => Color::Cyan,
+            "white" => Color::White,
+            hex if hex.starts_with('#') && hex.len() == 7 => {
+                let r = u8::from_str_radix(&hex[1..3], 16).unwrap_or(255);
+                let g = u8::from_str_radix(&hex[3..5], 16).unwrap_or(255);
+                let b = u8::from_str_radix(&hex[5..7], 16).unwrap_or(0);
+                Color::Rgb(r, g, b)
+            }
+            _ => {
+                eprintln!("Warning: unknown --flash-color '{}', using yellow", name);
+                Color::Yellow
+            }
+        },
+    }
+}
 
 fn main() {
     // Parse CLI
@@ -98,7 +125,15 @@ fn main() {
             } else {
                 Some(UpsertIndex::new(args.key.indexes().to_vec()))
             };
-            stream_sink = Some(StreamSink::new(rx, 0, table_name, upsert));
+            let flash_duration = if args.no_flash || args.no_key {
+                std::time::Duration::ZERO
+            } else {
+                std::time::Duration::from_millis(args.flash_ms)
+            };
+            let flash_update_color = parse_color(args.flash_color.as_deref());
+            stream_sink = Some(StreamSink::new(
+                rx, 0, table_name, upsert, flash_duration, flash_update_color,
+            ));
         } else {
             for (name, mut df) in args
                 .build_reader("")

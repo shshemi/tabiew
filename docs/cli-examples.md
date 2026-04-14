@@ -313,6 +313,43 @@ kubectl logs -f deploy/api | \
   tw -f fwf --follow --widths 12,10,8,15 --key 0,1
 ```
 
+### `--flash-ms` — cell flash duration (default 750ms)
+
+When upsert mode is active (`--key`), changed cells briefly flash:
+green for inserts, yellow for updates. Adjust the duration with
+`--flash-ms`:
+
+```bash
+# Shorter flash for fast-moving data
+firehose | tw -f jsonl --follow --key 0 --flash-ms 300
+
+# Longer flash to spot changes
+slow-feed | tw -f csv --follow --key 0 --flash-ms 2000
+```
+
+### `--flash-color` — custom update highlight color (default yellow)
+
+Accepts named colors (`red`, `green`, `yellow`, `blue`, `magenta`,
+`cyan`, `white`, `black`) or hex (`#FF8800`):
+
+```bash
+# Orange flash for updates
+producer | tw -f jsonl --follow --key 0 --flash-color '#FF8800'
+
+# Cyan flash
+producer | tw -f csv --follow --key 0 --flash-color cyan
+```
+
+### `--no-flash` — disable cell flash highlighting
+
+```bash
+# No flash, just silent upserts
+producer | tw -f jsonl --follow --key 0 --no-flash
+```
+
+`--no-flash`, `--flash-ms`, and `--flash-color` are mutually exclusive
+with `--no-flash`.
+
 ---
 
 ## 9. Built-in help

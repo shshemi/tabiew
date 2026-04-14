@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::ops::{Add, Div};
+use std::time::{Duration, Instant};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use ratatui::{
     layout::{Constraint, Layout, Position, Rect},
+    style::{Color, Style},
     text::Text,
     widgets::{Cell, List, ListItem, ListState, Row, StatefulWidget, TableState},
 };
@@ -20,6 +23,13 @@ use crate::{
     tui::component::Component,
 };
 
+/// Whether a cell flash represents an insert or update.
+#[derive(Debug, Clone, Copy)]
+pub enum FlashKind {
+    Insert,
+    Update,
+}
+
 #[derive(Debug, Clone)]
 pub struct Table {
     df: DataFrame,
@@ -34,6 +44,10 @@ pub struct Table {
     rendered_width: u16,
     column_mode: ColumnMode,
     gutter_mode: GutterMode,
+    /// Active cell flashes: (row, col) → (kind, expiry instant).
+    flashes: HashMap<(usize, usize), (FlashKind, Instant)>,
+    flash_duration: Duration,
+    flash_update_color: Color,
 }
 
 impl Table {
@@ -59,6 +73,9 @@ impl Table {
             gutter_mode: GutterMode::Visible(gutter_width),
             df,
             col_space,
+            flashes: HashMap::new(),
+            flash_duration: Duration::from_millis(750),
+            flash_update_color: Color::Yellow,
         }
     }
 
@@ -83,6 +100,9 @@ impl Table {
             show_header: self.show_header,
             gutter_mode: GutterMode::Visible(gutter_width),
             col_space: self.col_space,
+            flashes: HashMap::new(),
+            flash_duration: self.flash_duration,
+            flash_update_color: self.flash_update_color,
         }
     }
 
@@ -163,6 +183,41 @@ impl Table {
             .collect_vec();
         self.col_offsets = col_offsets(&self.col_widths, self.col_space);
         self.gutter_mode = GutterMode::Visible(self.df.height().to_string().len() as u16);
+    }
+
+    pub fn set_flash_duration(&mut self, duration: Duration) {
+        self.flash_duration = duration;
+    }
+
+    pub fn set_flash_update_color(&mut self, color: Color) {
+        self.flash_update_color = color;
+    }
+
+    /// Register cell flashes for the given coordinates.
+    pub fn flash_cells(&mut self, kind: FlashKind, cells: impl Iterator<Item = (usize, usize)>) {
+        let expiry = Instant::now() + self.flash_duration;
+        for coord in cells {
+            self.flashes.insert(coord, (kind, expiry));
+        }
+    }
+
+    /// Remove expired flashes. Call on each tick.
+    pub fn expire_flashes(&mut self) {
+        if self.flashes.is_empty() {
+            return;
+        }
+        let now = Instant::now();
+        self.flashes.retain(|_, (_, expiry)| *expiry > now);
+    }
+
+    /// Snapshot of active flashes keyed by kind for the render pass.
+    fn active_flash_kinds(&self) -> HashMap<(usize, usize), FlashKind> {
+        let now = Instant::now();
+        self.flashes
+            .iter()
+            .filter(|(_, (_, expiry))| *expiry > now)
+            .map(|(&coord, &(kind, _))| (coord, kind))
+            .collect()
     }
 
     pub fn set_gutter_visibility(&mut self, value: bool) {
@@ -382,6 +437,8 @@ impl Component for Table {
             self.column_mode = ColumnMode::Expanded(0);
         }
 
+        let active_flashes = self.active_flash_kinds();
+
         match &mut self.column_mode {
             ColumnMode::Compact => {
                 let df = self.df.slice(self.offset as i64, height);
@@ -393,6 +450,8 @@ impl Component for Table {
                     self.striped,
                     self.offset,
                     0,
+                    &active_flashes,
+                    self.flash_update_color,
                 );
                 table.render(
                     table_area,
@@ -419,6 +478,13 @@ impl Component for Table {
                     .select(&self.df.get_column_names()[col_start..=col_end])
                     .unwrap()
                     .slice(self.offset as i64, height);
+                // Remap flash coordinates: shift column indices for the
+                // visible column slice so build_table sees local col indices.
+                let remapped_flashes: HashMap<(usize, usize), FlashKind> = active_flashes
+                    .iter()
+                    .filter(|&(&(_, c), _)| c >= col_start && c <= col_end)
+                    .map(|(&(r, c), &kind)| ((r, c - col_start), kind))
+                    .collect();
                 let table = build_table(
                     &df,
                     &self.col_widths[col_start..=col_end],
@@ -427,6 +493,8 @@ impl Component for Table {
                     self.striped,
                     self.offset,
                     col_start,
+                    &remapped_flashes,
+                    self.flash_update_color,
                 );
                 let width = (self.col_offsets[col_end + 1] - self.col_offsets[col_start])
                     .max(table_area.width);
@@ -593,6 +661,7 @@ fn next_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
         .unwrap_or_default()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_table<'a>(
     df: &'a DataFrame,
     col_widths: &[Constraint],
@@ -601,6 +670,8 @@ fn build_table<'a>(
     striped: bool,
     offset_row: usize,
     offset_col: usize,
+    flashes: &HashMap<(usize, usize), FlashKind>,
+    update_color: Color,
 ) -> ratatui::widgets::Table<'a> {
     let mut table = ratatui::widgets::Table::default()
         .widths(col_widths)
@@ -614,11 +685,27 @@ fn build_table<'a>(
                 .zip_iters()
                 .enumerate()
                 .map(|(idx, vals)| {
-                    let cells = vals
+                    let abs_row = offset_row + idx;
+                    let cells: Vec<Cell> = vals
                         .into_iter()
-                        .map(|val| Cell::new(val.into_single_line()));
+                        .enumerate()
+                        .map(|(col_idx, val)| {
+                            let mut cell = Cell::new(val.into_single_line());
+                            if let Some(kind) = flashes.get(&(abs_row, col_idx)) {
+                                cell = cell.style(match kind {
+                                    FlashKind::Insert => {
+                                        Style::default().bg(Color::Green).fg(Color::Black)
+                                    }
+                                    FlashKind::Update => {
+                                        Style::default().bg(update_color).fg(Color::Black)
+                                    }
+                                });
+                            }
+                            cell
+                        })
+                        .collect();
                     Row::new(cells).style(if striped {
-                        theme().row(offset_row + idx)
+                        theme().row(abs_row)
                     } else {
                         theme().row(0)
                     })

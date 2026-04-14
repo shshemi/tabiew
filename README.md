@@ -173,6 +173,9 @@ stream-metrics | tw -f jsonl --follow --key 1,3
 Tuning knobs (optional):
 - `--stream-batch-rows N` — flush a batch after N rows (default 1000)
 - `--stream-batch-ms M`  — flush a batch every M milliseconds (default 250)
+- `--flash-ms N` — cell flash duration in ms (default 750); changed cells flash green (insert) or yellow (update)
+- `--flash-color COLOR` — custom update highlight color (named or hex, default `yellow`)
+- `--no-flash` — disable cell flash highlighting
 
 ## Useful Keybindings️
 

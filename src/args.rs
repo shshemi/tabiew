@@ -157,6 +157,29 @@ pub struct Args {
         default_value_t = 250
     )]
     pub stream_batch_ms: u64,
+
+    #[arg(
+        long = "flash-ms",
+        help = "Duration in milliseconds for cell flash highlighting on upsert changes. Requires --follow and --key.",
+        required = false,
+        default_value_t = 750
+    )]
+    pub flash_ms: u64,
+
+    #[arg(
+        long = "no-flash",
+        help = "Disable cell flash highlighting on upsert changes.",
+        required = false,
+        default_value_t = false,
+    )]
+    pub no_flash: bool,
+
+    #[arg(
+        long = "flash-color",
+        help = "Color for update flash highlighting. Accepts: red, green, yellow, blue, magenta, cyan, white, or a hex color like '#FF8800'. Default: yellow.",
+        required = false,
+    )]
+    pub flash_color: Option<String>,
 }
 
 impl Args {
@@ -172,6 +195,21 @@ impl Args {
         }
         if self.no_key && !self.key.is_default() {
             return Err("--no-key and --key are mutually exclusive".to_string());
+        }
+        if self.no_flash && !self.follow {
+            return Err("--no-flash requires --follow".to_string());
+        }
+        if self.flash_ms != 750 && !self.follow {
+            return Err("--flash-ms requires --follow".to_string());
+        }
+        if self.no_flash && self.flash_ms != 750 {
+            return Err("--no-flash and --flash-ms are mutually exclusive".to_string());
+        }
+        if self.flash_color.is_some() && !self.follow {
+            return Err("--flash-color requires --follow".to_string());
+        }
+        if self.flash_color.is_some() && self.no_flash {
+            return Err("--flash-color and --no-flash are mutually exclusive".to_string());
         }
         if self.follow {
             if std::io::stdin().is_terminal() {

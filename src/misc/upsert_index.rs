@@ -17,10 +17,14 @@ use polars::prelude::*;
 use crate::AppResult;
 
 /// Per-batch statistics returned by `UpsertIndex::apply_batch`.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub struct UpsertStats {
     pub inserted: usize,
     pub updated: usize,
+    /// Live-frame row indices of newly inserted rows.
+    pub inserted_rows: Vec<usize>,
+    /// (live_row_idx, col_idx) pairs for cells updated in place.
+    pub updated_cells: Vec<(usize, usize)>,
 }
 
 #[derive(Debug)]
@@ -84,6 +88,7 @@ impl UpsertIndex {
         }
 
         // Apply inserts first: vstack, then extend the map.
+        let mut inserted_rows = Vec::new();
         if !inserts.is_empty() {
             let base_height = live.height();
             let insert_idx: Vec<IdxSize> = inserts.iter().map(|&i| i as IdxSize).collect();
@@ -95,18 +100,39 @@ impl UpsertIndex {
                 live.vstack_mut_owned(insert_df)?;
             }
             for (offset, &batch_row) in inserts.iter().enumerate() {
+                let row_idx = base_height + offset;
                 self.map
-                    .insert(batch_keys[batch_row].clone(), base_height + offset);
+                    .insert(batch_keys[batch_row].clone(), row_idx);
+                inserted_rows.push(row_idx);
             }
         }
 
         // Apply updates: per column, build a replacement series that keeps
         // original values everywhere except the updated live-row indices.
+        // Track which cells actually changed value (skip key columns and
+        // cells where old == new).
+        let mut updated_cells = Vec::new();
+        let width = live.width();
         if !updates.is_empty() {
             // Sort by live_row_idx so a single forward pass over the column
             // is enough.
             updates.sort_by_key(|(live_idx, _)| *live_idx);
-            let width = live.width();
+            for col_idx in 0..width {
+                if self.key_cols.contains(&col_idx) {
+                    continue;
+                }
+                let src_col = batch.columns()[col_idx].clone();
+                // Compare old vs new before overwriting.
+                let live_col = &live.columns()[col_idx];
+                for &(live_idx, batch_idx) in &updates {
+                    let old_val = live_col.get(live_idx).unwrap();
+                    let new_val = src_col.get(batch_idx).unwrap();
+                    if old_val != new_val {
+                        updated_cells.push((live_idx, col_idx));
+                    }
+                }
+            }
+            // Now apply the actual updates.
             for col_idx in 0..width {
                 let src_col = batch.columns()[col_idx].clone();
                 live.try_apply_at_idx(col_idx, |col| {
@@ -118,6 +144,8 @@ impl UpsertIndex {
         Ok(UpsertStats {
             inserted: inserts.len(),
             updated: updates.len(),
+            inserted_rows,
+            updated_cells,
         })
     }
 
@@ -428,5 +456,74 @@ mod tests {
         encode_any_value(&AnyValue::String("a"), &mut b);
         encode_any_value(&AnyValue::String("bc"), &mut b);
         assert_ne!(a, b);
+    }
+
+    #[test]
+    fn stats_contain_inserted_row_indices() {
+        let mut live = DataFrame::empty();
+        let mut idx = UpsertIndex::new(vec![0]);
+        let stats = idx
+            .apply_batch(&mut live, df_i64_str(&[10, 20, 30], &["a", "b", "c"]))
+            .unwrap();
+        assert_eq!(stats.inserted_rows, vec![0, 1, 2]);
+        assert!(stats.updated_cells.is_empty());
+    }
+
+    #[test]
+    fn stats_contain_updated_cell_coordinates() {
+        let mut live = DataFrame::empty();
+        let mut idx = UpsertIndex::new(vec![0]);
+        idx.apply_batch(&mut live, df_i64_str(&[1, 2, 3], &["a", "b", "c"]))
+            .unwrap();
+        // Update id=2 → should produce updated_cells for row 1, non-key columns only.
+        let stats = idx
+            .apply_batch(&mut live, df_i64_str(&[2], &["Z"]))
+            .unwrap();
+        assert_eq!(stats.inserted_rows, Vec::<usize>::new());
+        // Column 0 is the key — only column 1 (v) is marked as updated.
+        assert_eq!(stats.updated_cells, vec![(1, 1)]);
+    }
+
+    #[test]
+    fn stats_mixed_inserts_and_updates() {
+        let mut live = DataFrame::empty();
+        let mut idx = UpsertIndex::new(vec![0]);
+        idx.apply_batch(&mut live, df_i64_str(&[1, 2], &["a", "b"]))
+            .unwrap();
+        // id=2 updates, id=3 inserts.
+        let stats = idx
+            .apply_batch(&mut live, df_i64_str(&[2, 3], &["B", "c"]))
+            .unwrap();
+        assert_eq!(stats.inserted, 1);
+        assert_eq!(stats.updated, 1);
+        // Insert at row 2 (after existing 2 rows).
+        assert_eq!(stats.inserted_rows, vec![2]);
+        // Update at row 1 (id=2), non-key column only.
+        assert_eq!(stats.updated_cells, vec![(1, 1)]);
+    }
+
+    #[test]
+    fn unchanged_values_not_in_updated_cells() {
+        // Simulates stream-csv.sh: key=0, region (col 1) stays same,
+        // only col 2 (v) changes.
+        let id = Column::new("id".into(), &[1i64, 2]);
+        let region = Column::new("region".into(), &["us", "eu"]);
+        let v = Column::new("v".into(), &["old1", "old2"]);
+        let initial = DataFrame::new_infer_height(vec![id, region, v]).unwrap();
+
+        let mut live = DataFrame::empty();
+        let mut idx = UpsertIndex::new(vec![0]);
+        idx.apply_batch(&mut live, initial).unwrap();
+
+        // Update id=1: region stays "us", v changes to "new1".
+        let id2 = Column::new("id".into(), &[1i64]);
+        let region2 = Column::new("region".into(), &["us"]);
+        let v2 = Column::new("v".into(), &["new1"]);
+        let batch = DataFrame::new_infer_height(vec![id2, region2, v2]).unwrap();
+        let stats = idx.apply_batch(&mut live, batch).unwrap();
+
+        assert_eq!(stats.updated, 1);
+        // Only col 2 (v) changed — col 0 is key, col 1 (region) unchanged.
+        assert_eq!(stats.updated_cells, vec![(0, 2)]);
     }
 }
