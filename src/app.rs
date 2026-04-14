@@ -157,8 +157,12 @@ impl App {
                                 stream.rows_inserted += stats.inserted as u64;
                                 stream.rows_updated += stats.updated as u64;
 
-                                // Flash changed cells (only in upsert mode).
-                                if stream.upsert.is_some() {
+                                let has_derived = pane.has_derived_views();
+
+                                // Flash changed cells (only in upsert mode,
+                                // only on base view — skip when derived views
+                                // active since row indices don't map).
+                                if stream.upsert.is_some() && !has_derived {
                                     let width = refreshed.width();
                                     if !stats.inserted_rows.is_empty() {
                                         let cells = stats.inserted_rows.iter()
@@ -179,6 +183,15 @@ impl App {
                                     refreshed,
                                     SqlSource::Stdin,
                                 );
+
+                                // Re-execute derived views (sort/filter/select)
+                                // so the displayed view reflects new data.
+                                // Skip when a search modal is active — its tick
+                                // overwrites last_mut() and would corrupt the base.
+                                if has_derived && !pane.has_active_search() {
+                                    pane.reapply_derived_views();
+                                }
+
                                 Self::publish_stream_status(pane, stream);
                             }
                             Err(err) => {

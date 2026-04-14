@@ -103,6 +103,17 @@ impl Pane {
         Some(status.rows_received.saturating_sub(watermark))
     }
 
+    pub fn has_derived_views(&self) -> bool {
+        self.dstack.len_without_base() > 0
+    }
+
+    /// True when a search modal is open. Reapplying derived views while
+    /// a search is active would corrupt the base table because the search
+    /// tick overwrites `last_mut().set_data_frame()`.
+    pub fn has_active_search(&self) -> bool {
+        matches!(self.modal, Some(Modal::SearchBar(_)))
+    }
+
     pub fn description(&self) -> &TableDescription {
         self.dstack.last()
     }
@@ -251,6 +262,56 @@ impl Pane {
         self.tstack.pop();
         self.dstack.pop();
         self.freeze_watermarks.pop();
+    }
+
+    /// Re-execute all derived views (Order/Filter/Select) against the
+    /// current base table so the displayed view reflects streaming updates.
+    /// Variants that can't be trivially replayed (Search, FuzzySearch, Cast,
+    /// Query) cause the stack to be truncated at that point.
+    pub fn reapply_derived_views(&mut self) {
+        if self.dstack.len_without_base() == 0 {
+            return;
+        }
+
+        // Collect the descriptions we need to replay.
+        let descs: Vec<TableDescription> = self
+            .dstack
+            .iter()
+            .skip(1) // skip base
+            .cloned()
+            .collect();
+
+        // Pop all derived views.
+        while self.dstack.len_without_base() > 0 {
+            self.tstack.pop();
+            self.dstack.pop();
+            self.freeze_watermarks.pop();
+        }
+
+        // Replay each description, chaining from previous result.
+        for desc in descs {
+            let input_df = self.tstack.last().data_frame().clone();
+            let result = match &desc {
+                TableDescription::Order(expr) => sql().execute(
+                    &format!("SELECT * FROM _ ORDER BY {expr}"),
+                    input_df,
+                ),
+                TableDescription::Filter(expr) => sql().execute(
+                    &format!("SELECT * FROM _ WHERE {expr}"),
+                    input_df,
+                ),
+                TableDescription::Select(expr) => sql().execute(
+                    &format!("SELECT {expr} FROM _"),
+                    input_df,
+                ),
+                // Can't trivially replay — stop here.
+                _ => break,
+            };
+            match result {
+                Ok(df) => self.push_data_frame(df, desc),
+                Err(_) => break, // query no longer valid against new data
+            }
+        }
     }
 
     fn select(&mut self, idx: usize) {
