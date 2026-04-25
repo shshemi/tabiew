@@ -107,7 +107,7 @@ impl Component for Schema {
                         })
                         .and_then(|name| {
                             sql()
-                                .execute(&format!("SELECT * FROM {name}"), None)
+                                .execute(&format!("SELECT * FROM \"{}\"", name.replace('"', "\"\"")), None)
                                 .ok()
                                 .map(|df| (name, df))
                         })
