@@ -67,7 +67,7 @@ impl OverlayStep for State {
                 }
             }
             State::PickBucketCount { column, picker } => {
-                let buckets = picker.value().parse().unwrap_or(1);
+                let buckets = picker.value().parse().unwrap_or(1).max(1);
                 Message::PaneShowHistogram(column.clone(), buckets).enqueue();
                 State::PickBucketCount { column, picker }
             }
