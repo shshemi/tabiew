@@ -57,7 +57,7 @@ impl InlineQueryPicker {
                     TableDescription::Select(value.to_owned()),
                 )
                 .enqueue();
-                Message::AppShowToast(format!("Column selection '{value}' occured")).enqueue();
+                Message::AppShowToast(format!("Column selection '{value}' occurred")).enqueue();
             }
             (Ok(result_dataframe), QueryType::Order) => {
                 Message::PaneDismissModal.enqueue();
