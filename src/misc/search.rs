@@ -131,7 +131,7 @@ where
                                         .map(|(idx, _)| *idx)
                                         .collect(),
                                 ))
-                                .unwrap_or_graceful_shutdown(),
+                                .unwrap_or_default(),
                             );
                             updated = true;
                         }
