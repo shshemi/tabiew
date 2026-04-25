@@ -69,7 +69,10 @@ fn path_to_name_frames(path: impl AsRef<Path>, key: Option<&str>) -> AppResult<N
 
 fn get_data_frame(conn: &Connection, table_name: &str) -> AppResult<DataFrame> {
     let schema = Schema::from_iter(
-        conn.prepare(&format!("PRAGMA table_info(\"{}\")", table_name))?
+        conn.prepare(&format!(
+                "PRAGMA table_info(\"{}\")",
+                table_name.replace('"', "\"\"")
+            ))?
             .query_map([], |row| {
                 let name = PlSmallStr::from_string(row.get(1)?);
                 let dtype = match row.get::<_, String>(2)?.as_str() {
@@ -84,7 +87,10 @@ fn get_data_frame(conn: &Connection, table_name: &str) -> AppResult<DataFrame> {
     );
     Ok(DataFrame::from_rows_and_schema(
         &conn
-            .prepare(&format!("SELECT * FROM \"{}\"", table_name))?
+            .prepare(&format!(
+                "SELECT * FROM \"{}\"",
+                table_name.replace('"', "\"\"")
+            ))?
             .query_map([], sqlite_to_polars_row)?
             .collect::<Result<Vec<_>, _>>()?,
         &schema,
