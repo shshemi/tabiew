@@ -33,7 +33,7 @@ impl OverlayStep for State {
             },
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Resource::LocalFile(picker.path()),
+                    Resource::File(picker.path()),
                     CsvToDataFrame::default()
                         .with_no_header(true)
                         .with_quote_char('"')

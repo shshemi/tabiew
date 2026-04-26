@@ -91,7 +91,7 @@ impl Default for CsvToDataFrame {
 impl ReadToDataFrames for CsvToDataFrame {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let df = match &input {
-            Resource::LocalFile(path) => self.try_into_frame(File::open(path)?),
+            Resource::File(path) => self.try_into_frame(File::open(path)?),
             Resource::Stdin => self.try_into_frame(stdin()),
         }?;
         Ok([(input.table_name(), df)].into())

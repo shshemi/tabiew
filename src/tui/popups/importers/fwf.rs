@@ -60,7 +60,7 @@ impl OverlayStep for State {
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => State::PickWidths {
-                source: Resource::LocalFile(picker.path()),
+                source: Resource::File(picker.path()),
                 picker: TextPicker::default()
                     .with_input_type(InputType::MultiNumeric)
                     .with_title("Widths")

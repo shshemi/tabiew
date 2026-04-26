@@ -16,7 +16,7 @@ impl OverlayStep for State {
         match self {
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Resource::LocalFile(picker.path()),
+                    Resource::File(picker.path()),
                     ExcelToDataFrames,
                 );
                 State::PickPath { picker }

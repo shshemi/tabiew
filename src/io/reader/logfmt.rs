@@ -29,7 +29,7 @@ impl LogfmtToDataFrame {
 impl ReadToDataFrames for LogfmtToDataFrame {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let contents = match &input {
-            Resource::LocalFile(path_buf) => fs::read_to_string(path_buf)?,
+            Resource::File(path_buf) => fs::read_to_string(path_buf)?,
             Resource::Stdin => {
                 let mut s = String::new();
                 stdin().read_to_string(&mut s)?;

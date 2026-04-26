@@ -70,7 +70,7 @@ impl Default for FwfToDataFrame {
 impl ReadToDataFrames for FwfToDataFrame {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let file_content = match &input {
-            Resource::LocalFile(path) => read_to_string(path)?,
+            Resource::File(path) => read_to_string(path)?,
             Resource::Stdin => {
                 let mut buf = String::new();
                 io::stdin().read_to_string(&mut buf)?;

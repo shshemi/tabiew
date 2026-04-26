@@ -24,17 +24,15 @@ impl ReadToDataFrames for ExcelToDataFrames {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         Ok(match input {
             //
-            Resource::LocalFile(path) => {
-                open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
-                    .worksheets()
-                    .into_iter()
-                    .map(|(name, sheet)| {
-                        let df = sheet_to_data_frame(sheet)?;
-                        Ok((name, df))
-                    })
-                    .collect::<AppResult<Vec<_>>>()?
-                    .into_boxed_slice()
-            }
+            Resource::File(path) => open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
+                .worksheets()
+                .into_iter()
+                .map(|(name, sheet)| {
+                    let df = sheet_to_data_frame(sheet)?;
+                    Ok((name, df))
+                })
+                .collect::<AppResult<Vec<_>>>()?
+                .into_boxed_slice(),
             Resource::Stdin => {
                 //
                 open_workbook_auto_from_rs(stdin())?
