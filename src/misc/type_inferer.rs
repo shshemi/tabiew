@@ -1,17 +1,15 @@
 use std::collections::HashMap;
 
-use anyhow::anyhow;
-use chrono::{NaiveDate, NaiveDateTime};
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, Column, DataType, PlSmallStr, TimeUnit},
-    series::{ChunkCompareEq, Series},
+    prelude::{Column, DataType, PlSmallStr},
+    series::Series,
 };
 
 use crate::{
     AppResult,
     args::{Args, Type},
-    misc::{polars_ext::TryMapAll, type_ext::UnwrapOrGracefulShutdown},
+    misc::{polars_ext::SeriesExt, type_ext::UnwrapOrGracefulShutdown},
 };
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -47,23 +45,23 @@ impl TypeInferer {
         let cast_fns = {
             let mut vec = Vec::<fn(&Series) -> AppResult<Series>>::new();
             if self.int {
-                vec.push(cast_int);
+                vec.push(SeriesExt::refine_to_int);
             }
 
             if self.float {
-                vec.push(cast_float);
+                vec.push(SeriesExt::refine_to_float);
             }
 
             if self.boolean {
-                vec.push(cast_boolean);
+                vec.push(SeriesExt::refine_to_bool);
             }
 
             if self.date {
-                vec.push(cast_date);
+                vec.push(SeriesExt::refine_to_date);
             }
 
             if self.datetime {
-                vec.push(cast_datetime);
+                vec.push(SeriesExt::refine_to_datetime);
             }
             vec
         };
@@ -110,152 +108,4 @@ impl TypeInferer {
         self.datetime = true;
         self
     }
-}
-
-pub fn cast_string(series: &Series) -> AppResult<Series> {
-    let casted = series.cast(&DataType::String)?;
-    if casted.is_null().equal(&series.is_null()).all() {
-        Ok(casted)
-    } else {
-        Err(anyhow!(
-            "Column '{}' cannot be casted to {}",
-            series.name(),
-            DataType::String
-        ))
-    }
-}
-
-pub fn cast_int(series: &Series) -> AppResult<Series> {
-    let casted = series.cast(&DataType::Int64)?;
-    if casted.is_null().equal(&series.is_null()).all() {
-        Ok(casted)
-    } else {
-        Err(anyhow!(
-            "Column '{}' cannot be casted to {}",
-            series.name(),
-            DataType::Int64
-        ))
-    }
-}
-
-pub fn cast_float(series: &Series) -> AppResult<Series> {
-    let casted = series.cast(&DataType::Float64)?;
-    if casted.is_null().equal(&series.is_null()).all() {
-        Ok(casted)
-    } else {
-        Err(anyhow!(
-            "Column '{}' cannot be casted to {}",
-            series.name(),
-            DataType::Float64
-        ))
-    }
-}
-
-pub fn cast_boolean(series: &Series) -> AppResult<Series> {
-    series
-        .try_map_all(|val| match val {
-            AnyValue::String(s) => parse_boolean(s),
-            AnyValue::StringOwned(s) => parse_boolean(s.as_str()),
-            AnyValue::Null => Some(AnyValue::Null),
-            _ => None,
-        })
-        .ok_or(anyhow!(
-            "Column '{}' cannot be casted to {}",
-            series.name(),
-            DataType::Boolean
-        ))
-}
-
-fn parse_boolean(slice: &str) -> Option<AnyValue<'static>> {
-    match slice {
-        "true" => Some(AnyValue::Boolean(true)),
-        "false" => Some(AnyValue::Boolean(false)),
-        _ => None,
-    }
-}
-
-pub fn cast_date(series: &Series) -> AppResult<Series> {
-    [
-        "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y %m %d", "%Y%m%d", "%d-%m-%Y", "%d/%m/%Y",
-        "%d.%m.%Y", "%d %m %Y", "%d%m%Y", "%m-%d-%Y", "%m/%d/%Y", "%m.%d.%Y", "%m %d %Y", "%m%d%Y",
-        "%B %d %Y", "%B-%d-%Y", "%Y-%j",
-    ]
-    .into_iter()
-    .find_map(|fmt| cast_date_with_format(series, fmt))
-    .ok_or(anyhow!(
-        "Column '{}' cannot be casted to {}",
-        series.name(),
-        DataType::Date
-    ))
-}
-
-pub fn cast_datetime(series: &Series) -> AppResult<Series> {
-    [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S%.f",
-        "%Y/%m/%d %H:%M:%S",
-        "%Y %m %d %H:%M:%S",
-        "%Y.%m.%d %H:%M:%S",
-        "%d-%m-%Y %H:%M:%S",
-        "%d/%m/%Y %H:%M:%S",
-        "%d %m %Y %H:%M:%S",
-        "%d.%m.%Y %H:%M:%S",
-        "%m-%d-%Y %H:%M:%S",
-        "%m/%d/%Y %H:%M:%S",
-        "%m %d %Y %H:%M:%S",
-        "%m.%d.%Y %H:%M:%S",
-        "%B %d %Y %H:%M:%S",
-        "%B-%d-%Y %H:%M:%S",
-        "%Y%m%dT%H%M%S",
-    ]
-    .into_iter()
-    .find_map(|fmt| cast_datetime_with_format(series, fmt))
-    .ok_or(anyhow!(
-        "Column '{}' cannot be casted to {}",
-        series.name(),
-        DataType::Datetime(TimeUnit::Milliseconds, None)
-    ))
-}
-
-fn cast_date_with_format(series: &Series, fmt: &'static str) -> Option<Series> {
-    series.try_map_all(|val| match val {
-        AnyValue::String(s) => parse_date(s, fmt),
-        AnyValue::StringOwned(s) => parse_date(s.as_str(), fmt),
-        AnyValue::Null => Some(AnyValue::Null),
-        _ => None,
-    })
-}
-
-fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-    NaiveDate::parse_from_str(slice, fmt)
-        .map(|date| {
-            const UNIX_EPOCH: NaiveDate = match NaiveDate::from_ymd_opt(1970, 1, 1) {
-                Some(date) => date,
-                None => unreachable!(),
-            };
-            AnyValue::Date(date.signed_duration_since(UNIX_EPOCH).num_days() as i32)
-        })
-        .ok()
-}
-
-fn cast_datetime_with_format(series: &Series, fmt: &'static str) -> Option<Series> {
-    series.try_map_all(|val| match val {
-        AnyValue::String(s) => parse_datetime(s, fmt),
-        AnyValue::StringOwned(s) => parse_datetime(s.as_str(), fmt),
-        AnyValue::Null => Some(AnyValue::Null),
-        _ => None,
-    })
-}
-
-fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-    NaiveDateTime::parse_from_str(slice, fmt)
-        .map(|date| {
-            AnyValue::DatetimeOwned(
-                date.and_utc().timestamp_millis(),
-                TimeUnit::Milliseconds,
-                None,
-            )
-        })
-        .ok()
 }
