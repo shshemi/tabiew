@@ -1,11 +1,12 @@
 use crate::{
+    io::writer::{Destination, WriteToFile},
     misc::type_ext::UnwrapOrEnqueueError,
-    writer::{Destination, WriteToFile},
 };
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
+    io::writer::{JsonFormat, WriteToJson},
     tui::{
         component::Component,
         popups::{
@@ -14,7 +15,6 @@ use crate::{
             path_picker::PathPicker,
         },
     },
-    writer::{JsonFormat, WriteToJson},
 };
 
 #[derive(Debug)]

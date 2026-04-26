@@ -1,7 +1,7 @@
 use crate::{
     handler::message::Message,
+    io::reader::{ReadToDataFrames, Source},
     misc::sql::sql,
-    reader::{ReadToDataFrames, Source},
 };
 
 pub mod arrow;

@@ -8,7 +8,7 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::{AppResult, args::Args, misc::stdin::stdin, reader::Source};
+use crate::{AppResult, args::Args, io::reader::Source, misc::stdin::stdin};
 
 use super::{NamedFrames, ReadToDataFrames};
 
@@ -70,20 +70,20 @@ fn path_to_name_frames(path: impl AsRef<Path>, key: Option<&str>) -> AppResult<N
 fn get_data_frame(conn: &Connection, table_name: &str) -> AppResult<DataFrame> {
     let schema = Schema::from_iter(
         conn.prepare(&format!(
-                "PRAGMA table_info(\"{}\")",
-                table_name.replace('"', "\"\"")
-            ))?
-            .query_map([], |row| {
-                let name = PlSmallStr::from_string(row.get(1)?);
-                let dtype = match row.get::<_, String>(2)?.as_str() {
-                    "INTEGER" => DataType::Int64,
-                    "REAL" => DataType::Float64,
-                    "BLOB" => DataType::Binary,
-                    _ => DataType::String,
-                };
-                Ok((name, dtype))
-            })?
-            .collect::<Result<Vec<_>, _>>()?,
+            "PRAGMA table_info(\"{}\")",
+            table_name.replace('"', "\"\"")
+        ))?
+        .query_map([], |row| {
+            let name = PlSmallStr::from_string(row.get(1)?);
+            let dtype = match row.get::<_, String>(2)?.as_str() {
+                "INTEGER" => DataType::Int64,
+                "REAL" => DataType::Float64,
+                "BLOB" => DataType::Binary,
+                _ => DataType::String,
+            };
+            Ok((name, dtype))
+        })?
+        .collect::<Result<Vec<_>, _>>()?,
     );
     Ok(DataFrame::from_rows_and_schema(
         &conn

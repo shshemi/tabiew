@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::{
-    reader::{Source, SqliteToDataFrames},
+    io::reader::{Source, SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{

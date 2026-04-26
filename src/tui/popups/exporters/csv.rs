@@ -1,11 +1,12 @@
 use crate::{
+    io::writer::{Destination, WriteToFile},
     misc::type_ext::UnwrapOrEnqueueError,
-    writer::{Destination, WriteToFile},
 };
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
+    io::writer::WriteToCsv,
     tui::{
         component::Component,
         pickers::text_picker::TextPicker,
@@ -15,7 +16,6 @@ use crate::{
             path_picker::PathPicker,
         },
     },
-    writer::WriteToCsv,
 };
 
 #[derive(Debug)]

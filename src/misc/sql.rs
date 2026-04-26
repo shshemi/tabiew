@@ -186,11 +186,11 @@ impl Source {
     }
 }
 
-impl From<crate::reader::Source> for Source {
-    fn from(value: crate::reader::Source) -> Self {
+impl From<crate::io::reader::Source> for Source {
+    fn from(value: crate::io::reader::Source) -> Self {
         match value {
-            crate::reader::Source::File(path_buf) => Source::File(path_buf),
-            crate::reader::Source::Stdin => Source::Stdin,
+            crate::io::reader::Source::File(path_buf) => Source::File(path_buf),
+            crate::io::reader::Source::Stdin => Source::Stdin,
         }
     }
 }
