@@ -123,7 +123,7 @@ impl BackendSchema {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableInfo {
-    source: Origin,
+    origin: Origin,
     height: usize,
     width: usize,
     total_null: usize,
@@ -135,7 +135,7 @@ impl TableInfo {
     pub fn new(input: Origin, df: &DataFrame) -> Self {
         let schema = TableSchema::new(df);
         Self {
-            source: input,
+            origin: input,
             height: df.height(),
             width: df.width(),
             total_null: schema.iter().map(|(_, info)| info.null_count()).sum(),
@@ -145,7 +145,7 @@ impl TableInfo {
     }
 
     pub fn source(&self) -> &Origin {
-        &self.source
+        &self.origin
     }
 
     pub fn height(&self) -> usize {
