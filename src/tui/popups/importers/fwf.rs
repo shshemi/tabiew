@@ -1,5 +1,5 @@
 use crate::{
-    reader::{FwfToDataFrame, Source},
+    io::reader::{FwfToDataFrame, Source},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{

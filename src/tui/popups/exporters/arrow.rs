@@ -2,12 +2,12 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
+    io::writer::{Destination, WriteToArrow, WriteToFile},
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
         popups::{multi_step_overlay::OverlayStep, path_picker::PathPicker},
     },
-    writer::{Destination, WriteToArrow, WriteToFile},
 };
 
 #[derive(Debug)]

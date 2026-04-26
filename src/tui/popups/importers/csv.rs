@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    reader::{CsvToDataFrame, Source},
+    io::reader::{CsvToDataFrame, Source},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{

@@ -1,5 +1,5 @@
 use crate::{
-    reader::{ArrowIpcToDataFrame, Source},
+    io::reader::{ArrowIpcToDataFrame, Source},
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame, multi_step_overlay::OverlayStep,
         path_picker::PathPicker,

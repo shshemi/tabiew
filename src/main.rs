@@ -9,12 +9,12 @@ use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
+use tabiew::io::reader::{BuildReader, Source};
 use tabiew::misc::config::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::sql;
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
-use tabiew::reader::{BuildReader, Source};
 use tabiew::tui::component::{Component, FocusState};
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
@@ -113,6 +113,8 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
                 }
                 #[cfg(not(target_os = "windows"))]
                 {
+                    use tabiew::tui::component::Component;
+
                     app.handle(key_event);
                 }
             }

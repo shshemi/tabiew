@@ -5,7 +5,7 @@ use polars::frame::DataFrame;
 use crate::{
     AppResult,
     args::{Args, Format},
-    reader::{
+    io::reader::{
         ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
         JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame, Source,
         SqliteToDataFrames,

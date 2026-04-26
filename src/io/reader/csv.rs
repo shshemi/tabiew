@@ -10,8 +10,8 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, InferSchema},
+    io::reader::{NamedFrames, ReadToDataFrames, Source},
     misc::{stdin::stdin, type_ext::ToAscii},
-    reader::{NamedFrames, ReadToDataFrames, Source},
 };
 
 pub struct CsvToDataFrame {

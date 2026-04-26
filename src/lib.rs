@@ -16,10 +16,7 @@ pub mod handler;
 /// App
 pub mod app;
 
-/// Readers
-pub mod reader;
-
-/// Writers
-pub mod writer;
+/// IO
+pub mod io;
 
 pub type AppResult<T> = anyhow::Result<T>;

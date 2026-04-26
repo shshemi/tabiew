@@ -4,8 +4,8 @@ use polars::{io::SerReader, prelude::IpcReader};
 
 use crate::{
     AppResult,
+    io::reader::{NamedFrames, ReadToDataFrames, Source},
     misc::stdin::stdin,
-    reader::{NamedFrames, ReadToDataFrames, Source},
 };
 
 pub struct ArrowIpcToDataFrame;

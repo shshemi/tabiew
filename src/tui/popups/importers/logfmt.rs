@@ -1,5 +1,5 @@
 use crate::{
-    reader::{LogfmtToDataFrame, Source},
+    io::reader::{LogfmtToDataFrame, Source},
     tui::popups::{
         import_source_picker::{self, ImportSourcePicker},
         importers::dismiss_overlay_and_load_data_frame,

@@ -5,8 +5,8 @@ use polars::{io::SerReader, prelude::JsonReader};
 use crate::{
     AppResult,
     args::Args,
+    io::reader::{NamedFrames, ReadToDataFrames, Source},
     misc::stdin::stdin,
-    reader::{NamedFrames, ReadToDataFrames, Source},
 };
 
 pub struct JsonToDataFrame {
