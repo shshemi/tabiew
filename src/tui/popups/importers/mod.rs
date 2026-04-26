@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    io::reader::{ReadToDataFrames, Source},
+    io::{Resource, reader::ReadToDataFrames},
     misc::sql::sql,
 };
 
@@ -15,7 +15,7 @@ pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
 
-fn dismiss_overlay_and_load_data_frame(source: Source, rtdf: impl ReadToDataFrames) {
+fn dismiss_overlay_and_load_data_frame(source: Resource, rtdf: impl ReadToDataFrames) {
     Message::AppDismissOverlay.enqueue();
     match rtdf.read_to_data_frames(source.clone()) {
         Ok(named_frames) => {

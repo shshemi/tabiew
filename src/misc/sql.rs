@@ -13,7 +13,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::misc::table_name_generator::TableNameGeneratorExt;
+use crate::{io::Resource, misc::table_name_generator::TableNameGeneratorExt};
 
 use super::polars_ext::AnyValueExt;
 use super::type_ext::UnwrapOrGracefulShutdown;
@@ -186,11 +186,11 @@ impl Source {
     }
 }
 
-impl From<crate::io::reader::Source> for Source {
-    fn from(value: crate::io::reader::Source) -> Self {
+impl From<Resource> for Source {
+    fn from(value: Resource) -> Self {
         match value {
-            crate::io::reader::Source::File(path_buf) => Source::File(path_buf),
-            crate::io::reader::Source::Stdin => Source::Stdin,
+            Resource::LocalFile(path_buf) => Source::File(path_buf),
+            Resource::Stdin => Source::Stdin,
         }
     }
 }

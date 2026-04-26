@@ -10,7 +10,10 @@ use polars::{
 use crate::{
     AppResult,
     args::Args,
-    io::reader::{NamedFrames, ReadToDataFrames, Source},
+    io::{
+        Resource,
+        reader::{NamedFrames, ReadToDataFrames},
+    },
     misc::stdin::stdin,
 };
 
@@ -24,10 +27,10 @@ impl LogfmtToDataFrame {
 }
 
 impl ReadToDataFrames for LogfmtToDataFrame {
-    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let contents = match &input {
-            Source::File(path_buf) => fs::read_to_string(path_buf)?,
-            Source::Stdin => {
+            Resource::LocalFile(path_buf) => fs::read_to_string(path_buf)?,
+            Resource::Stdin => {
                 let mut s = String::new();
                 stdin().read_to_string(&mut s)?;
                 s

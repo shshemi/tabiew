@@ -1,5 +1,5 @@
 use crate::{
-    io::reader::{ParquetToDataFrame, Source},
+    io::{Resource, reader::ParquetToDataFrame},
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame, multi_step_overlay::OverlayStep,
         path_picker::PathPicker,
@@ -16,7 +16,7 @@ impl OverlayStep for State {
         match self {
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Source::File(picker.path()),
+                    Resource::LocalFile(picker.path()),
                     ParquetToDataFrame,
                 );
                 Default::default()

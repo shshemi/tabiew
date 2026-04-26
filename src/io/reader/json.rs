@@ -5,7 +5,10 @@ use polars::{io::SerReader, prelude::JsonReader};
 use crate::{
     AppResult,
     args::Args,
-    io::reader::{NamedFrames, ReadToDataFrames, Source},
+    io::{
+        Resource,
+        reader::{NamedFrames, ReadToDataFrames},
+    },
     misc::stdin::stdin,
 };
 
@@ -30,14 +33,14 @@ impl Default for JsonToDataFrame {
 }
 
 impl ReadToDataFrames for JsonToDataFrame {
-    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let df = match &input {
-            Source::File(path) => JsonReader::new(File::open(path)?)
+            Resource::LocalFile(path) => JsonReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            Source::Stdin => JsonReader::new(stdin())
+            Resource::Stdin => JsonReader::new(stdin())
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)

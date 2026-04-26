@@ -1,5 +1,5 @@
 use crate::{
-    io::reader::{JsonToDataFrame, Source},
+    io::{Resource, reader::JsonToDataFrame},
     tui::popups::{
         import_source_picker::{self, ImportSourcePicker},
         importers::dismiss_overlay_and_load_data_frame,
@@ -19,7 +19,10 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(import_source_picker::Source::Stdin) => {
-                    dismiss_overlay_and_load_data_frame(Source::Stdin, JsonToDataFrame::default());
+                    dismiss_overlay_and_load_data_frame(
+                        Resource::Stdin,
+                        JsonToDataFrame::default(),
+                    );
                     State::PickSource { picker }
                 }
                 Some(import_source_picker::Source::File) => State::PickPath {
@@ -29,7 +32,7 @@ impl OverlayStep for State {
             },
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Source::File(picker.path()),
+                    Resource::LocalFile(picker.path()),
                     JsonToDataFrame::default(),
                 );
                 Default::default()
