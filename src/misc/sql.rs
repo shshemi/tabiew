@@ -41,7 +41,7 @@ impl SqlBackend {
         &mut self,
         name: &str,
         data_frame: DataFrame,
-        input: impl Into<Source>,
+        input: impl Into<Origin>,
     ) -> String {
         let name = self.schema.available_name(name);
         self.schema
@@ -123,7 +123,7 @@ impl BackendSchema {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableInfo {
-    source: Source,
+    source: Origin,
     height: usize,
     width: usize,
     total_null: usize,
@@ -132,7 +132,7 @@ pub struct TableInfo {
 }
 
 impl TableInfo {
-    pub fn new(input: Source, df: &DataFrame) -> Self {
+    pub fn new(input: Origin, df: &DataFrame) -> Self {
         let schema = TableSchema::new(df);
         Self {
             source: input,
@@ -144,7 +144,7 @@ impl TableInfo {
         }
     }
 
-    pub fn source(&self) -> &Source {
+    pub fn source(&self) -> &Origin {
         &self.source
     }
 
@@ -170,21 +170,21 @@ impl TableInfo {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Source {
+pub enum Origin {
     Resource(Resource),
     User,
 }
 
-impl Source {
+impl Origin {
     pub fn display_path<'a>(&'a self) -> Cow<'a, str> {
         match self {
-            Source::User => "User".into(),
-            Source::Resource(resource) => resource.display_path(),
+            Origin::User => "User".into(),
+            Origin::Resource(resource) => resource.display_path(),
         }
     }
 }
 
-impl From<Resource> for Source {
+impl From<Resource> for Origin {
     fn from(value: Resource) -> Self {
         Self::Resource(value)
     }
