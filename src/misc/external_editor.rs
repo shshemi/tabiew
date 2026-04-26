@@ -6,8 +6,11 @@ use polars::frame::DataFrame;
 use crate::{
     AppResult,
     handler::event::{disable_event_read, enable_event_read},
-    io::reader::{CsvToDataFrame, ReadToDataFrames, Source},
-    io::writer::{Destination, WriteToCsv, WriteToFile},
+    io::{
+        Resource,
+        reader::{CsvToDataFrame, ReadToDataFrames},
+        writer::{Destination, WriteToCsv, WriteToFile},
+    },
     misc::type_inferer::TypeInferer,
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
 };
@@ -37,7 +40,7 @@ pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
             .with_no_header(false)
             .with_quote_char('"')
             .with_separator(',')
-            .read_to_data_frames(Source::File(tempfile.path().to_owned()))?
+            .read_to_data_frames(Resource::LocalFile(tempfile.path().to_owned()))?
             .into_iter()
             .next()
             .map(|(_, df)| df)

@@ -8,7 +8,7 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::{AppResult, args::Args, io::reader::Source, misc::stdin::stdin};
+use crate::{AppResult, args::Args, io::Resource, misc::stdin::stdin};
 
 use super::{NamedFrames, ReadToDataFrames};
 
@@ -30,10 +30,10 @@ impl SqliteToDataFrames {
 }
 
 impl ReadToDataFrames for SqliteToDataFrames {
-    fn read_to_data_frames(&self, input: super::Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         match input {
-            Source::File(path) => path_to_name_frames(path, self.key.as_deref()),
-            Source::Stdin => {
+            Resource::LocalFile(path) => path_to_name_frames(path, self.key.as_deref()),
+            Resource::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf)?;

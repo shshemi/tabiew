@@ -12,10 +12,11 @@ use polars::{frame::DataFrame, prelude::Column};
 use crate::{
     AppResult,
     args::Args,
+    io::Resource,
     misc::{iter_ext::ZipItersExt, table_name_generator::TableNameGeneratorExt},
 };
 
-use super::{NamedFrames, ReadToDataFrames, Source};
+use super::{NamedFrames, ReadToDataFrames};
 
 pub struct FwfToDataFrame {
     widths: Vec<usize>,
@@ -67,10 +68,10 @@ impl Default for FwfToDataFrame {
 }
 
 impl ReadToDataFrames for FwfToDataFrame {
-    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let file_content = match &input {
-            Source::File(path) => read_to_string(path)?,
-            Source::Stdin => {
+            Resource::LocalFile(path) => read_to_string(path)?,
+            Resource::Stdin => {
                 let mut buf = String::new();
                 io::stdin().read_to_string(&mut buf)?;
                 buf

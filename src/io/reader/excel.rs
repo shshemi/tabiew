@@ -7,9 +7,9 @@ use polars::{
     prelude::{AnyValue, Column},
 };
 
-use crate::{AppResult, args::Args, misc::stdin::stdin};
+use crate::{AppResult, args::Args, io::Resource, misc::stdin::stdin};
 
-use super::{NamedFrames, ReadToDataFrames, Source};
+use super::{NamedFrames, ReadToDataFrames};
 
 #[derive(Debug, Default)]
 pub struct ExcelToDataFrames;
@@ -21,19 +21,21 @@ impl ExcelToDataFrames {
 }
 
 impl ReadToDataFrames for ExcelToDataFrames {
-    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         Ok(match input {
             //
-            Source::File(path) => open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
-                .worksheets()
-                .into_iter()
-                .map(|(name, sheet)| {
-                    let df = sheet_to_data_frame(sheet)?;
-                    Ok((name, df))
-                })
-                .collect::<AppResult<Vec<_>>>()?
-                .into_boxed_slice(),
-            Source::Stdin => {
+            Resource::LocalFile(path) => {
+                open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
+                    .worksheets()
+                    .into_iter()
+                    .map(|(name, sheet)| {
+                        let df = sheet_to_data_frame(sheet)?;
+                        Ok((name, df))
+                    })
+                    .collect::<AppResult<Vec<_>>>()?
+                    .into_boxed_slice()
+            }
+            Resource::Stdin => {
                 //
                 open_workbook_auto_from_rs(stdin())?
                     .worksheets()

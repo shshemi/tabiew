@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::{
-    io::reader::{Source, SqliteToDataFrames},
+    io::{Resource, reader::SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
@@ -28,7 +28,7 @@ impl OverlayStep for State {
             },
             State::PickPassword { path, picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Source::File(path),
+                    Resource::LocalFile(path),
                     if picker.value().is_empty() {
                         SqliteToDataFrames::default()
                     } else {

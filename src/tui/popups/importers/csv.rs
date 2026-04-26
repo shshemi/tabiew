@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    io::reader::{CsvToDataFrame, Source},
+    io::{Resource, reader::CsvToDataFrame},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
@@ -22,17 +22,17 @@ pub enum State {
         picker: PathPicker,
     },
     PickHasHeader {
-        source: Source,
+        source: Resource,
         picker: YesNoPicker,
     },
     PickSeparator {
-        source: Source,
+        source: Resource,
         has_header: bool,
         picker: TextPicker,
     },
     PickQuote {
         separator: char,
-        source: Source,
+        source: Resource,
         has_header: bool,
         picker: TextPicker,
     },
@@ -43,7 +43,7 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(import_source_picker::Source::Stdin) => State::PickHasHeader {
-                    source: Source::Stdin,
+                    source: Resource::Stdin,
                     picker: YesNoPicker::default(),
                 },
                 Some(import_source_picker::Source::File) => State::PickPath {
@@ -54,7 +54,7 @@ impl OverlayStep for State {
                 },
             },
             State::PickPath { picker } => State::PickHasHeader {
-                source: Source::File(picker.path()),
+                source: Resource::LocalFile(picker.path()),
                 picker: YesNoPicker::default().with_title("Has Header"),
             },
             State::PickHasHeader { source, picker } => State::PickSeparator {

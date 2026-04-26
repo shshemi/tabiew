@@ -9,7 +9,8 @@ use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::io::reader::{BuildReader, Source};
+use tabiew::io::Resource;
+use tabiew::io::reader::BuildReader;
 use tabiew::misc::config::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::sql;
@@ -56,7 +57,7 @@ fn main() {
     for (_, (name, mut df)) in multiparts {
         df.rechunk_mut_par();
         type_infer.update(&mut df);
-        let name = sql().register(&name, df.clone(), Source::File(name.clone().into()));
+        let name = sql().register(&name, df.clone(), Resource::LocalFile(name.clone().into()));
         name_dfs.push((name, df));
     }
 
@@ -64,7 +65,7 @@ fn main() {
     for path in args.files.iter() {
         for (name, mut df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), Source::File(path.clone()));
+            let name = sql().register(&name, df.clone(), Resource::LocalFile(path.clone()));
             name_dfs.push((name, df))
         }
     }
@@ -73,11 +74,11 @@ fn main() {
         for (name, mut df) in args
             .build_reader("")
             .unwrap_or_graceful_shutdown()
-            .read_to_data_frames(Source::Stdin)
+            .read_to_data_frames(Resource::Stdin)
             .unwrap_or_graceful_shutdown()
         {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), Source::Stdin);
+            let name = sql().register(&name, df.clone(), Resource::Stdin);
             name_dfs.push((name, df))
         }
     }
@@ -137,7 +138,7 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
 }
 
 fn try_read_path(args: &Args, path: &PathBuf) -> AppResult<Box<[(String, DataFrame)]>> {
-    let source = Source::File(path.clone());
+    let source = Resource::LocalFile(path.clone());
     let reader = args.build_reader(path)?;
     reader.read_to_data_frames(source.clone())
 }

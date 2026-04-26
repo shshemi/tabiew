@@ -5,10 +5,13 @@ use polars::frame::DataFrame;
 use crate::{
     AppResult,
     args::{Args, Format},
-    io::reader::{
-        ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
-        JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame, Source,
-        SqliteToDataFrames,
+    io::{
+        Resource,
+        reader::{
+            ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
+            JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame,
+            SqliteToDataFrames,
+        },
     },
 };
 
@@ -16,7 +19,7 @@ pub type NamedFrame = (String, DataFrame);
 pub type NamedFrames = Box<[NamedFrame]>;
 
 pub trait ReadToDataFrames {
-    fn read_to_data_frames(&self, input: Source) -> AppResult<NamedFrames>;
+    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames>;
 }
 
 pub trait BuildReader {
