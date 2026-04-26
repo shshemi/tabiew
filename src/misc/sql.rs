@@ -1,6 +1,6 @@
 use std::{
+    borrow::Cow,
     ops::DerefMut,
-    path::PathBuf,
     sync::{LazyLock, Mutex},
 };
 
@@ -171,27 +171,22 @@ impl TableInfo {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Source {
-    File(PathBuf),
-    Stdin,
+    Resource(Resource),
     User,
 }
 
 impl Source {
-    pub fn display_path(&self) -> String {
+    pub fn display_path<'a>(&'a self) -> Cow<'a, str> {
         match self {
-            Source::File(path_buf) => path_buf.to_string_lossy().into_owned(),
-            Source::Stdin => "Standard Input".to_owned(),
-            Source::User => "User".to_owned(),
+            Source::User => "User".into(),
+            Source::Resource(resource) => resource.display_path(),
         }
     }
 }
 
 impl From<Resource> for Source {
     fn from(value: Resource) -> Self {
-        match value {
-            Resource::LocalFile(path_buf) => Source::File(path_buf),
-            Resource::Stdin => Source::Stdin,
-        }
+        Self::Resource(value)
     }
 }
 

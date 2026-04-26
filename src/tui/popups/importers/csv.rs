@@ -1,14 +1,12 @@
 use crate::{
     handler::message::Message,
-    io::{Resource, reader::CsvToDataFrame},
+    io::{Resource, ResourceType, reader::CsvToDataFrame},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            import_source_picker::{self, ImportSourcePicker},
-            importers::dismiss_overlay_and_load_data_frame,
-            multi_step_overlay::OverlayStep,
-            path_picker::PathPicker,
-            yes_no_picker::YesNoPicker,
+            import_source_picker::ImportSourcePicker,
+            importers::dismiss_overlay_and_load_data_frame, multi_step_overlay::OverlayStep,
+            path_picker::PathPicker, yes_no_picker::YesNoPicker,
         },
     },
 };
@@ -42,11 +40,11 @@ impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(import_source_picker::Source::Stdin) => State::PickHasHeader {
+                Some(ResourceType::Stdin) => State::PickHasHeader {
                     source: Resource::Stdin,
                     picker: YesNoPicker::default(),
                 },
-                Some(import_source_picker::Source::File) => State::PickPath {
+                Some(ResourceType::File) => State::PickPath {
                     picker: Default::default(),
                 },
                 None => State::PickSource {

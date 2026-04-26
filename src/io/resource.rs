@@ -1,6 +1,8 @@
 use std::{borrow::Cow, ffi::OsStr, path::PathBuf};
 
-#[derive(Debug, Clone)]
+use strum_macros::{EnumIter, IntoStaticStr};
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Resource {
     LocalFile(PathBuf),
     Stdin,
@@ -29,13 +31,14 @@ impl Resource {
 
     pub fn resource_type(&self) -> ResourceType {
         match self {
-            Resource::LocalFile(_) => ResourceType::LocalFile,
+            Resource::LocalFile(_) => ResourceType::File,
             Resource::Stdin => ResourceType::Stdin,
         }
     }
 }
 
+#[derive(Debug, Clone, Copy, IntoStaticStr, EnumIter)]
 pub enum ResourceType {
-    LocalFile,
+    File,
     Stdin,
 }
