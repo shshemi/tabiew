@@ -1,13 +1,11 @@
 use crate::{
-    io::{Resource, reader::FwfToDataFrame},
+    io::{Resource, ResourceType, reader::FwfToDataFrame},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            import_source_picker::{self, ImportSourcePicker},
-            importers::dismiss_overlay_and_load_data_frame,
-            multi_step_overlay::OverlayStep,
-            path_picker::PathPicker,
-            yes_no_picker::YesNoPicker,
+            import_source_picker::ImportSourcePicker,
+            importers::dismiss_overlay_and_load_data_frame, multi_step_overlay::OverlayStep,
+            path_picker::PathPicker, yes_no_picker::YesNoPicker,
         },
         widgets::input::InputType,
     },
@@ -49,10 +47,10 @@ impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(import_source_picker::Source::File) => State::PickPath {
+                Some(ResourceType::File) => State::PickPath {
                     picker: PathPicker::default(),
                 },
-                Some(import_source_picker::Source::Stdin) => State::PickWidths {
+                Some(ResourceType::Stdin) => State::PickWidths {
                     source: Resource::Stdin,
                     picker: TextPicker::default()
                         .with_input_type(InputType::MultiNumeric)
