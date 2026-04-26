@@ -38,7 +38,7 @@ impl Default for JsonLineToDataFrame {
 impl ReadToDataFrames for JsonLineToDataFrame {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let df = match &input {
-            Resource::LocalFile(path) => JsonReader::new(File::open(path)?)
+            Resource::File(path) => JsonReader::new(File::open(path)?)
                 .with_json_format(JsonFormat::JsonLines)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)

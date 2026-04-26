@@ -30,7 +30,7 @@ impl OverlayStep for State {
             },
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Resource::LocalFile(picker.path()),
+                    Resource::File(picker.path()),
                     LogfmtToDataFrame::default(),
                 );
                 Default::default()

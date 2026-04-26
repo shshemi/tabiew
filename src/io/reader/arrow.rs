@@ -16,7 +16,7 @@ pub struct ArrowIpcToDataFrame;
 impl ReadToDataFrames for ArrowIpcToDataFrame {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let df = match &input {
-            Resource::LocalFile(path) => IpcReader::new(File::open(path)?)
+            Resource::File(path) => IpcReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .finish()?,
             Resource::Stdin => IpcReader::new(stdin()).set_rechunk(true).finish()?,

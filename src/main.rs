@@ -57,7 +57,7 @@ fn main() {
     for (_, (name, mut df)) in multiparts {
         df.rechunk_mut_par();
         type_infer.update(&mut df);
-        let name = sql().register(&name, df.clone(), Resource::LocalFile(name.clone().into()));
+        let name = sql().register(&name, df.clone(), Resource::File(name.clone().into()));
         name_dfs.push((name, df));
     }
 
@@ -65,7 +65,7 @@ fn main() {
     for path in args.files.iter() {
         for (name, mut df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), Resource::LocalFile(path.clone()));
+            let name = sql().register(&name, df.clone(), Resource::File(path.clone()));
             name_dfs.push((name, df))
         }
     }
@@ -138,7 +138,7 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
 }
 
 fn try_read_path(args: &Args, path: &PathBuf) -> AppResult<Box<[(String, DataFrame)]>> {
-    let source = Resource::LocalFile(path.clone());
+    let source = Resource::File(path.clone());
     let reader = args.build_reader(path)?;
     reader.read_to_data_frames(source.clone())
 }

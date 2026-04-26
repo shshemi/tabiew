@@ -16,7 +16,7 @@ pub struct ParquetToDataFrame;
 impl ReadToDataFrames for ParquetToDataFrame {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         let df = match &input {
-            Resource::LocalFile(path) => ParquetReader::new(File::open(path)?)
+            Resource::File(path) => ParquetReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .finish()?,
 

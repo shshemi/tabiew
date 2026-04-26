@@ -32,7 +32,7 @@ impl SqliteToDataFrames {
 impl ReadToDataFrames for SqliteToDataFrames {
     fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
         match input {
-            Resource::LocalFile(path) => path_to_name_frames(path, self.key.as_deref()),
+            Resource::File(path) => path_to_name_frames(path, self.key.as_deref()),
             Resource::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();

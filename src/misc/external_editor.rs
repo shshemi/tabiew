@@ -40,7 +40,7 @@ pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
             .with_no_header(false)
             .with_quote_char('"')
             .with_separator(',')
-            .read_to_data_frames(Resource::LocalFile(tempfile.path().to_owned()))?
+            .read_to_data_frames(Resource::File(tempfile.path().to_owned()))?
             .into_iter()
             .next()
             .map(|(_, df)| df)

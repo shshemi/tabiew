@@ -4,14 +4,14 @@ use strum_macros::{EnumIter, IntoStaticStr};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Resource {
-    LocalFile(PathBuf),
+    File(PathBuf),
     Stdin,
 }
 
 impl Resource {
     pub fn table_name(&self) -> String {
         match self {
-            Resource::LocalFile(path_buf) => path_buf
+            Resource::File(path_buf) => path_buf
                 .file_stem()
                 .map(OsStr::to_string_lossy)
                 .unwrap_or("unknown".into())
@@ -22,16 +22,14 @@ impl Resource {
 
     pub fn display_path(&self) -> Cow<'_, str> {
         match self {
-            Resource::LocalFile(path_buf) => {
-                path_buf.file_name().unwrap_or_default().to_string_lossy()
-            }
+            Resource::File(path_buf) => path_buf.file_name().unwrap_or_default().to_string_lossy(),
             Resource::Stdin => Cow::Borrowed("Stdin"),
         }
     }
 
     pub fn resource_type(&self) -> ResourceType {
         match self {
-            Resource::LocalFile(_) => ResourceType::File,
+            Resource::File(_) => ResourceType::File,
             Resource::Stdin => ResourceType::Stdin,
         }
     }

@@ -52,7 +52,7 @@ impl OverlayStep for State {
                 },
             },
             State::PickPath { picker } => State::PickHasHeader {
-                source: Resource::LocalFile(picker.path()),
+                source: Resource::File(picker.path()),
                 picker: YesNoPicker::default().with_title("Has Header"),
             },
             State::PickHasHeader { source, picker } => State::PickSeparator {
