@@ -8,9 +8,7 @@ use strum_macros::{Display, EnumIter, IntoStaticStr};
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::type_inferer::{
-        cast_boolean, cast_date, cast_datetime, cast_float, cast_int, cast_string,
-    },
+    misc::polars_ext::SeriesExt,
     tui::{
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
@@ -133,12 +131,12 @@ impl From<TargetType> for DataType {
 fn cast_column(df: &mut DataFrame, name: &str, target_type: TargetType) -> AppResult<()> {
     let series = df.column(name)?.as_materialized_series();
     let casted = Column::from(match target_type {
-        TargetType::Boolean => cast_boolean(series),
-        TargetType::Date => cast_date(series),
-        TargetType::Datetime => cast_datetime(series),
-        TargetType::Float => cast_float(series),
-        TargetType::Int => cast_int(series),
-        TargetType::String => cast_string(series),
+        TargetType::Boolean => series.refine_to_bool(),
+        TargetType::Date => series.refine_to_date(),
+        TargetType::Datetime => series.refine_to_datetime(),
+        TargetType::Float => series.refine_to_float(),
+        TargetType::Int => series.refine_to_int(),
+        TargetType::String => series.refine_to_string(),
     }?);
     df.replace(name, casted)?;
     Ok(())

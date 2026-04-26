@@ -7,11 +7,12 @@ use std::{
 };
 
 use anyhow::anyhow;
+use chrono::{NaiveDate, NaiveDateTime};
 use itertools::{Itertools, izip};
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, SeriesMethods},
-    series::Series,
+    prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, SeriesMethods, TimeUnit},
+    series::{ChunkCompareEq, Series},
 };
 use ratatui::widgets::Cell;
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -27,6 +28,9 @@ pub trait AnyValueExt {
     fn into_multi_line(self) -> String;
     fn into_cell(self, width: usize) -> Cell<'static>;
     fn fuzzy_cmp(self, other: &str) -> bool;
+    fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
+    fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
+    fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
 }
 
 impl AnyValueExt for AnyValue<'_> {
@@ -113,12 +117,166 @@ impl AnyValueExt for AnyValue<'_> {
             _ => self.into_multi_line().has_subsequence(other),
         }
     }
+
+    fn parse_bool(slice: &str) -> Option<AnyValue<'static>> {
+        match slice {
+            "true" => Some(AnyValue::Boolean(true)),
+            "false" => Some(AnyValue::Boolean(false)),
+            _ => None,
+        }
+    }
+
+    fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
+        NaiveDate::parse_from_str(slice, fmt)
+            .map(|date| {
+                const UNIX_EPOCH: NaiveDate = match NaiveDate::from_ymd_opt(1970, 1, 1) {
+                    Some(date) => date,
+                    None => unreachable!(),
+                };
+                AnyValue::Date(date.signed_duration_since(UNIX_EPOCH).num_days() as i32)
+            })
+            .ok()
+    }
+
+    fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
+        NaiveDateTime::parse_from_str(slice, fmt)
+            .map(|date| {
+                AnyValue::DatetimeOwned(
+                    date.and_utc().timestamp_millis(),
+                    TimeUnit::Milliseconds,
+                    None,
+                )
+            })
+            .ok()
+    }
 }
 
 #[derive(Default, Clone)]
 pub struct NumBuffer {
     ryu: ryu::Buffer,
     itoa: itoa::Buffer,
+}
+
+pub trait SeriesExt {
+    fn refine_to_string(&self) -> AppResult<Series>;
+    fn refine_to_int(&self) -> AppResult<Series>;
+    fn refine_to_float(&self) -> AppResult<Series>;
+    fn refine_to_bool(&self) -> AppResult<Series>;
+    fn refine_to_date(&self) -> AppResult<Series>;
+    fn refine_to_datetime(&self) -> AppResult<Series>;
+}
+
+impl SeriesExt for Series {
+    fn refine_to_string(&self) -> AppResult<Series> {
+        let casted = self.cast(&DataType::String)?;
+        if casted.is_null().equal(&self.is_null()).all() {
+            Ok(casted)
+        } else {
+            Err(anyhow!(
+                "Column '{}' cannot be refined to {}",
+                self.name(),
+                DataType::String
+            ))
+        }
+    }
+
+    fn refine_to_int(&self) -> AppResult<Series> {
+        let casted = self.cast(&DataType::Int64)?;
+        if casted.is_null().equal(&self.is_null()).all() {
+            Ok(casted)
+        } else {
+            Err(anyhow!(
+                "Column '{}' cannot be refined to {}",
+                self.name(),
+                DataType::Int64
+            ))
+        }
+    }
+
+    fn refine_to_float(&self) -> AppResult<Series> {
+        let casted = self.cast(&DataType::Float64)?;
+        if casted.is_null().equal(&self.is_null()).all() {
+            Ok(casted)
+        } else {
+            Err(anyhow!(
+                "Column '{}' cannot be refined to {}",
+                self.name(),
+                DataType::Float64
+            ))
+        }
+    }
+
+    fn refine_to_bool(&self) -> AppResult<Series> {
+        self.try_map_all(|val| match val {
+            AnyValue::String(s) => AnyValue::parse_bool(s),
+            AnyValue::StringOwned(s) => AnyValue::parse_bool(s.as_str()),
+            AnyValue::Null => Some(AnyValue::Null),
+            _ => None,
+        })
+        .ok_or(anyhow!(
+            "Column '{}' cannot be refined to {}",
+            self.name(),
+            DataType::Boolean
+        ))
+    }
+
+    fn refine_to_date(&self) -> AppResult<Series> {
+        [
+            "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y %m %d", "%Y%m%d", "%d-%m-%Y", "%d/%m/%Y",
+            "%d.%m.%Y", "%d %m %Y", "%d%m%Y", "%m-%d-%Y", "%m/%d/%Y", "%m.%d.%Y", "%m %d %Y",
+            "%m%d%Y", "%B %d %Y", "%B-%d-%Y", "%Y-%j",
+        ]
+        .into_iter()
+        .find_map(|fmt| {
+            self.try_map_all(|val| match val {
+                AnyValue::String(s) => AnyValue::parse_date(s, fmt),
+                AnyValue::StringOwned(s) => AnyValue::parse_date(s.as_str(), fmt),
+                AnyValue::Null => Some(AnyValue::Null),
+                _ => None,
+            })
+        })
+        .ok_or(anyhow!(
+            "Column '{}' cannot be refined to {}",
+            self.name(),
+            DataType::Date
+        ))
+    }
+
+    fn refine_to_datetime(&self) -> AppResult<Series> {
+        [
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S%.f",
+            "%Y/%m/%d %H:%M:%S",
+            "%Y %m %d %H:%M:%S",
+            "%Y.%m.%d %H:%M:%S",
+            "%d-%m-%Y %H:%M:%S",
+            "%d/%m/%Y %H:%M:%S",
+            "%d %m %Y %H:%M:%S",
+            "%d.%m.%Y %H:%M:%S",
+            "%m-%d-%Y %H:%M:%S",
+            "%m/%d/%Y %H:%M:%S",
+            "%m %d %Y %H:%M:%S",
+            "%m.%d.%Y %H:%M:%S",
+            "%B %d %Y %H:%M:%S",
+            "%B-%d-%Y %H:%M:%S",
+            "%Y%m%dT%H%M%S",
+        ]
+        .into_iter()
+        .find_map(|fmt| {
+            self.try_map_all(|val| match val {
+                AnyValue::String(s) => AnyValue::parse_datetime(s, fmt),
+                AnyValue::StringOwned(s) => AnyValue::parse_datetime(s.as_str(), fmt),
+                AnyValue::Null => Some(AnyValue::Null),
+                _ => None,
+            })
+        })
+        .ok_or(anyhow!(
+            "Column '{}' cannot be refined to {}",
+            self.name(),
+            DataType::Datetime(TimeUnit::Milliseconds, None)
+        ))
+    }
 }
 
 pub trait DataFrameExt {
