@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ffi::OsStr, path::PathBuf};
+use std::{borrow::Cow, convert::Infallible, ffi::OsStr, path::PathBuf, str::FromStr};
 
 use strum_macros::{EnumIter, IntoStaticStr};
 
@@ -32,6 +32,14 @@ impl Resource {
             Resource::File(_) => ResourceType::File,
             Resource::Stdin => ResourceType::Stdin,
         }
+    }
+}
+
+impl FromStr for Resource {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Resource::File(PathBuf::from(s)))
     }
 }
 
