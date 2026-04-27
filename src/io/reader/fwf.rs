@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     fs::read_to_string,
-    io::{self, Cursor, Read},
+    io::{Cursor, Read},
     iter::once,
 };
 
@@ -13,7 +13,7 @@ use crate::{
     AppResult,
     args::Args,
     io::Resource,
-    misc::{iter_ext::ZipItersExt, table_name_generator::TableNameGeneratorExt},
+    misc::{iter_ext::ZipItersExt, stdin::stdin, table_name_generator::TableNameGeneratorExt},
 };
 
 use super::{NamedFrames, ReadToDataFrames};
@@ -73,7 +73,7 @@ impl ReadToDataFrames for FwfToDataFrame {
             Resource::File(path) => read_to_string(path)?,
             Resource::Stdin => {
                 let mut buf = String::new();
-                io::stdin().read_to_string(&mut buf)?;
+                stdin().read_to_string(&mut buf)?;
                 buf
             }
         };
