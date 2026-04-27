@@ -3,7 +3,6 @@ use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use std::io::IsTerminal;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
@@ -44,8 +43,8 @@ fn main() {
 
     // Load multiparts to data frames
     let mut multiparts = IndexMap::<Arc<Schema>, (String, DataFrame)>::new();
-    for path in args.multiparts.iter() {
-        for (name, new_df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
+    for resource in args.multiparts.iter() {
+        for (name, new_df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
             let schema = new_df.schema().clone();
             if let Some((_, df)) = multiparts.get_mut(&schema) {
                 df.vstack_mut_owned(new_df).unwrap_or_graceful_shutdown();
@@ -62,10 +61,10 @@ fn main() {
     }
 
     // Load files to data frames
-    for path in args.files.iter() {
-        for (name, mut df) in try_read_path(&args, path).unwrap_or_graceful_shutdown() {
+    for resource in args.resources.iter() {
+        for (name, mut df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), Resource::File(path.clone()));
+            let name = sql().register(&name, df.clone(), resource.clone());
             name_dfs.push((name, df))
         }
     }
@@ -137,8 +136,10 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     Ok(())
 }
 
-fn try_read_path(args: &Args, path: &PathBuf) -> AppResult<Box<[(String, DataFrame)]>> {
-    let source = Resource::File(path.clone());
-    let reader = args.build_reader(path)?;
-    reader.read_to_data_frames(source.clone())
+fn try_read_path(args: &Args, resource: &Resource) -> AppResult<Box<[(String, DataFrame)]>> {
+    let reader = match resource {
+        Resource::File(path) => args.build_reader(path)?,
+        Resource::Stdin => args.build_reader("")?,
+    };
+    reader.read_to_data_frames(resource.clone())
 }
