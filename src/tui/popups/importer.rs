@@ -15,7 +15,7 @@ pub type Importer = MultiStepOverlay<State>;
 
 #[derive(Debug)]
 pub enum State {
-    PickFormat { picker: SearchPicker<Formats> },
+    PickFormat { picker: SearchPicker<Format> },
     Arrow { arrow: arrow::State },
     Csv { csv: csv::State },
     Excel { excel: excel::State },
@@ -32,34 +32,34 @@ impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { picker } => match picker.selected_item() {
-                Some(Formats::Arrow) => State::Arrow {
+                Some(Format::Arrow) => State::Arrow {
                     arrow: Default::default(),
                 },
-                Some(Formats::Csv) => Self::Csv {
+                Some(Format::Csv) => Self::Csv {
                     csv: Default::default(),
                 },
-                Some(Formats::Excel) => Self::Excel {
+                Some(Format::Excel) => Self::Excel {
                     excel: Default::default(),
                 },
-                Some(Formats::Fwf) => Self::Fwf {
+                Some(Format::Fwf) => Self::Fwf {
                     fwf: Default::default(),
                 },
-                Some(Formats::Json) => Self::Json {
+                Some(Format::Json) => Self::Json {
                     json: Default::default(),
                 },
-                Some(Formats::Jsonl) => Self::JsonL {
+                Some(Format::Jsonl) => Self::JsonL {
                     jsonl: Default::default(),
                 },
-                Some(Formats::Parquet) => Self::Parquet {
+                Some(Format::Parquet) => Self::Parquet {
                     parquet: Default::default(),
                 },
-                Some(Formats::Sqlite) => Self::Sqlite {
+                Some(Format::Sqlite) => Self::Sqlite {
                     sqlite: Default::default(),
                 },
-                Some(Formats::Tsv) => Self::Tsv {
+                Some(Format::Tsv) => Self::Tsv {
                     tsv: Default::default(),
                 },
-                Some(Formats::Logfmt) => Self::Logfmt {
+                Some(Format::Logfmt) => Self::Logfmt {
                     logfmt: Default::default(),
                 },
                 None => State::PickFormat { picker },
@@ -109,13 +109,13 @@ impl OverlayStep for State {
 impl Default for State {
     fn default() -> Self {
         Self::PickFormat {
-            picker: SearchPicker::new(Formats::iter().collect()),
+            picker: SearchPicker::new(Format::iter().collect()),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, IntoStaticStr, EnumIter)]
-pub enum Formats {
+pub enum Format {
     Csv,
     Tsv,
     Parquet,
@@ -128,7 +128,7 @@ pub enum Formats {
     Logfmt,
 }
 
-impl Display for Formats {
+impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", Into::<&str>::into(self))
     }
