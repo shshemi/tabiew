@@ -1,6 +1,10 @@
-use std::{env, fs};
+use std::{env, fs, path::PathBuf};
 
 use clap::CommandFactory;
+
+mod io {
+    include!("src/io/resource.rs");
+}
 
 include!("src/args.rs");
 
