@@ -109,6 +109,8 @@ rstest = "0.26.1"
 clap = { version = "4.5.54", features = ["derive"] }
 clap_mangen = { version = "0.2.33" }
 clap_complete = { version = "4.6.0" }
+strum = "0.28.0"
+strum_macros = "0.28.0"
 
 [profile.release]
 opt-level = 3
