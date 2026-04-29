@@ -8,7 +8,7 @@ use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::io::Resource;
+use tabiew::io::DataSource;
 use tabiew::io::reader::BuildReader;
 use tabiew::misc::config::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
@@ -56,7 +56,7 @@ fn main() {
     for (_, (name, mut df)) in multiparts {
         df.rechunk_mut_par();
         type_infer.update(&mut df);
-        let name = sql().register(&name, df.clone(), Resource::File(name.clone().into()));
+        let name = sql().register(&name, df.clone(), DataSource::File(name.clone().into()));
         name_dfs.push((name, df));
     }
 
@@ -73,11 +73,11 @@ fn main() {
         for (name, mut df) in args
             .build_reader("")
             .unwrap_or_graceful_shutdown()
-            .read_to_data_frames(Resource::Stdin)
+            .read_to_data_frames(DataSource::Stdin)
             .unwrap_or_graceful_shutdown()
         {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), Resource::Stdin);
+            let name = sql().register(&name, df.clone(), DataSource::Stdin);
             name_dfs.push((name, df))
         }
     }
@@ -136,11 +136,11 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     Ok(())
 }
 
-fn try_read_path(args: &Args, resource: &Resource) -> AppResult<Box<[(String, DataFrame)]>> {
+fn try_read_path(args: &Args, resource: &DataSource) -> AppResult<Box<[(String, DataFrame)]>> {
     let reader = match resource {
-        Resource::File(path) => args.build_reader(path)?,
-        Resource::Stdin => args.build_reader("")?,
-        Resource::Url(url) => {
+        DataSource::File(path) => args.build_reader(path)?,
+        DataSource::Stdin => args.build_reader("")?,
+        DataSource::Url(url) => {
             let path_part = url.split(['?', '#']).next().unwrap_or(url);
             args.build_reader(path_part)?
         }

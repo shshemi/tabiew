@@ -10,7 +10,7 @@ use polars::{
 use crate::{
     AppResult,
     args::Args,
-    io::Resource,
+    io::DataSource,
     misc::{download::download_to_temp, stdin::stdin},
 };
 
@@ -26,10 +26,10 @@ impl ExcelToDataFrames {
 }
 
 impl ReadToDataFrames for ExcelToDataFrames {
-    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
         Ok(match input {
             //
-            Resource::File(path) => open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
+            DataSource::File(path) => open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
                 .worksheets()
                 .into_iter()
                 .map(|(name, sheet)| {
@@ -38,7 +38,7 @@ impl ReadToDataFrames for ExcelToDataFrames {
                 })
                 .collect::<AppResult<Vec<_>>>()?
                 .into_boxed_slice(),
-            Resource::Stdin => {
+            DataSource::Stdin => {
                 //
                 open_workbook_auto_from_rs(stdin())?
                     .worksheets()
@@ -50,7 +50,7 @@ impl ReadToDataFrames for ExcelToDataFrames {
                     .collect::<AppResult<Vec<_>>>()?
                     .into_boxed_slice()
             }
-            Resource::Url(url) => {
+            DataSource::Url(url) => {
                 let temp = download_to_temp(&url)?;
                 open_workbook_auto_from_rs(Cursor::new(std::fs::read(temp.path())?))?
                     .worksheets()

@@ -11,7 +11,7 @@ use tempfile::NamedTempFile;
 use crate::{
     AppResult,
     args::Args,
-    io::Resource,
+    io::DataSource,
     misc::{download::download_to_temp, stdin::stdin},
 };
 
@@ -35,17 +35,17 @@ impl SqliteToDataFrames {
 }
 
 impl ReadToDataFrames for SqliteToDataFrames {
-    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
         match input {
-            Resource::File(path) => path_to_name_frames(path, self.key.as_deref()),
-            Resource::Stdin => {
+            DataSource::File(path) => path_to_name_frames(path, self.key.as_deref()),
+            DataSource::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf)?;
                 std::fs::write(temp_file.path(), buf)?;
                 path_to_name_frames(temp_file.path(), self.key.as_deref())
             }
-            Resource::Url(url) => {
+            DataSource::Url(url) => {
                 let temp = download_to_temp(&url)?;
                 path_to_name_frames(temp.path(), self.key.as_deref())
             }
