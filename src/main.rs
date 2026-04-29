@@ -140,6 +140,10 @@ fn try_read_path(args: &Args, resource: &Resource) -> AppResult<Box<[(String, Da
     let reader = match resource {
         Resource::File(path) => args.build_reader(path)?,
         Resource::Stdin => args.build_reader("")?,
+        Resource::Url(url) => {
+            let path_part = url.split(['?', '#']).next().unwrap_or(url);
+            args.build_reader(path_part)?
+        }
     };
     reader.read_to_data_frames(resource.clone())
 }
