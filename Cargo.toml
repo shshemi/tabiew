@@ -101,6 +101,7 @@ ryu = "1.0.23"
 itoa = "1.0.17"
 logfmt-zerocopy = "0.1.3"
 indexmap = "2.14.0"
+ureq = "2"
 
 [dev-dependencies]
 rstest = "0.26.1"

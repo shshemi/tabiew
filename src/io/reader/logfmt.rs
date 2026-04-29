@@ -14,7 +14,7 @@ use crate::{
         Resource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::stdin::stdin,
+    misc::{download::download_to_temp, stdin::stdin},
 };
 
 #[derive(Debug, Default)]
@@ -34,6 +34,10 @@ impl ReadToDataFrames for LogfmtToDataFrame {
                 let mut s = String::new();
                 stdin().read_to_string(&mut s)?;
                 s
+            }
+            Resource::Url(url) => {
+                let temp = download_to_temp(url)?;
+                fs::read_to_string(temp.path())?
             }
         };
         let row_count = contents.lines().count();

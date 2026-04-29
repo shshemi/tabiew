@@ -14,7 +14,7 @@ use crate::{
         Resource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::{stdin::stdin, type_ext::ToAscii},
+    misc::{download::download_to_temp, stdin::stdin, type_ext::ToAscii},
 };
 
 pub struct CsvToDataFrame {
@@ -93,6 +93,10 @@ impl ReadToDataFrames for CsvToDataFrame {
         let df = match &input {
             Resource::File(path) => self.try_into_frame(File::open(path)?),
             Resource::Stdin => self.try_into_frame(stdin()),
+            Resource::Url(url) => {
+                let temp = download_to_temp(url)?;
+                self.try_into_frame(File::open(temp.path())?)
+            }
         }?;
         Ok([(input.table_name(), df)].into())
     }

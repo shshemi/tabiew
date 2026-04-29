@@ -9,7 +9,7 @@ use crate::{
         Resource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::stdin::stdin,
+    misc::{download::download_to_temp, stdin::stdin},
 };
 
 pub struct JsonToDataFrame {
@@ -45,6 +45,14 @@ impl ReadToDataFrames for JsonToDataFrame {
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
+            Resource::Url(url) => {
+                let temp = download_to_temp(url)?;
+                JsonReader::new(File::open(temp.path())?)
+                    .set_rechunk(true)
+                    .infer_schema_len(None)
+                    .with_ignore_errors(self.ignore_errors)
+                    .finish()?
+            }
         };
         Ok([(input.table_name(), df)].into())
     }

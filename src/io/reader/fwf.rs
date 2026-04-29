@@ -13,7 +13,10 @@ use crate::{
     AppResult,
     args::Args,
     io::Resource,
-    misc::{iter_ext::ZipItersExt, stdin::stdin, table_name_generator::TableNameGeneratorExt},
+    misc::{
+        download::download_to_temp, iter_ext::ZipItersExt, stdin::stdin,
+        table_name_generator::TableNameGeneratorExt,
+    },
 };
 
 use super::{NamedFrames, ReadToDataFrames};
@@ -75,6 +78,10 @@ impl ReadToDataFrames for FwfToDataFrame {
                 let mut buf = String::new();
                 stdin().read_to_string(&mut buf)?;
                 buf
+            }
+            Resource::Url(url) => {
+                let temp = download_to_temp(url)?;
+                read_to_string(temp.path())?
             }
         };
 

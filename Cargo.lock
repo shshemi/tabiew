@@ -3520,11 +3520,7 @@ dependencies = [
 name = "rustls"
 version = "0.23.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "758025cb5fccfd3bc2fd74708fd4682be41d99e5dff73c377c0646c6012c73a4"
-dependencies = [
- "once_cell",
- "ring",
- "rustls-pki-types",
+checksum = "758025cb5fccfd3bc2fd74708fd4682be41d99e5dff73c377c0646c6012c73a4" dependencies = [ "log", "once_cell", "ring", "rustls-pki-types",  
  "rustls-webpki",
  "subtle",
  "zeroize",
@@ -4061,11 +4057,7 @@ dependencies = [
  "tempfile",
  "toml",
  "tui-input",
- "tui-scrollview",
- "unicode-width",
-]
-
-[[package]]
+ "tui-scrollview", "unicode-width", "ureq", ] [[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4534,11 +4526,7 @@ name = "unty"
 version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d49784317cd0d1ee7ec5c716dd598ec5b4483ea832a2dced265471cc0f690ae"
-
-[[package]]
-name = "url"
-version = "2.5.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+ [[package]] name = "ureq" version = "2.12.1" source = "registry+https://github.com/rust-lang/crates.io-index" checksum = "02d1a66277ed75f640d608235660df48c8e3c19f3b4edb6a263315626cc3c01d" dependencies = [ "base64", "flate2", "log", "once_cell", "rustls", "rustls-pki-types", "url", "webpki-roots 0.26.11", ] [[package]] name = "url" version = "2.5.8" source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed"
 dependencies = [
  "form_urlencoded",
@@ -4779,11 +4767,7 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "wezterm-bidi"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+ [[package]] name = "webpki-roots" version = "0.26.11" source = "registry+https://github.com/rust-lang/crates.io-index" checksum = "521bc38abb08001b01866da9f51eb7c5d647a19260e00054a8c7fd5f9e57f7a9" dependencies = [ "webpki-roots 1.0.7", ] [[package]] name = "webpki-roots" version = "1.0.7" source = "registry+https://github.com/rust-lang/crates.io-index" checksum = "52f5ee44c96cf55f1b349600768e3ece3a8f26010c05265ab73f945bb1a2eb9d" dependencies = [ "rustls-pki-types", ] [[package]] name = "wezterm-bidi" version = "0.2.3" source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c0a6e355560527dd2d1cf7890652f4f09bb3433b6aadade4c9b5ed76de5f3ec"
 dependencies = [
  "log",
