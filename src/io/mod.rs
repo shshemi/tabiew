@@ -1,4 +1,4 @@
+mod data_source;
 pub mod reader;
-mod resource;
 pub mod writer;
-pub use resource::{Resource, ResourceType, ResourceTypeIter};
+pub use data_source::{DataSource, DataSourceType, DataSourceTypeIter};

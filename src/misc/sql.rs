@@ -13,7 +13,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::{io::Resource, misc::table_name_generator::TableNameGeneratorExt};
+use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
 
 use super::polars_ext::AnyValueExt;
 use super::type_ext::UnwrapOrGracefulShutdown;
@@ -171,7 +171,7 @@ impl TableInfo {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Origin {
-    Resource(Resource),
+    Resource(DataSource),
     User,
 }
 
@@ -184,8 +184,8 @@ impl Origin {
     }
 }
 
-impl From<Resource> for Origin {
-    fn from(value: Resource) -> Self {
+impl From<DataSource> for Origin {
+    fn from(value: DataSource) -> Self {
         Self::Resource(value)
     }
 }

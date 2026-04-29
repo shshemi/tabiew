@@ -1,5 +1,5 @@
 use crate::{
-    io::{Resource, reader::SqliteToDataFrames},
+    io::{DataSource, reader::SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
@@ -22,7 +22,7 @@ pub enum State {
         picker: PathPicker,
     },
     PickPassword {
-        source: Resource,
+        source: DataSource,
         picker: TextPicker,
     },
 }
@@ -32,7 +32,7 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(ImportSource::Stdin) => State::PickPassword {
-                    source: Resource::Stdin,
+                    source: DataSource::Stdin,
                     picker: TextPicker::default()
                         .with_title("Password")
                         .with_hint("Leave empty for no password"),
@@ -43,7 +43,7 @@ impl OverlayStep for State {
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => State::PickPassword {
-                source: Resource::File(picker.path()),
+                source: DataSource::File(picker.path()),
                 picker: TextPicker::default()
                     .with_title("Password")
                     .with_hint("Leave empty for no password"),

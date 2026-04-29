@@ -11,7 +11,7 @@ use crate::{
     AppResult,
     args::Args,
     io::{
-        Resource,
+        DataSource,
         reader::{NamedFrames, ReadToDataFrames},
     },
     misc::{download::download_to_temp, stdin::stdin},
@@ -27,15 +27,15 @@ impl LogfmtToDataFrame {
 }
 
 impl ReadToDataFrames for LogfmtToDataFrame {
-    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
         let contents = match &input {
-            Resource::File(path_buf) => fs::read_to_string(path_buf)?,
-            Resource::Stdin => {
+            DataSource::File(path_buf) => fs::read_to_string(path_buf)?,
+            DataSource::Stdin => {
                 let mut s = String::new();
                 stdin().read_to_string(&mut s)?;
                 s
             }
-            Resource::Url(url) => {
+            DataSource::Url(url) => {
                 let temp = download_to_temp(url)?;
                 fs::read_to_string(temp.path())?
             }

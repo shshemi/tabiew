@@ -1,5 +1,5 @@
 use crate::{
-    io::{Resource, reader::LogfmtToDataFrame},
+    io::{DataSource, reader::LogfmtToDataFrame},
     tui::popups::{
         importers::{
             dismiss_overlay_and_load_data_frame,
@@ -22,7 +22,7 @@ impl OverlayStep for State {
             State::PickSource { picker } => match picker.value() {
                 Some(ImportSource::Stdin) => {
                     dismiss_overlay_and_load_data_frame(
-                        Resource::Stdin,
+                        DataSource::Stdin,
                         LogfmtToDataFrame::default(),
                     );
                     State::PickSource { picker }
@@ -34,7 +34,7 @@ impl OverlayStep for State {
             },
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    Resource::File(picker.path()),
+                    DataSource::File(picker.path()),
                     LogfmtToDataFrame::default(),
                 );
                 Default::default()

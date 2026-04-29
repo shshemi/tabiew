@@ -6,7 +6,7 @@ use crate::{
     AppResult,
     args::Args,
     io::{
-        Resource,
+        DataSource,
         reader::{NamedFrames, ReadToDataFrames},
     },
     misc::{download::download_to_temp, stdin::stdin},
@@ -33,19 +33,19 @@ impl Default for JsonToDataFrame {
 }
 
 impl ReadToDataFrames for JsonToDataFrame {
-    fn read_to_data_frames(&self, input: Resource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
         let df = match &input {
-            Resource::File(path) => JsonReader::new(File::open(path)?)
+            DataSource::File(path) => JsonReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            Resource::Stdin => JsonReader::new(stdin())
+            DataSource::Stdin => JsonReader::new(stdin())
                 .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .finish()?,
-            Resource::Url(url) => {
+            DataSource::Url(url) => {
                 let temp = download_to_temp(url)?;
                 JsonReader::new(File::open(temp.path())?)
                     .set_rechunk(true)

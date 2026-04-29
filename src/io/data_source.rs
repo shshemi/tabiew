@@ -9,22 +9,22 @@ use std::{
 use strum_macros::{EnumIter, IntoStaticStr};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Resource {
+pub enum DataSource {
     File(PathBuf),
     Stdin,
     Url(String),
 }
 
-impl Resource {
+impl DataSource {
     pub fn table_name(&self) -> String {
         match self {
-            Resource::File(path_buf) => path_buf
+            DataSource::File(path_buf) => path_buf
                 .file_stem()
                 .map(OsStr::to_string_lossy)
                 .unwrap_or("unknown".into())
                 .into_owned(),
-            Resource::Stdin => String::from("Stdin"),
-            Resource::Url(url) => Path::new(
+            DataSource::Stdin => String::from("Stdin"),
+            DataSource::Url(url) => Path::new(
                 url.split(['?', '#'])
                     .next()
                     .unwrap_or(url)
@@ -40,35 +40,37 @@ impl Resource {
 
     pub fn display_path(&self) -> Cow<'_, str> {
         match self {
-            Resource::File(path_buf) => path_buf.file_name().unwrap_or_default().to_string_lossy(),
-            Resource::Stdin => Cow::Borrowed("Stdin"),
-            Resource::Url(url) => Cow::Borrowed(url),
+            DataSource::File(path_buf) => {
+                path_buf.file_name().unwrap_or_default().to_string_lossy()
+            }
+            DataSource::Stdin => Cow::Borrowed("Stdin"),
+            DataSource::Url(url) => Cow::Borrowed(url),
         }
     }
 
-    pub fn resource_type(&self) -> ResourceType {
+    pub fn resource_type(&self) -> DataSourceType {
         match self {
-            Resource::File(_) => ResourceType::File,
-            Resource::Stdin => ResourceType::Stdin,
-            Resource::Url(_) => ResourceType::Url,
+            DataSource::File(_) => DataSourceType::File,
+            DataSource::Stdin => DataSourceType::Stdin,
+            DataSource::Url(_) => DataSourceType::Url,
         }
     }
 }
 
-impl FromStr for Resource {
+impl FromStr for DataSource {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with("http://") || s.starts_with("https://") {
-            Ok(Resource::Url(s.to_owned()))
+            Ok(DataSource::Url(s.to_owned()))
         } else {
-            Ok(Resource::File(PathBuf::from(s)))
+            Ok(DataSource::File(PathBuf::from(s)))
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, IntoStaticStr, EnumIter)]
-pub enum ResourceType {
+pub enum DataSourceType {
     File,
     Stdin,
     Url,
