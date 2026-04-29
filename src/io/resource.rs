@@ -1,4 +1,10 @@
-use std::{borrow::Cow, convert::Infallible, ffi::OsStr, path::PathBuf, str::FromStr};
+use std::{
+    borrow::Cow,
+    convert::Infallible,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use strum_macros::{EnumIter, IntoStaticStr};
 
@@ -6,6 +12,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 pub enum Resource {
     File(PathBuf),
     Stdin,
+    Url(String),
 }
 
 impl Resource {
@@ -17,6 +24,17 @@ impl Resource {
                 .unwrap_or("unknown".into())
                 .into_owned(),
             Resource::Stdin => String::from("Stdin"),
+            Resource::Url(url) => Path::new(
+                url.split(['?', '#'])
+                    .next()
+                    .unwrap_or(url)
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or(""),
+            )
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "url".into()),
         }
     }
 
@@ -24,6 +42,7 @@ impl Resource {
         match self {
             Resource::File(path_buf) => path_buf.file_name().unwrap_or_default().to_string_lossy(),
             Resource::Stdin => Cow::Borrowed("Stdin"),
+            Resource::Url(url) => Cow::Borrowed(url),
         }
     }
 
@@ -31,6 +50,7 @@ impl Resource {
         match self {
             Resource::File(_) => ResourceType::File,
             Resource::Stdin => ResourceType::Stdin,
+            Resource::Url(_) => ResourceType::Url,
         }
     }
 }
@@ -39,7 +59,11 @@ impl FromStr for Resource {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Resource::File(PathBuf::from(s)))
+        if s.starts_with("http://") || s.starts_with("https://") {
+            Ok(Resource::Url(s.to_owned()))
+        } else {
+            Ok(Resource::File(PathBuf::from(s)))
+        }
     }
 }
 
@@ -47,4 +71,5 @@ impl FromStr for Resource {
 pub enum ResourceType {
     File,
     Stdin,
+    Url,
 }
