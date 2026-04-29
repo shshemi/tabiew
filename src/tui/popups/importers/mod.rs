@@ -8,6 +8,7 @@ pub mod arrow;
 pub mod csv;
 pub mod excel;
 pub mod fwf;
+mod import_source_picker;
 pub mod json;
 pub mod jsonl;
 pub mod logfmt;
