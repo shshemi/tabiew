@@ -1,6 +1,7 @@
 pub mod column_caster;
 pub mod command_palette;
 pub mod data_frame_info;
+pub mod download_notif;
 pub mod export_target_picker;
 pub mod exporter;
 pub mod exporters;
