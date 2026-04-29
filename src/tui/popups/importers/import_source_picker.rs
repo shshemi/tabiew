@@ -1,19 +1,41 @@
 use std::fmt::Display;
 
 use strum::IntoEnumIterator;
+use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    io::ResourceType,
+    io::Resource,
     tui::{component::Component, pickers::list_picker::ListPicker},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr, EnumIter)]
+pub enum ImportSource {
+    File,
+    Stdin,
+}
+
+impl Display for ImportSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", Into::<&str>::into(self))
+    }
+}
+
+impl From<&Resource> for ImportSource {
+    fn from(r: &Resource) -> Self {
+        match r {
+            Resource::Stdin => ImportSource::Stdin,
+            Resource::File(_) | Resource::Url(_) => ImportSource::File,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ImportSourcePicker {
-    list_picker: ListPicker<ResourceType>,
+    list_picker: ListPicker<ImportSource>,
 }
 
 impl ImportSourcePicker {
-    pub fn value(&self) -> Option<&ResourceType> {
+    pub fn value(&self) -> Option<&ImportSource> {
         self.list_picker.selected_item()
     }
 }
@@ -36,14 +58,8 @@ impl Component for ImportSourcePicker {
 impl Default for ImportSourcePicker {
     fn default() -> Self {
         Self {
-            list_picker: ListPicker::new(ResourceType::iter().to_owned().collect())
+            list_picker: ListPicker::new(ImportSource::iter().collect())
                 .with_title("Import Source"),
         }
-    }
-}
-
-impl Display for ResourceType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
     }
 }
