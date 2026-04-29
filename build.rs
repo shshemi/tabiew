@@ -3,7 +3,7 @@ use std::{env, fs, path::PathBuf};
 use clap::CommandFactory;
 
 mod io {
-    include!("src/io/resource.rs");
+    include!("src/io/data_source.rs");
 }
 
 include!("src/args.rs");
