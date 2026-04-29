@@ -1,8 +1,12 @@
 use crate::{
-    io::{Resource, ResourceType, reader::LogfmtToDataFrame},
+    io::{Resource, reader::LogfmtToDataFrame},
     tui::popups::{
-        import_source_picker::ImportSourcePicker, importers::dismiss_overlay_and_load_data_frame,
-        multi_step_overlay::OverlayStep, path_picker::PathPicker,
+        importers::{
+            dismiss_overlay_and_load_data_frame,
+            import_source_picker::{ImportSource, ImportSourcePicker},
+        },
+        multi_step_overlay::OverlayStep,
+        path_picker::PathPicker,
     },
 };
 
@@ -16,14 +20,14 @@ impl OverlayStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(ResourceType::Stdin) => {
+                Some(ImportSource::Stdin) => {
                     dismiss_overlay_and_load_data_frame(
                         Resource::Stdin,
                         LogfmtToDataFrame::default(),
                     );
                     State::PickSource { picker }
                 }
-                Some(ResourceType::File) => State::PickPath {
+                Some(ImportSource::File) => State::PickPath {
                     picker: Default::default(),
                 },
                 None => State::PickSource { picker },
