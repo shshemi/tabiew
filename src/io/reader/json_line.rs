@@ -12,7 +12,7 @@ use crate::{
         Resource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::stdin::stdin,
+    misc::{download::download_to_temp, stdin::stdin},
 };
 
 pub struct JsonLineToDataFrame {
@@ -50,6 +50,15 @@ impl ReadToDataFrames for JsonLineToDataFrame {
                 .with_ignore_errors(self.ignore_errors)
                 .set_rechunk(true)
                 .finish()?,
+            Resource::Url(url) => {
+                let temp = download_to_temp(url)?;
+                JsonReader::new(File::open(temp.path())?)
+                    .with_json_format(JsonFormat::JsonLines)
+                    .infer_schema_len(None)
+                    .with_ignore_errors(self.ignore_errors)
+                    .set_rechunk(true)
+                    .finish()?
+            }
         };
         Ok([(input.table_name(), df)].into())
     }

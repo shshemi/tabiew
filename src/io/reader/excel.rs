@@ -7,7 +7,12 @@ use polars::{
     prelude::{AnyValue, Column},
 };
 
-use crate::{AppResult, args::Args, io::Resource, misc::stdin::stdin};
+use crate::{
+    AppResult,
+    args::Args,
+    io::Resource,
+    misc::{download::download_to_temp, stdin::stdin},
+};
 
 use super::{NamedFrames, ReadToDataFrames};
 
@@ -36,6 +41,18 @@ impl ReadToDataFrames for ExcelToDataFrames {
             Resource::Stdin => {
                 //
                 open_workbook_auto_from_rs(stdin())?
+                    .worksheets()
+                    .into_iter()
+                    .map(|(name, sheet)| {
+                        let df = sheet_to_data_frame(sheet)?;
+                        Ok((name, df))
+                    })
+                    .collect::<AppResult<Vec<_>>>()?
+                    .into_boxed_slice()
+            }
+            Resource::Url(url) => {
+                let temp = download_to_temp(&url)?;
+                open_workbook_auto_from_rs(Cursor::new(std::fs::read(temp.path())?))?
                     .worksheets()
                     .into_iter()
                     .map(|(name, sheet)| {

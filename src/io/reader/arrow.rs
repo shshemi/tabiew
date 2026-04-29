@@ -8,7 +8,7 @@ use crate::{
         Resource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::stdin::stdin,
+    misc::{download::download_to_temp, stdin::stdin},
 };
 
 pub struct ArrowIpcToDataFrame;
@@ -20,6 +20,12 @@ impl ReadToDataFrames for ArrowIpcToDataFrame {
                 .set_rechunk(true)
                 .finish()?,
             Resource::Stdin => IpcReader::new(stdin()).set_rechunk(true).finish()?,
+            Resource::Url(url) => {
+                let temp = download_to_temp(url)?;
+                IpcReader::new(File::open(temp.path())?)
+                    .set_rechunk(true)
+                    .finish()?
+            }
         };
         Ok([(input.table_name(), df)].into())
     }
