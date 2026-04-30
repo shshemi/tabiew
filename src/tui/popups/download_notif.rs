@@ -10,6 +10,12 @@ pub struct DownloadNotification {
     title: String,
 }
 
+impl DownloadNotification {
+    pub fn new(title: String, dl: BackgroundDownloader) -> Self {
+        DownloadNotification { title, dl }
+    }
+}
+
 impl Component for DownloadNotification {
     fn render(
         &mut self,
@@ -17,10 +23,12 @@ impl Component for DownloadNotification {
         buf: &mut ratatui::prelude::Buffer,
         _: crate::tui::component::FocusState,
     ) {
-        Gauge::default()
+        let mut gauge = Gauge::default()
             .block(Block::default().title(self.title.as_str()).into_widget())
-            .gauge_style(theme().text())
-            .ratio(self.dl.info().ratio().unwrap_or(1.0))
-            .render(area, buf);
+            .gauge_style(theme().block());
+        if let Some(ratio) = self.dl.info().ratio() {
+            gauge = gauge.ratio(ratio)
+        }
+        gauge.render(area, buf);
     }
 }

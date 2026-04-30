@@ -104,6 +104,15 @@ impl DownloadInfo {
     pub fn is_complete(&self) -> bool {
         self.progress() == self.total()
     }
+
+    pub fn ratio(&self) -> Option<f64> {
+        let tt = self.total();
+        (tt == 0).then_some({
+            let pg = self.progress() as f64;
+            let tt = tt as f64;
+            pg / tt
+        })
+    }
 }
 
 pub fn download_to_temp(url: &str) -> AppResult<NamedTempFile> {
