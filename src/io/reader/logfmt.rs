@@ -11,10 +11,10 @@ use crate::{
     AppResult,
     args::Args,
     io::{
-        DataSource,
+        reader::ReaderSource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::{download::download_to_temp, stdin::stdin},
+    misc::stdin::stdin,
 };
 
 #[derive(Debug, Default)]
@@ -27,17 +27,13 @@ impl LogfmtToDataFrame {
 }
 
 impl ReadToDataFrames for LogfmtToDataFrame {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let contents = match &input {
-            DataSource::File(path_buf) => fs::read_to_string(path_buf)?,
-            DataSource::Stdin => {
+            ReaderSource::File(path_buf) => fs::read_to_string(path_buf)?,
+            ReaderSource::Stdin => {
                 let mut s = String::new();
                 stdin().read_to_string(&mut s)?;
                 s
-            }
-            DataSource::Url(url) => {
-                let temp = download_to_temp(url)?;
-                fs::read_to_string(temp.path())?
             }
         };
         let row_count = contents.lines().count();

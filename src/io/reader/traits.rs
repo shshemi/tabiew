@@ -6,7 +6,7 @@ use crate::{
     AppResult,
     args::{Args, Format},
     io::{
-        DataSource,
+        reader::ReaderSource,
         reader::{
             ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
             JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame,
@@ -19,7 +19,7 @@ pub type NamedFrame = (String, DataFrame);
 pub type NamedFrames = Box<[NamedFrame]>;
 
 pub trait ReadToDataFrames {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames>;
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames>;
 }
 
 pub trait BuildReader {

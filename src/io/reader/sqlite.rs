@@ -8,12 +8,7 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::{
-    AppResult,
-    args::Args,
-    io::DataSource,
-    misc::{download::download_to_temp, stdin::stdin},
-};
+use crate::{AppResult, args::Args, io::reader::ReaderSource, misc::stdin::stdin};
 
 use super::{NamedFrames, ReadToDataFrames};
 
@@ -35,19 +30,15 @@ impl SqliteToDataFrames {
 }
 
 impl ReadToDataFrames for SqliteToDataFrames {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         match input {
-            DataSource::File(path) => path_to_name_frames(path, self.key.as_deref()),
-            DataSource::Stdin => {
+            ReaderSource::File(path) => path_to_name_frames(path, self.key.as_deref()),
+            ReaderSource::Stdin => {
                 let temp_file = NamedTempFile::new()?;
                 let mut buf = Vec::new();
                 stdin().read_to_end(&mut buf)?;
                 std::fs::write(temp_file.path(), buf)?;
                 path_to_name_frames(temp_file.path(), self.key.as_deref())
-            }
-            DataSource::Url(url) => {
-                let temp = download_to_temp(&url)?;
-                path_to_name_frames(temp.path(), self.key.as_deref())
             }
         }
     }

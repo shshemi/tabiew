@@ -12,11 +12,8 @@ use polars::{frame::DataFrame, prelude::Column};
 use crate::{
     AppResult,
     args::Args,
-    io::DataSource,
-    misc::{
-        download::download_to_temp, iter_ext::ZipItersExt, stdin::stdin,
-        table_name_generator::TableNameGeneratorExt,
-    },
+    io::reader::ReaderSource,
+    misc::{iter_ext::ZipItersExt, stdin::stdin, table_name_generator::TableNameGeneratorExt},
 };
 
 use super::{NamedFrames, ReadToDataFrames};
@@ -71,17 +68,13 @@ impl Default for FwfToDataFrame {
 }
 
 impl ReadToDataFrames for FwfToDataFrame {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let file_content = match &input {
-            DataSource::File(path) => read_to_string(path)?,
-            DataSource::Stdin => {
+            ReaderSource::File(path) => read_to_string(path)?,
+            ReaderSource::Stdin => {
                 let mut buf = String::new();
                 stdin().read_to_string(&mut buf)?;
                 buf
-            }
-            DataSource::Url(url) => {
-                let temp = download_to_temp(url)?;
-                read_to_string(temp.path())?
             }
         };
 

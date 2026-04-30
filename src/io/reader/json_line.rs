@@ -9,10 +9,10 @@ use crate::{
     AppResult,
     args::Args,
     io::{
-        DataSource,
+        reader::ReaderSource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::{download::download_to_temp, stdin::stdin},
+    misc::stdin::stdin,
 };
 
 pub struct JsonLineToDataFrame {
@@ -36,29 +36,20 @@ impl Default for JsonLineToDataFrame {
 }
 
 impl ReadToDataFrames for JsonLineToDataFrame {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let df = match &input {
-            DataSource::File(path) => JsonReader::new(File::open(path)?)
+            ReaderSource::File(path) => JsonReader::new(File::open(path)?)
                 .with_json_format(JsonFormat::JsonLines)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .set_rechunk(true)
                 .finish()?,
-            DataSource::Stdin => JsonReader::new(stdin())
+            ReaderSource::Stdin => JsonReader::new(stdin())
                 .with_json_format(JsonFormat::JsonLines)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
                 .set_rechunk(true)
                 .finish()?,
-            DataSource::Url(url) => {
-                let temp = download_to_temp(url)?;
-                JsonReader::new(File::open(temp.path())?)
-                    .with_json_format(JsonFormat::JsonLines)
-                    .infer_schema_len(None)
-                    .with_ignore_errors(self.ignore_errors)
-                    .set_rechunk(true)
-                    .finish()?
-            }
         };
         Ok([(input.table_name(), df)].into())
     }
