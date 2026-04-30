@@ -1,4 +1,5 @@
 use crate::misc::config::config;
+use crate::misc::download::BackgroundDownloader;
 use crate::tui::Pane;
 use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
@@ -17,6 +18,7 @@ use crate::{
     },
 };
 use crossterm::event::KeyCode;
+use itertools::Itertools;
 use ratatui::layout::{Constraint, Direction, Flex, Layout, Rect};
 
 pub struct App {
@@ -72,6 +74,13 @@ impl App {
                 .map(Table::data_frame)
                 .cloned(),
         )));
+    }
+
+    fn add_download(&mut self, url: &str) {
+        self.dls.push(DownloadNotification::new(
+            url.to_owned(),
+            BackgroundDownloader::new(url.to_owned()),
+        ));
     }
 
     fn reload_app_config(&mut self) {
@@ -170,6 +179,7 @@ impl Component for App {
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
+            Message::AppDownloadTable(url) => self.add_download(url),
             _ => (),
         };
         match (self.overlay.as_mut(), self.schema.as_mut()) {
@@ -201,6 +211,16 @@ impl Component for App {
         {
             self.toast.take();
         }
+        self.dls
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, dl)| dl.is_done().then_some(idx))
+            .collect_vec()
+            .into_iter()
+            .rev()
+            .for_each(|idx| {
+                self.dls.remove(idx);
+            });
         self.tabs.tick();
     }
 }
