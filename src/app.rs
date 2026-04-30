@@ -1,5 +1,6 @@
 use crate::misc::config::config;
 use crate::tui::Pane;
+use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
@@ -16,12 +17,14 @@ use crate::{
     },
 };
 use crossterm::event::KeyCode;
+use ratatui::layout::{Constraint, Direction, Flex, Layout, Rect};
 
 pub struct App {
     tabs: Tabs,
     overlay: Option<Overlay>,
     schema: Option<Schema>,
     toast: Option<Toast>,
+    dls: Vec<DownloadNotification>,
     running: bool,
 }
 
@@ -33,6 +36,7 @@ impl App {
             schema: None,
             toast: None,
             running: true,
+            dls: Vec::new(),
         }
     }
 
@@ -115,6 +119,17 @@ impl Component for App {
             (None, None) => {
                 self.tabs.render(area, buf, FocusState::Focused);
             }
+        }
+
+        let areas = Layout::new(
+            Direction::Vertical,
+            self.dls.iter().map(|_| Constraint::Length(3)),
+        )
+        .flex(Flex::End)
+        .split(right_notif_bar(area));
+
+        for (dl, area) in self.dls.iter_mut().zip(areas.iter()) {
+            dl.render(*area, buf, FocusState::NotFocused);
         }
 
         if let Some(toast) = self.toast.as_mut() {
@@ -210,5 +225,18 @@ impl Overlay {
             Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
         }
+    }
+}
+
+fn right_notif_bar(area: Rect) -> Rect {
+    Rect {
+        x: area.width.saturating_sub(if config().show_table_borders() {
+            41
+        } else {
+            40
+        }),
+        y: 1,
+        width: 40,
+        height: area.height.saturating_sub(2),
     }
 }
