@@ -1,5 +1,5 @@
 use crate::{
-    io::{DataSource, reader::ArrowIpcToDataFrame},
+    io::{reader::ArrowIpcToDataFrame, reader::ReaderSource},
     tui::popups::{
         importers::{
             dismiss_overlay_and_load_data_frame,
@@ -21,7 +21,7 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(ImportSource::Stdin) => {
-                    dismiss_overlay_and_load_data_frame(DataSource::Stdin, ArrowIpcToDataFrame);
+                    dismiss_overlay_and_load_data_frame(ReaderSource::Stdin, ArrowIpcToDataFrame);
                     State::PickSource { picker }
                 }
                 Some(ImportSource::File) => State::PickImportPath {
@@ -31,7 +31,7 @@ impl OverlayStep for State {
             },
             State::PickImportPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
-                    DataSource::File(picker.path()),
+                    ReaderSource::File(picker.path()),
                     ArrowIpcToDataFrame,
                 );
                 Default::default()

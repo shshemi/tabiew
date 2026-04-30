@@ -1,5 +1,5 @@
 use crate::{
-    io::{DataSource, reader::FwfToDataFrame},
+    io::{reader::FwfToDataFrame, reader::ReaderSource},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
@@ -24,25 +24,25 @@ pub enum State {
         picker: PathPicker,
     },
     PickWidths {
-        source: DataSource,
+        source: ReaderSource,
         picker: TextPicker,
     },
     PickHeader {
         widths: Vec<usize>,
-        source: DataSource,
+        source: ReaderSource,
         picker: YesNoPicker,
     },
     PickSeparatorLength {
         has_header: bool,
         widths: Vec<usize>,
-        source: DataSource,
+        source: ReaderSource,
         picker: TextPicker,
     },
     PickFlexibleWidth {
         separator_length: usize,
         has_header: bool,
         widths: Vec<usize>,
-        source: DataSource,
+        source: ReaderSource,
         picker: YesNoPicker,
     },
 }
@@ -55,7 +55,7 @@ impl OverlayStep for State {
                     picker: PathPicker::default(),
                 },
                 Some(ImportSource::Stdin) => State::PickWidths {
-                    source: DataSource::Stdin,
+                    source: ReaderSource::Stdin,
                     picker: TextPicker::default()
                         .with_input_type(InputType::MultiNumeric)
                         .with_title("Widths")
@@ -64,7 +64,7 @@ impl OverlayStep for State {
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => State::PickWidths {
-                source: DataSource::File(picker.path()),
+                source: ReaderSource::File(picker.path()),
                 picker: TextPicker::default()
                     .with_input_type(InputType::MultiNumeric)
                     .with_title("Widths")
