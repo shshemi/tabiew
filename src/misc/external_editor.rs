@@ -7,7 +7,7 @@ use crate::{
     AppResult,
     handler::event::{disable_event_read, enable_event_read},
     io::{
-        DataSource,
+        reader::ReaderSource,
         reader::{CsvToDataFrame, ReadToDataFrames},
         writer::{Destination, WriteToCsv, WriteToFile},
     },
@@ -40,7 +40,7 @@ pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
             .with_no_header(false)
             .with_quote_char('"')
             .with_separator(',')
-            .read_to_data_frames(DataSource::File(tempfile.path().to_owned()))?
+            .read_to_data_frames(ReaderSource::File(tempfile.path().to_owned()))?
             .into_iter()
             .next()
             .map(|(_, df)| df)
