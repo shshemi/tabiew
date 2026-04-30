@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    io::DataSource,
+    io::reader::ReaderSource,
     tui::{component::Component, pickers::list_picker::ListPicker},
 };
 
@@ -20,11 +20,11 @@ impl Display for ImportSource {
     }
 }
 
-impl From<&DataSource> for ImportSource {
-    fn from(r: &DataSource) -> Self {
+impl From<&ReaderSource> for ImportSource {
+    fn from(r: &ReaderSource) -> Self {
         match r {
-            DataSource::Stdin => ImportSource::Stdin,
-            DataSource::File(_) | DataSource::Url(_) => ImportSource::File,
+            ReaderSource::Stdin => ImportSource::Stdin,
+            ReaderSource::File(_) => ImportSource::File,
         }
     }
 }
