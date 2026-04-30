@@ -6,6 +6,7 @@ mod json;
 mod json_line;
 mod logfmt;
 mod parquet;
+mod reader_source;
 mod sqlite;
 mod traits;
 
@@ -17,5 +18,6 @@ pub use json::JsonToDataFrame;
 pub use json_line::JsonLineToDataFrame;
 pub use logfmt::LogfmtToDataFrame;
 pub use parquet::ParquetToDataFrame;
+pub use reader_source::ReaderSource;
 pub use sqlite::SqliteToDataFrames;
 pub use traits::{BuildReader, NamedFrames, ReadToDataFrames};

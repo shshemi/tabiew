@@ -7,12 +7,7 @@ use polars::{
     prelude::{AnyValue, Column},
 };
 
-use crate::{
-    AppResult,
-    args::Args,
-    io::DataSource,
-    misc::{download::download_to_temp, stdin::stdin},
-};
+use crate::{AppResult, args::Args, io::reader::ReaderSource, misc::stdin::stdin};
 
 use super::{NamedFrames, ReadToDataFrames};
 
@@ -26,10 +21,20 @@ impl ExcelToDataFrames {
 }
 
 impl ReadToDataFrames for ExcelToDataFrames {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         Ok(match input {
-            //
-            DataSource::File(path) => open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
+            ReaderSource::File(path) => {
+                open_workbook_auto_from_rs(Cursor::new(std::fs::read(path)?))?
+                    .worksheets()
+                    .into_iter()
+                    .map(|(name, sheet)| {
+                        let df = sheet_to_data_frame(sheet)?;
+                        Ok((name, df))
+                    })
+                    .collect::<AppResult<Vec<_>>>()?
+                    .into_boxed_slice()
+            }
+            ReaderSource::Stdin => open_workbook_auto_from_rs(stdin())?
                 .worksheets()
                 .into_iter()
                 .map(|(name, sheet)| {
@@ -38,30 +43,6 @@ impl ReadToDataFrames for ExcelToDataFrames {
                 })
                 .collect::<AppResult<Vec<_>>>()?
                 .into_boxed_slice(),
-            DataSource::Stdin => {
-                //
-                open_workbook_auto_from_rs(stdin())?
-                    .worksheets()
-                    .into_iter()
-                    .map(|(name, sheet)| {
-                        let df = sheet_to_data_frame(sheet)?;
-                        Ok((name, df))
-                    })
-                    .collect::<AppResult<Vec<_>>>()?
-                    .into_boxed_slice()
-            }
-            DataSource::Url(url) => {
-                let temp = download_to_temp(&url)?;
-                open_workbook_auto_from_rs(Cursor::new(std::fs::read(temp.path())?))?
-                    .worksheets()
-                    .into_iter()
-                    .map(|(name, sheet)| {
-                        let df = sheet_to_data_frame(sheet)?;
-                        Ok((name, df))
-                    })
-                    .collect::<AppResult<Vec<_>>>()?
-                    .into_boxed_slice()
-            }
         })
     }
 }

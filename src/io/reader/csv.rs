@@ -11,10 +11,10 @@ use crate::{
     AppResult,
     args::{Args, InferSchema},
     io::{
-        DataSource,
+        reader::ReaderSource,
         reader::{NamedFrames, ReadToDataFrames},
     },
-    misc::{download::download_to_temp, stdin::stdin, type_ext::ToAscii},
+    misc::{stdin::stdin, type_ext::ToAscii},
 };
 
 pub struct CsvToDataFrame {
@@ -89,14 +89,10 @@ impl Default for CsvToDataFrame {
 }
 
 impl ReadToDataFrames for CsvToDataFrame {
-    fn read_to_data_frames(&self, input: DataSource) -> AppResult<NamedFrames> {
+    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let df = match &input {
-            DataSource::File(path) => self.try_into_frame(File::open(path)?),
-            DataSource::Stdin => self.try_into_frame(stdin()),
-            DataSource::Url(url) => {
-                let temp = download_to_temp(url)?;
-                self.try_into_frame(File::open(temp.path())?)
-            }
+            ReaderSource::File(path) => self.try_into_frame(File::open(path)?),
+            ReaderSource::Stdin => self.try_into_frame(stdin()),
         }?;
         Ok([(input.table_name(), df)].into())
     }
