@@ -12,7 +12,7 @@ use crate::{
     args::Args,
     io::{
         reader::ReaderSource,
-        reader::{NamedFrames, ReadToDataFrames},
+        reader::{DataFrameReader, NamedFrames},
     },
     misc::stdin::stdin,
 };
@@ -26,7 +26,7 @@ impl LogfmtToDataFrame {
     }
 }
 
-impl ReadToDataFrames for LogfmtToDataFrame {
+impl DataFrameReader for LogfmtToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let contents = match &input {
             ReaderSource::File(path_buf) => fs::read_to_string(path_buf)?,

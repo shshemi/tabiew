@@ -10,10 +10,7 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, InferSchema},
-    io::{
-        reader::ReaderSource,
-        reader::{NamedFrames, ReadToDataFrames},
-    },
+    io::reader::{DataFrameReader, NamedFrames, ReaderSource},
     misc::{stdin::stdin, type_ext::ToAscii},
 };
 
@@ -88,7 +85,7 @@ impl Default for CsvToDataFrame {
     }
 }
 
-impl ReadToDataFrames for CsvToDataFrame {
+impl DataFrameReader for CsvToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let df = match &input {
             ReaderSource::File(path) => self.try_into_frame(File::open(path)?),
