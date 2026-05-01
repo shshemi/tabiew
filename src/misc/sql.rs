@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     ops::DerefMut,
+    path::PathBuf,
     sync::{LazyLock, Mutex},
 };
 
@@ -13,7 +14,10 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::{io::reader::ReaderSource, misc::table_name_generator::TableNameGeneratorExt};
+use crate::{
+    io::{DataSource, reader::ReaderSource},
+    misc::table_name_generator::TableNameGeneratorExt,
+};
 
 use super::polars_ext::AnyValueExt;
 use super::type_ext::UnwrapOrGracefulShutdown;
@@ -41,7 +45,7 @@ impl SqlBackend {
         &mut self,
         name: &str,
         data_frame: DataFrame,
-        input: impl Into<Origin>,
+        input: impl Into<TableSource>,
     ) -> String {
         let name = self.schema.available_name(name);
         self.schema
@@ -123,7 +127,7 @@ impl BackendSchema {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableInfo {
-    origin: Origin,
+    origin: TableSource,
     height: usize,
     width: usize,
     total_null: usize,
@@ -132,7 +136,7 @@ pub struct TableInfo {
 }
 
 impl TableInfo {
-    pub fn new(input: Origin, df: &DataFrame) -> Self {
+    pub fn new(input: TableSource, df: &DataFrame) -> Self {
         let schema = TableSchema::new(df);
         Self {
             origin: input,
@@ -144,7 +148,7 @@ impl TableInfo {
         }
     }
 
-    pub fn source(&self) -> &Origin {
+    pub fn source(&self) -> &TableSource {
         &self.origin
     }
 
@@ -170,23 +174,32 @@ impl TableInfo {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Origin {
-    Resource(ReaderSource),
+pub enum TableSource {
+    Url(String),
+    File(PathBuf),
+    Stdin,
     User,
 }
 
-impl Origin {
+impl TableSource {
     pub fn display_path<'a>(&'a self) -> Cow<'a, str> {
         match self {
-            Origin::User => "User".into(),
-            Origin::Resource(resource) => resource.display_path(),
+            TableSource::User => "User".into(),
+            // TableSource::Resource(resource) => resource.display_path(),
+            TableSource::File(path_buf) => path_buf.to_string_lossy(),
+            TableSource::Stdin => "Stdin".into(),
+            TableSource::Url(url) => url.into(),
         }
     }
 }
 
-impl From<ReaderSource> for Origin {
-    fn from(value: ReaderSource) -> Self {
-        Self::Resource(value)
+impl From<DataSource> for TableSource {
+    fn from(value: DataSource) -> Self {
+        match value {
+            DataSource::Stdin => Self::Stdin,
+            DataSource::File(path_buf) => Self::File(path_buf),
+            DataSource::Url(url) => Self::Url(url),
+        }
     }
 }
 
