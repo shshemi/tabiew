@@ -14,6 +14,10 @@ impl DownloadNotification {
     pub fn new(title: String, dl: BackgroundDownloader) -> Self {
         DownloadNotification { title, dl }
     }
+
+    pub fn is_done(&self) -> bool {
+        self.dl.running()
+    }
 }
 
 impl Component for DownloadNotification {

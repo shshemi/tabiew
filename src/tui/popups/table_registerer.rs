@@ -3,7 +3,7 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    misc::{sql::Origin, sql::sql},
+    misc::{sql::TableSource, sql::sql},
     tui::{component::Component, pickers::text_picker::TextPicker},
 };
 
@@ -29,7 +29,7 @@ impl TableRegisterer {
             Message::AppShowError(format!("Table name '{name}' already exists in the backed"))
                 .enqueue();
         } else {
-            sql().register(name, self.df.clone(), Origin::User);
+            sql().register(name, self.df.clone(), TableSource::User);
         }
     }
 }

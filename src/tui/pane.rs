@@ -13,7 +13,7 @@ use crate::{
         external_editor::edit_in_external_editor,
         non_empty_stack::NonEmptyStack,
         polars_ext::DataFrameExt,
-        sql::{Origin, sql},
+        sql::{TableSource, sql},
         type_ext::UnwrapOrEnqueueError,
     },
     tui::{
@@ -121,7 +121,7 @@ impl Pane {
             | TableDescription::FuzzySearch(_) => {
                 self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
                     self.tstack.last().data_frame(),
-                    Origin::User,
+                    TableSource::User,
                 )))
             }
         }
