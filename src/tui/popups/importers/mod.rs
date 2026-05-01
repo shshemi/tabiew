@@ -1,6 +1,9 @@
 use crate::{
     handler::message::Message,
-    io::{reader::ReadToDataFrames, reader::ReaderSource},
+    io::{
+        DataSource,
+        reader::{DataFrameReader, ReaderSource},
+    },
     misc::sql::sql,
 };
 
@@ -16,12 +19,19 @@ pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
 
-fn dismiss_overlay_and_load_data_frame(source: ReaderSource, rtdf: impl ReadToDataFrames) {
+fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl DataFrameReader) {
     Message::AppDismissOverlay.enqueue();
-    match rtdf.read_to_data_frames(source.clone()) {
-        Ok(named_frames) => {
-            let count = named_frames.len();
-            for (name, df) in named_frames {
+    let frames = match &source {
+        DataSource::Stdin => reader.read_to_data_frames(ReaderSource::Stdin),
+        DataSource::File(path_buf) => {
+            reader.read_to_data_frames(ReaderSource::File(path_buf.clone()))
+        }
+        DataSource::Url(_) => todo!(),
+    };
+    match frames {
+        Ok(frames) => {
+            let count = frames.len();
+            for (name, df) in frames {
                 let name = sql().register(&name, df.clone(), source.clone());
                 Message::TabsAddNamePane(df, name).enqueue();
             }

@@ -8,7 +8,7 @@ use crate::{
     handler::event::{disable_event_read, enable_event_read},
     io::{
         reader::ReaderSource,
-        reader::{CsvToDataFrame, ReadToDataFrames},
+        reader::{CsvToDataFrame, DataFrameReader},
         writer::{Destination, WriteToCsv, WriteToFile},
     },
     misc::type_inferer::TypeInferer,
