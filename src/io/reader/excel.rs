@@ -9,7 +9,7 @@ use polars::{
 
 use crate::{AppResult, args::Args, io::reader::ReaderSource, misc::stdin::stdin};
 
-use super::{NamedFrames, ReadToDataFrames};
+use super::{DataFrameReader, NamedFrames};
 
 #[derive(Debug, Default)]
 pub struct ExcelToDataFrames;
@@ -20,7 +20,7 @@ impl ExcelToDataFrames {
     }
 }
 
-impl ReadToDataFrames for ExcelToDataFrames {
+impl DataFrameReader for ExcelToDataFrames {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         Ok(match input {
             ReaderSource::File(path) => {

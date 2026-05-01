@@ -4,16 +4,13 @@ use polars::{io::SerReader, prelude::IpcReader};
 
 use crate::{
     AppResult,
-    io::{
-        reader::ReaderSource,
-        reader::{NamedFrames, ReadToDataFrames},
-    },
+    io::reader::{DataFrameReader, NamedFrames, ReaderSource},
     misc::stdin::stdin,
 };
 
 pub struct ArrowIpcToDataFrame;
 
-impl ReadToDataFrames for ArrowIpcToDataFrame {
+impl DataFrameReader for ArrowIpcToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let df = match &input {
             ReaderSource::File(path) => IpcReader::new(File::open(path)?)

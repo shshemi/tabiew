@@ -16,7 +16,7 @@ use crate::{
     misc::{iter_ext::ZipItersExt, stdin::stdin, table_name_generator::TableNameGeneratorExt},
 };
 
-use super::{NamedFrames, ReadToDataFrames};
+use super::{DataFrameReader, NamedFrames};
 
 pub struct FwfToDataFrame {
     widths: Vec<usize>,
@@ -67,7 +67,7 @@ impl Default for FwfToDataFrame {
     }
 }
 
-impl ReadToDataFrames for FwfToDataFrame {
+impl DataFrameReader for FwfToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let file_content = match &input {
             ReaderSource::File(path) => read_to_string(path)?,

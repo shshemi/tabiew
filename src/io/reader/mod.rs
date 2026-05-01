@@ -20,4 +20,4 @@ pub use logfmt::LogfmtToDataFrame;
 pub use parquet::ParquetToDataFrame;
 pub use source::ReaderSource;
 pub use sqlite::SqliteToDataFrames;
-pub use traits::{BuildReader, NamedFrames, ReadToDataFrames};
+pub use traits::{BuildReader, DataFrameReader, NamedFrames};

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::Infallible, ffi::OsStr, path::PathBuf, str::FromStr};
+use std::{convert::Infallible, ffi::OsStr, path::PathBuf, str::FromStr};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ReaderSource {
@@ -17,14 +17,11 @@ impl ReaderSource {
             ReaderSource::Stdin => String::from("Stdin"),
         }
     }
+}
 
-    pub fn display_path(&self) -> Cow<'_, str> {
-        match self {
-            ReaderSource::File(path_buf) => {
-                path_buf.file_name().unwrap_or_default().to_string_lossy()
-            }
-            ReaderSource::Stdin => Cow::Borrowed("Stdin"),
-        }
+impl From<PathBuf> for ReaderSource {
+    fn from(value: PathBuf) -> Self {
+        ReaderSource::File(value)
     }
 }
 

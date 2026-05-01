@@ -18,16 +18,16 @@ use crate::{
 pub type NamedFrame = (String, DataFrame);
 pub type NamedFrames = Box<[NamedFrame]>;
 
-pub trait ReadToDataFrames {
-    fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames>;
+pub trait DataFrameReader {
+    fn read_to_data_frames(&self, source: ReaderSource) -> AppResult<NamedFrames>;
 }
 
 pub trait BuildReader {
-    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>>;
+    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFrameReader>>;
 }
 
 impl BuildReader for Args {
-    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn ReadToDataFrames>> {
+    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFrameReader>> {
         match self.format {
             Some(Format::Dsv) | Some(Format::Csv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
             Some(Format::Tsv) => Ok(Box::new(

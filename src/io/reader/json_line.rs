@@ -10,7 +10,7 @@ use crate::{
     args::Args,
     io::{
         reader::ReaderSource,
-        reader::{NamedFrames, ReadToDataFrames},
+        reader::{DataFrameReader, NamedFrames},
     },
     misc::stdin::stdin,
 };
@@ -35,7 +35,7 @@ impl Default for JsonLineToDataFrame {
     }
 }
 
-impl ReadToDataFrames for JsonLineToDataFrame {
+impl DataFrameReader for JsonLineToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let df = match &input {
             ReaderSource::File(path) => JsonReader::new(File::open(path)?)

@@ -10,7 +10,7 @@ use tempfile::NamedTempFile;
 
 use crate::{AppResult, args::Args, io::reader::ReaderSource, misc::stdin::stdin};
 
-use super::{NamedFrames, ReadToDataFrames};
+use super::{DataFrameReader, NamedFrames};
 
 #[derive(Default)]
 pub struct SqliteToDataFrames {
@@ -29,7 +29,7 @@ impl SqliteToDataFrames {
     }
 }
 
-impl ReadToDataFrames for SqliteToDataFrames {
+impl DataFrameReader for SqliteToDataFrames {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         match input {
             ReaderSource::File(path) => path_to_name_frames(path, self.key.as_deref()),
