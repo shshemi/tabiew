@@ -133,6 +133,7 @@ pub enum Format {
     Sqlite,
     Excel,
     Logfmt,
+    Avro,
 }
 
 #[derive(Debug, Clone)]

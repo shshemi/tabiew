@@ -6,7 +6,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        importers::{arrow, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
+        importers::{arrow, avro, csv, excel, fwf, json, jsonl, logfmt, parquet, sqlite, tsv},
         multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
 };
@@ -17,6 +17,7 @@ pub type Importer = MultiStepOverlay<State>;
 pub enum State {
     PickFormat { picker: SearchPicker<Format> },
     Arrow { arrow: arrow::State },
+    Avro { avro: avro::State },
     Csv { csv: csv::State },
     Excel { excel: excel::State },
     Fwf { fwf: fwf::State },
@@ -34,6 +35,9 @@ impl OverlayStep for State {
             State::PickFormat { picker } => match picker.selected_item() {
                 Some(Format::Arrow) => State::Arrow {
                     arrow: Default::default(),
+                },
+                Some(Format::Avro) => State::Avro {
+                    avro: Default::default(),
                 },
                 Some(Format::Csv) => Self::Csv {
                     csv: Default::default(),
@@ -67,6 +71,7 @@ impl OverlayStep for State {
             State::Arrow { arrow } => State::Arrow {
                 arrow: arrow.next(),
             },
+            State::Avro { avro } => State::Avro { avro: avro.next() },
             State::Csv { csv } => State::Csv { csv: csv.next() },
             State::Excel { excel } => State::Excel {
                 excel: excel.next(),
@@ -93,6 +98,7 @@ impl OverlayStep for State {
         match self {
             State::PickFormat { picker } => picker,
             State::Arrow { arrow } => arrow.responder(),
+            State::Avro { avro } => avro.responder(),
             State::Csv { csv } => csv.responder(),
             State::Excel { excel } => excel.responder(),
             State::Fwf { fwf } => fwf.responder(),
@@ -122,6 +128,7 @@ pub enum Format {
     Jsonl,
     Json,
     Arrow,
+    Avro,
     Fwf,
     Sqlite,
     Excel,
