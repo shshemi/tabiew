@@ -1,4 +1,5 @@
 mod arrow;
+mod avro;
 mod csv;
 mod excel;
 mod fwf;
@@ -11,6 +12,7 @@ mod sqlite;
 mod traits;
 
 pub use arrow::ArrowIpcToDataFrame;
+pub use avro::AvroToDataFrame;
 pub use csv::CsvToDataFrame;
 pub use excel::ExcelToDataFrames;
 pub use fwf::FwfToDataFrame;

@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod arrow;
+pub mod avro;
 pub mod csv;
 pub mod excel;
 pub mod fwf;
