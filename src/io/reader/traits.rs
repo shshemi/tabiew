@@ -8,9 +8,9 @@ use crate::{
     io::{
         reader::ReaderSource,
         reader::{
-            ArrowIpcToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
-            JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame, ParquetToDataFrame,
-            SqliteToDataFrames,
+            ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, ExcelToDataFrames,
+            FwfToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
+            ParquetToDataFrame, SqliteToDataFrames,
         },
     },
 };
@@ -41,6 +41,7 @@ impl BuildReader for Args {
             Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames::from_args(self))),
             Some(Format::Excel) => Ok(Box::new(ExcelToDataFrames::from_args(self))),
             Some(Format::Logfmt) => Ok(Box::new(LogfmtToDataFrame::from_args(self))),
+            Some(Format::Avro) => Ok(Box::new(AvroToDataFrame)),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let reader = CsvToDataFrame::from_args(self).with_separator('\t');
@@ -50,6 +51,7 @@ impl BuildReader for Args {
                 Some("json") => Ok(Box::new(JsonToDataFrame::from_args(self))),
                 Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(self))),
                 Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame)),
+                Some("avro") => Ok(Box::new(AvroToDataFrame)),
                 Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(self))),
                 Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames::from_args(self))),
                 Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
