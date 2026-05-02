@@ -179,7 +179,7 @@ impl Component for App {
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
-            Message::AppDownloadTable(url) => self.add_download(url),
+            Message::AppDownloadDataSource(url) => self.add_download(url),
             _ => (),
         };
         match (self.overlay.as_mut(), self.schema.as_mut()) {

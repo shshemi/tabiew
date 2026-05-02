@@ -8,11 +8,13 @@ use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::io::reader::BuildReader;
+use tabiew::io::DataSource;
 use tabiew::io::reader::ReaderSource;
+use tabiew::io::reader::{BuildReader, NamedFrames};
 use tabiew::misc::config::config;
+use tabiew::misc::download::download_to_temp;
 use tabiew::misc::osc52::flush_osc52_buffer;
-use tabiew::misc::sql::sql;
+use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::tui::component::{Component, FocusState};
@@ -56,7 +58,7 @@ fn main() {
     for (_, (name, mut df)) in multiparts {
         df.rechunk_mut_par();
         type_infer.update(&mut df);
-        let name = sql().register(&name, df.clone(), ReaderSource::File(name.clone().into()));
+        let name = sql().register(&name, df.clone(), TableSource::File(name.clone().into()));
         name_dfs.push((name, df));
     }
 
@@ -77,7 +79,7 @@ fn main() {
             .unwrap_or_graceful_shutdown()
         {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), ReaderSource::Stdin);
+            let name = sql().register(&name, df.clone(), TableSource::Stdin);
             name_dfs.push((name, df))
         }
     }
@@ -136,10 +138,18 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     Ok(())
 }
 
-fn try_read_path(args: &Args, resource: &ReaderSource) -> AppResult<Box<[(String, DataFrame)]>> {
-    let reader = match resource {
-        ReaderSource::File(path) => args.build_reader(path)?,
-        ReaderSource::Stdin => args.build_reader("")?,
-    };
-    reader.read_to_data_frames(resource.clone())
+fn try_read_path(args: &Args, resource: &DataSource) -> AppResult<NamedFrames> {
+    match resource {
+        DataSource::Stdin => args
+            .build_reader("")?
+            .read_to_data_frames(ReaderSource::Stdin),
+        DataSource::File(path_buf) => args
+            .build_reader(path_buf)?
+            .read_to_data_frames(ReaderSource::File(path_buf.clone())),
+        DataSource::Url(url) => {
+            let file = download_to_temp(url)?;
+            args.build_reader(file.path())?
+                .read_to_data_frames(ReaderSource::File(file.path().to_owned()))
+        }
+    }
 }

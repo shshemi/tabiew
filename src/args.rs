@@ -1,18 +1,18 @@
 use clap::{Parser, ValueEnum};
 use std::num::NonZero;
 
-use crate::io::reader::ReaderSource;
+use crate::io::DataSource;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[arg(help = "Path(s) to the file(s) to be opened.", required = false)]
-    pub resources: Vec<ReaderSource>,
+    pub resources: Vec<DataSource>,
 
     #[arg(long, help = "Paths to be opened and concatenated vertically.",
         num_args = 1..,
         required = false)]
-    pub multiparts: Vec<ReaderSource>,
+    pub multiparts: Vec<DataSource>,
 
     #[arg(
         short,

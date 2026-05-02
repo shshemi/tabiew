@@ -1,8 +1,5 @@
 use crate::{
-    io::{
-        DataSource,
-        reader::{CsvToDataFrame, ReaderSource},
-    },
+    io::{DataSource, reader::CsvToDataFrame},
     tui::popups::{
         importers::{
             dismiss_overlay_and_load_data_frame,

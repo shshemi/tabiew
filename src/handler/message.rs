@@ -18,7 +18,7 @@ pub enum Message {
     AppShowImporter,
     AppDismissSchema,
     AppShowSqlQuery,
-    AppDownloadTable(String),
+    AppDownloadDataSource(String),
     AppReloadConfig,
     TabsSelect(usize),
     TabsDismissSwitcher,
