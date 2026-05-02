@@ -1,8 +1,5 @@
 use crate::{
-    io::{
-        DataSource,
-        reader::{ReaderSource, SqliteToDataFrames},
-    },
+    io::{DataSource, reader::SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
         popups::{

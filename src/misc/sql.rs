@@ -14,10 +14,7 @@ use polars::{
 };
 use polars_sql::SQLContext;
 
-use crate::{
-    io::{DataSource, reader::ReaderSource},
-    misc::table_name_generator::TableNameGeneratorExt,
-};
+use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
 
 use super::polars_ext::AnyValueExt;
 use super::type_ext::UnwrapOrGracefulShutdown;

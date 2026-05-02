@@ -4,7 +4,7 @@ use crate::{
         DataSource,
         reader::{DataFrameReader, ReaderSource},
     },
-    misc::sql::sql,
+    misc::sql::{TableSource, sql},
 };
 
 pub mod arrow;
@@ -21,27 +21,43 @@ pub mod tsv;
 
 fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl DataFrameReader) {
     Message::AppDismissOverlay.enqueue();
-    let frames = match &source {
-        DataSource::Stdin => reader.read_to_data_frames(ReaderSource::Stdin),
-        DataSource::File(path_buf) => {
-            reader.read_to_data_frames(ReaderSource::File(path_buf.clone()))
-        }
-        DataSource::Url(_) => todo!(),
-    };
-    match frames {
-        Ok(frames) => {
+    match source {
+        DataSource::Stdin => {
+            let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
+                Ok(f) => f,
+                Err(err) => {
+                    Message::AppShowError(err.to_string()).enqueue();
+                    return;
+                }
+            };
             let count = frames.len();
             for (name, df) in frames {
-                let name = sql().register(&name, df.clone(), source.clone());
+                let name = sql().register(&name, df.clone(), TableSource::Stdin);
+                Message::TabsAddNamePane(df, name).enqueue();
+            }
+            Message::AppShowToast(format!("{} data frame(s) were imported from Stdin", count,))
+                .enqueue();
+        }
+        DataSource::File(path_buf) => {
+            let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
+                Ok(f) => f,
+                Err(err) => {
+                    Message::AppShowError(err.to_string()).enqueue();
+                    return;
+                }
+            };
+            let count = frames.len();
+            for (name, df) in frames {
+                let name = sql().register(&name, df.clone(), TableSource::Stdin);
                 Message::TabsAddNamePane(df, name).enqueue();
             }
             Message::AppShowToast(format!(
                 "{} data frame(s) were imported from {}",
                 count,
-                source.display_path()
+                path_buf.to_string_lossy()
             ))
             .enqueue();
         }
-        Err(err) => Message::AppShowError(err.to_string()).enqueue(),
-    }
+        DataSource::Url(url) => Message::AppDownloadDataSource(url).enqueue(),
+    };
 }
