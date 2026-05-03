@@ -1,7 +1,4 @@
-use ratatui::{
-    text::Line,
-    widgets::{Gauge, Paragraph, Widget},
-};
+use ratatui::widgets::{Gauge, Paragraph, Widget};
 
 use crate::{
     misc::{config::theme, download::BackgroundDownloaderAndRead},

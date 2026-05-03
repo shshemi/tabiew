@@ -6,10 +6,8 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
     thread::JoinHandle,
-    time::Duration,
 };
 
-use anyhow::anyhow;
 use tempfile::NamedTempFile;
 use url::Url;
 

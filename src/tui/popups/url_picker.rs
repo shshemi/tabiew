@@ -1,5 +1,4 @@
 use crossterm::event::KeyEvent;
-use home::home_dir;
 use url::Url;
 
 use crate::tui::{component::Component, pickers::text_picker::TextPicker};
