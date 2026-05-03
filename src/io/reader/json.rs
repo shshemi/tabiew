@@ -12,6 +12,7 @@ use crate::{
     misc::stdin::stdin,
 };
 
+#[derive(Debug)]
 pub struct JsonToDataFrame {
     ignore_errors: bool,
 }

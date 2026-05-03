@@ -8,6 +8,7 @@ use crate::{
     misc::stdin::stdin,
 };
 
+#[derive(Debug)]
 pub struct ArrowIpcToDataFrame;
 
 impl DataFrameReader for ArrowIpcToDataFrame {

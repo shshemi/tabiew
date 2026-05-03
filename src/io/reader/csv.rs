@@ -14,6 +14,7 @@ use crate::{
     misc::{stdin::stdin, type_ext::ToAscii},
 };
 
+#[derive(Debug)]
 pub struct CsvToDataFrame {
     infer_schema: InferSchema,
     quote_char: char,

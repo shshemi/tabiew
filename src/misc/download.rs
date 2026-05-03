@@ -1,6 +1,6 @@
 use std::{
+    fmt::Debug,
     io::Write,
-    path::PathBuf,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
@@ -9,23 +9,30 @@ use std::{
 };
 
 use tempfile::NamedTempFile;
-use ureq::rustls::lock::Mutex;
+use url::Url;
 
-use crate::AppResult;
+use crate::{
+    AppResult,
+    io::reader::{DataFrameReader, NamedFrames, ReaderSource},
+};
+
+pub trait Reader: DataFrameReader + Debug + Send + Sync + 'static {}
+
+impl<T> Reader for T where T: DataFrameReader + Debug + Send + Sync + 'static {}
 
 #[derive(Debug)]
-pub struct BackgroundDownloader {
+pub struct BackgroundDownloaderAndRead {
     info: DownloadInfo,
-    hndl: JoinHandle<AppResult<()>>,
+    hndl: JoinHandle<AppResult<NamedFrames>>,
 }
 
-impl BackgroundDownloader {
-    pub fn new(url: String) -> Self {
+impl BackgroundDownloaderAndRead {
+    pub fn new(url: Url, df_reader: Arc<dyn Reader>) -> Self {
         let info = DownloadInfo::default();
-        BackgroundDownloader {
+        BackgroundDownloaderAndRead {
             info: info.clone(),
             hndl: std::thread::spawn(move || {
-                let response = ureq::get(&url).call()?;
+                let response = ureq::get(url.as_str()).call()?;
                 let len = response
                     .header("Content-Length")
                     .and_then(|v| v.parse::<u64>().ok());
@@ -44,8 +51,9 @@ impl BackgroundDownloader {
                     info.add_progress(n as u64);
                     writer.write_all(&buffer[..n])?;
                 }
-                info.set_path(temp.path().to_owned());
-                Ok(())
+                let nf =
+                    df_reader.read_to_data_frames(ReaderSource::File(temp.path().to_owned()))?;
+                Ok(nf)
             }),
         }
     }
@@ -57,23 +65,17 @@ impl BackgroundDownloader {
     pub fn info(&self) -> &DownloadInfo {
         &self.info
     }
+
+    pub fn join(self) -> AppResult<NamedFrames> {
+        // TODO: fix unwrap
+        self.hndl.join().unwrap()
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct DownloadInfo {
     pg: Arc<AtomicU64>,
     tt: Arc<AtomicU64>,
-    path: Arc<Mutex<Option<PathBuf>>>,
-}
-
-impl Default for DownloadInfo {
-    fn default() -> Self {
-        Self {
-            path: Arc::new(Mutex::new(None)),
-            pg: Default::default(),
-            tt: Default::default(),
-        }
-    }
 }
 
 impl DownloadInfo {
@@ -93,14 +95,6 @@ impl DownloadInfo {
         self.tt.store(tt, Ordering::Relaxed);
     }
 
-    pub fn path(&self) -> Option<PathBuf> {
-        self.path.lock().unwrap().clone()
-    }
-
-    fn set_path(&self, path: PathBuf) {
-        *self.path.lock().unwrap() = Some(path);
-    }
-
     pub fn is_complete(&self) -> bool {
         self.progress() == self.total()
     }
@@ -115,9 +109,9 @@ impl DownloadInfo {
     }
 }
 
-pub fn download_to_temp(url: &str) -> AppResult<NamedTempFile> {
+pub fn download_to_temp(url: &Url) -> AppResult<NamedTempFile> {
     let mut temp = NamedTempFile::new()?;
-    let response = ureq::get(url).call()?;
+    let response = ureq::get(url.as_str()).call()?;
     std::io::copy(&mut response.into_reader(), temp.as_file_mut())?;
     Ok(temp)
 }

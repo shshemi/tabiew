@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use crate::misc::config::config;
-use crate::misc::download::BackgroundDownloader;
+use crate::misc::download::{self, BackgroundDownloaderAndRead};
 use crate::tui::Pane;
 use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
@@ -20,6 +22,7 @@ use crate::{
 use crossterm::event::KeyCode;
 use itertools::Itertools;
 use ratatui::layout::{Constraint, Direction, Flex, Layout, Rect};
+use url::Url;
 
 pub struct App {
     tabs: Tabs,
@@ -76,10 +79,10 @@ impl App {
         )));
     }
 
-    fn add_download(&mut self, url: &str) {
+    fn add_download(&mut self, url: &Url, reader: Arc<dyn download::Reader>) {
         self.dls.push(DownloadNotification::new(
-            url.to_owned(),
-            BackgroundDownloader::new(url.to_owned()),
+            url.as_str().to_owned(),
+            BackgroundDownloaderAndRead::new(url.to_owned(), reader),
         ));
     }
 
@@ -179,7 +182,7 @@ impl Component for App {
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
-            Message::AppDownloadDataSource(url) => self.add_download(url),
+            Message::AppDownloadDataSource(url, reader) => self.add_download(url, reader.clone()),
             _ => (),
         };
         match (self.overlay.as_mut(), self.schema.as_mut()) {
@@ -219,7 +222,15 @@ impl Component for App {
             .into_iter()
             .rev()
             .for_each(|idx| {
-                self.dls.remove(idx);
+                let dl = self.dls.remove(idx).into_downloader();
+                match dl.join() {
+                    Ok(nfs) => {
+                        for (name, df) in nfs {
+                            Message::TabsAddNamePane(df, name).enqueue();
+                        }
+                    }
+                    Err(err) => self.show_error(err.to_string()),
+                }
             });
         self.tabs.tick();
     }
