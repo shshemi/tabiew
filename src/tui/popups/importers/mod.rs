@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use crate::{
     handler::message::Message,
-    io::{
-        DataSource,
-        reader::{DataFrameReader, ReaderSource},
+    io::{DataSource, reader::ReaderSource},
+    misc::{
+        download,
+        sql::{TableSource, sql},
     },
-    misc::sql::{TableSource, sql},
 };
 
 pub mod arrow;
@@ -20,7 +22,7 @@ pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
 
-fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl DataFrameReader) {
+fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl download::Reader) {
     Message::AppDismissOverlay.enqueue();
     match source {
         DataSource::Stdin => {
@@ -40,7 +42,7 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl DataFram
                 .enqueue();
         }
         DataSource::File(path_buf) => {
-            let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
+            let frames = match reader.read_to_data_frames(ReaderSource::File(path_buf.clone())) {
                 Ok(f) => f,
                 Err(err) => {
                     Message::AppShowError(err.to_string()).enqueue();
@@ -59,6 +61,6 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl DataFram
             ))
             .enqueue();
         }
-        DataSource::Url(url) => Message::AppDownloadDataSource(url).enqueue(),
+        DataSource::Url(url) => Message::AppDownloadDataSource(url, Arc::new(reader)).enqueue(),
     };
 }

@@ -8,6 +8,7 @@ use crate::{
     misc::stdin::stdin,
 };
 
+#[derive(Debug)]
 pub struct ParquetToDataFrame;
 
 impl DataFrameReader for ParquetToDataFrame {

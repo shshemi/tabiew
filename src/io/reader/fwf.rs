@@ -18,6 +18,7 @@ use crate::{
 
 use super::{DataFrameReader, NamedFrames};
 
+#[derive(Debug)]
 pub struct FwfToDataFrame {
     widths: Vec<usize>,
     has_header: bool,

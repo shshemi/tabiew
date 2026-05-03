@@ -13,6 +13,7 @@ use polars::{
     series::Series,
 };
 use polars_sql::SQLContext;
+use url::Url;
 
 use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
 
@@ -172,7 +173,7 @@ impl TableInfo {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TableSource {
-    Url(String),
+    Url(Url),
     File(PathBuf),
     Stdin,
     User,
@@ -185,7 +186,7 @@ impl TableSource {
             // TableSource::Resource(resource) => resource.display_path(),
             TableSource::File(path_buf) => path_buf.to_string_lossy(),
             TableSource::Stdin => "Stdin".into(),
-            TableSource::Url(url) => url.into(),
+            TableSource::Url(url) => url.as_str().into(),
         }
     }
 }

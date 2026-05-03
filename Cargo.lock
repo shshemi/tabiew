@@ -4123,6 +4123,7 @@ dependencies = [
  "tui-scrollview",
  "unicode-width",
  "ureq",
+ "url",
 ]
 
 [[package]]

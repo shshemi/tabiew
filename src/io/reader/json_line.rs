@@ -15,6 +15,7 @@ use crate::{
     misc::stdin::stdin,
 };
 
+#[derive(Debug)]
 pub struct JsonLineToDataFrame {
     ignore_errors: bool,
 }

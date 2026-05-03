@@ -1,10 +1,12 @@
-use std::{borrow::Cow, convert::Infallible, path::PathBuf, str::FromStr};
+use anyhow::anyhow;
+use std::{borrow::Cow, error::Error, path::PathBuf, str::FromStr};
+use url::Url;
 
 #[derive(Debug, Clone, Hash)]
 pub enum DataSource {
     Stdin,
     File(PathBuf),
-    Url(String),
+    Url(Url),
 }
 
 impl DataSource {
@@ -14,21 +16,24 @@ impl DataSource {
             DataSource::File(path_buf) => {
                 path_buf.file_name().unwrap_or_default().to_string_lossy()
             }
-            DataSource::Url(url) => url.into(),
+            DataSource::Url(url) => url.as_str().into(),
         }
     }
 }
 
 impl FromStr for DataSource {
-    type Err = Infallible;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "-" {
-            Ok(DataSource::Stdin)
-        } else if s.starts_with("http://") || s.starts_with("https://") {
-            Ok(DataSource::Url(s.to_owned()))
-        } else {
-            Ok(DataSource::File(PathBuf::from(s)))
+            return Ok(DataSource::Stdin);
+        }
+        match Url::parse(s) {
+            Ok(url) => match url.scheme() {
+                "http" | "https" => Ok(DataSource::Url(url)),
+                _ => Err(anyhow!("Unsupported url scheme: {}", url.scheme())),
+            },
+            Err(_) => Ok(DataSource::File(PathBuf::from(s))),
         }
     }
 }

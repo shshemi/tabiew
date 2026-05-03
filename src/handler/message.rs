@@ -1,11 +1,12 @@
 use std::sync::{
-    LazyLock, Mutex,
+    Arc, LazyLock, Mutex,
     mpsc::{Receiver, Sender, channel},
 };
 
 use polars::frame::DataFrame;
+use url::Url;
 
-use crate::tui::pane::TableDescription;
+use crate::{misc::download::Reader, tui::pane::TableDescription};
 
 #[derive(Debug)]
 pub enum Message {
@@ -18,7 +19,7 @@ pub enum Message {
     AppShowImporter,
     AppDismissSchema,
     AppShowSqlQuery,
-    AppDownloadDataSource(String),
+    AppDownloadDataSource(Url, Arc<dyn Reader>),
     AppReloadConfig,
     TabsSelect(usize),
     TabsDismissSwitcher,

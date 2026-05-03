@@ -12,7 +12,7 @@ use crate::{AppResult, args::Args, io::reader::ReaderSource, misc::stdin::stdin}
 
 use super::{DataFrameReader, NamedFrames};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct SqliteToDataFrames {
     key: Option<String>,
 }
