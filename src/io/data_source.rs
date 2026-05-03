@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use std::{borrow::Cow, error::Error, path::PathBuf, str::FromStr};
+use std::{borrow::Cow, path::PathBuf, str::FromStr};
 use url::Url;
 
 #[derive(Debug, Clone, Hash)]
