@@ -12,6 +12,7 @@ use crate::{
 pub enum ImportSource {
     File,
     Stdin,
+    Url,
 }
 
 impl Display for ImportSource {

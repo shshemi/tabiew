@@ -6,6 +6,7 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
     thread::JoinHandle,
+    time::Duration,
 };
 
 use tempfile::NamedTempFile;
@@ -32,15 +33,9 @@ impl BackgroundDownloaderAndRead {
         BackgroundDownloaderAndRead {
             info: info.clone(),
             hndl: std::thread::spawn(move || {
-                let response = ureq::get(url.as_str()).call()?;
-                let len = response
-                    .header("Content-Length")
-                    .and_then(|v| v.parse::<u64>().ok());
-                if let Some(len) = len {
-                    info.set_total(len);
-                }
+                info.set_total(file_size(&url)?);
+                let mut reader = ureq::get(url.as_str()).call()?.into_reader();
                 let mut temp = NamedTempFile::new()?;
-                let mut reader = response.into_reader();
                 let writer = temp.as_file_mut();
                 let mut buffer = [0_u8; 16_384];
                 loop {
@@ -95,17 +90,14 @@ impl DownloadInfo {
         self.tt.store(tt, Ordering::Relaxed);
     }
 
-    pub fn is_complete(&self) -> bool {
-        self.progress() == self.total()
-    }
-
-    pub fn ratio(&self) -> Option<f64> {
+    pub fn percent(&self) -> Option<u16> {
         let tt = self.total();
-        (tt == 0).then_some({
-            let pg = self.progress() as f64;
-            let tt = tt as f64;
-            pg / tt
-        })
+        if tt != 0 {
+            let pg = self.progress() * 100;
+            Some((pg / tt).min(100) as u16)
+        } else {
+            None
+        }
     }
 }
 
@@ -114,4 +106,36 @@ pub fn download_to_temp(url: &Url) -> AppResult<NamedTempFile> {
     let response = ureq::get(url.as_str()).call()?;
     std::io::copy(&mut response.into_reader(), temp.as_file_mut())?;
     Ok(temp)
+}
+
+pub fn file_size(url: &Url) -> AppResult<u64> {
+    if let Ok(response) = ureq::get(url.as_str()).set("Range", "bytes=0-0").call() {
+        let size = response
+            .header("Content-Range")
+            .and_then(|v| v.rsplit('/').next().and_then(|n| n.parse::<u64>().ok()))
+            .or_else(|| {
+                response
+                    .header("Content-Length")
+                    .and_then(|v| v.parse::<u64>().ok())
+            });
+        if let Some(size) = size {
+            return Ok(size);
+        }
+    }
+
+    if let Ok(response) = ureq::head(url.as_str())
+        .set("Accept-Encoding", "identity")
+        .call()
+        && let Some(size) = response
+            .header("Content-Length")
+            .and_then(|v| v.parse::<u64>().ok())
+    {
+        return Ok(size);
+    }
+
+    let response = ureq::head(url.as_str()).call()?;
+    Ok(response
+        .header("Content-Length")
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(0))
 }

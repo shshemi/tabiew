@@ -9,6 +9,7 @@ use crate::{
             },
             multi_step_overlay::OverlayStep,
             path_picker::PathPicker,
+            url_picker::UrlPicker,
         },
     },
 };
@@ -20,6 +21,9 @@ pub enum State {
     },
     PickPath {
         picker: PathPicker,
+    },
+    PickUrl {
+        picker: UrlPicker,
     },
     PickPassword {
         source: DataSource,
@@ -38,12 +42,21 @@ impl OverlayStep for State {
                         .with_hint("Leave empty for no password"),
                 },
                 Some(ImportSource::File) => State::PickPath {
-                    picker: Default::default(),
+                    picker: PathPicker::default(),
+                },
+                Some(ImportSource::Url) => State::PickUrl {
+                    picker: UrlPicker::default(),
                 },
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => State::PickPassword {
                 source: DataSource::File(picker.path()),
+                picker: TextPicker::default()
+                    .with_title("Password")
+                    .with_hint("Leave empty for no password"),
+            },
+            State::PickUrl { picker } => State::PickPassword {
+                source: DataSource::Url(picker.url()),
                 picker: TextPicker::default()
                     .with_title("Password")
                     .with_hint("Leave empty for no password"),
@@ -67,6 +80,7 @@ impl OverlayStep for State {
             State::PickSource { picker } => picker,
             State::PickPath { picker } => picker,
             State::PickPassword { source: _, picker } => picker,
+            State::PickUrl { picker } => picker,
         }
     }
 }

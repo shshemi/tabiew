@@ -217,7 +217,7 @@ impl Component for App {
         self.dls
             .iter()
             .enumerate()
-            .filter_map(|(idx, dl)| dl.is_done().then_some(idx))
+            .filter_map(|(idx, dl)| (!dl.is_running()).then_some(idx))
             .collect_vec()
             .into_iter()
             .rev()
