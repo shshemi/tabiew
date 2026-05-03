@@ -9,6 +9,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::anyhow;
 use tempfile::NamedTempFile;
 use url::Url;
 
@@ -33,7 +34,10 @@ impl BackgroundDownloaderAndRead {
         BackgroundDownloaderAndRead {
             info: info.clone(),
             hndl: std::thread::spawn(move || {
-                info.set_total(file_size(&url)?);
+                info.set_total(download_size(&url)?);
+                if info.total() == 0 {
+                    todo!() // Just testing
+                }
                 let mut reader = ureq::get(url.as_str()).call()?.into_reader();
                 let mut temp = NamedTempFile::new()?;
                 let writer = temp.as_file_mut();
@@ -108,34 +112,13 @@ pub fn download_to_temp(url: &Url) -> AppResult<NamedTempFile> {
     Ok(temp)
 }
 
-pub fn file_size(url: &Url) -> AppResult<u64> {
-    if let Ok(response) = ureq::get(url.as_str()).set("Range", "bytes=0-0").call() {
-        let size = response
-            .header("Content-Range")
-            .and_then(|v| v.rsplit('/').next().and_then(|n| n.parse::<u64>().ok()))
-            .or_else(|| {
-                response
-                    .header("Content-Length")
-                    .and_then(|v| v.parse::<u64>().ok())
-            });
-        if let Some(size) = size {
-            return Ok(size);
-        }
-    }
-
-    if let Ok(response) = ureq::head(url.as_str())
+pub fn download_size(url: &Url) -> AppResult<u64> {
+    let respnse = ureq::head(url.as_str())
         .set("Accept-Encoding", "identity")
-        .call()
-        && let Some(size) = response
-            .header("Content-Length")
-            .and_then(|v| v.parse::<u64>().ok())
-    {
-        return Ok(size);
+        .call()?;
+    if let Some(cl) = respnse.header("Content-Length") {
+        Ok(cl.parse::<u64>()?)
+    } else {
+        Ok(0)
     }
-
-    let response = ureq::head(url.as_str()).call()?;
-    Ok(response
-        .header("Content-Length")
-        .and_then(|v| v.parse::<u64>().ok())
-        .unwrap_or(0))
 }
