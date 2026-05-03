@@ -9,6 +9,7 @@ use crate::{
             },
             multi_step_overlay::OverlayStep,
             path_picker::PathPicker,
+            url_picker::UrlPicker,
             yes_no_picker::YesNoPicker,
         },
         widgets::input::InputType,
@@ -22,6 +23,9 @@ pub enum State {
     },
     PickPath {
         picker: PathPicker,
+    },
+    PickUrl {
+        picker: UrlPicker,
     },
     PickWidths {
         source: DataSource,
@@ -61,10 +65,20 @@ impl OverlayStep for State {
                         .with_title("Widths")
                         .with_hint("4 8 12 or leave empty to auto detect"),
                 },
+                Some(ImportSource::Url) => State::PickUrl {
+                    picker: UrlPicker::default(),
+                },
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => State::PickWidths {
                 source: DataSource::File(picker.path()),
+                picker: TextPicker::default()
+                    .with_input_type(InputType::MultiNumeric)
+                    .with_title("Widths")
+                    .with_hint("4 8 12 or leave empty to auto detect"),
+            },
+            State::PickUrl { picker } => State::PickWidths {
+                source: DataSource::Url(picker.url()),
                 picker: TextPicker::default()
                     .with_input_type(InputType::MultiNumeric)
                     .with_title("Widths")
@@ -159,6 +173,7 @@ impl OverlayStep for State {
                 source: _,
                 picker,
             } => picker,
+            State::PickUrl { picker } => picker,
         }
     }
 }

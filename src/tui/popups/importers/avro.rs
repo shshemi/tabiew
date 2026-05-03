@@ -7,13 +7,15 @@ use crate::{
         },
         multi_step_overlay::OverlayStep,
         path_picker::PathPicker,
+        url_picker::UrlPicker,
     },
 };
 
 #[derive(Debug)]
 pub enum State {
     PickSource { picker: ImportSourcePicker },
-    PickImportPath { picker: PathPicker },
+    PickPath { picker: PathPicker },
+    PickUrl { picker: UrlPicker },
 }
 
 impl OverlayStep for State {
@@ -24,16 +26,23 @@ impl OverlayStep for State {
                     dismiss_overlay_and_load_data_frame(DataSource::Stdin, AvroToDataFrame);
                     State::PickSource { picker }
                 }
-                Some(ImportSource::File) => State::PickImportPath {
+                Some(ImportSource::File) => State::PickPath {
                     picker: Default::default(),
+                },
+                Some(ImportSource::Url) => State::PickUrl {
+                    picker: UrlPicker::default(),
                 },
                 None => State::PickSource { picker },
             },
-            State::PickImportPath { picker } => {
+            State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
                     DataSource::File(picker.path()),
                     AvroToDataFrame,
                 );
+                Default::default()
+            }
+            State::PickUrl { picker } => {
+                dismiss_overlay_and_load_data_frame(DataSource::Url(picker.url()), AvroToDataFrame);
                 Default::default()
             }
         }
@@ -42,7 +51,8 @@ impl OverlayStep for State {
     fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
         match self {
             State::PickSource { picker } => picker,
-            State::PickImportPath { picker } => picker,
+            State::PickPath { picker } => picker,
+            State::PickUrl { picker } => picker,
         }
     }
 }

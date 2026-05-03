@@ -1,4 +1,7 @@
-use ratatui::widgets::{Gauge, Widget};
+use ratatui::{
+    text::Line,
+    widgets::{Gauge, Paragraph, Widget},
+};
 
 use crate::{
     misc::{config::theme, download::BackgroundDownloaderAndRead},
@@ -15,7 +18,7 @@ impl DownloadNotification {
         DownloadNotification { title, dl }
     }
 
-    pub fn is_done(&self) -> bool {
+    pub fn is_running(&self) -> bool {
         self.dl.running()
     }
 
@@ -31,12 +34,16 @@ impl Component for DownloadNotification {
         buf: &mut ratatui::prelude::Buffer,
         _: crate::tui::component::FocusState,
     ) {
-        let mut gauge = Gauge::default()
-            .block(Block::default().title(self.title.as_str()).into_widget())
-            .gauge_style(theme().block());
-        if let Some(ratio) = self.dl.info().ratio() {
-            gauge = gauge.ratio(ratio)
+        if let Some(percent) = self.dl.info().percent() {
+            Gauge::default()
+                .block(Block::default().title(self.title.as_str()).into_widget())
+                .gauge_style(theme().block())
+                .percent(percent)
+                .render(area, buf);
+        } else {
+            Paragraph::new("Downloading...")
+                .block(Block::default().title(self.title.as_str()).into_widget())
+                .render(area, buf);
         }
-        gauge.render(area, buf);
     }
 }

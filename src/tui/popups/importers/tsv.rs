@@ -7,6 +7,7 @@ use crate::{
         },
         multi_step_overlay::OverlayStep,
         path_picker::PathPicker,
+        url_picker::UrlPicker,
     },
 };
 
@@ -14,6 +15,7 @@ use crate::{
 pub enum State {
     PickSource { picker: ImportSourcePicker },
     PickPath { picker: PathPicker },
+    PickUrl { picker: UrlPicker },
 }
 
 impl OverlayStep for State {
@@ -31,13 +33,26 @@ impl OverlayStep for State {
                     State::PickSource { picker }
                 }
                 Some(ImportSource::File) => State::PickPath {
-                    picker: Default::default(),
+                    picker: PathPicker::default(),
+                },
+                Some(ImportSource::Url) => State::PickUrl {
+                    picker: UrlPicker::default(),
                 },
                 None => State::PickSource { picker },
             },
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
                     DataSource::File(picker.path()),
+                    CsvToDataFrame::default()
+                        .with_no_header(true)
+                        .with_quote_char('"')
+                        .with_separator('\t'),
+                );
+                Default::default()
+            }
+            State::PickUrl { picker } => {
+                dismiss_overlay_and_load_data_frame(
+                    DataSource::Url(picker.url()),
                     CsvToDataFrame::default()
                         .with_no_header(true)
                         .with_quote_char('"')
@@ -52,6 +67,7 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => picker,
             State::PickPath { picker } => picker,
+            State::PickUrl { picker } => picker,
         }
     }
 }

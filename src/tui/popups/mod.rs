@@ -17,4 +17,5 @@ pub mod scatter_plot_builder;
 pub mod sql_query_picker;
 pub mod table_registerer;
 pub mod theme_selector;
+pub mod url_picker;
 pub mod yes_no_picker;

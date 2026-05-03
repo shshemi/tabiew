@@ -8,7 +8,8 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            multi_step_overlay::OverlayStep, path_picker::PathPicker, yes_no_picker::YesNoPicker,
+            multi_step_overlay::OverlayStep, path_picker::PathPicker, url_picker::UrlPicker,
+            yes_no_picker::YesNoPicker,
         },
     },
 };
@@ -20,6 +21,9 @@ pub enum State {
     },
     PickPath {
         picker: PathPicker,
+    },
+    PickUrl {
+        picker: UrlPicker,
     },
     PickHasHeader {
         source: DataSource,
@@ -44,10 +48,13 @@ impl OverlayStep for State {
             State::PickSource { picker } => match picker.value() {
                 Some(ImportSource::Stdin) => State::PickHasHeader {
                     source: DataSource::Stdin,
-                    picker: YesNoPicker::default(),
+                    picker: YesNoPicker::default().with_title("Has Header"),
                 },
                 Some(ImportSource::File) => State::PickPath {
                     picker: Default::default(),
+                },
+                Some(ImportSource::Url) => State::PickUrl {
+                    picker: UrlPicker::default(),
                 },
                 None => State::PickSource {
                     picker: Default::default(),
@@ -55,6 +62,10 @@ impl OverlayStep for State {
             },
             State::PickPath { picker } => State::PickHasHeader {
                 source: DataSource::File(picker.path()),
+                picker: YesNoPicker::default().with_title("Has Header"),
+            },
+            State::PickUrl { picker } => State::PickHasHeader {
+                source: DataSource::Url(picker.url()),
                 picker: YesNoPicker::default().with_title("Has Header"),
             },
             State::PickHasHeader { source, picker } => State::PickSeparator {
@@ -113,6 +124,7 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => picker,
             State::PickPath { picker } => picker,
+            State::PickUrl { picker } => picker,
             State::PickHasHeader { source: _, picker } => picker,
             State::PickSeparator {
                 source: _,
