@@ -402,13 +402,9 @@ impl Component for Pane {
                 self.show_exact_search();
                 true
             }
-            (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                if self.tstack.len_without_base() > 0 {
-                    self.pop_data_frame();
-                    true
-                } else {
-                    false
-                }
+            (KeyCode::Char('q'), KeyModifiers::NONE) if self.tstack.len_without_base() > 0 => {
+                self.pop_data_frame();
+                true
             }
             _ => false,
         })
