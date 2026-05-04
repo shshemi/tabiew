@@ -9,8 +9,8 @@ use crate::{
         reader::ReaderSource,
         reader::{
             ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, ExcelToDataFrames,
-            FwfToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
-            ParquetToDataFrame, SqliteToDataFrames,
+            FwfToDataFrame, HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame,
+            LogfmtToDataFrame, ParquetToDataFrame, SqliteToDataFrames,
         },
     },
 };
@@ -42,6 +42,7 @@ impl BuildReader for Args {
             Some(Format::Excel) => Ok(Box::new(ExcelToDataFrames::from_args(self))),
             Some(Format::Logfmt) => Ok(Box::new(LogfmtToDataFrame::from_args(self))),
             Some(Format::Avro) => Ok(Box::new(AvroToDataFrame)),
+            Some(Format::Html) => Ok(Box::new(HtmlToDataFrame::from_args(self))),
             None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
                 Some("tsv") => {
                     let reader = CsvToDataFrame::from_args(self).with_separator('\t');
@@ -57,6 +58,7 @@ impl BuildReader for Args {
                 Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
                     Ok(Box::new(ExcelToDataFrames::from_args(self)))
                 }
+                Some("html") | Some("htm") => Ok(Box::new(HtmlToDataFrame::from_args(self))),
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
         }

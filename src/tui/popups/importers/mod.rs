@@ -14,6 +14,7 @@ pub mod avro;
 pub mod csv;
 pub mod excel;
 pub mod fwf;
+pub mod html;
 mod import_source_picker;
 pub mod json;
 pub mod jsonl;

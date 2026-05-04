@@ -103,6 +103,7 @@ logfmt-zerocopy = "0.1.3"
 indexmap = "2.14.0"
 ureq = "2"
 url = "2.5.8"
+scraper = "0.26"
 
 [dev-dependencies]
 rstest = "0.26.1"

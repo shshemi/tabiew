@@ -134,6 +134,7 @@ pub enum Format {
     Excel,
     Logfmt,
     Avro,
+    Html,
 }
 
 #[derive(Debug, Clone)]
