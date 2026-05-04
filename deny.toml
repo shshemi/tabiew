@@ -34,6 +34,7 @@ allow = [
     "0BSD",
     "BSL-1.0",
     "CC0-1.0",
+    "CDLA-Permissive-2.0",
     "MIT-0",
     "Unlicense",
 ]
