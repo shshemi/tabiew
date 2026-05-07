@@ -21,15 +21,15 @@ pub trait Reader: DataFrameReader + Debug + Send + Sync + 'static {}
 impl<T> Reader for T where T: DataFrameReader + Debug + Send + Sync + 'static {}
 
 #[derive(Debug)]
-pub struct BackgroundDownloaderAndRead {
+pub struct DownloadAndRead {
     info: DownloadInfo,
     hndl: JoinHandle<AppResult<NamedFrames>>,
 }
 
-impl BackgroundDownloaderAndRead {
+impl DownloadAndRead {
     pub fn new(url: Url, df_reader: Arc<dyn Reader>) -> Self {
         let info = DownloadInfo::default();
-        BackgroundDownloaderAndRead {
+        DownloadAndRead {
             info: info.clone(),
             hndl: std::thread::spawn(move || {
                 info.set_total(download_size(&url)?);

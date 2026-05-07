@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::misc::config::config;
-use crate::misc::download::{self, BackgroundDownloaderAndRead};
+use crate::misc::download::{self, DownloadAndRead};
 use crate::tui::Pane;
 use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
@@ -82,7 +82,7 @@ impl App {
     fn add_download(&mut self, url: &Url, reader: Arc<dyn download::Reader>) {
         self.dls.push(DownloadNotification::new(
             url.as_str().to_owned(),
-            BackgroundDownloaderAndRead::new(url.to_owned(), reader),
+            DownloadAndRead::new(url.to_owned(), reader),
         ));
     }
 

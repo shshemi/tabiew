@@ -1,17 +1,17 @@
 use ratatui::widgets::{Gauge, Paragraph, Widget};
 
 use crate::{
-    misc::{config::theme, download::BackgroundDownloaderAndRead},
+    misc::{config::theme, download::DownloadAndRead},
     tui::{component::Component, widgets::block::Block},
 };
 
 pub struct DownloadNotification {
-    dl: BackgroundDownloaderAndRead,
+    dl: DownloadAndRead,
     title: String,
 }
 
 impl DownloadNotification {
-    pub fn new(title: String, dl: BackgroundDownloaderAndRead) -> Self {
+    pub fn new(title: String, dl: DownloadAndRead) -> Self {
         DownloadNotification { title, dl }
     }
 
@@ -19,7 +19,7 @@ impl DownloadNotification {
         self.dl.running()
     }
 
-    pub fn into_downloader(self) -> BackgroundDownloaderAndRead {
+    pub fn into_downloader(self) -> DownloadAndRead {
         self.dl
     }
 }
