@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    io::Write,
+    io::{Read, Write},
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
@@ -14,6 +14,7 @@ use url::Url;
 use crate::{
     AppResult,
     io::reader::{DataFrameReader, NamedFrames, ReaderSource},
+    misc::http,
 };
 
 pub trait Reader: DataFrameReader + Debug + Send + Sync + 'static {}
@@ -36,7 +37,7 @@ impl DownloadAndRead {
                 if info.total() == 0 {
                     todo!() // Just testing
                 }
-                let mut reader = ureq::get(url.as_str()).call()?.into_reader();
+                let mut reader = http::get(&url).call()?.into_body().into_reader();
                 let mut temp = NamedTempFile::new()?;
                 let writer = temp.as_file_mut();
                 let mut buffer = [0_u8; 16_384];
@@ -102,16 +103,18 @@ impl DownloadInfo {
 pub fn download_to_temp(url: &Url) -> AppResult<NamedTempFile> {
     let mut temp = NamedTempFile::new()?;
     let response = ureq::get(url.as_str()).call()?;
-    std::io::copy(&mut response.into_reader(), temp.as_file_mut())?;
+    std::io::copy(&mut response.into_body().into_reader(), temp.as_file_mut())?;
     Ok(temp)
 }
 
 pub fn download_size(url: &Url) -> AppResult<u64> {
-    let respnse = ureq::head(url.as_str())
-        .set("Accept-Encoding", "identity")
+    let respnse = http::head(url)
+        .header("Accept-Encoding", "identity")
         .call()?;
-    if let Some(cl) = respnse.header("Content-Length") {
-        Ok(cl.parse::<u64>()?)
+    if let Some(cl) = respnse.headers().get("Content-Length") {
+        let s = cl.to_str()?;
+        let v = s.parse::<u64>()?;
+        Ok(v)
     } else {
         Ok(0)
     }

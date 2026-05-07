@@ -9,7 +9,11 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AppResult, misc::paths::config_path, tui::themes::theme::LoadedTheme};
+use crate::{
+    AppResult,
+    misc::{http::HttpConfig, paths::config_path},
+    tui::themes::theme::LoadedTheme,
+};
 
 use super::type_ext::UnwrapOrGracefulShutdown;
 
@@ -17,6 +21,7 @@ use super::type_ext::UnwrapOrGracefulShutdown;
 #[serde(default)]
 pub struct Config {
     theme: RwLock<LoadedTheme>,
+    http: RwLock<HttpConfig>,
     show_table_borders: AtomicBool,
     show_table_row_numbers: AtomicBool,
 }
@@ -27,10 +32,12 @@ impl Config {
         let contents = fs::read_to_string(path)?;
         let Config {
             theme,
+            http,
             show_table_borders: table_borders,
             show_table_row_numbers: table_row_numbers,
         } = toml::from_str(&contents)?;
         self.set_theme(theme.into_inner()?);
+        self.set_http_config(http.into_inner()?);
         self.show_table_borders
             .swap(table_borders.into_inner(), Ordering::Relaxed);
         self.show_table_row_numbers
@@ -53,6 +60,14 @@ impl Config {
 
     pub fn set_theme(&self, theme: impl Into<LoadedTheme>) {
         *self.theme.write().unwrap_or_graceful_shutdown() = theme.into();
+    }
+
+    pub fn http_config(&self) -> impl Deref<Target = HttpConfig> {
+        self.http.read().unwrap_or_graceful_shutdown()
+    }
+
+    pub fn set_http_config(&self, http_config: impl Into<HttpConfig>) {
+        *self.http.write().unwrap_or_graceful_shutdown() = http_config.into();
     }
 
     pub fn show_table_borders(&self) -> bool {
@@ -79,6 +94,7 @@ impl Default for Config {
             theme: RwLock::new(LoadedTheme::default()),
             show_table_borders: AtomicBool::new(true),
             show_table_row_numbers: AtomicBool::new(true),
+            http: RwLock::new(HttpConfig::default()),
         }
     }
 }

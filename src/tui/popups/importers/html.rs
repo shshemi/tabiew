@@ -23,10 +23,7 @@ impl OverlayStep for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(ImportSource::Stdin) => {
-                    dismiss_overlay_and_load_data_frame(
-                        DataSource::Stdin,
-                        HtmlToDataFrame::default(),
-                    );
+                    dismiss_overlay_and_load_data_frame(DataSource::Stdin, HtmlToDataFrame);
                     State::PickSource { picker }
                 }
                 Some(ImportSource::File) => State::PickPath {
@@ -40,15 +37,12 @@ impl OverlayStep for State {
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
                     DataSource::File(picker.path()),
-                    HtmlToDataFrame::default(),
+                    HtmlToDataFrame,
                 );
                 Default::default()
             }
             State::PickUrl { picker } => {
-                dismiss_overlay_and_load_data_frame(
-                    DataSource::Url(picker.url()),
-                    HtmlToDataFrame::default(),
-                );
+                dismiss_overlay_and_load_data_frame(DataSource::Url(picker.url()), HtmlToDataFrame);
                 Default::default()
             }
         }

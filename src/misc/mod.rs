@@ -1,6 +1,7 @@
 pub mod config;
 pub mod download;
 pub mod external_editor;
+pub mod http;
 pub mod iter_ext;
 pub mod non_empty_stack;
 pub mod osc52;
