@@ -19,6 +19,7 @@ mod import_source_picker;
 pub mod json;
 pub mod jsonl;
 pub mod logfmt;
+pub mod markdown;
 pub mod parquet;
 pub mod sqlite;
 pub mod tsv;

@@ -104,6 +104,7 @@ indexmap = "2.14.0"
 ureq = "3.3.0"
 url = "2.5.8"
 scraper = "0.26"
+pulldown-cmark = { version = "0.13.3", default-features = false }
 
 [dev-dependencies]
 rstest = "0.26.1"

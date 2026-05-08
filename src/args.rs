@@ -135,6 +135,7 @@ pub enum Format {
     Logfmt,
     Avro,
     Html,
+    Markdown,
 }
 
 #[derive(Debug, Clone)]

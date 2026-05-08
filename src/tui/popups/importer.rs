@@ -6,7 +6,10 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
-        importers::{arrow, avro, csv, excel, fwf, html, json, jsonl, logfmt, parquet, sqlite, tsv},
+        importers::{
+            arrow, avro, csv, excel, fwf, html, json, jsonl, logfmt, markdown, parquet, sqlite,
+            tsv,
+        },
         multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
 };
@@ -28,6 +31,7 @@ pub enum State {
     Tsv { tsv: tsv::State },
     Logfmt { logfmt: logfmt::State },
     Html { html: html::State },
+    Markdown { markdown: markdown::State },
 }
 
 impl OverlayStep for State {
@@ -70,6 +74,9 @@ impl OverlayStep for State {
                 Some(Format::Html) => Self::Html {
                     html: Default::default(),
                 },
+                Some(Format::Markdown) => Self::Markdown {
+                    markdown: Default::default(),
+                },
                 None => State::PickFormat { picker },
             },
             State::Arrow { arrow } => State::Arrow {
@@ -96,6 +103,9 @@ impl OverlayStep for State {
                 logfmt: logfmt.next(),
             },
             State::Html { html } => State::Html { html: html.next() },
+            State::Markdown { markdown } => State::Markdown {
+                markdown: markdown.next(),
+            },
         }
     }
 
@@ -114,6 +124,7 @@ impl OverlayStep for State {
             State::Tsv { tsv } => tsv.responder(),
             State::Logfmt { logfmt } => logfmt.responder(),
             State::Html { html } => html.responder(),
+            State::Markdown { markdown } => markdown.responder(),
         }
     }
 }
@@ -140,6 +151,7 @@ pub enum Format {
     Excel,
     Logfmt,
     Html,
+    Markdown,
 }
 
 impl Display for Format {
