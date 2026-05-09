@@ -1,102 +1,74 @@
-use std::{
-    fmt::Debug,
-    io::{Read, Write},
-    sync::{
-        Arc,
-        atomic::{AtomicU64, Ordering},
-    },
-    thread::JoinHandle,
-};
+use std::io::Read;
 
 use tempfile::NamedTempFile;
 use url::Url;
 
-use crate::{
-    AppResult,
-    io::reader::{DataFrameReader, NamedFrames, ReaderSource},
-    misc::http,
-};
+use crate::{AppResult, misc::http};
 
-pub trait Reader: DataFrameReader + Debug + Send + Sync + 'static {}
+const CHUNK_SIZE: usize = 16_384;
 
-impl<T> Reader for T where T: DataFrameReader + Debug + Send + Sync + 'static {}
-
-#[derive(Debug)]
-pub struct DownloadAndRead {
-    info: DownloadInfo,
-    hndl: JoinHandle<AppResult<NamedFrames>>,
+pub struct Download {
+    reader: Box<dyn Read + Send>,
+    buffer: Box<[u8]>,
+    downloaded: u64,
+    total: Option<u64>,
+    done: bool,
 }
 
-impl DownloadAndRead {
-    pub fn new(url: Url, df_reader: Arc<dyn Reader>) -> Self {
-        let info = DownloadInfo::default();
-        DownloadAndRead {
-            info: info.clone(),
-            hndl: std::thread::spawn(move || {
-                info.set_total(download_size(&url)?);
-                if info.total() == 0 {
-                    todo!() // Just testing
-                }
-                let mut reader = http::get(&url).call()?.into_body().into_reader();
-                let mut temp = NamedTempFile::new()?;
-                let writer = temp.as_file_mut();
-                let mut buffer = [0_u8; 16_384];
-                loop {
-                    let n = reader.read(&mut buffer)?;
-                    if n == 0 {
-                        break;
-                    }
-                    info.add_progress(n as u64);
-                    writer.write_all(&buffer[..n])?;
-                }
-                let nf =
-                    df_reader.read_to_data_frames(ReaderSource::File(temp.path().to_owned()))?;
-                Ok(nf)
-            }),
+impl Download {
+    pub fn new(url: &Url) -> AppResult<Self> {
+        let total = download_size(url).ok().filter(|&n| n > 0);
+        let reader = http::get(url).call()?.into_body().into_reader();
+        Ok(Self {
+            reader: Box::new(reader),
+            buffer: vec![0u8; CHUNK_SIZE].into_boxed_slice(),
+            downloaded: 0,
+            total,
+            done: false,
+        })
+    }
+
+    pub fn next_chunk(&mut self) -> Option<&[u8]> {
+        if self.done {
+            return None;
+        }
+        match self.reader.read(&mut self.buffer) {
+            Ok(0) => {
+                self.done = true;
+                None
+            }
+            Ok(n) => {
+                self.downloaded += n as u64;
+                Some(&self.buffer[..n])
+            }
+            Err(_) => {
+                self.done = true;
+                None
+            }
         }
     }
 
-    pub fn running(&self) -> bool {
-        !self.hndl.is_finished()
+    pub fn downloaded(&self) -> u64 {
+        self.downloaded
     }
 
-    pub fn info(&self) -> &DownloadInfo {
-        &self.info
-    }
-
-    pub fn join(self) -> AppResult<NamedFrames> {
-        // TODO: fix unwrap
-        self.hndl.join().unwrap()
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct DownloadInfo {
-    pg: Arc<AtomicU64>,
-    tt: Arc<AtomicU64>,
-}
-
-impl DownloadInfo {
-    pub fn progress(&self) -> u64 {
-        self.pg.load(Ordering::Relaxed)
-    }
-
-    fn add_progress(&self, pg: u64) {
-        self.pg.fetch_add(pg, Ordering::Relaxed);
-    }
-
-    pub fn total(&self) -> u64 {
-        self.tt.load(Ordering::Relaxed)
-    }
-
-    fn set_total(&self, tt: u64) {
-        self.tt.store(tt, Ordering::Relaxed);
+    pub fn total(&self) -> Option<u64> {
+        self.total
     }
 
     pub fn percent(&self) -> Option<u16> {
-        let pg = self.progress() * 100;
-        let tt = self.total();
-        pg.checked_div(tt).map(|u| u as u16)
+        self.total
+            .and_then(|tt| (self.downloaded * 100).checked_div(tt).map(|v| v as u16))
+    }
+}
+
+impl std::fmt::Debug for Download {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Downloader")
+            .field("downloaded", &self.downloaded)
+            .field("total", &self.total)
+            .field("done", &self.done)
+            .finish()
     }
 }
 

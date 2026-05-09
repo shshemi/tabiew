@@ -1,3 +1,4 @@
+pub mod background;
 pub mod config;
 pub mod download;
 pub mod external_editor;
@@ -8,6 +9,7 @@ pub mod osc52;
 pub mod paths;
 pub mod polars_ext;
 pub mod ragged_vec;
+pub mod remote_load;
 pub mod search;
 pub mod sql;
 pub mod stdin;

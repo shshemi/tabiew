@@ -4,7 +4,7 @@ use crate::{
     handler::message::Message,
     io::{DataSource, reader::ReaderSource},
     misc::{
-        download,
+        remote_load,
         sql::{TableSource, sql},
     },
 };
@@ -24,7 +24,7 @@ pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
 
-fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl download::Reader) {
+fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Reader) {
     Message::AppDismissOverlay.enqueue();
     match source {
         DataSource::Stdin => {

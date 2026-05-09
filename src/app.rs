@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::misc::config::config;
-use crate::misc::download::{self, DownloadAndRead};
+use crate::misc::remote_load::{self, RemoteLoad};
 use crate::tui::Pane;
 use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;
@@ -79,10 +79,10 @@ impl App {
         )));
     }
 
-    fn add_download(&mut self, url: &Url, reader: Arc<dyn download::Reader>) {
+    fn add_download(&mut self, url: &Url, reader: Arc<dyn remote_load::Reader>) {
         self.dls.push(DownloadNotification::new(
             url.as_str().to_owned(),
-            DownloadAndRead::new(url.to_owned(), reader),
+            RemoteLoad::new(url.to_owned(), reader),
         ));
     }
 
@@ -222,7 +222,7 @@ impl Component for App {
             .into_iter()
             .rev()
             .for_each(|idx| {
-                let dl = self.dls.remove(idx).into_downloader();
+                let dl = self.dls.remove(idx).into_remote_load();
                 match dl.join() {
                     Ok(nfs) => {
                         for (name, df) in nfs {
