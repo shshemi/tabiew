@@ -8,7 +8,7 @@ use crate::tui::{
     component::Component,
     pickers::search_picker::SearchPicker,
     popups::{
-        exporters::{arrow, avro, csv, json, jsonl, parquet, tsv},
+        exporters::{arrow, avro, csv, json, jsonl, markdown, parquet, tsv},
         multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
 };
@@ -36,6 +36,9 @@ pub enum State {
     JsonL {
         state: jsonl::State,
     },
+    Markdown {
+        state: markdown::State,
+    },
     Parquet {
         state: parquet::State,
     },
@@ -62,6 +65,7 @@ impl OverlayStep for State {
                 Some(Format::Csv) => State::Csv { state: df.into() },
                 Some(Format::Json) => State::Json { state: df.into() },
                 Some(Format::JsonL) => State::JsonL { state: df.into() },
+                Some(Format::Markdown) => State::Markdown { state: df.into() },
                 Some(Format::Parquet) => State::Parquet { state: df.into() },
                 Some(Format::Tsv) => State::Tsv { state: df.into() },
                 None => State::PickFormat { df, picker },
@@ -81,6 +85,9 @@ impl OverlayStep for State {
             State::JsonL { state } => State::JsonL {
                 state: state.next(),
             },
+            State::Markdown { state } => State::Markdown {
+                state: state.next(),
+            },
             State::Parquet { state } => State::Parquet {
                 state: state.next(),
             },
@@ -98,6 +105,7 @@ impl OverlayStep for State {
             State::Csv { state } => state.responder(),
             State::Json { state } => state.responder(),
             State::JsonL { state } => state.responder(),
+            State::Markdown { state } => state.responder(),
             State::Parquet { state } => state.responder(),
             State::Tsv { state } => state.responder(),
         }
@@ -111,6 +119,7 @@ pub enum Format {
     Parquet,
     Json,
     JsonL,
+    Markdown,
     Arrow,
     Avro,
 }
