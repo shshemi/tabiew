@@ -10,8 +10,8 @@ use crate::{
         component::Component,
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
+            file_picker::FilePicker,
             multi_step_overlay::OverlayStep,
-            path_picker::PathPicker,
         },
     },
 };
@@ -24,7 +24,7 @@ pub enum State {
     },
     PickOutputPath {
         df: DataFrame,
-        picker: PathPicker,
+        picker: FilePicker,
     },
 }
 

@@ -9,7 +9,7 @@ use crate::{
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
             multi_step_overlay::OverlayStep,
-            path_picker::PathPicker,
+            file_picker::FilePicker,
         },
     },
 };
@@ -22,7 +22,7 @@ pub enum State {
     },
     PickOutputPath {
         df: DataFrame,
-        picker: PathPicker,
+        picker: FilePicker,
     },
 }
 
@@ -41,7 +41,7 @@ impl OverlayStep for State {
             State::PickOutputTarget { mut df, picker } => match picker.selected() {
                 Some(Target::File) => State::PickOutputPath {
                     df,
-                    picker: PathPicker::default(),
+                    picker: FilePicker::default(),
                 },
                 Some(Target::Clipboard) => {
                     WriteToCsv::default()

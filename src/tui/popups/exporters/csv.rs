@@ -12,8 +12,8 @@ use crate::{
         pickers::text_picker::TextPicker,
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
+            file_picker::FilePicker,
             multi_step_overlay::OverlayStep,
-            path_picker::PathPicker,
         },
     },
 };
@@ -39,7 +39,7 @@ pub enum State {
         df: DataFrame,
         separator: char,
         quote: char,
-        picker: PathPicker,
+        picker: FilePicker,
     },
 }
 
@@ -121,7 +121,7 @@ impl OverlayStep for State {
                     df,
                     separator,
                     quote,
-                    picker: PathPicker::default(),
+                    picker: FilePicker::default(),
                 },
                 None => State::PickOutputTarget {
                     df,

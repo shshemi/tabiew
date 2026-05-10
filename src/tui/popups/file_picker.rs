@@ -6,11 +6,11 @@ use home::home_dir;
 use crate::tui::{component::Component, pickers::text_picker::TextPicker};
 
 #[derive(Debug)]
-pub struct PathPicker {
+pub struct FilePicker {
     text_picker: TextPicker,
 }
 
-impl PathPicker {
+impl FilePicker {
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
             text_picker: self.text_picker.with_title(title),
@@ -21,7 +21,7 @@ impl PathPicker {
     }
 }
 
-impl Component for PathPicker {
+impl Component for FilePicker {
     fn render(
         &mut self,
         area: ratatui::prelude::Rect,
@@ -36,7 +36,7 @@ impl Component for PathPicker {
     }
 }
 
-impl Default for PathPicker {
+impl Default for FilePicker {
     fn default() -> Self {
         Self {
             text_picker: TextPicker::default().with_title("File Path").with_value(

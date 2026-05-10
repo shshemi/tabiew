@@ -8,7 +8,7 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            multi_step_overlay::OverlayStep, path_picker::PathPicker, url_picker::UrlPicker,
+            multi_step_overlay::OverlayStep, file_picker::FilePicker, url_picker::UrlPicker,
             yes_no_picker::YesNoPicker,
         },
     },
@@ -20,7 +20,7 @@ pub enum State {
         picker: ImportSourcePicker,
     },
     PickPath {
-        picker: PathPicker,
+        picker: FilePicker,
     },
     PickUrl {
         picker: UrlPicker,

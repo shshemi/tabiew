@@ -6,13 +6,13 @@ use crate::{
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
-        popups::{multi_step_overlay::OverlayStep, path_picker::PathPicker},
+        popups::{file_picker::FilePicker, multi_step_overlay::OverlayStep},
     },
 };
 
 #[derive(Debug)]
 pub enum State {
-    PickOutputPath { df: DataFrame, picker: PathPicker },
+    PickOutputPath { df: DataFrame, picker: FilePicker },
 }
 
 impl From<DataFrame> for State {

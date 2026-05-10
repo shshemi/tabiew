@@ -6,7 +6,7 @@ use crate::{
             import_source_picker::{ImportSource, ImportSourcePicker},
         },
         multi_step_overlay::OverlayStep,
-        path_picker::PathPicker,
+        file_picker::FilePicker,
         url_picker::UrlPicker,
     },
 };
@@ -14,7 +14,7 @@ use crate::{
 #[derive(Debug)]
 pub enum State {
     PickSource { picker: ImportSourcePicker },
-    PickPath { picker: PathPicker },
+    PickPath { picker: FilePicker },
     PickUrl { picker: UrlPicker },
 }
 
@@ -27,7 +27,7 @@ impl OverlayStep for State {
                     State::PickSource { picker }
                 }
                 Some(ImportSource::File) => State::PickPath {
-                    picker: PathPicker::default(),
+                    picker: FilePicker::default(),
                 },
                 Some(ImportSource::Url) => State::PickUrl {
                     picker: UrlPicker::default(),
