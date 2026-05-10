@@ -99,12 +99,12 @@ impl Component for InlineQueryPicker {
         self.picker.handle(event)
             || match (event.code, event.modifiers) {
                 (KeyCode::Tab, KeyModifiers::NONE) => {
-                    self.picker.apply_selected();
+                    self.picker.apply_selected_suggestion();
                     true
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     if self.picker.has_suggestions() {
-                        self.picker.apply_selected();
+                        self.picker.apply_selected_suggestion();
                     } else {
                         self.submit();
                     }

@@ -41,6 +41,20 @@ where
         }
     }
 
+    pub fn with_title(self, title: impl Into<String>) -> Self {
+        Self {
+            title: title.into(),
+            ..self
+        }
+    }
+
+    pub fn with_value(self, value: impl Into<String>) -> Self {
+        Self {
+            input: self.input.with_value(value.into()),
+            ..self
+        }
+    }
+
     pub fn value(&self) -> &str {
         self.input.value()
     }
@@ -49,7 +63,15 @@ where
         !self.items.is_empty()
     }
 
-    pub fn apply_selected(&mut self) {
+    pub fn selected_suggestion(&self) -> Option<&<P as Provider>::Suggestion> {
+        self.list.selected().and_then(|idx| self.items.get(idx))
+    }
+
+    pub fn clear_suggestion_selection(&mut self) {
+        self.list = ListState::default().with_selected(0.into());
+    }
+
+    pub fn apply_selected_suggestion(&mut self) {
         if let Some(suggestion) = self.list.selected().and_then(|idx| self.items.get(idx)) {
             suggestion.apply_to(&mut self.input);
         }
@@ -149,4 +171,15 @@ pub trait Suggestion {
 pub trait Provider {
     type Suggestion: Suggestion;
     fn suggestions(&self, query: &str, cursor: usize) -> Vec<Self::Suggestion>;
+}
+
+impl<S> Provider for fn(&str, usize) -> Vec<S>
+where
+    S: Suggestion,
+{
+    type Suggestion = S;
+
+    fn suggestions(&self, query: &str, cursor: usize) -> Vec<Self::Suggestion> {
+        self(query, cursor)
+    }
 }

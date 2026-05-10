@@ -99,6 +99,10 @@ impl Input {
         self.input.handle(tui_input::InputRequest::DeletePrevWord);
     }
 
+    pub fn set_value(&mut self, value: String) {
+        self.input = tui_input::Input::new(value);
+    }
+
     pub fn value(&self) -> &str {
         self.input.value()
     }
