@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     cmp::Ordering,
     ffi::OsStr,
     fs::{DirEntry, read_dir},
@@ -118,13 +117,22 @@ fn suggestions(query: &str, _: usize) -> Vec<FileSuggestion> {
     };
     read_dir
         .flat_map(|r| r.ok())
-        .filter(|entry| entry.file_name().to_string_lossy().starts_with(filter))
+        .filter(|entry| {
+            entry
+                .file_name()
+                .to_string_lossy()
+                .to_lowercase()
+                .starts_with(&filter.to_lowercase())
+        })
         .sorted_by(cmp_dir_entry)
         .flat_map(|entry| {
             let path = entry.path();
             path.file_name()
                 .map(OsStr::to_string_lossy)
-                .map(Cow::into_owned)
+                .map(|s| {
+                    let icon = if path.is_dir() { "[D]" } else { "[F]" };
+                    format!("{} {}", icon, s)
+                })
                 .map(|title| FileSuggestion { title, path })
         })
         .collect_vec()
@@ -140,22 +148,19 @@ fn path_to_string(path: &Path) -> String {
 }
 
 fn cmp_dir_entry(a: &DirEntry, b: &DirEntry) -> Ordering {
-    let Ok(type_a) = a.file_type() else {
-        return Ordering::Equal;
-    };
-    let Ok(type_b) = a.file_type() else {
-        return Ordering::Equal;
-    };
-
-    if type_a.is_dir() && !type_b.is_dir() {
-        return Ordering::Less;
+    if let Ok(type_a) = a.file_type()
+        && let Ok(type_b) = b.file_type()
+    {
+        if type_a.is_dir() && !type_b.is_dir() {
+            Ordering::Less
+        } else if !type_a.is_dir() && type_b.is_dir() {
+            Ordering::Greater
+        } else {
+            a.file_name()
+                .to_string_lossy()
+                .cmp(&b.file_name().to_string_lossy())
+        }
+    } else {
+        Ordering::Equal
     }
-
-    if !type_a.is_dir() && type_b.is_dir() {
-        return Ordering::Greater;
-    }
-
-    b.file_name()
-        .to_string_lossy()
-        .cmp(&a.file_name().to_string_lossy())
 }
