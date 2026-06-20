@@ -1,8 +1,10 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
+use itertools::{FoldWhile, Itertools};
 use polars::frame::DataFrame;
 use rand::RngExt;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
+use unicode_width::UnicodeWidthStr;
 
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
@@ -71,7 +73,7 @@ impl Pane {
         self.dstack.last_mut()
     }
 
-    pub fn iter_descriptions(&self) -> impl Iterator<Item = &TableDescription> {
+    pub fn iter_descriptions(&self) -> impl DoubleEndedIterator<Item = &TableDescription> {
         self.dstack.iter()
     }
 
@@ -223,6 +225,35 @@ impl Pane {
 
     pub fn title(&self) -> &str {
         self.dstack.base().description()
+    }
+
+    pub fn history(&self, mut width: usize) -> String {
+        self.dstack
+            .iter()
+            .rev()
+            .fold_while(String::new(), |mut s, td| {
+                if s.is_empty() {
+                    let tag = format!("{} {}", td.variant(), td.description());
+                    width = width.saturating_sub(tag.width());
+                    s.extend(tag.chars().rev());
+                    FoldWhile::Continue(s)
+                } else {
+                    //
+                    let tag = format!("{} {} > ", td.variant(), td.description());
+                    let w = tag.width();
+                    if w <= width {
+                        width -= w;
+                        s.extend(tag.chars().rev());
+                        FoldWhile::Continue(s)
+                    } else {
+                        FoldWhile::Done(s)
+                    }
+                }
+            })
+            .into_inner()
+            .chars()
+            .rev()
+            .collect()
     }
 }
 
