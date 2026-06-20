@@ -1,6 +1,9 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use ratatui::widgets::{Borders, Widget};
+use ratatui::{
+    layout::{Constraint, Layout, Rect},
+    widgets::{Borders, Widget},
+};
 
 use crate::{
     handler::message::Message,
@@ -8,7 +11,7 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         pane::TableDescription,
-        widgets::block::Block,
+        widgets::{block::Block, status_bar::StatusBar},
     },
 };
 
@@ -97,56 +100,36 @@ impl Component for Tabs {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        // fix state (if invalid)
         self.idx = self.idx().min(self.len().saturating_sub(1));
 
-        // build the status bar
-        let status_bar = self
-            .panes
-            .get(self.idx)
-            .map(|pane| {
-                let status_bar = TagLine::default();
-                let key = pane.description().variant();
-                let value = pane.description().description();
-                status_bar
-                    .left_aligned()
-                    .tag(Tag::new(key, value))
-                    .tag(Tag::new(
-                        "Tab",
-                        format!("{} / {}", self.idx + 1, self.len()),
-                    ))
-                    .tag(Tag::new(
-                        "Row",
-                        format!(
-                            "{:>width$}",
-                            pane.table().selected().unwrap_or_default() + 1,
-                            width = pane.table().data_frame().height().to_string().len()
-                        ),
-                    ))
-                    .tag(Tag::new(
-                        "Shape",
-                        format!(
-                            "{} x {}",
-                            pane.table().data_frame().height(),
-                            pane.table().data_frame().width()
-                        ),
-                    ))
-            })
-            .unwrap_or_default()
-            .right_aligned();
-
-        // render block with status bar
         let area = {
-            let blk = Block::default()
-                .borders(if config().show_table_borders() {
-                    Borders::all()
-                } else {
-                    Borders::empty()
-                })
-                .bottom(status_bar);
-            let new = blk.inner(area);
-            blk.render(area, buf);
-            new
+            if config().show_table_borders() {
+                let blk = Block::default().borders(Borders::all());
+                let new = blk.inner(area);
+                blk.render(area, buf);
+                if let Some(pane) = self.panes.get(self.idx) {
+                    let status_bar = StatusBar::new(pane, self.idx, self.len());
+                    status_bar.render(
+                        Rect {
+                            x: area.x + 1,
+                            y: area.height.saturating_sub(1),
+                            width: area.width.saturating_sub(2),
+                            height: 1,
+                        },
+                        buf,
+                    );
+                }
+                new
+            } else {
+                let [pane_area, statusbar_area] =
+                    Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+
+                if let Some(pane) = self.panes.get(self.idx) {
+                    let status_bar = StatusBar::new(pane, self.idx, self.len());
+                    status_bar.render(statusbar_area, buf);
+                }
+                pane_area
+            }
         };
 
         // render tabular
