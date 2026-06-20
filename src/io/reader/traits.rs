@@ -60,9 +60,7 @@ impl BuildReader for Args {
                     Ok(Box::new(ExcelToDataFrames::from_args(self)))
                 }
                 Some("html") | Some("htm") => Ok(Box::new(HtmlToDataFrame::from_args(self))),
-                Some("md") | Some("markdown") => {
-                    Ok(Box::new(MarkdownToDataFrame::from_args(self)))
-                }
+                Some("md") | Some("markdown") => Ok(Box::new(MarkdownToDataFrame::from_args(self))),
                 _ => Ok(Box::new(CsvToDataFrame::from_args(self))),
             },
         }
