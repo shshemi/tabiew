@@ -1,5 +1,5 @@
-use std::borrow::Cow;
 use std::default::Default;
+use std::{borrow::Cow, ops::Add};
 
 use ratatui::{
     layout::{Constraint, Layout},
@@ -35,10 +35,23 @@ impl<'a> Widget for StatusBar<'a> {
     where
         Self: Sized,
     {
-        let tab_tag = Tag::new("Tab", format!("{} / {}", self.sel_tab, self.tot_tab), 1);
+        let tab_tag = Tag::new(
+            "Tab",
+            format!(
+                "{:>width$} / {}",
+                self.sel_tab.add(1),
+                self.tot_tab,
+                width = self.tot_tab.to_string().len()
+            ),
+            1,
+        );
         let row_tag = Tag::new(
             "Row",
-            self.pane.table().selected().unwrap_or_default().to_string(),
+            format!(
+                "{:>width$}",
+                self.pane.table().selected().unwrap_or_default().add(1),
+                width = self.pane.table().data_frame().height().to_string().len(),
+            ),
             2,
         );
         let shp_tag = Tag::new(
