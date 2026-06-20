@@ -15,11 +15,7 @@ use crate::{
     },
 };
 
-use super::{
-    pane::Pane,
-    tab_switcher::TabSwitcher,
-    tag_line::{Tag, TagLine},
-};
+use super::{pane::Pane, tab_switcher::TabSwitcher};
 
 #[derive(Debug)]
 pub struct Tabs {
