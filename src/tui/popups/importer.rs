@@ -7,8 +7,7 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         importers::{
-            arrow, avro, csv, excel, fwf, html, json, jsonl, logfmt, markdown, parquet, sqlite,
-            tsv,
+            arrow, avro, csv, excel, fwf, html, json, jsonl, logfmt, markdown, parquet, sqlite, tsv,
         },
         multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },

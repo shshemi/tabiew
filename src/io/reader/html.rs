@@ -53,10 +53,7 @@ fn table_to_data_frame(table: ElementRef) -> AppResult<DataFrame> {
     let tr_selector = Selector::parse("tr").unwrap();
     let cell_selector = Selector::parse("th, td").unwrap();
 
-    let header_cells: Vec<String> = table
-        .select(&thead_th_selector)
-        .map(cell_text)
-        .collect();
+    let header_cells: Vec<String> = table.select(&thead_th_selector).map(cell_text).collect();
 
     let has_thead_headers = !header_cells.is_empty();
 
@@ -84,13 +81,10 @@ fn table_to_data_frame(table: ElementRef) -> AppResult<DataFrame> {
     let headers: Vec<String> = if has_thead_headers {
         header_cells
     } else {
-        (1..=column_count)
-            .map(|i| format!("column_{i}"))
-            .collect()
+        (1..=column_count).map(|i| format!("column_{i}")).collect()
     };
 
-    let mut columns: Vec<Vec<AnyValue<'static>>> =
-        (0..column_count).map(|_| Vec::new()).collect();
+    let mut columns: Vec<Vec<AnyValue<'static>>> = (0..column_count).map(|_| Vec::new()).collect();
     for row in data_rows {
         let mut row_iter = row.into_iter();
         for col in columns.iter_mut() {
