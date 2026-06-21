@@ -85,7 +85,7 @@ impl<'a> Widget for StatusBar<'a> {
     }
 }
 
-const SEPARATOR: &str = ">";
+const SEPARATOR: &str = "\u{25B6}";
 const SUMMARIZED: &str = " ... ";
 
 struct History<'a> {
@@ -142,12 +142,12 @@ impl<'a> History<'a> {
         let mut spans = self.first.spans().collect::<Vec<_>>();
         if self.shrinked {
             spans.extend([
-                Span::styled(SEPARATOR, theme().tag(0).reversed().bold()),
+                Span::styled(SEPARATOR, theme().tag(0).reversed()),
                 Span::styled(SUMMARIZED, theme().tag(0).reversed()),
             ]);
         }
         for item in self.nexts {
-            spans.push(Span::styled(SEPARATOR, theme().tag(0).reversed().bold()));
+            spans.push(Span::styled(SEPARATOR, theme().tag(0).reversed()));
             spans.extend(item.spans());
         }
 
@@ -199,17 +199,11 @@ impl<'a> NextHistoryItem<'a> {
 
     fn spans(&self) -> impl Iterator<Item = Span<'a>> {
         [
-            Span::styled(" ", theme().tag(0).add_modifier(Modifier::REVERSED)),
-            Span::styled(
-                self.td.variant(),
-                theme().tag(0).add_modifier(Modifier::REVERSED),
-            ),
-            Span::styled("(", theme().tag(0).add_modifier(Modifier::REVERSED)),
-            Span::styled(
-                self.td.description().trim(),
-                theme().tag(0).add_modifier(Modifier::REVERSED),
-            ),
-            Span::styled(") ", theme().tag(0).add_modifier(Modifier::REVERSED)),
+            Span::styled(" ", theme().tag(0).reversed()),
+            Span::styled(self.td.variant(), theme().tag(0).reversed()),
+            Span::styled("[", theme().tag(0).reversed()),
+            Span::styled(self.td.description().trim(), theme().tag(0).reversed()),
+            Span::styled("] ", theme().tag(0).reversed()),
         ]
         .into_iter()
     }
