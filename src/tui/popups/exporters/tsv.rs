@@ -8,8 +8,8 @@ use crate::{
         component::Component,
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
-            multi_step_overlay::OverlayStep,
             file_picker::FilePicker,
+            multi_step_overlay::OverlayStep,
         },
     },
 };

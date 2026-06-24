@@ -8,7 +8,7 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
-            multi_step_overlay::OverlayStep, file_picker::FilePicker, url_picker::UrlPicker,
+            file_picker::FilePicker, multi_step_overlay::OverlayStep, url_picker::UrlPicker,
             yes_no_picker::YesNoPicker,
         },
     },
