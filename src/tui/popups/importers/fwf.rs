@@ -3,12 +3,12 @@ use crate::{
     tui::{
         pickers::text_picker::TextPicker,
         popups::{
+            file_picker::FilePicker,
             importers::{
                 dismiss_overlay_and_load_data_frame,
                 import_source_picker::{ImportSource, ImportSourcePicker},
             },
             multi_step_overlay::OverlayStep,
-            file_picker::FilePicker,
             url_picker::UrlPicker,
             yes_no_picker::YesNoPicker,
         },
