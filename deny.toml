@@ -36,6 +36,7 @@ allow = [
     "CC0-1.0",
     "CDLA-Permissive-2.0",
     "MIT-0",
+    "MPL-2.0",
     "Unlicense",
 ]
 confidence-threshold = 0.8
