@@ -29,8 +29,8 @@ impl SixColorsTwoRowsStyler for CatppuccinMacchiato {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A2D40), Color::from_u32(0x00303346)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D4BBB6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00eed49f);
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C58DB6);
 }
