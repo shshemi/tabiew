@@ -29,8 +29,8 @@ impl SixColorsTwoRowsStyler for CatppuccinMocha {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00242434), Color::from_u32(0x002A2A3A)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D5C0BC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00f9e2af);
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C9B27F);
 }

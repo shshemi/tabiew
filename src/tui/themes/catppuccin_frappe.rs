@@ -29,8 +29,8 @@ impl SixColorsTwoRowsStyler for CatppuccinFrappe {
     ];
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00363A4C), Color::from_u32(0x003C4052)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D2B5AF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00e5c890);
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C488B4);
 }
