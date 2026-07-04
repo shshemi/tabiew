@@ -23,7 +23,7 @@ impl SixColorsTwoRowsStyler for Cga {
         Color::from_u32(0x00aa0000),
         Color::from_u32(0x0000aa00),
         Color::from_u32(0x00aa5500),
-        Color::from_u32(0x000000aa),
+        Color::from_u32(0x005555ff),
         Color::from_u32(0x00aa00aa),
         Color::from_u32(0x0000aaaa),
     ];
