@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for DarkModern {
     const BACKGROUND: Color = Color::from_u32(0x001f1f1f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003F3F3F);
     const FOREGROUND: Color = Color::from_u32(0x00cccccc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00272727);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007c7c7c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00dc5452),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for DarkModern {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00252525), Color::from_u32(0x002B2B2B)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C71919);
 }
