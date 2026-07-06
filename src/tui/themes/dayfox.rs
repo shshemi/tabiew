@@ -28,8 +28,8 @@ impl SixColorsTwoRowsStyler for Dayfox {
         Color::from_u32(0x00287980),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FCF8F4), Color::from_u32(0x00FFFEFA)];
-    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x001D0B3A);
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00ECE8E4), Color::from_u32(0x00FFFEFA)];
+    const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CCC8C4);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x007C2400);
