@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Deep {
     const BACKGROUND: Color = Color::from_u32(0x00090909);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00292929);
     const FOREGROUND: Color = Color::from_u32(0x00cdcdcd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007d7d7d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fb0007),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Deep {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000F0F0F), Color::from_u32(0x00151515)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B0B0B0);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A98D00);
 }
