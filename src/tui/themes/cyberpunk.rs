@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Cyberpunk {
     const BACKGROUND: Color = Color::from_u32(0x00332a57);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00534A77);
     const FOREGROUND: Color = Color::from_u32(0x00e5e5e5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a5a5a5);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8aa4),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Cyberpunk {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0039305D), Color::from_u32(0x003F3663)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0001D69C);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFCA3A);
 }
