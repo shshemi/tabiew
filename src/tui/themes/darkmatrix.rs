@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Darkmatrix {
     const BACKGROUND: Color = Color::from_u32(0x00070c0e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00272C2E);
     const FOREGROUND: Color = Color::from_u32(0x005a7a30);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00091013);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x002a4808);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x0000733d),
