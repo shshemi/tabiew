@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Darkside {
     const BACKGROUND: Color = Color::from_u32(0x00222324);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00424344);
     const FOREGROUND: Color = Color::from_u32(0x00bababa);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006a6a6a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e05a4f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Darkside {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0028292A), Color::from_u32(0x002E2F30)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009B9B9B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C2A400);
 }
