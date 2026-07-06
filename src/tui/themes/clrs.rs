@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for Clrs {
         Color::from_u32(0x0033c3c1),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00DFDFDF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x004FB3DC);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
