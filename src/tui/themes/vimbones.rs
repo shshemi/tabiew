@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Vimbones {
     const BACKGROUND: Color = Color::from_u32(0x00f0f0ca);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFEA);
     const FOREGROUND: Color = Color::from_u32(0x00353535);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00f0f0ca);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00858585);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x0094253e),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for Vimbones {
         Color::from_u32(0x003b8992),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F6F6D0), Color::from_u32(0x00FCFCD6)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F0F0C8), Color::from_u32(0x00FCFCD6)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00151515);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0078031C);
 }
