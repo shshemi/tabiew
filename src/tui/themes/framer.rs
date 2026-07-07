@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Framer {
     const BACKGROUND: Color = Color::from_u32(0x00111111);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313131);
     const FOREGROUND: Color = Color::from_u32(0x00777777);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00272727);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x003f3f3f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8888),
