@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Embark {
     const BACKGROUND: Color = Color::from_u32(0x001e1c31);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E3C51);
     const FOREGROUND: Color = Color::from_u32(0x00eeffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001e1c31);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009eafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f02e6e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Embark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00242237), Color::from_u32(0x002A283D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0081CFB3);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB97A);
 }

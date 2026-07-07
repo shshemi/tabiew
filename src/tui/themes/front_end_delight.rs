@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for FrontEndDelight {
     const BACKGROUND: Color = Color::from_u32(0x001b1c1d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003B3C3D);
     const FOREGROUND: Color = Color::from_u32(0x00adadad);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00242526);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005d5d5d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f74319),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for FrontEndDelight {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00212223), Color::from_u32(0x00272829)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x004a4e54);
-    const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00eeeeee);
+    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA4700);
 }

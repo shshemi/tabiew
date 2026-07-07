@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Spacedust {
     const BACKGROUND: Color = Color::from_u32(0x000a1e24);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002A3E44);
     const FOREGROUND: Color = Color::from_u32(0x00ecf0c1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x006e5346);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009ca071);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8a3a),

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Sundried {
     const BACKGROUND: Color = Color::from_u32(0x001a1818);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003A3838);
     const FOREGROUND: Color = Color::from_u32(0x00c9c9c9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00302b2a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00797979);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00aa000c),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Sundried {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00201E1E), Color::from_u32(0x00262424)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0077160D);
 }

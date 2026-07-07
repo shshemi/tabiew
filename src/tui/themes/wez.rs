@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Wez {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00b3b3b3);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00636363);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff5555),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Wez {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00338E51);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D9D25);
 }

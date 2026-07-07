@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Arthur {
     const BACKGROUND: Color = Color::from_u32(0x001c1c1c);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003C3C3C);
     const FOREGROUND: Color = Color::from_u32(0x00ddeedd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x003d352a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008d9e8d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cc5533),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Arthur {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00222222), Color::from_u32(0x00282828)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C29BCF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B87E2B);
 }

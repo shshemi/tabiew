@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for MelangeDark {
     const BACKGROUND: Color = Color::from_u32(0x00292522);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00494542);
     const FOREGROUND: Color = Color::from_u32(0x00ece1d7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0034302c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009c9187);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d47766),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for MelangeDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002F2B28), Color::from_u32(0x0035312E)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CCC1B7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B46B2D);
 }

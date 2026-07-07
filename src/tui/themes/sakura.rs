@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Sakura {
     const BACKGROUND: Color = Color::from_u32(0x0018131e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0038333E);
     const FOREGROUND: Color = Color::from_u32(0x00dd7bdc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008d2b8c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f41d99),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Sakura {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001E1924), Color::from_u32(0x00241F2A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DF45DD);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A50040);
 }

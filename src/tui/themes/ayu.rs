@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Ayu {
     const BACKGROUND: Color = Color::from_u32(0x000f1419);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002F3439);
     const FOREGROUND: Color = Color::from_u32(0x00e6e1cf);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0096917f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6565),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Ayu {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00151A1F), Color::from_u32(0x001B2025)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D27700);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0303);
 }

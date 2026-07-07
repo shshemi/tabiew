@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for OceanicNext {
     const BACKGROUND: Color = Color::from_u32(0x00162c35);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00364C55);
     const FOREGROUND: Color = Color::from_u32(0x00c0c5ce);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00162c35);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0070757e);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ec5f67),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for OceanicNext {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C323B), Color::from_u32(0x00223841)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A0A5AE);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA9833);
 }

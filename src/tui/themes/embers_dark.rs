@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for EmbersDark {
     const BACKGROUND: Color = Color::from_u32(0x0016130f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0036332F);
     const FOREGROUND: Color = Color::from_u32(0x00a39a90);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0016130f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00534a40);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00828257),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for EmbersDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C1915), Color::from_u32(0x00221F1B)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00837A70);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00523D27);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Mirage {
     const BACKGROUND: Color = Color::from_u32(0x001b2738);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003B4758);
     const FOREGROUND: Color = Color::from_u32(0x00a6b2c0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00011627);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00566270);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff9999),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Mirage {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00212D3E), Color::from_u32(0x00273344)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00BD93DF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA700);
 }

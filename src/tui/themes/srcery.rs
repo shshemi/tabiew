@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Srcery {
     const BACKGROUND: Color = Color::from_u32(0x001c1b19);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003C3B39);
     const FOREGROUND: Color = Color::from_u32(0x00fce8c3);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001c1b19);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00ac9873);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f75341),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Srcery {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0022211F), Color::from_u32(0x00282725)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DB9809);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CB8800);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for JackieBrown {
     const BACKGROUND: Color = Color::from_u32(0x002c1d16);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004C3D36);
     const FOREGROUND: Color = Color::from_u32(0x00ffcc2f);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002c1d16);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00af7c00);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e50000),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for JackieBrown {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0032231C), Color::from_u32(0x00382922)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0003DF00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BF2704);
 }

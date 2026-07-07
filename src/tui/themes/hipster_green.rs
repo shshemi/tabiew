@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for HipsterGreen {
     const BACKGROUND: Color = Color::from_u32(0x00100b05);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00302B25);
     const FOREGROUND: Color = Color::from_u32(0x0084c138);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00347100);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e50000),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for HipsterGreen {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0016110B), Color::from_u32(0x001C1711)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0003DF00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008F8F00);
 }

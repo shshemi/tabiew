@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Vaughn {
     const BACKGROUND: Color = Color::from_u32(0x0025234f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0045436F);
     const FOREGROUND: Color = Color::from_u32(0x00dcdccc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0025234f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008c8c7c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00dca3a3),

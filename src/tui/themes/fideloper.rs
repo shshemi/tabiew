@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Fideloper {
     const BACKGROUND: Color = Color::from_u32(0x00292f33);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00494F53);
     const FOREGROUND: Color = Color::from_u32(0x00dbdae0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00292f33);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008b8a90);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d4605a),

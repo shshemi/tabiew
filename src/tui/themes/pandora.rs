@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Pandora {
     const BACKGROUND: Color = Color::from_u32(0x00141e43);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343E63);
     const FOREGROUND: Color = Color::from_u32(0x00e1e1e1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00919191);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff3242),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Pandora {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A2449), Color::from_u32(0x00202A4F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0023B56E);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF7D00);
 }

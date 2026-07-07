@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for IcGreenPpl {
     const BACKGROUND: Color = Color::from_u32(0x002c2c2c);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004C4C4C);
     const FOREGROUND: Color = Color::from_u32(0x00e0f1dc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00014401);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0090a18c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00b4fa5c),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for IcGreenPpl {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00323232), Color::from_u32(0x00383838)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0027DA4B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0006);
 }

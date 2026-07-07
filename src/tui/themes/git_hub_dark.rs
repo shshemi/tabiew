@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GithubDark {
     const BACKGROUND: Color = Color::from_u32(0x00101216);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00303236);
     const FOREGROUND: Color = Color::from_u32(0x008b949e);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x003b444e);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f78166),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for GithubDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0016181C), Color::from_u32(0x001C1E22)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A9B1B9);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C75136);
 }

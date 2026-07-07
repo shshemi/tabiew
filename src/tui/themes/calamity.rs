@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Calamity {
     const BACKGROUND: Color = Color::from_u32(0x002f2833);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004F4853);
     const FOREGROUND: Color = Color::from_u32(0x00d5ced9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002f2833);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00857e89);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fc644d),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Calamity {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00352E39), Color::from_u32(0x003B343F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B5AEB9);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC341D);
 }

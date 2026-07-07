@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for IrixTerminal {
     const BACKGROUND: Color = Color::from_u32(0x00000043);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202063);
     const FOREGROUND: Color = Color::from_u32(0x00f2f2f2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001a1919);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a2a2a2);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffff44),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for IrixTerminal {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060649), Color::from_u32(0x000C0C4F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0000);
 }

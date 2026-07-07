@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Batman {
     const BACKGROUND: Color = Color::from_u32(0x001b1d1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003B3D3E);
     const FOREGROUND: Color = Color::from_u32(0x008a8a8a);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001b1d1e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x003a3a3a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fff78e),

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Floraverse {
     const BACKGROUND: Color = Color::from_u32(0x000e0d15);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002E2D35);
     const FOREGROUND: Color = Color::from_u32(0x00dbd1b9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0008002e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008b8169);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d02063),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Floraverse {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0014131B), Color::from_u32(0x001A1921)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009B9B9B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D4500);
 }

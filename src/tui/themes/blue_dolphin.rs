@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BlueDolphin {
     const BACKGROUND: Color = Color::from_u32(0x00006984);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002089A4);
     const FOREGROUND: Color = Color::from_u32(0x00c5f2ff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00292d3e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0075a2af);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8b92),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for BlueDolphin {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00066F8A), Color::from_u32(0x000C7590)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFAC00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF5258);
 }

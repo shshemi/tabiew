@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Subliminal {
     const BACKGROUND: Color = Color::from_u32(0x00282c35);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00484C55);
     const FOREGROUND: Color = Color::from_u32(0x00d4d4d4);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x007f7f7f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00848484);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e15a60),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Subliminal {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E323B), Color::from_u32(0x00343841)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB279);
 }

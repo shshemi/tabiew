@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GhosttyDefaultStyleDark {
     const BACKGROUND: Color = Color::from_u32(0x00282c34);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00484C54);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d1f21);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d54e53),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for GhosttyDefaultStyleDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E323A), Color::from_u32(0x00343840)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C09644);
 }

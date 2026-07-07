@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for EspressoLibre {
     const BACKGROUND: Color = Color::from_u32(0x002a211c);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004A413C);
     const FOREGROUND: Color = Color::from_u32(0x00b8a898);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00685848);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ef2929),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for EspressoLibre {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00302722), Color::from_u32(0x00362D28)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C0B50A);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Shaman {
     const BACKGROUND: Color = Color::from_u32(0x00001015);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00203035);
     const FOREGROUND: Color = Color::from_u32(0x006a8888);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00012026);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x001a3838);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff4242),

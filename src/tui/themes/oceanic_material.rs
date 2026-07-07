@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for OceanicMaterial {
     const BACKGROUND: Color = Color::from_u32(0x001c262b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003C464B);
     const FOREGROUND: Color = Color::from_u32(0x00c2c8d7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00727887);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00dc5c60),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for OceanicMaterial {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00222C31), Color::from_u32(0x00283237)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009398A3);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFBA00);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Wryan {
     const BACKGROUND: Color = Color::from_u32(0x00101010);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00303030);
     const FOREGROUND: Color = Color::from_u32(0x00999993);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00333333);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00494943);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bf4d80),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Wryan {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00161616), Color::from_u32(0x001C1C1C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007E7EAB);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x005C1635);
 }

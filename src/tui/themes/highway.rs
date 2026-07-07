@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Highway {
     const BACKGROUND: Color = Color::from_u32(0x00222225);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00424245);
     const FOREGROUND: Color = Color::from_u32(0x00ededed);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009d9d9d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f07e18),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Highway {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0028282B), Color::from_u32(0x002E2E31)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C0B999);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9B0E);
 }

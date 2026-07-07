@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for PoppingAndLocking {
     const BACKGROUND: Color = Color::from_u32(0x00181921);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00383941);
     const FOREGROUND: Color = Color::from_u32(0x00ebdbb2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d2021);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009b8b62);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f42c3e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for PoppingAndLocking {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001E1F27), Color::from_u32(0x0024252D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A76900);
 }

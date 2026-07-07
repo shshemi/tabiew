@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Atom {
     const BACKGROUND: Color = Color::from_u32(0x00161719);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00363739);
     const FOREGROUND: Color = Color::from_u32(0x00c5c8c6);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00757876);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fd5ff1),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Atom {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C1D1F), Color::from_u32(0x00222325)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B0B0B0);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA781);
 }

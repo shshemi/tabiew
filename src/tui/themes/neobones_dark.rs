@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NeobonesDark {
     const BACKGROUND: Color = Color::from_u32(0x000f191f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002F393F);
     const FOREGROUND: Color = Color::from_u32(0x00c6d5cf);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000f191f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0076857f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e8838f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for NeobonesDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00151F25), Color::from_u32(0x001B252B)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00AEBDB7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AE3E4C);
 }

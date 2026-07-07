@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Ollie {
     const BACKGROUND: Color = Color::from_u32(0x00222125);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00424145);
     const FOREGROUND: Color = Color::from_u32(0x008a8dae);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x003a3d5e);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff3d48),

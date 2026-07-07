@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GreyGreen {
     const BACKGROUND: Color = Color::from_u32(0x00002a1a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00204A3A);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff3939),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for GreyGreen {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00063020), Color::from_u32(0x000C3626)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFD400);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF00C0);
 }

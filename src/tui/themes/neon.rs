@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Neon {
     const BACKGROUND: Color = Color::from_u32(0x0014161a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0034363A);
     const FOREGROUND: Color = Color::from_u32(0x0000fffc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0000afac);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff5a5a),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Neon {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A1C20), Color::from_u32(0x00202226)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0015);
 }

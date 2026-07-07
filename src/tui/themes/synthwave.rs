@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Synthwave {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00dad9c7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008a8977);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f841a0),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Synthwave {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0000ADC6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CDC804);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NordWave {
     const BACKGROUND: Color = Color::from_u32(0x00212121);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00414141);
     const FOREGROUND: Color = Color::from_u32(0x00d8dee9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x003b4252);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00888e99);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bf616a),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for NordWave {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00272727), Color::from_u32(0x002D2D2D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CBAB6B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BB9B5B);
 }

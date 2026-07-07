@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for AyuMirage {
     const BACKGROUND: Color = Color::from_u32(0x001f2430);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003F4450);
     const FOREGROUND: Color = Color::from_u32(0x00cbccc6);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00191e2a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007b7c76);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f28779),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for AyuMirage {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00252A36), Color::from_u32(0x002B303C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFAC46);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CAA04B);
 }

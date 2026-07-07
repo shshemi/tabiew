@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Fairyfloss {
     const BACKGROUND: Color = Color::from_u32(0x005a5475);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x007A7495);
     const FOREGROUND: Color = Color::from_u32(0x00f8f8f2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00040303);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a8a8a2);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff857f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Fairyfloss {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00605A7B), Color::from_u32(0x00666081)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D8D8D0);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF88A1);
 }

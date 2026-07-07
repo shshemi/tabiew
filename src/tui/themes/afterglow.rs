@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Afterglow {
     const BACKGROUND: Color = Color::from_u32(0x00212121);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00414141);
     const FOREGROUND: Color = Color::from_u32(0x00d0d0d0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00151515);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00808080);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ac4142),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Afterglow {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00272727), Color::from_u32(0x002D2D2D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B0B0B0);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B58537);
 }

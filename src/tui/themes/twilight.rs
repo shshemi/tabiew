@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Twilight {
     const BACKGROUND: Color = Color::from_u32(0x00141414);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343434);
     const FOREGROUND: Color = Color::from_u32(0x00ffffd4);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00141414);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afaf84);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00de7c4c),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Twilight {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A1A1A), Color::from_u32(0x00202020)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0092783C);
 }

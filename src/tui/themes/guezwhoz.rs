@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Guezwhoz {
     const BACKGROUND: Color = Color::from_u32(0x001d1d1d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003D3D3D);
     const FOREGROUND: Color = Color::from_u32(0x00d9d9d9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00333333);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00898989);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e85181),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Guezwhoz {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00232323), Color::from_u32(0x00292929)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0079B491);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B82151);
 }

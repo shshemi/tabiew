@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Miasma {
     const BACKGROUND: Color = Color::from_u32(0x00222222);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00424242);
     const FOREGROUND: Color = Color::from_u32(0x00c2c2b0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00727260);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00685742),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Miasma {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00282828), Color::from_u32(0x002E2E2E)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00997524);
 }

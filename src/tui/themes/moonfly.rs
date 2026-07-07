@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Moonfly {
     const BACKGROUND: Color = Color::from_u32(0x00080808);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00282828);
     const FOREGROUND: Color = Color::from_u32(0x00bdbdbd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00323437);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006d6d6d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff5189),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Moonfly {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000E0E0E), Color::from_u32(0x00141414)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007E7E7E);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF2424);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Treehouse {
     const BACKGROUND: Color = Color::from_u32(0x00191919);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00393939);
     const FOREGROUND: Color = Color::from_u32(0x00958568);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00321300);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00453518);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ed5d20),

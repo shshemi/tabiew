@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for MonaLisa {
     const BACKGROUND: Color = Color::from_u32(0x00120b0d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00322B2D);
     const FOREGROUND: Color = Color::from_u32(0x00f7d66a);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00351b0e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a7861a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff4331),

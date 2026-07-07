@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Hopscotch {
     const BACKGROUND: Color = Color::from_u32(0x00322931);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00524951);
     const FOREGROUND: Color = Color::from_u32(0x00b9b5b8);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00322931);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00696568);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fd8b19),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Hopscotch {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00382F37), Color::from_u32(0x003E353D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00999598);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CD9C29);
 }

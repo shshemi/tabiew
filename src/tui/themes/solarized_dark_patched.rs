@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SolarizedDarkPatched {
     const BACKGROUND: Color = Color::from_u32(0x00001e27);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00203E47);
     const FOREGROUND: Color = Color::from_u32(0x00708284);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00002831);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00203234);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bd3613),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SolarizedDarkPatched {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0006242D), Color::from_u32(0x000C2A33)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00506264);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A10000);
 }

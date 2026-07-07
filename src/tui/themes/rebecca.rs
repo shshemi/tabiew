@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Rebecca {
     const BACKGROUND: Color = Color::from_u32(0x00292a44);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00494A64);
     const FOREGROUND: Color = Color::from_u32(0x00e8e6ed);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0012131e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0098969d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff92cd),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Rebecca {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002F304A), Color::from_u32(0x00353650)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00987BD9);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C2B787);
 }

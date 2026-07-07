@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Homebrew {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x0000ff00);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0000af00);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e50000),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Homebrew {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0003DF00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00820082);
 }

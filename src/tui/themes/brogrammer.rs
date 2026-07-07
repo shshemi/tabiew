@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Brogrammer {
     const BACKGROUND: Color = Color::from_u32(0x00131313);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00333333);
     const FOREGROUND: Color = Color::from_u32(0x00d6dbe5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001f1f1f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00868b95);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00de352e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Brogrammer {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00191919), Color::from_u32(0x001F1F1F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00999999);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C80000);
 }

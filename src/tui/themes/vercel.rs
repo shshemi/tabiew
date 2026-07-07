@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Vercel {
     const BACKGROUND: Color = Color::from_u32(0x00101010);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00303030);
     const FOREGROUND: Color = Color::from_u32(0x00fafafa);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00aaaaaa);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8080),

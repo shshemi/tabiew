@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for KanagawaDragon {
     const BACKGROUND: Color = Color::from_u32(0x00181616);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00383636);
     const FOREGROUND: Color = Color::from_u32(0x00c8c093);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000d0c0c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00787043);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e46876),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for KanagawaDragon {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001E1C1C), Color::from_u32(0x00242222)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A5A9A5);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0094443E);
 }

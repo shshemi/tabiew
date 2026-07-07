@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Japanesque {
     const BACKGROUND: Color = Color::from_u32(0x001e1e1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E3E3E);
     const FOREGROUND: Color = Color::from_u32(0x00f7f6ec);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00343935);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a7a69c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d18fa6),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Japanesque {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00242424), Color::from_u32(0x002A2A2A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CDAF2F);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B98300);
 }

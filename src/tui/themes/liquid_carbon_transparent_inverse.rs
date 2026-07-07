@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for LiquidCarbonTransparentInverse {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00afc2c2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00bccccd);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005f7272);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff3030),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for LiquidCarbonTransparentInverse {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0000);
 }

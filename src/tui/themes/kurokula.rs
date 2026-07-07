@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Kurokula {
     const BACKGROUND: Color = Color::from_u32(0x00141515);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343535);
     const FOREGROUND: Color = Color::from_u32(0x00e0cfc2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00333333);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00907f72);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffc34c),

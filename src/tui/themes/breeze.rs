@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Breeze {
     const BACKGROUND: Color = Color::from_u32(0x0031363b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0051565B);
     const FOREGROUND: Color = Color::from_u32(0x00eff0f1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0031363b);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009fa0a1);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00c0392b),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Breeze {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00373C41), Color::from_u32(0x003D4247)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CFD0D1);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C64400);
 }

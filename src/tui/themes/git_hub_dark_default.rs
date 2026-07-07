@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GithubDarkDefault {
     const BACKGROUND: Color = Color::from_u32(0x000d1117);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002D3137);
     const FOREGROUND: Color = Color::from_u32(0x00e6edf3);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00484f58);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00969da3);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffa198),

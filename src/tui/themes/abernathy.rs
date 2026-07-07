@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Abernathy {
     const BACKGROUND: Color = Color::from_u32(0x00111416);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313436);
     const FOREGROUND: Color = Color::from_u32(0x00eeeeec);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009e9e9c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff0000),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Abernathy {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00171A1C), Color::from_u32(0x001D2022)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009B9B9B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009D0000);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Chalk {
     const BACKGROUND: Color = Color::from_u32(0x002b2d2e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004B4D4E);
     const FOREGROUND: Color = Color::from_u32(0x00d2d8d9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x007d8b8f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00828889);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f24840),

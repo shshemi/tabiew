@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for FunForrest {
     const BACKGROUND: Color = Color::from_u32(0x00251200);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00453220);
     const FOREGROUND: Color = Color::from_u32(0x00dec165);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008e7115);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e55a1c),

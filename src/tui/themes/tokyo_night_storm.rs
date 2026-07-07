@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for TokyoNightStorm {
     const BACKGROUND: Color = Color::from_u32(0x0024283b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0044485B);
     const FOREGROUND: Color = Color::from_u32(0x00c0caf5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d202f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00707aa5);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f7768e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for TokyoNightStorm {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A2E41), Color::from_u32(0x00303447)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A0AAD5);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C7465E);
 }

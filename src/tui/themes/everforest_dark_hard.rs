@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for EverforestDarkHard {
     const BACKGROUND: Color = Color::from_u32(0x001e2326);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E4346);
     const FOREGROUND: Color = Color::from_u32(0x00d3c6aa);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x007a8478);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0083765a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f85552),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for EverforestDarkHard {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0024292C), Color::from_u32(0x002A2F32)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C67855);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B64E50);
 }

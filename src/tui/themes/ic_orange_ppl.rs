@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for IcOrangePpl {
     const BACKGROUND: Color = Color::from_u32(0x00262626);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00464646);
     const FOREGROUND: Color = Color::from_u32(0x00ffcb83);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00af7b33);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8c68),

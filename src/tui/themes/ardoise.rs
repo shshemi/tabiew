@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Ardoise {
     const BACKGROUND: Color = Color::from_u32(0x001e1e1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E3E3E);
     const FOREGROUND: Color = Color::from_u32(0x00eaeaea);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002c2c2c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009a9a9a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fa5852),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Ardoise {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00242424), Color::from_u32(0x002A2A2A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D7D7D7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC790A);
 }

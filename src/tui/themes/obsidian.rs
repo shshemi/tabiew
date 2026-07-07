@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Obsidian {
     const BACKGROUND: Color = Color::from_u32(0x00283033);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00485053);
     const FOREGROUND: Color = Color::from_u32(0x00cdcdcd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007d7d7d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff0003),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Obsidian {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E3639), Color::from_u32(0x00343C3F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A0AAB0);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE9D00);
 }

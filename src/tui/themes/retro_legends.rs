@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for RetroLegends {
     const BACKGROUND: Color = Color::from_u32(0x000d0d0d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002D2D2D);
     const FOREGROUND: Color = Color::from_u32(0x0045eb45);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00262626);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00009b00);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6666),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for RetroLegends {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00131313), Color::from_u32(0x00191919)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0025CB25);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C78F00);
 }

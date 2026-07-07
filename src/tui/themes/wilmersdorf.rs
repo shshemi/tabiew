@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Wilmersdorf {
     const BACKGROUND: Color = Color::from_u32(0x00282b33);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00484B53);
     const FOREGROUND: Color = Color::from_u32(0x00c6c6c6);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0034373e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00767676);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fa7193),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Wilmersdorf {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E3139), Color::from_u32(0x0034373F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x005E9E9D);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B191BE);
 }

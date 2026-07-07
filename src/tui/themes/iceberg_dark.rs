@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for IcebergDark {
     const BACKGROUND: Color = Color::from_u32(0x00161821);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00363841);
     const FOREGROUND: Color = Color::from_u32(0x00c6c8d1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001e2132);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00767881);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e98989),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for IcebergDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C1E27), Color::from_u32(0x0022242D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A6A8B1);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B24848);
 }

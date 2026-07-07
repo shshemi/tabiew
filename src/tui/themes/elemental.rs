@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Elemental {
     const BACKGROUND: Color = Color::from_u32(0x0022211d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0042413D);
     const FOREGROUND: Color = Color::from_u32(0x00807a74);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x003c3c30);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00302a24);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e0502a),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Elemental {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00282723), Color::from_u32(0x002E2D29)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DAAB60);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00680000);
 }

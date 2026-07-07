@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Ubuntu {
     const BACKGROUND: Color = Color::from_u32(0x00300a24);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00502A44);
     const FOREGROUND: Color = Color::from_u32(0x00eeeeec);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002e3436);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009e9e9c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ef2929),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Ubuntu {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0036102A), Color::from_u32(0x003C1630)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009B9B9B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009C0000);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for CobaltNeon {
     const BACKGROUND: Color = Color::from_u32(0x00142838);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00344858);
     const FOREGROUND: Color = Color::from_u32(0x008ff586);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x005fc556);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x003fa536);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d4312e),

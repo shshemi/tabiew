@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Rapture {
     const BACKGROUND: Color = Color::from_u32(0x00111e2a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313E4A);
     const FOREGROUND: Color = Color::from_u32(0x00c0c9e5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00707995);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fc644d),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Rapture {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00172430), Color::from_u32(0x001D2A36)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFC06B);
 }

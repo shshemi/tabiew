@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Kibble {
     const BACKGROUND: Color = Color::from_u32(0x000e100a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002E302A);
     const FOREGROUND: Color = Color::from_u32(0x00f7f7f7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x004d4d4d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a7a7a7);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f01578),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Kibble {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00141610), Color::from_u32(0x001A1C16)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007FBA7C);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A8B300);
 }

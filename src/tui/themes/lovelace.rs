@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Lovelace {
     const BACKGROUND: Color = Color::from_u32(0x001d1f28);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003D3F48);
     const FOREGROUND: Color = Color::from_u32(0x00fdfdfd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00282a36);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00adadad);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff4971),

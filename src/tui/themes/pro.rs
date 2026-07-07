@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Pro {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00f2f2f2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a2a2a2);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e50000),

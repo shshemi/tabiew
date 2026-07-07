@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Pnevma {
     const BACKGROUND: Color = Color::from_u32(0x001c1c1c);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003C3C3C);
     const FOREGROUND: Color = Color::from_u32(0x00d0d0d0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002f2e2d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00808080);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d78787),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Pnevma {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00222222), Color::from_u32(0x00282828)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C4A98F);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A77F57);
 }

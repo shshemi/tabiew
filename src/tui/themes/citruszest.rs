@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Citruszest {
     const BACKGROUND: Color = Color::from_u32(0x00121212);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00323232);
     const FOREGROUND: Color = Color::from_u32(0x00bfbfbf);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00404040);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006f6f6f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff1a75),

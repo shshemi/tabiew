@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for MonokaiClassic {
     const BACKGROUND: Color = Color::from_u32(0x00272822);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00474842);
     const FOREGROUND: Color = Color::from_u32(0x00fdfff1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00272822);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00adafa1);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f92672),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for MonokaiClassic {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002D2E28), Color::from_u32(0x0033342E)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A0A195);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CD6700);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SoftServer {
     const BACKGROUND: Color = Color::from_u32(0x00242626);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00444646);
     const FOREGROUND: Color = Color::from_u32(0x0099a3a2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00495352);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00dd5c60),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SoftServer {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A2C2C), Color::from_u32(0x00303232)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B2C0BE);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0073603A);
 }
