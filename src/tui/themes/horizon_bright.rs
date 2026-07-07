@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for HorizonBright {
     const BACKGROUND: Color = Color::from_u32(0x00fdf0ed);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x0016161d);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0016161d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0066666d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fe5f87),
