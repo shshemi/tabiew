@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NightOwlishLight {
     const BACKGROUND: Color = Color::from_u32(0x00ffffff);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00403f53);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00011627);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00908fa3);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f76e6e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for NightOwlishLight {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00201F33);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AA7A00);
 }
