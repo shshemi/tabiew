@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for CoffeeTheme {
     const BACKGROUND: Color = Color::from_u32(0x00f5deb3);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFED3);
     const FOREGROUND: Color = Color::from_u32(0x00000000);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00505050);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6e67),
