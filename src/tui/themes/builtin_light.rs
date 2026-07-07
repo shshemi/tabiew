@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for BuiltinLight {
         Color::from_u32(0x0000bbbb),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F2F2F2), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x003584e4);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00ffffff);
 
