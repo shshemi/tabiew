@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Elemental {
     const BACKGROUND: Color = Color::from_u32(0x0022211d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0042413D);
     const FOREGROUND: Color = Color::from_u32(0x00807a74);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00302a24);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0048433a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e0502a),
