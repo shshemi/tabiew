@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for VioletLight {
     const BACKGROUND: Color = Color::from_u32(0x00fcf4dc);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFC);
     const FOREGROUND: Color = Color::from_u32(0x00536870);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0056595c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a3b8c0);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bd3613),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for VioletLight {
         Color::from_u32(0x0032a198),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFAE2), Color::from_u32(0x00FFFFE8)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F8F4DC), Color::from_u32(0x00FFFFE8)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00334850);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A10A52);
 }
