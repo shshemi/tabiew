@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for DotGov {
     const BACKGROUND: Color = Color::from_u32(0x00262c35);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00464C55);
     const FOREGROUND: Color = Color::from_u32(0x00ebebeb);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00191919);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009b9b9b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bf091d),
