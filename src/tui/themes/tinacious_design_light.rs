@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for TinaciousDesignLight {
     const BACKGROUND: Color = Color::from_u32(0x00f8f8ff);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x001d1d26);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d1d26);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006d6d76);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff2f92),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for TinaciousDesignLight {
         Color::from_u32(0x0000ceca),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FEFEFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00EBEBE0), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ABABD0);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
