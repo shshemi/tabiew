@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Duckbones {
     const BACKGROUND: Color = Color::from_u32(0x000e101a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002E303A);
     const FOREGROUND: Color = Color::from_u32(0x00ebefc0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000e101a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009b9f70);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff4821),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Duckbones {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00141620), Color::from_u32(0x001A1C26)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CDD2A2);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B36500);
 }
