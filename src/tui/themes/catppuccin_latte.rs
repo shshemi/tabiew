@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for CatppuccinLatte {
     const BACKGROUND: Color = Color::from_u32(0x00eff1f5);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x004c4f69);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x005c5f77);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009c9fb9);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00de293e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for CatppuccinLatte {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F5F7FB), Color::from_u32(0x00FBFDFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00BC6A58);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BA469B);
 }
