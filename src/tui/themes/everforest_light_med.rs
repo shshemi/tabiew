@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for EverforestLightMed {
     const BACKGROUND: Color = Color::from_u32(0x00efebd4);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFF4);
     const FOREGROUND: Color = Color::from_u32(0x005c6a72);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x007a8478);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00acbac2);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f85552),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for EverforestLightMed {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F5F1DA), Color::from_u32(0x00FBF7E0)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D55D06);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B64E50);
 }
