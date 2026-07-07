@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for FarmhouseLight {
     const BACKGROUND: Color = Color::from_u32(0x00e8e4e1);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x001d2027);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d2027);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006d7077);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00eb0009),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for FarmhouseLight {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00EEEAE7), Color::from_u32(0x00F4F0ED)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00004EDE);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00792600);
 }
