@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for DimmedMonokai {
     const BACKGROUND: Color = Color::from_u32(0x001f1f1f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003F3F3F);
     const FOREGROUND: Color = Color::from_u32(0x00b9bcba);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x003a3d43);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00696c6a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fb001f),
