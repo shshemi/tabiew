@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for OneHalfLight {
     const BACKGROUND: Color = Color::from_u32(0x00fafafa);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00383a42);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00383a42);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00888a92);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e06c75),
