@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for CutiePro {
     const BACKGROUND: Color = Color::from_u32(0x00181818);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00383838);
     const FOREGROUND: Color = Color::from_u32(0x00d5d0c9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00959089);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00858079);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e5a1a3),

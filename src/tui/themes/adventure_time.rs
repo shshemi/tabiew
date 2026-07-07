@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for AdventureTime {
     const BACKGROUND: Color = Color::from_u32(0x001f1d45);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003F3D65);
     const FOREGROUND: Color = Color::from_u32(0x00f8dcc0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00050404);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a88c70);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fc5f5a),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for AdventureTime {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0025234B), Color::from_u32(0x002B2951)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CF9F18);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B74400);
 }

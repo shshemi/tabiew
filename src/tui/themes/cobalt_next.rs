@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for CobaltNext {
     const BACKGROUND: Color = Color::from_u32(0x00162c35);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00364C55);
     const FOREGROUND: Color = Color::from_u32(0x00d7deea);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00979eaa);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00878e9a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e47e8b),

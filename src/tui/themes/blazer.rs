@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Blazer {
     const BACKGROUND: Color = Color::from_u32(0x000d1926);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002D3946);
     const FOREGROUND: Color = Color::from_u32(0x00d9e6f2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008996a2);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00dbbdbd),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Blazer {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00131F2C), Color::from_u32(0x00192532)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B9C6D2);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00884A4A);
 }

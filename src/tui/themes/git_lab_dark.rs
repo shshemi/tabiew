@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GitlabDark {
     const BACKGROUND: Color = Color::from_u32(0x0028262b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0048464B);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fcb5aa),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for GitlabDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E2C31), Color::from_u32(0x00343237)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C85A7F);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for LabFox {
     const BACKGROUND: Color = Color::from_u32(0x002e2e2e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004E4E4E);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002e2e2e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6517),

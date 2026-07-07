@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Zenburned {
     const BACKGROUND: Color = Color::from_u32(0x00404040);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00606060);
     const FOREGROUND: Color = Color::from_u32(0x00f0e4cf);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00404040);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a0947f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ec8685),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Zenburned {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00464646), Color::from_u32(0x004C4C4C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D3CABB);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B3413E);
 }

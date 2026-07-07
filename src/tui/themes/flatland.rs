@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Flatland {
     const BACKGROUND: Color = Color::from_u32(0x001d1f21);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003D3F41);
     const FOREGROUND: Color = Color::from_u32(0x00b8dbef);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d1d19);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00688b9f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d22a24),

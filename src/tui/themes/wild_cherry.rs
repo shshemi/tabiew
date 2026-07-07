@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for WildCherry {
     const BACKGROUND: Color = Color::from_u32(0x001f1726);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003F3746);
     const FOREGROUND: Color = Color::from_u32(0x00dafaff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000507);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008aaaaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00da6bac),

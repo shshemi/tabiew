@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NvimDark {
     const BACKGROUND: Color = Color::from_u32(0x0014161b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0034363B);
     const FOREGROUND: Color = Color::from_u32(0x00e0e2ea);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0007080d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0090929a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffc0b9),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for NvimDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A1C21), Color::from_u32(0x00202227)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007B7E84);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9089);
 }

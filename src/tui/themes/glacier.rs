@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Glacier {
     const BACKGROUND: Color = Color::from_u32(0x000c1115);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002C3135);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002e343c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bd0f2f),

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SeoulbonesDark {
     const BACKGROUND: Color = Color::from_u32(0x004b4b4b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x006B6B6B);
     const FOREGROUND: Color = Color::from_u32(0x00dddddd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x004b4b4b);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008d8d8d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00eb99b1),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SeoulbonesDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00515151), Color::from_u32(0x00575757)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C2C2C2);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFAF6B);
 }

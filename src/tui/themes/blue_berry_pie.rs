@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BlueBerryPie {
     const BACKGROUND: Color = Color::from_u32(0x001c0c28);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003C2C48);
     const FOREGROUND: Color = Color::from_u32(0x00babab9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000a4c62);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006a6a69);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00c87272),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for BlueBerryPie {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0022122E), Color::from_u32(0x00281834)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DCDAB6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BA8978);
 }

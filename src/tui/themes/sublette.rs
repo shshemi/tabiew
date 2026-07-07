@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Sublette {
     const BACKGROUND: Color = Color::from_u32(0x00202535);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00404555);
     const FOREGROUND: Color = Color::from_u32(0x00ccced0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00253045);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007c7e80);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ee6655),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Sublette {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00262B3B), Color::from_u32(0x002C3141)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ACAEB0);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFAD58);
 }

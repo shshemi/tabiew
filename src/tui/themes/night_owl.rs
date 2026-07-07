@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NightOwl {
     const BACKGROUND: Color = Color::from_u32(0x00011627);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00213647);
     const FOREGROUND: Color = Color::from_u32(0x00d6deeb);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00011627);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00868e9b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ef5350),

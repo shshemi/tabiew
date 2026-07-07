@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Seti {
     const BACKGROUND: Color = Color::from_u32(0x00111213);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313233);
     const FOREGROUND: Color = Color::from_u32(0x00cacecd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00323232);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007a7e7d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00c22832),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Seti {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00171819), Color::from_u32(0x001D1E1F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C39F01);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B0961F);
 }

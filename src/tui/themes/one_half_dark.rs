@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for OneHalfDark {
     const BACKGROUND: Color = Color::from_u32(0x00282c34);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00484C54);
     const FOREGROUND: Color = Color::from_u32(0x00dcdfe4);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00282c34);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008c8f94);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e06c75),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for OneHalfDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E323A), Color::from_u32(0x00343840)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x008393AC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B5904B);
 }

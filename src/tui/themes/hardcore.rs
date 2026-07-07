@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Hardcore {
     const BACKGROUND: Color = Color::from_u32(0x00121212);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00323232);
     const FOREGROUND: Color = Color::from_u32(0x00a0a0a0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001b1d1e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00505050);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff669d),

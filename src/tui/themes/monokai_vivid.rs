@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for MonokaiVivid {
     const BACKGROUND: Color = Color::from_u32(0x00121212);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00323232);
     const FOREGROUND: Color = Color::from_u32(0x00f9f9f9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00121212);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a9a9a9);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f6669d),

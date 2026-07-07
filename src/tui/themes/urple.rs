@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Urple {
     const BACKGROUND: Color = Color::from_u32(0x001b1b23);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003B3B43);
     const FOREGROUND: Color = Color::from_u32(0x00877a9b);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00372a4b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6388),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Urple {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00212129), Color::from_u32(0x0027272F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x008043CB);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0080122B);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for AlienBlood {
     const BACKGROUND: Color = Color::from_u32(0x000f1610);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002F3630);
     const FOREGROUND: Color = Color::from_u32(0x00637d75);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00112616);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00132d25);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e08009),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for AlienBlood {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00151C16), Color::from_u32(0x001B221C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0053DA71);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x004F0000);
 }

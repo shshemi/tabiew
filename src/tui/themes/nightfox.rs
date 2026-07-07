@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Nightfox {
     const BACKGROUND: Color = Color::from_u32(0x00192330);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00394350);
     const FOREGROUND: Color = Color::from_u32(0x00cdcecf);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00393b44);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007d7e7f);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d16983),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Nightfox {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001F2936), Color::from_u32(0x00252F3C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ADAEAF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AB9044);
 }

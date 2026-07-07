@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Arcoiris {
     const BACKGROUND: Color = Color::from_u32(0x00201f1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00403F3E);
     const FOREGROUND: Color = Color::from_u32(0x00eee4d9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00333333);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009e9489);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffb9b9),

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Andromeda {
     const BACKGROUND: Color = Color::from_u32(0x00262a33);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00464A53);
     const FOREGROUND: Color = Color::from_u32(0x00e5e5e5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00959595);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cd3131),

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Jubi {
     const BACKGROUND: Color = Color::from_u32(0x00262b33);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00464B53);
     const FOREGROUND: Color = Color::from_u32(0x00c3d3de);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x003b3750);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0073838e);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00de90ab),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Jubi {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002C3139), Color::from_u32(0x0032373F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A3B3BE);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009F4B68);
 }

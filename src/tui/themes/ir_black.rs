@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for IrBlack {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00f1f1f1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x004f4f4f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a1a1a1);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fcb6b0),

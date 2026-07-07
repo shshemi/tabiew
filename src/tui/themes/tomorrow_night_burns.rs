@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for TomorrowNightBurns {
     const BACKGROUND: Color = Color::from_u32(0x00151515);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00353535);
     const FOREGROUND: Color = Color::from_u32(0x00a1b0b8);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00252525);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00516068);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00832e31),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for TomorrowNightBurns {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001B1B1B), Color::from_u32(0x00212121)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DF241E);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC292F);
 }

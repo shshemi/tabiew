@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Misterioso {
     const BACKGROUND: Color = Color::from_u32(0x002d3743);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004D5763);
     const FOREGROUND: Color = Color::from_u32(0x00e1e1e0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00919190);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff3242),

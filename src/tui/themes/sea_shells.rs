@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SeaShells {
     const BACKGROUND: Color = Color::from_u32(0x0009141b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0029343B);
     const FOREGROUND: Color = Color::from_u32(0x00deb88d);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0017384c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008e683d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d48678),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SeaShells {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000F1A21), Color::from_u32(0x00152027)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DC800F);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CC7000);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SolarizedDarcula {
     const BACKGROUND: Color = Color::from_u32(0x003d3f41);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x005D5F61);
     const FOREGROUND: Color = Color::from_u32(0x00d2d8d9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0025292a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00828889);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f24840),

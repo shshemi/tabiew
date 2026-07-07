@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Teerb {
     const BACKGROUND: Color = Color::from_u32(0x00262626);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00464646);
     const FOREGROUND: Color = Color::from_u32(0x00d0d0d0);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001c1c1c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00808080);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d68686),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Teerb {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002C2C2C), Color::from_u32(0x00323232)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C4A98F);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A77F57);
 }

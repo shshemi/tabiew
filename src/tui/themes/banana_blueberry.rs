@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BananaBlueberry {
     const BACKGROUND: Color = Color::from_u32(0x00191323);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00393343);
     const FOREGROUND: Color = Color::from_u32(0x00cccccc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0017141f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007c7c7c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fe9ea1),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for BananaBlueberry {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001F1929), Color::from_u32(0x00251F2F)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C05D00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3B4F);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Matrix {
     const BACKGROUND: Color = Color::from_u32(0x000f191c);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002F393C);
     const FOREGROUND: Color = Color::from_u32(0x005a8a5c);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000f191c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x000a3a0c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x002fc079),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Matrix {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00151F22), Color::from_u32(0x001B2528)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x002a4540);
-    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFA700);
 }

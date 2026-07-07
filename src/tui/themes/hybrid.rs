@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Hybrid {
     const BACKGROUND: Color = Color::from_u32(0x00161719);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00363739);
     const FOREGROUND: Color = Color::from_u32(0x00b7bcba);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002a2e33);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00676c6a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x008d2e32),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Hybrid {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C1D1F), Color::from_u32(0x00222325)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00979C9A);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B4852E);
 }

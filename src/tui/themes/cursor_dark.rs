@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for CursorDark {
     const BACKGROUND: Color = Color::from_u32(0x00141414);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343434);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00bfbfbf);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bf616a),

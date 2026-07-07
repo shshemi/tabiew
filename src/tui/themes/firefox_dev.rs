@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for FirefoxDev {
     const BACKGROUND: Color = Color::from_u32(0x000e1011);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002E3031);
     const FOREGROUND: Color = Color::from_u32(0x007c8fa4);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00002831);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x002c3f54);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e1003f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for FirefoxDev {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00141617), Color::from_u32(0x001A1C1D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00506264);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B60823);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SleepyHollow {
     const BACKGROUND: Color = Color::from_u32(0x00121214);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00323234);
     const FOREGROUND: Color = Color::from_u32(0x00af9a91);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00572100);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005f4a41);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d9443f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SleepyHollow {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0018181A), Color::from_u32(0x001E1E20)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x008F7A71);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008A0904);
 }

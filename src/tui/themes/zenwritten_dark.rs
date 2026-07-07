@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for ZenwrittenDark {
     const BACKGROUND: Color = Color::from_u32(0x00191919);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00393939);
     const FOREGROUND: Color = Color::from_u32(0x00bbbbbb);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00191919);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x006b6b6b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e8838f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for ZenwrittenDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001F1F1F), Color::from_u32(0x00252525)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A9A9A9);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AE3E4C);
 }

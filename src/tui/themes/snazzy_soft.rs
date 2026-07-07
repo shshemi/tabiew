@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SnazzySoft {
     const BACKGROUND: Color = Color::from_u32(0x00282a36);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00484A56);
     const FOREGROUND: Color = Color::from_u32(0x00eff0eb);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009fa09b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff5c57),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SnazzySoft {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002E303C), Color::from_u32(0x00343642)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CACACA);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF2C27);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Oxocarbon {
     const BACKGROUND: Color = Color::from_u32(0x00161616);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00363636);
     const FOREGROUND: Color = Color::from_u32(0x00f2f4f8);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00161616);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a2a4a8);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x0000dfdb),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Oxocarbon {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C1C1C), Color::from_u32(0x00222222)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF1267);
 }

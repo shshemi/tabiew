@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Firewatch {
     const BACKGROUND: Color = Color::from_u32(0x001e2027);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E4047);
     const FOREGROUND: Color = Color::from_u32(0x009ba2b2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00585f6d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x004b5262);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d95360),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Firewatch {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0024262D), Color::from_u32(0x002A2C33)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D6D7CC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AF8533);
 }

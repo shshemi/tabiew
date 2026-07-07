@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Encom {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x0000a595);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00005545);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff0000),

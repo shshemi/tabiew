@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for HavnSkumring {
     const BACKGROUND: Color = Color::from_u32(0x00111522);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313542);
     const FOREGROUND: Color = Color::from_u32(0x00d6dbeb);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00252c47);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00868b9b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d17264),

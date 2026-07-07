@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Hivacruz {
     const BACKGROUND: Color = Color::from_u32(0x00132638);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00334658);
     const FOREGROUND: Color = Color::from_u32(0x00ede4e4);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00202746);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009d9494);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00c76b29),

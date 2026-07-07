@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Aurora {
     const BACKGROUND: Color = Color::from_u32(0x0023262e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0043464E);
     const FOREGROUND: Color = Color::from_u32(0x00ffca28);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0023262e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00af7a00);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f92672),

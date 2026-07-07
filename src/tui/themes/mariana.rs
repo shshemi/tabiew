@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Mariana {
     const BACKGROUND: Color = Color::from_u32(0x00343d46);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00545D66);
     const FOREGROUND: Color = Color::from_u32(0x00d8dee9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00888e99);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f97b58),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Mariana {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x003A434C), Color::from_u32(0x00404952)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DC9B4A);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C97E28);
 }

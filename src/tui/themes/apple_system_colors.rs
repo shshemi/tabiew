@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for AppleSystemColors {
     const BACKGROUND: Color = Color::from_u32(0x001e1e1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E3E3E);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001a1a1a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff453a),

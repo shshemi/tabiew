@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for RedPlanet {
     const BACKGROUND: Color = Color::from_u32(0x00222222);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00424242);
     const FOREGROUND: Color = Color::from_u32(0x00c2b790);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00202020);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00726740);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00b55242),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for RedPlanet {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00282828), Color::from_u32(0x002E2E2E)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A29770);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B88F3A);
 }

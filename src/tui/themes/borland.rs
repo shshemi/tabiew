@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Borland {
     const BACKGROUND: Color = Color::from_u32(0x000000a4);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002020C4);
     const FOREGROUND: Color = Color::from_u32(0x00ffff4e);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x004f4f4f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afaf00);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffb6b0),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Borland {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000606AA), Color::from_u32(0x000C0CB0)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DF8540);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF3C30);
 }

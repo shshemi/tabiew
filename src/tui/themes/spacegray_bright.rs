@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SpacegrayBright {
     const BACKGROUND: Color = Color::from_u32(0x002a2e3a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004A4E5A);
     const FOREGROUND: Color = Color::from_u32(0x00f3f3f3);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00080808);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a3a3a3);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bc5553),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SpacegrayBright {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00303440), Color::from_u32(0x00363A46)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A6A6A6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C69957);
 }

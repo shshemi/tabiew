@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for AppleClassic {
     const BACKGROUND: Color = Color::from_u32(0x002c2b2b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004C4B4B);
     const FOREGROUND: Color = Color::from_u32(0x00d5a200);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00855200);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6e67),

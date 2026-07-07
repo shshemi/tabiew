@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Sugarplum {
     const BACKGROUND: Color = Color::from_u32(0x00111147);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313167);
     const FOREGROUND: Color = Color::from_u32(0x00db7ddd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00111147);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008b2d8d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x005cb5dc),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Sugarplum {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0017174D), Color::from_u32(0x001D1D53)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00339377);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C9C3C9);
 }

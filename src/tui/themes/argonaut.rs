@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Argonaut {
     const BACKGROUND: Color = Color::from_u32(0x000e1019);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002E3039);
     const FOREGROUND: Color = Color::from_u32(0x00fffaf4);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00232323);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afaaa4);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff2740),

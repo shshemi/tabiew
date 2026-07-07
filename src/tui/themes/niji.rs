@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Niji {
     const BACKGROUND: Color = Color::from_u32(0x00141515);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343535);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00333333);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffb7b7),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Niji {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A1B1B), Color::from_u32(0x00202121)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFA643);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFC700);
 }

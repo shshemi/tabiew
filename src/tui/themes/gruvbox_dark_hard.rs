@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GruvboxDarkHard {
     const BACKGROUND: Color = Color::from_u32(0x001d2021);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003D4041);
     const FOREGROUND: Color = Color::from_u32(0x00ebdbb2);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001d2021);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009b8b62);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fb4934),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for GruvboxDarkHard {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00232627), Color::from_u32(0x00292C2D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CBBB92);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A76900);
 }

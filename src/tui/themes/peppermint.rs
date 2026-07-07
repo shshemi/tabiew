@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Peppermint {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00c8c8c8);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00353535);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00787878);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e4859b),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Peppermint {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009B9B9B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B71639);
 }

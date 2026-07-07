@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Tearout {
     const BACKGROUND: Color = Color::from_u32(0x0034392d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0054594D);
     const FOREGROUND: Color = Color::from_u32(0x00f4d2ae);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00685742);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a4825e);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cc967b),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Tearout {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x003A3F33), Color::from_u32(0x00404539)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B7A463);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A79453);
 }

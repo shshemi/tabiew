@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Neopolitan {
     const BACKGROUND: Color = Color::from_u32(0x00271f19);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00473F39);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00800000),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Neopolitan {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002D251F), Color::from_u32(0x00332B25)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0050);
 }

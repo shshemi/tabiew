@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Mellow {
     const BACKGROUND: Color = Color::from_u32(0x00161617);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00363637);
     const FOREGROUND: Color = Color::from_u32(0x00c9c7cd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0027272a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0079777d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ffae9f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Mellow {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001C1C1D), Color::from_u32(0x00222223)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00AAA9BD);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C57161);
 }

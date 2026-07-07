@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Everblush {
     const BACKGROUND: Color = Color::from_u32(0x00141b1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343B3E);
     const FOREGROUND: Color = Color::from_u32(0x00dadada);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00232a2d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008a8a8a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ef7e7e),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Everblush {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A2124), Color::from_u32(0x0020272A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00BABABA);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B5973B);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Terafox {
     const BACKGROUND: Color = Color::from_u32(0x00152528);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00354548);
     const FOREGROUND: Color = Color::from_u32(0x00e6eaea);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002f3239);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00969a9a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00eb746b),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Terafox {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001B2B2E), Color::from_u32(0x00213134)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C6CACA);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CD744F);
 }

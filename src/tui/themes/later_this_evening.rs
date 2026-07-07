@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for LaterThisEvening {
     const BACKGROUND: Color = Color::from_u32(0x00222222);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00424242);
     const FOREGROUND: Color = Color::from_u32(0x00959595);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x002b2b2b);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00454545);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d3232f),

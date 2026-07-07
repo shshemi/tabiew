@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Mellifluous {
     const BACKGROUND: Color = Color::from_u32(0x001a1a1a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003A3A3A);
     const FOREGROUND: Color = Color::from_u32(0x00dadada);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001a1a1a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008a8a8a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00c95954),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Mellifluous {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00202020), Color::from_u32(0x00262626)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009F8D7E);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A26363);
 }

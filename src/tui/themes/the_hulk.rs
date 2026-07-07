@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for TheHulk {
     const BACKGROUND: Color = Color::from_u32(0x001b1d1e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003B3D3E);
     const FOREGROUND: Color = Color::from_u32(0x00b5b5b5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001b1d1e);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00656565);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x008dff2a),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for TheHulk {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00212324), Color::from_u32(0x0027292A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00009600);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00340044);
 }

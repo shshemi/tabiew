@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Harper {
     const BACKGROUND: Color = Color::from_u32(0x00010101);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00212121);
     const FOREGROUND: Color = Color::from_u32(0x00a8a49d);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00010101);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0058544d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f8b63f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Harper {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00070707), Color::from_u32(0x000D0D0D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0088847D);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C8860F);
 }

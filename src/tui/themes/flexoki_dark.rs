@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for FlexokiDark {
     const BACKGROUND: Color = Color::from_u32(0x00100f0f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00302F2F);
     const FOREGROUND: Color = Color::from_u32(0x00cecdc3);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00100f0f);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007e7d73);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00af3029),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for FlexokiDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00161515), Color::from_u32(0x001C1B1B)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00AEADA3);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A11D11);
 }

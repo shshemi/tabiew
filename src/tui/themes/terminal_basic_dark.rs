@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for TerminalBasicDark {
     const BACKGROUND: Color = Color::from_u32(0x001d1e1d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003D3E3D);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00eb5a3a),

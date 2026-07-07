@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for ChallengerDeep {
     const BACKGROUND: Color = Color::from_u32(0x001e1c31);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003E3C51);
     const FOREGROUND: Color = Color::from_u32(0x00cbe1e7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00141228);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007b9197);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8080),

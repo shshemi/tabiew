@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SolarizedDarkHigherContrast {
     const BACKGROUND: Color = Color::from_u32(0x00001e27);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00203E47);
     const FOREGROUND: Color = Color::from_u32(0x009cc2c3);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00002831);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x004c7273);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f5163b),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for SolarizedDarkHigherContrast {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0006242D), Color::from_u32(0x000C2A33)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D32B00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A10000);
 }

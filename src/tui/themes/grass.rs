@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Grass {
     const BACKGROUND: Color = Color::from_u32(0x0013773d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x0033975D);
     const FOREGROUND: Color = Color::from_u32(0x00fff0a5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afa055);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bb0000),

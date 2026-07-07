@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Vesper {
     const BACKGROUND: Color = Color::from_u32(0x00101010);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00303030);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00101010);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8080),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Vesper {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00161616), Color::from_u32(0x001C1C1C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x008C918B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C57161);
 }

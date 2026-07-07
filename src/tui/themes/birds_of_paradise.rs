@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BirdsOfParadise {
     const BACKGROUND: Color = Color::from_u32(0x002a1f1d);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004A3F3D);
     const FOREGROUND: Color = Color::from_u32(0x00e0dbb7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00573d26);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00908b67);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e84627),

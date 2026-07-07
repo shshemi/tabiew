@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Zenburn {
     const BACKGROUND: Color = Color::from_u32(0x003f3f3f);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x005F5F5F);
     const FOREGROUND: Color = Color::from_u32(0x00dcdccc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x004d4d4d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008c8c7c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00dca3a3),

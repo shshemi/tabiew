@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for UnderTheSea {
     const BACKGROUND: Color = Color::from_u32(0x00011116);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00213136);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00022026);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff4242),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for UnderTheSea {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0007171C), Color::from_u32(0x000D1D22)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x002ADCB6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00820000);
 }

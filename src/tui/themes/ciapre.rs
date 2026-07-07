@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Ciapre {
     const BACKGROUND: Color = Color::from_u32(0x00191c27);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00393C47);
     const FOREGROUND: Color = Color::from_u32(0x00aea47a);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x006c6238);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005e542a);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ac3835),

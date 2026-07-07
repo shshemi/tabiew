@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for PencilDark {
     const BACKGROUND: Color = Color::from_u32(0x00212121);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00414141);
     const FOREGROUND: Color = Color::from_u32(0x00f1f1f1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00212121);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a1a1a1);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fb007a),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for PencilDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00272727), Color::from_u32(0x002D2D2D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00009BDC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00930041);
 }

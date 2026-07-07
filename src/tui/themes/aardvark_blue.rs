@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for AardvarkBlue {
     const BACKGROUND: Color = Color::from_u32(0x00102040);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00304060);
     const FOREGROUND: Color = Color::from_u32(0x00dddddd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00191919);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008d8d8d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f05b50),

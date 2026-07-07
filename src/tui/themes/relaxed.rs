@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Relaxed {
     const BACKGROUND: Color = Color::from_u32(0x00353a44);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00555A64);
     const FOREGROUND: Color = Color::from_u32(0x00d9d9d9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00151515);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00898989);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bc5653),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Relaxed {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x003B404A), Color::from_u32(0x00414650)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B9B9B9);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BB914A);
 }

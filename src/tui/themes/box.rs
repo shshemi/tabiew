@@ -10,7 +10,7 @@ impl SixColorsTwoRowsStyler for Box {
     const BACKGROUND: Color = Color::from_u32(0x00141d2b);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343D4B);
     const FOREGROUND: Color = Color::from_u32(0x009fef00);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x004f9f00);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f2201f),
@@ -31,7 +31,7 @@ impl SixColorsTwoRowsStyler for Box {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A2331), Color::from_u32(0x00202937)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007FCF00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009E9B00);
 }

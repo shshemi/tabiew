@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Starlight {
     const BACKGROUND: Color = Color::from_u32(0x00242424);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00444444);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00242424);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff4d51),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Starlight {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A2A2A), Color::from_u32(0x00303030)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C6002A);
 }

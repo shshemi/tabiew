@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Powershell {
     const BACKGROUND: Color = Color::from_u32(0x00052454);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00254474);
     const FOREGROUND: Color = Color::from_u32(0x00f6f6f7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a6a6a7);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ef2929),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Powershell {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000B2A5A), Color::from_u32(0x00113060)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D6D6D7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A30652);
 }

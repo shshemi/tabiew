@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BrightLights {
     const BACKGROUND: Color = Color::from_u32(0x00191919);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00393939);
     const FOREGROUND: Color = Color::from_u32(0x00b3c9d7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00191919);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00637987);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff355b),

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for IdleToes {
     const BACKGROUND: Color = Color::from_u32(0x00323232);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00525252);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00323232);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f07070),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for IdleToes {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00383838), Color::from_u32(0x003E3E3E)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00B6B6B6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF963D);
 }

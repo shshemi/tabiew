@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Ocean {
     const BACKGROUND: Color = Color::from_u32(0x00224fbc);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00426FDC);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e50000),

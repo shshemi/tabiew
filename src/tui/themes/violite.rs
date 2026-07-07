@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Violite {
     const BACKGROUND: Color = Color::from_u32(0x00241c36);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00443C56);
     const FOREGROUND: Color = Color::from_u32(0x00eef4f6);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00241c36);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009ea4a6);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ef8f8f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Violite {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A223C), Color::from_u32(0x00302842)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00CED4D6);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BC4949);
 }

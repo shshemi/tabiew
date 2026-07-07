@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for MonokaiSoda {
     const BACKGROUND: Color = Color::from_u32(0x001a1a1a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003A3A3A);
     const FOREGROUND: Color = Color::from_u32(0x00c4c5b5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001a1a1a);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00747565);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f4005f),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for MonokaiSoda {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00202020), Color::from_u32(0x00262626)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00D6D7CC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CA5400);
 }

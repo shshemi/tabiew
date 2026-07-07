@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for RedSands {
     const BACKGROUND: Color = Color::from_u32(0x007a251e);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x009A453E);
     const FOREGROUND: Color = Color::from_u32(0x00d7c9a7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00877957);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bb0000),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for RedSands {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00802B24), Color::from_u32(0x0086312A)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0F00);
 }

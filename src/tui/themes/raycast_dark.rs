@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for RaycastDark {
     const BACKGROUND: Color = Color::from_u32(0x001a1a1a);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x003A3A3A);
     const FOREGROUND: Color = Color::from_u32(0x00ffffff);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00afafaf);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff6363),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for RaycastDark {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00202020), Color::from_u32(0x00262626)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00ACACAC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9501);
 }

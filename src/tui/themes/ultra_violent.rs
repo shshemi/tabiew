@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for UltraViolent {
     const BACKGROUND: Color = Color::from_u32(0x00242728);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00444748);
     const FOREGROUND: Color = Color::from_u32(0x00c1c1c1);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00242728);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00717171);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fb58b4),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for UltraViolent {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x002A2D2E), Color::from_u32(0x00303334)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A1A1A1);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFC700);
 }

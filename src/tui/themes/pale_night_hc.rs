@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for PaleNightHc {
     const BACKGROUND: Color = Color::from_u32(0x003e4251);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x005E6271);
     const FOREGROUND: Color = Color::from_u32(0x00cccccc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007c7c7c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f6a9ae),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for PaleNightHc {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00444857), Color::from_u32(0x004A4E5D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFAB4B);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9B3B);
 }

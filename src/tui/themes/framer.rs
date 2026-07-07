@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Framer {
     const BACKGROUND: Color = Color::from_u32(0x00111111);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00313131);
     const FOREGROUND: Color = Color::from_u32(0x00777777);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00141414);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00272727);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff8888),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Framer {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00171717), Color::from_u32(0x001D1D1D)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DCBC00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF9C03);
 }

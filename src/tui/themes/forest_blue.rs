@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for ForestBlue {
     const BACKGROUND: Color = Color::from_u32(0x00051519);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00253539);
     const FOREGROUND: Color = Color::from_u32(0x00e2d8cd);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00333333);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0092887d);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fb3d66),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for ForestBlue {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000B1B1F), Color::from_u32(0x00112125)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x007E7EAB);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00C8515E);
 }

@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Hacktober {
     const BACKGROUND: Color = Color::from_u32(0x00141414);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00343434);
     const FOREGROUND: Color = Color::from_u32(0x00c9c9c9);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00191918);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00797979);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00b33323),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Hacktober {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x001A1A1A), Color::from_u32(0x00202020)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A9A9A9);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A05919);
 }

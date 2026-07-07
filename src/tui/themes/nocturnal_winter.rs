@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NocturnalWinter {
     const BACKGROUND: Color = Color::from_u32(0x000d0d17);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x002D2D37);
     const FOREGROUND: Color = Color::from_u32(0x00e6e5e5);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x004d4d4d);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00969595);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f16d86),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for NocturnalWinter {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0013131D), Color::from_u32(0x00191923)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00C6C5C5);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF003D);
 }
