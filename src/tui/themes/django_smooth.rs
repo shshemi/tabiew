@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for DjangoSmooth {
     const BACKGROUND: Color = Color::from_u32(0x00245032);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00447052);
     const FOREGROUND: Color = Color::from_u32(0x00f8f8f8);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a8a8a8);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff943b),
