@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Laser {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0009131E), Color::from_u32(0x000F1924)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0000DF7C);
-    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF5343);
 }
