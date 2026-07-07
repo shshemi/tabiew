@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for GithubLightHighContrast {
     const BACKGROUND: Color = Color::from_u32(0x00ffffff);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x000e1116);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000e1116);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005e6166);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x0086061d),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for GithubLightHighContrast {
         Color::from_u32(0x001b7c83),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00E5E5E5), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00002994);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00700000);
 }
