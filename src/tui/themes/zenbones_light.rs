@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for ZenbonesLight {
     const BACKGROUND: Color = Color::from_u32(0x00f0edec);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x002c363c);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00f0edec);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x007c868c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x0094253e),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for ZenbonesLight {
         Color::from_u32(0x003b8992),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F6F3F2), Color::from_u32(0x00FCF9F8)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F0ECEB), Color::from_u32(0x00FCF9F8)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x000C161C);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x0078031C);
 }
