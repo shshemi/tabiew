@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Alabaster {
     const BACKGROUND: Color = Color::from_u32(0x00f7f7f7);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00000000);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00505050);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00f05050),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for Alabaster {
         Color::from_u32(0x000083b2),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FDFDFD), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F4F4F4), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00005AAC);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x009B6000);
 }
