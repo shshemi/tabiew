@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for LightOwl {
     const BACKGROUND: Color = Color::from_u32(0x00fbfbfb);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00403f53);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00403f53);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00908fa3);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00de3d3b),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for LightOwl {
         Color::from_u32(0x002aa298),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00EBEBEB), Color::from_u32(0x00FBFBFB)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00201F33);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00B07F00);
 }
