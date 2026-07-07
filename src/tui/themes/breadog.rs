@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Breadog {
     const BACKGROUND: Color = Color::from_u32(0x00f1ebe6);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00362c24);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00362c24);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00867c74);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00de1100),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Breadog {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F7F1EC), Color::from_u32(0x00FDF7F2)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00160C04);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00810000);
 }
