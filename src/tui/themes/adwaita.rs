@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Adwaita {
     const BACKGROUND: Color = Color::from_u32(0x00ffffff);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00000000);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00241f31);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00505050);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ed333b),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for Adwaita {
         Color::from_u32(0x000ab9dc),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F4F4F9), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x003584e4);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00ffffff);
 
