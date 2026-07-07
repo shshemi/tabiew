@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for Breadog {
         Color::from_u32(0x00006a78),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F7F1EC), Color::from_u32(0x00FDF7F2)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F1EAE7), Color::from_u32(0x00FDF7F2)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00160C04);
     const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
