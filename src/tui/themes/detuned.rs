@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Detuned {
     const BACKGROUND: Color = Color::from_u32(0x00000000);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00202020);
     const FOREGROUND: Color = Color::from_u32(0x00c7c7c7);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00171717);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00777777);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00fa80ac),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for Detuned {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00A7A7A7);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CE1356);
 }
