@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Unikitty {
     const BACKGROUND: Color = Color::from_u32(0x00ff8cd9);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFACF9);
     const FOREGROUND: Color = Color::from_u32(0x000b0b0b);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x000c0c0c);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x005b5b5b);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00d91329),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for Unikitty {
         Color::from_u32(0x006bd1bc),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FF92DF), Color::from_u32(0x00FF98E5)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FF92DF), Color::from_u32(0x00FFA8F5)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x009ADC6B);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
