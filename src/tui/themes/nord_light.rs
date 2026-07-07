@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for NordLight {
     const BACKGROUND: Color = Color::from_u32(0x00e5e9f0);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00414858);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x003b4252);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009198a8);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00bf616a),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for NordLight {
         Color::from_u32(0x0088c0d0),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00EBEFF6), Color::from_u32(0x00F1F5FC)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00E5E9F0), Color::from_u32(0x00F1F5FC)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0068A0B0);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
