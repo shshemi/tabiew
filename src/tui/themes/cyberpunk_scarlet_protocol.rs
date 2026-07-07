@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for CyberpunkScarletProtocol {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x0016171C), Color::from_u32(0x001C1D22)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0056DF7F);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CF0021);
 }
