@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for XcodeLightHc {
     const BACKGROUND: Color = Color::from_u32(0x00ffffff);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00000000);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00b4d8fd);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00505050);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ad1805),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for XcodeLightHc {
         Color::from_u32(0x00703daa),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00EFEFEF), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x000058d1);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00ffffff);
 
