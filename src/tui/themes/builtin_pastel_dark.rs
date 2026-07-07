@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for BuiltinPastelDark {
         Color::from_u32(0x00c6c5fe),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x00121212)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DF8540);
     const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
