@@ -19,6 +19,8 @@ feature-depth = 1
 [advisories]
 ignore = [
     { id = "RUSTSEC-2025-0141", reason = "transitive dep from polars, not actionable" },
+    { id = "RUSTSEC-2026-0194", reason = "quick-xml 0.39 via polars/object_store, not actionable" },
+    { id = "RUSTSEC-2026-0195", reason = "quick-xml 0.39 via polars/object_store, not actionable" },
 ]
 
 [licenses]
