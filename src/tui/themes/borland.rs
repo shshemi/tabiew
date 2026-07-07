@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for Borland {
         Color::from_u32(0x00c6c5fe),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000606AA), Color::from_u32(0x000C0CB0)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060699), Color::from_u32(0x000C0CB0)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DF8540);
     const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
