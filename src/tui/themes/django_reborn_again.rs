@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for DjangoRebornAgain {
     const BACKGROUND: Color = Color::from_u32(0x00051f14);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00253F34);
     const FOREGROUND: Color = Color::from_u32(0x00dadedc);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008a8e8c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff943b),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for DjangoRebornAgain {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x000B251A), Color::from_u32(0x00112B20)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFAC00);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00CFB832);
 }
