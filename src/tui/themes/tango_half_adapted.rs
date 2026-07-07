@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for TangoHalfAdapted {
     const BACKGROUND: Color = Color::from_u32(0x00ffffff);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00000000);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00505050);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff0013),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for TangoHalfAdapted {
         Color::from_u32(0x0000bdc3),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F1F1F1), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x003465a4);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00ffffff);
 
