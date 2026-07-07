@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for DoomPeacock {
     const BACKGROUND: Color = Color::from_u32(0x002b2a27);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x004B4A47);
     const FOREGROUND: Color = Color::from_u32(0x00ede0ce);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001c1f24);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x009d907e);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00ff5d38),
