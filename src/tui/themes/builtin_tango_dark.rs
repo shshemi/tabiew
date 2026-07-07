@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for BuiltinTangoDark {
         Color::from_u32(0x0006989a),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x000C0C0C)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00060606), Color::from_u32(0x00101010)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00DFDFDF);
     const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
