@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Dayfox {
     const BACKGROUND: Color = Color::from_u32(0x00f6f2ee);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x003d2b5a);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00352c24);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008d7baa);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00b3434e),
