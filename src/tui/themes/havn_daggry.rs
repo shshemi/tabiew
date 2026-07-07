@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for HavnDaggry {
     const BACKGROUND: Color = Color::from_u32(0x00f8f9fb);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x003b4a7a);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x001f2842);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008b9aca);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cc4a35),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for HavnDaggry {
         Color::from_u32(0x00925780),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FEFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00f0f1f3), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00024C2F);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x008E3B00);
 }
