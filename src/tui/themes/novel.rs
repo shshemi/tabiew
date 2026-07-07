@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Novel {
     const BACKGROUND: Color = Color::from_u32(0x00dfdbc3);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFBE3);
     const FOREGROUND: Color = Color::from_u32(0x003b2322);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00000000);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x008b7372);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cc0000),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for Novel {
         Color::from_u32(0x000087cc),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00E5E1C9), Color::from_u32(0x00EBE7CF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00DFDAC0), Color::from_u32(0x00EBE7CF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0053433A);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A03B00);
 }
