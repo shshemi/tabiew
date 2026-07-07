@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for SelenizedLight {
     const BACKGROUND: Color = Color::from_u32(0x00fbf3db);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFB);
     const FOREGROUND: Color = Color::from_u32(0x0053676d);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00ece3cc);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00a3b7bd);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cc1729),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for SelenizedLight {
         Color::from_u32(0x00009c8f),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFF9E1), Color::from_u32(0x00FFFFE7)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F9F3D8), Color::from_u32(0x00FFFFE7)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0033474D);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00A20000);
 }
