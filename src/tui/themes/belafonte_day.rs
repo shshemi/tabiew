@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BelafonteDay {
     const BACKGROUND: Color = Color::from_u32(0x00d5ccba);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00F5ECDA);
     const FOREGROUND: Color = Color::from_u32(0x0045373c);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x0020111b);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x0095878c);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00be100e),
@@ -28,9 +28,9 @@ impl SixColorsTwoRowsStyler for BelafonteDay {
         Color::from_u32(0x00989a9c),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00DBD2C0), Color::from_u32(0x00E1D8C6)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00D9D0BE), Color::from_u32(0x00E1D8C6)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x0025171C);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00BA7519);
 }
