@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for Material {
     const BACKGROUND: Color = Color::from_u32(0x00eaeaea);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00232322);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00212121);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00737372);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00e83b3f),
@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for Material {
         Color::from_u32(0x000e717c),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F0F0F0), Color::from_u32(0x00F6F6F6)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00E6E6E6), Color::from_u32(0x00F6F6F6)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00008FAA);
     const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
 
