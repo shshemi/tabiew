@@ -28,7 +28,7 @@ impl SixColorsTwoRowsStyler for BuiltinTangoLight {
         Color::from_u32(0x0006989a),
     ];
 
-    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFFFF), Color::from_u32(0x00FFFFFF)];
+    const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00F5F5F5), Color::from_u32(0x00FFFFFF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x003465a4);
     const HIGHLIGHT_FOREGROUND: Color = Color::from_u32(0x00ffffff);
 
