@@ -9,7 +9,7 @@ impl SixColorsTwoRowsStyler for BuiltinSolarizedLight {
     const BACKGROUND: Color = Color::from_u32(0x00fdf6e3);
     const LIGHT_BACKGROUND: Color = Color::from_u32(0x00FFFFFF);
     const FOREGROUND: Color = Color::from_u32(0x00657b83);
-    const DARK_FOREGROUND: Color = Color::from_u32(0x00073642);
+    const DARK_FOREGROUND: Color = Color::from_u32(0x00b5cbd3);
 
     const COLORS: [Color; 6] = [
         Color::from_u32(0x00cb4b16),
@@ -30,7 +30,7 @@ impl SixColorsTwoRowsStyler for BuiltinSolarizedLight {
 
     const ROW_BACKGROUNDS: [Color; 2] = [Color::from_u32(0x00FFFCE9), Color::from_u32(0x00FFFFEF)];
     const HIGHLIGHT_BACKGROUND: Color = Color::from_u32(0x00455B63);
-    const HIGHLIGHT_FOREGROUND: Color = Self::FOREGROUND;
+    const HIGHLIGHT_FOREGROUND: Color = Self::BACKGROUND;
 
     const STATUS_BAR_ERROR: Color = Color::from_u32(0x00AC0200);
 }
