@@ -3,13 +3,15 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    misc::sql::sql,
+    misc::{history::History, sql::sql},
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
         pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
     },
 };
+
+static HISTORY: History<String> = History::<String>::new(24);
 
 #[derive(Debug)]
 pub struct SqlQueryPicker {
@@ -23,6 +25,11 @@ impl SqlQueryPicker {
         let provider = SqlQueryProvider {
             dataframe: dataframe.clone(),
             all_columns,
+            history: HISTORY
+                .to_vec()
+                .into_iter()
+                .map(SqlSuggestion::new)
+                .collect(),
         };
         Self {
             picker: TextPickerWithSuggestion::new("SQL", provider),
@@ -54,6 +61,7 @@ impl Component for SqlQueryPicker {
                     } else {
                         let value = self.picker.value();
                         Message::AppDismissOverlay.enqueue();
+                        HISTORY.push(value.to_owned());
                         match sql().execute(value, self.dataframe.clone()) {
                             Ok(result) => {
                                 Message::TabsAddQueryPane(result, value.to_owned()).enqueue();
@@ -76,18 +84,23 @@ impl Component for SqlQueryPicker {
 struct SqlQueryProvider {
     dataframe: Option<DataFrame>,
     all_columns: Vec<String>,
+    history: Vec<SqlSuggestion>,
 }
 
 impl Provider for SqlQueryProvider {
     type Suggestion = SqlSuggestion;
 
     fn suggestions(&self, value: &str, cursor: usize) -> Vec<SqlSuggestion> {
-        sql_completion::suggestions(
-            value,
-            cursor,
-            "",
-            &self.all_columns,
-            self.dataframe.as_ref(),
-        )
+        if value.is_empty() {
+            self.history.clone()
+        } else {
+            sql_completion::suggestions(
+                value,
+                cursor,
+                "",
+                &self.all_columns,
+                self.dataframe.as_ref(),
+            )
+        }
     }
 }
