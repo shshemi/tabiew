@@ -22,7 +22,10 @@ pub fn start_tui() -> AppResult<()> {
     crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
     let panic_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic| {
-        let _ = stop_tui();
+        let _ = terminal::disable_raw_mode();
+        let _ = crossterm::execute!(io::stdout(), LeaveAlternateScreen);
+        let _ = ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))
+            .and_then(|mut term| term.show_cursor());
         panic_hook(panic);
     }));
 
