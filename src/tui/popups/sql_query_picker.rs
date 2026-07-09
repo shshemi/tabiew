@@ -63,8 +63,15 @@ impl Component for SqlQueryPicker {
                         Message::AppDismissOverlay.enqueue();
                         HISTORY.push(value.to_owned());
                         match sql().execute(value, self.dataframe.clone()) {
-                            Ok(result) => {
-                                Message::TabsAddQueryPane(result, value.to_owned()).enqueue();
+                            Ok(df) => {
+                                if df.columns().is_empty() {
+                                    Message::AppShowError(
+                                        "The query results in an empty data frame".to_owned(),
+                                    )
+                                    .enqueue()
+                                } else {
+                                    Message::TabsAddQueryPane(df, value.to_owned()).enqueue()
+                                }
                             }
                             Err(error) => Message::AppShowError(error.to_string()).enqueue(),
                         }
