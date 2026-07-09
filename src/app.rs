@@ -19,7 +19,7 @@ use crate::{
         schema::schema::Schema,
     },
 };
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::layout::{Constraint, Direction, Flex, Layout, Rect};
 use url::Url;
@@ -156,12 +156,13 @@ impl Component for App {
             schema.handle(event)
         } else {
             self.tabs.handle(event)
-        }) || match event.code {
-            KeyCode::Char(':') => {
+        }) || match (event.modifiers, event.code) {
+            (KeyModifiers::NONE, KeyCode::Char(':'))
+            | (KeyModifiers::CONTROL, KeyCode::Char('P')) => {
                 self.show_palette();
                 true
             }
-            KeyCode::Char('Q') => {
+            (KeyModifiers::SHIFT, KeyCode::Char('Q')) => {
                 self.quit();
                 true
             }
