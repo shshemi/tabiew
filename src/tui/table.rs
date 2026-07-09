@@ -385,6 +385,9 @@ impl Component for Table {
                 );
             }
             ColumnMode::Expanded(x) => {
+                if self.df.columns().is_empty() {
+                    return;
+                }
                 let total_width = self
                     .col_offsets
                     .last()
