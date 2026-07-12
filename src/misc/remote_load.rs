@@ -8,6 +8,7 @@ use std::{
     thread::JoinHandle,
 };
 
+use anyhow::{anyhow, bail};
 use tempfile::NamedTempFile;
 use url::Url;
 
@@ -62,8 +63,11 @@ impl RemoteLoad {
     }
 
     pub fn join(self) -> AppResult<NamedFrames> {
-        // TODO: fix unwrap
-        self.hndl.join().unwrap()
+        match self.hndl.join() {
+            Ok(Ok(named_frame)) => Ok(named_frame),
+            Ok(Err(err)) => bail!("{}", err),
+            Err(_) => bail!("Thread couldn't be joined"),
+        }
     }
 }
 
