@@ -67,9 +67,15 @@ impl OverlayStep for State {
                 }
             }
             State::PickBucketCount { column, picker } => {
-                let buckets = picker.value().parse().unwrap_or(1).max(1);
-                Message::PaneShowHistogram(column.clone(), buckets).enqueue();
-                State::PickBucketCount { column, picker }
+                let buckets = picker.value().parse().unwrap_or(2);
+                if (2..100).contains(&buckets) {
+                    Message::PaneShowHistogram(column.clone(), buckets).enqueue();
+                    State::PickBucketCount { column, picker }
+                } else {
+                    Message::AppShowToast("Bucket count must be between 2 and 100".to_owned())
+                        .enqueue();
+                    State::PickBucketCount { column, picker }
+                }
             }
         }
     }
