@@ -27,7 +27,7 @@ impl Custom {
     fn load() -> AppResult<Self> {
         let path = theme_path()?;
         let contents = fs::read_to_string(path)?;
-        Ok(toml::from_str(&contents)?)
+        Ok(toml::from_str(&contents).unwrap_or_default())
     }
 
     fn store(&self) -> AppResult<()> {
