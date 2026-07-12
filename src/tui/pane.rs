@@ -216,7 +216,10 @@ impl Pane {
     }
 
     fn select_random(&mut self) {
-        self.select(rand::rng().random_range(0..self.tstack.last().data_frame().height()));
+        let height = self.tstack.last().data_frame().height();
+        if height > 0 {
+            self.select(rand::rng().random_range(0..height));
+        }
     }
 
     fn cancel_modal(&mut self) {
