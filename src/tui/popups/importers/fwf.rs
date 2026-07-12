@@ -1,4 +1,5 @@
 use crate::{
+    handler::message::Message,
     io::{DataSource, reader::FwfToDataFrame},
     tui::{
         pickers::text_picker::TextPicker,
@@ -77,12 +78,18 @@ impl OverlayStep for State {
                     .with_title("Widths")
                     .with_hint("4 8 12 or leave empty to auto detect"),
             },
-            State::PickUrl { picker } => State::PickWidths {
-                source: DataSource::Url(picker.url()),
-                picker: TextPicker::default()
-                    .with_input_type(InputType::MultiNumeric)
-                    .with_title("Widths")
-                    .with_hint("4 8 12 or leave empty to auto detect"),
+            State::PickUrl { picker } => match picker.url() {
+                Ok(url) => State::PickWidths {
+                    source: DataSource::Url(url),
+                    picker: TextPicker::default()
+                        .with_input_type(InputType::MultiNumeric)
+                        .with_title("Widths")
+                        .with_hint("4 8 12 or leave empty to auto detect"),
+                },
+                Err(err) => {
+                    Message::AppShowToast(err.to_string()).enqueue();
+                    State::PickUrl { picker }
+                }
             },
             State::PickWidths { source, picker } => {
                 let widths = picker

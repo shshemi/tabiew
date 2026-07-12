@@ -64,9 +64,15 @@ impl OverlayStep for State {
                 source: DataSource::File(picker.path()),
                 picker: YesNoPicker::default().with_title("Has Header"),
             },
-            State::PickUrl { picker } => State::PickHasHeader {
-                source: DataSource::Url(picker.url()),
-                picker: YesNoPicker::default().with_title("Has Header"),
+            State::PickUrl { picker } => match picker.url() {
+                Ok(url) => State::PickHasHeader {
+                    source: DataSource::Url(url),
+                    picker: YesNoPicker::default().with_title("Has Header"),
+                },
+                Err(err) => {
+                    Message::AppShowToast(err.to_string()).enqueue();
+                    State::PickUrl { picker }
+                }
             },
             State::PickHasHeader { source, picker } => State::PickSeparator {
                 source,

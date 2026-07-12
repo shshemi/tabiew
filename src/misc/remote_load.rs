@@ -8,7 +8,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use anyhow::{anyhow, bail};
+use anyhow::bail;
 use tempfile::NamedTempFile;
 use url::Url;
 

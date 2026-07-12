@@ -1,7 +1,10 @@
 use crossterm::event::KeyEvent;
 use url::Url;
 
-use crate::tui::{component::Component, pickers::text_picker::TextPicker};
+use crate::{
+    AppResult,
+    tui::{component::Component, pickers::text_picker::TextPicker},
+};
 
 #[derive(Debug)]
 pub struct UrlPicker {
@@ -14,8 +17,8 @@ impl UrlPicker {
             text_picker: self.text_picker.with_title(title),
         }
     }
-    pub fn url(&self) -> Url {
-        self.text_picker.input().value().parse().unwrap()
+    pub fn url(&self) -> AppResult<Url> {
+        Ok(self.text_picker.input().value().parse()?)
     }
 }
 
