@@ -74,7 +74,7 @@ impl std::fmt::Debug for Download {
 
 pub fn download_to_temp(url: &Url) -> AppResult<NamedTempFile> {
     let mut temp = NamedTempFile::new()?;
-    let response = ureq::get(url.as_str()).call()?;
+    let response = http::get(url).call()?;
     std::io::copy(&mut response.into_body().into_reader(), temp.as_file_mut())?;
     Ok(temp)
 }
