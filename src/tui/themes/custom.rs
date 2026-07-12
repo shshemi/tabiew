@@ -126,7 +126,11 @@ impl Styler for Custom {
     }
 
     fn header(&self, idx: usize) -> Style {
-        self.table_headers[idx % self.table_headers.len()]
+        if self.table_headers.is_empty() {
+            Default::default()
+        } else {
+            self.table_headers[idx % self.table_headers.len()]
+        }
     }
 
     fn row(&self, idx: usize) -> Style {
@@ -138,7 +142,11 @@ impl Styler for Custom {
     }
 
     fn tag(&self, idx: usize) -> Style {
-        self.table_tags[idx % self.table_tags.len()]
+        if self.table_tags.is_empty() {
+            Default::default()
+        } else {
+            self.table_tags[idx % self.table_tags.len()]
+        }
     }
 
     fn block(&self) -> Style {
@@ -162,7 +170,11 @@ impl Styler for Custom {
     }
 
     fn graph(&self, idx: usize) -> Style {
-        self.chart[idx % self.chart.len()]
+        if self.chart.is_empty() {
+            Default::default()
+        } else {
+            self.chart[idx % self.chart.len()]
+        }
     }
 
     fn text_highlighted(&self) -> Style {
