@@ -1,4 +1,5 @@
 use crate::{
+    handler::message::Message,
     io::{DataSource, reader::HtmlToDataFrame},
     tui::popups::{
         file_picker::FilePicker,
@@ -41,10 +42,16 @@ impl OverlayStep for State {
                 );
                 Default::default()
             }
-            State::PickUrl { picker } => {
-                dismiss_overlay_and_load_data_frame(DataSource::Url(picker.url()), HtmlToDataFrame);
-                Default::default()
-            }
+            State::PickUrl { picker } => match picker.url() {
+                Ok(url) => {
+                    dismiss_overlay_and_load_data_frame(DataSource::Url(url), HtmlToDataFrame);
+                    Default::default()
+                }
+                Err(err) => {
+                    Message::AppShowToast(err.to_string()).enqueue();
+                    State::PickUrl { picker }
+                }
+            },
         }
     }
 

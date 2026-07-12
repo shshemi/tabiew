@@ -1,4 +1,5 @@
 use crate::{
+    handler::message::Message,
     io::{DataSource, reader::SqliteToDataFrames},
     tui::{
         pickers::text_picker::TextPicker,
@@ -55,11 +56,17 @@ impl OverlayStep for State {
                     .with_title("Password")
                     .with_hint("Leave empty for no password"),
             },
-            State::PickUrl { picker } => State::PickPassword {
-                source: DataSource::Url(picker.url()),
-                picker: TextPicker::default()
-                    .with_title("Password")
-                    .with_hint("Leave empty for no password"),
+            State::PickUrl { picker } => match picker.url() {
+                Ok(url) => State::PickPassword {
+                    source: DataSource::Url(url),
+                    picker: TextPicker::default()
+                        .with_title("Password")
+                        .with_hint("Leave empty for no password"),
+                },
+                Err(err) => {
+                    Message::AppShowToast(err.to_string()).enqueue();
+                    State::PickUrl { picker }
+                }
             },
             State::PickPassword { source, picker } => {
                 dismiss_overlay_and_load_data_frame(
