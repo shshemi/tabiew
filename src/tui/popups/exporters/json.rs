@@ -50,12 +50,14 @@ impl OverlayStep for State {
                     WriteToJson::default()
                         .with_format(JsonFormat::Json)
                         .write_to_file(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error();
-                    Message::PaneDismissModal.enqueue();
-                    Message::AppShowToast(
-                        "Data frame exported to clipboard in JSON format".to_owned(),
-                    )
-                    .enqueue();
+                        .unwrap_or_enqueue_error()
+                        .then(|| {
+                            Message::PaneDismissModal.enqueue();
+                            Message::AppShowToast(
+                                "Data frame exported to clipboard in JSON format".to_owned(),
+                            )
+                            .enqueue();
+                        });
                     State::PickOutputTarget { df, picker }
                 }
                 None => State::PickOutputTarget { picker, df },

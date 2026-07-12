@@ -48,12 +48,14 @@ impl OverlayStep for State {
                 Some(Target::Clipboard) => {
                     WriteToMarkdown
                         .write_to_file(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error();
-                    Message::PaneDismissModal.enqueue();
-                    Message::AppShowToast(
-                        "Data frame exported to clipboard in Markdown format".to_owned(),
-                    )
-                    .enqueue();
+                        .unwrap_or_enqueue_error()
+                        .then(|| {
+                            Message::PaneDismissModal.enqueue();
+                            Message::AppShowToast(
+                                "Data frame exported to clipboard in Markdown format".to_owned(),
+                            )
+                            .enqueue();
+                        });
                     State::PickOutputTarget { df, picker }
                 }
                 None => State::PickOutputTarget { picker, df },
