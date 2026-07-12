@@ -56,14 +56,17 @@ where
 }
 
 pub trait UnwrapOrEnqueueError {
-    fn unwrap_or_enqueue_error(&self);
+    fn unwrap_or_enqueue_error(&self) -> bool;
 }
 
 impl UnwrapOrEnqueueError for AppResult<()> {
-    fn unwrap_or_enqueue_error(&self) {
+    fn unwrap_or_enqueue_error(&self) -> bool {
         match self {
-            Ok(_) => (),
-            Err(err) => Message::AppShowError(err.to_string()).enqueue(),
+            Ok(_) => true,
+            Err(err) => {
+                Message::AppShowError(err.to_string()).enqueue();
+                false
+            }
         }
     }
 }

@@ -49,12 +49,14 @@ impl OverlayStep for State {
                         .with_quote_char('"')
                         .with_header(false)
                         .write_to_file(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error();
-                    Message::PaneDismissModal.enqueue();
-                    Message::AppShowToast(
-                        "Data frame exported to clipboard in TSV format".to_owned(),
-                    )
-                    .enqueue();
+                        .unwrap_or_enqueue_error()
+                        .then(|| {
+                            Message::PaneDismissModal.enqueue();
+                            Message::AppShowToast(
+                                "Data frame exported to clipboard in TSV format".to_owned(),
+                            )
+                            .enqueue();
+                        });
                     State::PickOutputTarget { df, picker }
                 }
                 None => State::PickOutputTarget { df, picker },

@@ -30,17 +30,19 @@ impl OverlayStep for State {
             State::PickOutputPath { mut df, picker } => {
                 WriteToArrow
                     .write_to_file(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error();
-                Message::PaneDismissModal.enqueue();
-                Message::AppShowToast(format!(
-                    "Data frame exported to '{}' in Arrow format",
-                    picker
-                        .path()
-                        .file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                ))
-                .enqueue();
+                    .unwrap_or_enqueue_error()
+                    .then(|| {
+                        Message::PaneDismissModal.enqueue();
+                        Message::AppShowToast(format!(
+                            "Data frame exported to '{}' in Arrow format",
+                            picker
+                                .path()
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                        ))
+                        .enqueue();
+                    });
                 Self::PickOutputPath { df, picker }
             }
         }

@@ -467,11 +467,12 @@ impl Component for Pane {
                 self.show_histogram_builder()
             }
             Message::PaneShowHistogram(col, buckets) if focus_state.is_focused() => {
-                self.show_histogram(col, *buckets).unwrap_or_enqueue_error()
+                self.show_histogram(col, *buckets).unwrap_or_enqueue_error();
             }
-            Message::PaneShowScatterPlot(x, y, grp) if focus_state.is_focused() => self
-                .show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
-                .unwrap_or_enqueue_error(),
+            Message::PaneShowScatterPlot(x, y, grp) if focus_state.is_focused() => {
+                self.show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
+                    .unwrap_or_enqueue_error();
+            }
             Message::PaneShowTableRegisterer if focus_state.is_focused() => {
                 self.show_table_registerer()
             }
