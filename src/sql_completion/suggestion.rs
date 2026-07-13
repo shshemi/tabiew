@@ -1,6 +1,6 @@
 use crate::tui::{pickers::text_picker_with_suggestion::Suggestion, widgets::input::Input};
 
-use super::extraction::is_separator;
+use super::extraction::{cursor_byte_offset, is_separator};
 
 /// A SQL completion suggestion that replaces the partial token before the cursor
 /// with the completed text.
@@ -21,8 +21,8 @@ impl Suggestion for SqlSuggestion {
     }
 
     fn apply_to(&self, input: &mut Input) {
-        let cursor = input.cursor();
         let value = input.value().to_owned();
+        let cursor = cursor_byte_offset(&value, input.cursor());
         let before_cursor = &value[..cursor];
         let at_cursor = value[cursor..].chars().next();
 

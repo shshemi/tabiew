@@ -9,6 +9,16 @@ pub fn is_separator(character: char) -> bool {
         )
 }
 
+/// Convert a codepoint index (as returned by `Input::cursor()`) into a byte
+/// offset into `value`, clamped to the end of the string.
+pub fn cursor_byte_offset(value: &str, char_cursor: usize) -> usize {
+    value
+        .char_indices()
+        .nth(char_cursor)
+        .map(|(index, _)| index)
+        .unwrap_or(value.len())
+}
+
 /// Extract the partial token at `cursor` and determine the completion context
 /// by analysing the preceding SQL with `sqlparser`'s tokenizer.
 ///
@@ -21,7 +31,7 @@ pub fn extract_token_and_context(
     cursor: usize,
     sql_prefix: &str,
 ) -> (String, CompletionContext) {
-    let cursor = cursor.min(value.len());
+    let cursor = cursor_byte_offset(value, cursor);
     let before_cursor = &value[..cursor];
 
     // Find the start of the current partial word.
@@ -73,6 +83,9 @@ mod tests {
     #[case::after_where("x", 1, "SELECT * FROM _ WHERE ", "x", CompletionContext::Column)]
     #[case::cursor_beyond_length("ab", 100, "SELECT ", "ab", CompletionContext::Column)]
     #[case::at_separator_boundary("a ", 2, "SELECT ", "", CompletionContext::Keyword)]
+    #[case::multibyte_char("é", 1, "", "é", CompletionContext::Keyword)]
+    #[case::multibyte_column("名前", 2, "SELECT ", "名前", CompletionContext::Column)]
+    #[case::cursor_inside_multibyte_word("café x", 4, "SELECT ", "café", CompletionContext::Column)]
     fn test_extract_token_and_context(
         #[case] value: &str,
         #[case] cursor: usize,
