@@ -34,7 +34,9 @@ impl RemoteLoad {
         RemoteLoad {
             info: info.clone(),
             hndl: std::thread::spawn(move || {
-                info.set_total(download_size(&url)?);
+                if let Ok(size) = download_size(&url) {
+                    info.set_total(size);
+                }
                 let mut reader = http::get(&url).call()?.into_body().into_reader();
                 let mut temp = NamedTempFile::new()?;
                 let writer = temp.as_file_mut();
