@@ -134,7 +134,11 @@ impl Styler for Custom {
     }
 
     fn row(&self, idx: usize) -> Style {
-        self.rows[idx % self.rows.len()]
+        if self.table_headers.is_empty() {
+            Default::default()
+        } else {
+            self.rows[idx % self.rows.len()]
+        }
     }
 
     fn row_highlighted(&self) -> Style {
