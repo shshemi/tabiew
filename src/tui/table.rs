@@ -325,7 +325,9 @@ impl Component for Table {
         self.rendered_rows = height;
         self.rendered_width = area.width;
 
-        self.selected = self.selected.map(|selected| selected.min(self.df.height()));
+        self.selected = self
+            .selected
+            .map(|selected| selected.min(self.df.height().saturating_sub(1)));
 
         if let Some(selected) = self.selected {
             self.offset = self
