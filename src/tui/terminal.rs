@@ -22,10 +22,7 @@ pub fn start_tui() -> AppResult<()> {
     crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
     let panic_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic| {
-        let _ = terminal::disable_raw_mode();
-        let _ = crossterm::execute!(io::stdout(), LeaveAlternateScreen);
-        let _ = ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))
-            .and_then(|mut term| term.show_cursor());
+        forece_stop_tui();
         panic_hook(panic);
     }));
 
@@ -39,6 +36,15 @@ pub fn stop_tui() -> AppResult<()> {
     crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
     terminal().show_cursor()?;
     Ok(())
+}
+
+pub fn forece_stop_tui() {
+    if terminal::is_raw_mode_enabled().unwrap_or(false) {
+        let _ = terminal::disable_raw_mode();
+    }
+    let _ = crossterm::execute!(io::stdout(), LeaveAlternateScreen);
+    let _ = ratatui::Terminal::new(CrosstermBackend::new(io::stdout()))
+        .and_then(|mut term| term.show_cursor());
 }
 
 pub fn draw(app: &mut App) -> AppResult<()> {
