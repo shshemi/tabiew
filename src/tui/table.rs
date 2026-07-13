@@ -24,7 +24,7 @@ use crate::{
 pub struct Table {
     df: DataFrame,
     col_widths: Vec<Constraint>,
-    col_offsets: Vec<u16>,
+    col_offsets: Vec<usize>,
     col_space: u16,
     striped: bool,
     show_header: bool,
@@ -395,10 +395,10 @@ impl Component for Table {
                     .last()
                     .copied()
                     .unwrap_or(0)
-                    .max(table_area.width);
-                *x = (*x).min(total_width.saturating_sub(table_area.width));
+                    .max(table_area.width as usize);
+                *x = (*x).min(total_width.saturating_sub(table_area.width as usize));
                 let col_start = column_index(&self.col_offsets, x);
-                let col_end = column_index(&self.col_offsets, &x.add(table_area.width));
+                let col_end = column_index(&self.col_offsets, &x.add(table_area.width as usize));
                 let df = self
                     .df
                     .select(&self.df.get_column_names()[col_start..=col_end])
@@ -414,9 +414,9 @@ impl Component for Table {
                     col_start,
                 );
                 let width = (self.col_offsets[col_end + 1] - self.col_offsets[col_start])
-                    .max(table_area.width);
+                    .max(table_area.width as usize);
                 let size = ratatui::layout::Size {
-                    width,
+                    width: width as u16,
                     height: table_area.height,
                 };
                 let mut scroll_area =
@@ -436,7 +436,7 @@ impl Component for Table {
                     &mut ScrollViewState::with_offset(Position {
                         x: x.saturating_sub(
                             self.col_offsets.get(col_start).copied().unwrap_or_default(),
-                        ),
+                        ) as u16,
                         y: 0,
                     }),
                 );
@@ -515,7 +515,7 @@ impl Component for Table {
 #[derive(Debug, Clone, Copy)]
 enum ColumnMode {
     Compact,
-    Expanded(u16),
+    Expanded(usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -533,7 +533,7 @@ impl GutterMode {
     }
 }
 
-fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<u16> {
+fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<usize> {
     std::iter::once(0)
         .chain(
             col_widths
@@ -547,14 +547,14 @@ fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<u16> {
                     }
                 })
                 .scan(0, |s, u| {
-                    *s += u;
+                    *s += u as usize;
                     Some(*s)
                 }),
         )
         .collect_vec()
 }
 
-fn column_index(col_offsets: &[u16], offset: &u16) -> usize {
+fn column_index(col_offsets: &[usize], offset: &usize) -> usize {
     // col_offsets index: 0    1    2    3    4
     // col_offsets      : 0---10---20---30---40
     // return value     :   0    1    2   (3)-> maximum allowed = col_effsets.len() - 2
@@ -564,14 +564,14 @@ fn column_index(col_offsets: &[u16], offset: &u16) -> usize {
     }
     .min(col_offsets.len().saturating_sub(2))
 }
-fn prev_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
+fn prev_column_offset(col_offsets: &[usize], offset: &usize) -> usize {
     col_offsets
         .get(column_index(col_offsets, &offset.saturating_sub(1)))
         .copied()
         .unwrap_or_default()
 }
 
-fn next_column_offset(col_offsets: &[u16], offset: &u16) -> u16 {
+fn next_column_offset(col_offsets: &[usize], offset: &usize) -> usize {
     col_offsets
         .get(column_index(col_offsets, offset).saturating_add(1))
         .copied()
