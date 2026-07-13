@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use ratatui::layout::Constraint;
 
-use crate::{AppResult, handler::message::Message};
+use crate::{AppResult, handler::message::Message, tui::terminal::forece_stop_tui};
 
 pub trait ToAscii {
     fn to_ascii(self) -> Option<u8>;
@@ -48,6 +48,7 @@ where
         match self {
             Ok(val) => val,
             Err(err) => {
+                forece_stop_tui();
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }
