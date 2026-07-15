@@ -60,20 +60,20 @@ impl Component for SqlQueryPicker {
                         self.picker.apply_selected_suggestion();
                     } else {
                         let value = self.picker.value();
-                        Message::AppDismissOverlay.enqueue();
                         HISTORY.push(value.to_owned());
                         match sql().execute(value, self.dataframe.clone()) {
                             Ok(df) => {
                                 if df.columns().is_empty() {
-                                    Message::AppShowError(
+                                    Message::AppShowToast(
                                         "The query results in an empty data frame".to_owned(),
                                     )
                                     .enqueue()
                                 } else {
+                                    Message::AppDismissOverlay.enqueue();
                                     Message::TabsAddQueryPane(df, value.to_owned()).enqueue()
                                 }
                             }
-                            Err(error) => Message::AppShowError(error.to_string()).enqueue(),
+                            Err(error) => Message::AppShowToast(error.to_string()).enqueue(),
                         }
                     }
                     true
