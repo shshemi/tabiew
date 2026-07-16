@@ -39,6 +39,11 @@ where
         }
     }
 
+    pub fn with_selected(mut self, idx: usize) -> Self {
+        self.list.select(idx.min(self.items.len().saturating_sub(1)).into());
+        self
+    }
+
     pub fn selected(&self) -> Option<usize> {
         self.list.selected()
     }

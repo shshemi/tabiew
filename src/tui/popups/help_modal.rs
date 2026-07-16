@@ -112,6 +112,24 @@ impl Component for Help {
         ]));
         lines.push(Line::raw(""));
 
+        // Editing
+        lines.push(Line::styled("Editing", theme().header(1)));
+        lines.push(Line::from(vec![
+            Span::styled("  d", theme().text().bold()),
+            Span::raw(" or "),
+            Span::styled("Delete", theme().text().bold()),
+            Span::raw("             Delete selected row"),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("  z", theme().text().bold()),
+            Span::raw("                       Restore last deleted row"),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("  Ctrl + s", theme().text().bold()),
+            Span::raw("              Save to source file"),
+        ]));
+        lines.push(Line::raw(""));
+
         // Search
         lines.push(Line::styled("Search", theme().header(1)));
         lines.push(Line::from(vec![
@@ -168,6 +186,9 @@ impl Component for Help {
             Span::styled("  Q", theme().text().bold()),
             Span::raw("                       Quit Application"),
         ]));
+        lines.push(Line::from(vec![Span::raw(
+            "  With unsaved changes, q/Q ask: Save and exit / Exit without saving / Cancel",
+        )]));
         lines.push(Line::raw(""));
 
         // Common Commands
