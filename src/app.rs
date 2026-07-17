@@ -12,6 +12,7 @@ use crate::{
     handler::message::Message,
     tui::{
         component::{Component, FocusState},
+        pickers::list_picker::ListPicker,
         popups::{
             command_palette::CommandPalette, help_modal::Help, importer::Importer,
             theme_selector::ThemeSelector,
@@ -21,6 +22,9 @@ use crate::{
 };
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
+use std::fmt::Display;
+use strum::IntoEnumIterator;
+use strum_macros::{EnumIter, IntoStaticStr};
 use ratatui::layout::{Constraint, Direction, Flex, Layout, Rect};
 use url::Url;
 
@@ -107,6 +111,21 @@ impl App {
     fn quit(&mut self) {
         self.running = false;
     }
+
+    fn show_confirm(&mut self, title: impl Into<String>, action: ConfirmAction) {
+        self.overlay = Some(Overlay::Confirm(
+            ListPicker::new(ConfirmChoice::iter().collect()).with_title(title),
+            action,
+        ));
+    }
+
+    fn request_quit(&mut self) {
+        if self.tabs.has_unsaved_changes() {
+            self.show_confirm("Unsaved changes", ConfirmAction::Quit);
+        } else {
+            self.quit();
+        }
+    }
 }
 
 impl Component for App {
@@ -150,6 +169,35 @@ impl Component for App {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        if let Some(Overlay::Confirm(picker, action)) = self.overlay.as_mut() {
+            if !picker.handle(event) {
+                match (event.modifiers, event.code) {
+                    (KeyModifiers::NONE, KeyCode::Enter) => {
+                        let choice = picker.selected_item().copied();
+                        let action = *action;
+                        self.dismiss_overlay();
+                        match (choice, action) {
+                            (Some(ConfirmChoice::Save), ConfirmAction::Quit) => {
+                                Message::PaneSaveAllToSource.enqueue();
+                                Message::Quit.enqueue();
+                            }
+                            (Some(ConfirmChoice::Save), ConfirmAction::CloseTab) => {
+                                Message::PaneSaveToSource.enqueue();
+                                Message::TabsCloseSelectedIfClean.enqueue();
+                            }
+                            (Some(ConfirmChoice::Discard), ConfirmAction::Quit) => self.quit(),
+                            (Some(ConfirmChoice::Discard), ConfirmAction::CloseTab) => {
+                                Message::TabsCloseSelected.enqueue()
+                            }
+                            _ => (),
+                        }
+                    }
+                    (KeyModifiers::NONE, KeyCode::Esc) => self.dismiss_overlay(),
+                    _ => (),
+                }
+            }
+            return true;
+        }
         (if let Some(overlay) = self.overlay.as_mut() {
             overlay.responder().handle(event)
         } else if let Some(schema) = self.schema.as_mut() {
@@ -163,7 +211,7 @@ impl Component for App {
                 true
             }
             (KeyModifiers::SHIFT, KeyCode::Char('Q')) => {
-                self.quit();
+                self.request_quit();
                 true
             }
             _ => false,
@@ -172,7 +220,10 @@ impl Component for App {
 
     fn update(&mut self, action: &Message, _: FocusState) {
         match action {
-            Message::Quit => self.quit(),
+            Message::Quit => self.request_quit(),
+            Message::AppConfirmTabClose => {
+                self.show_confirm("Discard unsaved changes and close?", ConfirmAction::CloseTab)
+            }
             Message::AppDismissOverlay => self.dismiss_overlay(),
             Message::AppShowError(message) => self.show_error(message),
             Message::AppShowToast(message) => self.show_toast(message),
@@ -237,6 +288,28 @@ impl Component for App {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ConfirmAction {
+    Quit,
+    CloseTab,
+}
+
+#[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
+pub enum ConfirmChoice {
+    #[strum(serialize = "Save and exit")]
+    Save,
+    #[strum(serialize = "Exit without saving")]
+    Discard,
+    #[strum(serialize = "Cancel")]
+    Cancel,
+}
+
+impl Display for ConfirmChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", Into::<&str>::into(self))
+    }
+}
+
 #[derive(Debug)]
 pub enum Overlay {
     Error(ErrorPopup),
@@ -245,6 +318,7 @@ pub enum Overlay {
     SqlQueryPicker(SqlQueryPicker),
     Import(Importer),
     Help(Help),
+    Confirm(ListPicker<ConfirmChoice>, ConfirmAction),
 }
 
 impl Overlay {
@@ -256,6 +330,7 @@ impl Overlay {
             Overlay::Help(help) => help,
             Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
+            Overlay::Confirm(picker, _) => picker,
         }
     }
 }

@@ -29,6 +29,10 @@ impl Tabs {
         self.panes.get(self.idx)
     }
 
+    pub fn has_unsaved_changes(&self) -> bool {
+        self.panes.iter().any(Pane::has_unsaved_changes)
+    }
+
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
         self.idx = self.panes.len().saturating_sub(1);
@@ -154,9 +158,17 @@ impl Component for Tabs {
                 .unwrap_or_default()
                 || match (event.code, event.modifiers) {
                     (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                        self.remove_selected();
-                        if self.is_empty() {
-                            Message::Quit.enqueue();
+                        if self
+                            .panes
+                            .get(self.idx)
+                            .is_some_and(Pane::has_unsaved_changes)
+                        {
+                            Message::AppConfirmTabClose.enqueue();
+                        } else {
+                            self.remove_selected();
+                            if self.is_empty() {
+                                Message::Quit.enqueue();
+                            }
                         }
                         true
                     }
@@ -194,6 +206,24 @@ impl Component for Tabs {
                 ));
             }
             Message::TabsSelect(idx) if focus_state.is_focused() => self.select(*idx),
+            Message::TabsCloseSelected => {
+                self.remove_selected();
+                if self.is_empty() {
+                    Message::Quit.enqueue();
+                }
+            }
+            Message::TabsCloseSelectedIfClean => {
+                if !self
+                    .panes
+                    .get(self.idx)
+                    .is_some_and(Pane::has_unsaved_changes)
+                {
+                    self.remove_selected();
+                    if self.is_empty() {
+                        Message::Quit.enqueue();
+                    }
+                }
+            }
             Message::TabsDismissSwitcher if focus_state.is_focused() => self.dismiss_tab_switcher(),
             _ => (),
         }

@@ -52,6 +52,14 @@ impl SqlBackend {
         name
     }
 
+    pub fn update(&mut self, name: &str, data_frame: DataFrame) {
+        if let Some(source) = self.schema.get(name).map(|info| info.source().clone()) {
+            self.schema
+                .insert(name.to_owned(), TableInfo::new(source, &data_frame));
+            self.sql.register(name, data_frame.lazy());
+        }
+    }
+
     pub fn unregister(&mut self, name: &str) {
         self.schema.remove(name);
         self.sql.unregister(name);

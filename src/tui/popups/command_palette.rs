@@ -62,6 +62,7 @@ impl Component for CommandPalette {
                     if let Some(item) = self.picker.selected_item() {
                         match item {
                             Command::Cast => Message::PaneShowColumnCaster.enqueue(),
+                            Command::DeleteRow => Message::PaneDeleteRow.enqueue(),
                             Command::Info => Message::PaneShowTableInfo.enqueue(),
                             Command::Export => Message::PaneShowExporter.enqueue(),
                             Command::Filter => Message::PaneShowInlineFilter.enqueue(),
@@ -87,6 +88,7 @@ impl Component for CommandPalette {
                             Command::FuzzySearch => Message::PaneShowFuzzySearch.enqueue(),
                             Command::Search => Message::PaneShowSearch.enqueue(),
                             Command::Edit => Message::PaneEditInExternalEditor.enqueue(),
+                            Command::Save => Message::PaneSaveToSource.enqueue(),
                             Command::ReloadConfig => Message::AppReloadConfig.enqueue(),
                         }
                     }
@@ -105,6 +107,7 @@ impl Component for CommandPalette {
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
     Cast,
+    DeleteRow,
     Edit,
     Export,
     Filter,
@@ -117,6 +120,7 @@ enum Command {
     Quit,
     Register,
     ReloadConfig,
+    Save,
     ScatterPlot,
     Search,
     Schema,

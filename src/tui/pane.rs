@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use crossterm::event::{KeyCode, KeyModifiers};
 
 use itertools::{FoldWhile, Itertools};
@@ -10,6 +11,10 @@ use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     AppResult,
     handler::message::Message,
+    io::writer::{
+        Destination, JsonFormat, WriteToArrow, WriteToAvro, WriteToCsv, WriteToFile, WriteToJson,
+        WriteToMarkdown, WriteToParquet,
+    },
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
@@ -42,6 +47,8 @@ pub struct Pane {
     tstack: NonEmptyStack<Table>,
     dstack: NonEmptyStack<TableDescription>,
     modal: Option<Modal>,
+    deleted_rows: Vec<(usize, DataFrame)>,
+    unsaved: bool,
 }
 
 impl Pane {
@@ -58,7 +65,13 @@ impl Pane {
             ),
             dstack: NonEmptyStack::new(description),
             modal: None,
+            deleted_rows: Vec::new(),
+            unsaved: false,
         }
+    }
+
+    pub fn has_unsaved_changes(&self) -> bool {
+        self.unsaved
     }
 
     pub fn table(&self) -> &Table {
@@ -200,15 +213,103 @@ impl Pane {
         )))
     }
 
+    fn delete_selected_row(&mut self) {
+        if let Some(idx) = self.tstack.last().selected() {
+            let df = self.tstack.last().data_frame();
+            let height = df.height();
+            if idx < height {
+                let row = df.slice(idx as i64, 1);
+                match df
+                    .slice(0, idx)
+                    .vstack(&df.slice((idx + 1) as i64, height - idx - 1))
+                {
+                    Ok(df) => {
+                        self.tstack.last_mut().set_data_frame(df);
+                        self.tstack.last_mut().select(idx);
+                        self.deleted_rows.push((idx, row));
+                        self.unsaved = true;
+                    }
+                    Err(err) => Message::AppShowError(err.to_string()).enqueue(),
+                }
+            }
+        }
+    }
+
+    fn restore_last_deleted_row(&mut self) {
+        if let Some((idx, row)) = self.deleted_rows.pop() {
+            let df = self.tstack.last().data_frame();
+            let idx = idx.min(df.height());
+            match df
+                .slice(0, idx)
+                .vstack(&row)
+                .and_then(|head| head.vstack(&df.slice(idx as i64, df.height() - idx)))
+            {
+                Ok(df) => {
+                    self.tstack.last_mut().set_data_frame(df);
+                    self.tstack.last_mut().select(idx);
+                    self.unsaved = true;
+                }
+                Err(err) => Message::AppShowError(err.to_string()).enqueue(),
+            }
+        }
+    }
+
+    fn save_to_source(&mut self) -> AppResult<()> {
+        let name = self.dstack.base().description();
+        let source = sql()
+            .schema()
+            .get(name)
+            .map(|info| info.source().clone())
+            .ok_or_else(|| anyhow!("Table '{name}' is not registered"))?;
+        let TableSource::File(path) = source else {
+            return Err(anyhow!("Table '{name}' does not originate from a file"));
+        };
+        let mut df = self.tstack.last().data_frame().clone();
+        let dest = Destination::File(path.clone());
+        match path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str()
+        {
+            "tsv" => WriteToCsv::default()
+                .with_separator_char('\t')
+                .with_header(true)
+                .write_to_file(dest, &mut df)?,
+            "parquet" | "pqt" => WriteToParquet.write_to_file(dest, &mut df)?,
+            "json" => WriteToJson::default().write_to_file(dest, &mut df)?,
+            "jsonl" | "ndjson" => WriteToJson::default()
+                .with_format(JsonFormat::JsonLine)
+                .write_to_file(dest, &mut df)?,
+            "arrow" => WriteToArrow.write_to_file(dest, &mut df)?,
+            "avro" => WriteToAvro.write_to_file(dest, &mut df)?,
+            "md" | "markdown" => WriteToMarkdown.write_to_file(dest, &mut df)?,
+            ext @ ("xls" | "xlsx" | "xlsm" | "xlsb" | "db" | "sqlite" | "fwf" | "html"
+            | "htm") => {
+                return Err(anyhow!("Saving {ext} files is not supported"));
+            }
+            _ => WriteToCsv::default()
+                .with_header(true)
+                .write_to_file(dest, &mut df)?,
+        }
+        sql().update(name, df);
+        self.unsaved = false;
+        Message::AppShowToast(format!("Saved to {}", path.display())).enqueue();
+        Ok(())
+    }
+
     fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
         self.tstack
             .push(self.tstack.last().clone_with_data_frame(df));
         self.dstack.push(description);
+        self.deleted_rows.clear();
     }
 
     fn pop_data_frame(&mut self) {
         self.tstack.pop();
         self.dstack.pop();
+        self.deleted_rows.clear();
     }
 
     fn select(&mut self, idx: usize) {
@@ -440,6 +541,20 @@ impl Component for Pane {
                 self.pop_data_frame();
                 true
             }
+            (KeyCode::Char('d'), KeyModifiers::NONE) | (KeyCode::Delete, KeyModifiers::NONE)
+                if self.modal.is_none() =>
+            {
+                self.delete_selected_row();
+                true
+            }
+            (KeyCode::Char('z'), KeyModifiers::NONE) if self.modal.is_none() => {
+                self.restore_last_deleted_row();
+                true
+            }
+            (KeyCode::Char('s'), KeyModifiers::CONTROL) if self.modal.is_none() => {
+                self.save_to_source().unwrap_or_enqueue_error();
+                true
+            }
             _ => false,
         })
     }
@@ -489,6 +604,13 @@ impl Component for Pane {
             }
             Message::PaneShowFuzzySearch if focus_state.is_focused() => {
                 self.show_fuzzy_search();
+            }
+            Message::PaneDeleteRow if focus_state.is_focused() => self.delete_selected_row(),
+            Message::PaneSaveToSource if focus_state.is_focused() => {
+                self.save_to_source().unwrap_or_enqueue_error();
+            }
+            Message::PaneSaveAllToSource if self.unsaved => {
+                self.save_to_source().unwrap_or_enqueue_error();
             }
             Message::PaneEditInExternalEditor if focus_state.is_focused() => {
                 match edit_in_external_editor(self.tstack.last().data_frame().clone()) {

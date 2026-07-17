@@ -149,11 +149,16 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 | `Ctrl + b` / `Ctrl + f`| Move full page up/down|
 | `Home` or `g`| Move to first row|
 | `End` or `G`| Move to last row|
+| `d` or `Delete`| Delete selected row|
+| `z`| Restore last deleted row|
+| `Ctrl + s`| Save changes to the source file|
 | `Ctrl + r`| Reset data frame|
 | `q`| Close |
 | `Q`| Quit Application |
 | `:`| Command Palette|
 | `/`| Fuzzy Search|
+
+When there are unsaved changes (deleted rows), closing a tab with `q` or quitting with `Q` opens a confirmation dialog with *Save and exit*, *Exit without saving*, and *Cancel* options.
 
 ## Useful Commands
 
@@ -165,6 +170,8 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 |`O` or `order`| `O area`|Sort current data frame by column(s)|
 |`tabn`| `tabn SELECT * FORM user WHERE balance > 1000`|Create a new tab with the given query|
 |`q` or `quit` |`q`| Return to table from sheet view otherwise quit|
+|`DeleteRow`| `DeleteRow`| Delete the selected row (restore with `z`)|
+|`Save`| `Save`| Write the current data frame back to its source file (csv, tsv, parquet, json, jsonl, arrow, avro, and markdown)|
 |`schema`| `schema`| Show loaded data frame(s) alongside their path(s)|
 |`reset`| `reset`| Reset the table to the original data frame|
 |`help`| `help`| Show command reference in a new tab|
