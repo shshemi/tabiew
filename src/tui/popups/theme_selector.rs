@@ -75,7 +75,7 @@ impl Component for ThemeSelector {
 
 impl Default for ThemeSelector {
     fn default() -> Self {
-        let mut search_picker = SearchPicker::new(Theme::iter().collect());
+        let mut search_picker = SearchPicker::new(Theme::iter().collect()).no_darken_bg();
         let rollback = config().theme().deref().clone();
         let idx = Theme::iter()
             .enumerate()

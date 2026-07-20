@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::config::theme,
+    misc::{color_ext::ColorExt, config::theme},
     tui::{component::Component, widgets::block::Block},
 };
 
@@ -17,6 +17,7 @@ pub struct ListPicker<T> {
     list: ListState,
     items: Vec<T>,
     strings: Vec<String>,
+    darken_bg: bool,
 }
 
 impl<T> ListPicker<T>
@@ -29,12 +30,20 @@ where
             strings: items.iter().map(ToString::to_string).collect(),
             title: Default::default(),
             items,
+            darken_bg: true,
         }
     }
 
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
+            ..self
+        }
+    }
+
+    pub fn no_darken_bg(self) -> Self {
+        Self {
+            darken_bg: false,
             ..self
         }
     }
@@ -68,6 +77,13 @@ impl<T> Component for ListPicker<T> {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
+        if self.darken_bg {
+            for cell in buf.content.iter_mut() {
+                cell.bg = cell.bg.darken();
+                cell.fg = cell.fg.darken();
+            }
+        }
+
         let width = 80;
         let height = self.strings.len().saturating_add(2).min(25) as u16;
 

@@ -3,18 +3,22 @@ use ratatui::{
     widgets::{Clear, Widget},
 };
 
-use crate::tui::{
-    component::Component,
-    widgets::{
-        block::Block,
-        input::{Input, InputType},
+use crate::{
+    misc::color_ext::ColorExt,
+    tui::{
+        component::Component,
+        widgets::{
+            block::Block,
+            input::{Input, InputType},
+        },
     },
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct TextPicker {
     input: Input,
     title: String,
+    darken_bg: bool,
 }
 
 impl TextPicker {
@@ -53,6 +57,13 @@ impl TextPicker {
         }
     }
 
+    pub fn no_darken_bg(self) -> Self {
+        Self {
+            darken_bg: false,
+            ..self
+        }
+    }
+
     pub fn input(&self) -> &Input {
         &self.input
     }
@@ -66,6 +77,16 @@ impl TextPicker {
     }
 }
 
+impl Default for TextPicker {
+    fn default() -> Self {
+        Self {
+            input: Default::default(),
+            title: Default::default(),
+            darken_bg: true,
+        }
+    }
+}
+
 impl Component for TextPicker {
     fn render(
         &mut self,
@@ -73,6 +94,13 @@ impl Component for TextPicker {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
+        if self.darken_bg {
+            for cell in buf.content.iter_mut() {
+                cell.bg = cell.bg.darken();
+                cell.fg = cell.fg.darken();
+            }
+        }
+
         let [area] = Layout::horizontal([Constraint::Length(80)])
             .flex(Flex::Center)
             .areas(buf.area);
