@@ -1,4 +1,5 @@
 pub mod background;
+pub mod color_ext;
 pub mod config;
 pub mod download;
 pub mod external_editor;

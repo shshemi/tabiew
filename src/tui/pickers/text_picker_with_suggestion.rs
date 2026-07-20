@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::config::theme,
+    misc::{color_ext::ColorExt, config::theme},
     tui::{
         component::Component,
         widgets::{block::Block, input::Input},
@@ -24,6 +24,7 @@ pub struct TextPickerWithSuggestion<P: Provider> {
     args: (String, usize),
     items: Vec<P::Suggestion>,
     provider: P,
+    darken_bg: bool,
 }
 
 impl<P> TextPickerWithSuggestion<P>
@@ -38,6 +39,7 @@ where
             args: (String::default(), 0),
             items: provider.suggestions("", 0),
             provider,
+            darken_bg: true,
         }
     }
 
@@ -51,6 +53,13 @@ where
     pub fn with_value(self, value: impl Into<String>) -> Self {
         Self {
             input: self.input.with_value(value.into()),
+            ..self
+        }
+    }
+
+    pub fn no_darken_bg(self) -> Self {
+        Self {
+            darken_bg: false,
             ..self
         }
     }
@@ -88,6 +97,13 @@ where
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
+        if self.darken_bg {
+            for cell in buf.content.iter_mut() {
+                cell.bg = cell.bg.darken();
+                cell.fg = cell.fg.darken();
+            }
+        }
+
         if self.args.0 != self.input.value() || self.args.1 != self.input.cursor() {
             self.args = (self.input.value().to_owned(), self.input.cursor());
             self.items = self

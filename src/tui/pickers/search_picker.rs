@@ -15,7 +15,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::config::theme,
+    misc::{color_ext::ColorExt, config::theme},
     tui::{
         component::Component,
         widgets::{block::Block, highlighted_line::HighlightedLine, input::Input},
@@ -30,6 +30,7 @@ pub struct SearchPicker<T> {
     items: Vec<T>,
     strings: Vec<String>,
     cached_filter: CachedFilter,
+    darken_bg: bool,
 }
 
 impl<T> SearchPicker<T>
@@ -44,6 +45,7 @@ where
             cached_filter: Default::default(),
             strings: items.iter().map(ToString::to_string).collect(),
             items,
+            darken_bg: true,
         }
     }
 }
@@ -52,6 +54,13 @@ impl<T> SearchPicker<T> {
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
+            ..self
+        }
+    }
+
+    pub fn no_darken_bg(self) -> Self {
+        Self {
+            darken_bg: false,
             ..self
         }
     }
@@ -129,6 +138,13 @@ impl<T> Component for SearchPicker<T> {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
+        if self.darken_bg {
+            for cell in buf.content.iter_mut() {
+                cell.bg = cell.bg.darken();
+                cell.fg = cell.fg.darken();
+            }
+        }
+
         let items = if self.input.value().is_empty() {
             self.strings
                 .iter()

@@ -1,4 +1,4 @@
-use crate::misc::config::theme;
+use crate::misc::{color_ext::ColorExt, config::theme};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
@@ -30,6 +30,11 @@ impl Component for ErrorPopup {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
+        for cell in buf.content.iter_mut() {
+            cell.bg = cell.bg.darken();
+            cell.fg = cell.fg.darken();
+        }
+
         let pg = Paragraph::new(self.message.as_str())
             .left_aligned()
             .block(
