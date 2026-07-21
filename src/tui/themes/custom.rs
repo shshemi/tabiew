@@ -21,6 +21,7 @@ pub struct Custom {
     error: Style,
     gutter: Style,
     chart: Vec<Style>,
+    background: Style,
 }
 
 impl Custom {
@@ -116,6 +117,7 @@ impl Default for Custom {
             gutter: Style::default()
                 .bg(Color::from_u32(0x00000000))
                 .fg(Color::from_u32(0x00ff00ff)),
+            background: Style::default().bg(Color::from_u32(0x00000000)),
         }
     }
 }
@@ -187,5 +189,9 @@ impl Styler for Custom {
 
     fn gutter(&self, _: usize) -> Style {
         self.gutter
+    }
+
+    fn background(&self) -> Style {
+        self.background
     }
 }

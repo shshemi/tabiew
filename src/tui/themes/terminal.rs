@@ -85,4 +85,8 @@ impl Styler for Terminal {
     fn gutter(&self, _: usize) -> Style {
         Style::default().bg(Color::Reset).fg(Color::Reset)
     }
+
+    fn background(&self) -> Style {
+        Style::default().bg(Color::Black)
+    }
 }

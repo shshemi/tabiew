@@ -1,5 +1,6 @@
 use crate::AppResult;
 use crate::app::App;
+use crate::misc::config::theme;
 use crate::misc::type_ext::UnwrapOrGracefulShutdown;
 use crate::tui::component::Component;
 use crate::tui::component::FocusState;
@@ -54,6 +55,9 @@ pub fn draw(app: &mut App) -> AppResult<()> {
     terminal().draw(|frame| {
         let area = frame.area();
         let buf = frame.buffer_mut();
+        for cell in buf.content.iter_mut() {
+            cell.set_style(theme().background());
+        }
         app.render(area, buf, FocusState::Focused);
     })?;
     Ok(())
