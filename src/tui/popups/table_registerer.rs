@@ -30,6 +30,7 @@ impl TableRegisterer {
                 .enqueue();
         } else {
             sql().register(name, self.df.clone(), TableSource::User);
+            Message::AppShowToast(format!("Data frame registered with name '{name}'")).enqueue();
         }
     }
 }
