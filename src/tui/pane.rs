@@ -279,7 +279,7 @@ impl Component for Pane {
                     sheet_state.set(row, sections);
                 }
                 self.tstack.last_mut().render(area, buf, focus_state);
-                let area = area.inner(Margin::new(13, 3));
+                let area = area.centered(Constraint::Max(120), Constraint::Fill(1));
                 sheet_state.render(area, buf, focus_state);
             }
             Some(Modal::SearchBar(search_bar_state)) => {
