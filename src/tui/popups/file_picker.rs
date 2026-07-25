@@ -130,8 +130,11 @@ fn suggestions(query: &str, _: usize) -> Vec<FileSuggestion> {
             path.file_name()
                 .map(OsStr::to_string_lossy)
                 .map(|s| {
-                    let icon = if path.is_dir() { "[D]" } else { "[F]" };
-                    format!("{} {}", icon, s)
+                    if path.is_dir() {
+                        format!("{s}/")
+                    } else {
+                        s.into()
+                    }
                 })
                 .map(|title| FileSuggestion { title, path })
         })
