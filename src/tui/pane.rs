@@ -3,7 +3,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::{FoldWhile, Itertools};
 use polars::frame::DataFrame;
 use rand::RngExt;
-use ratatui::layout::{Constraint, Layout, Margin, Rect};
+use ratatui::layout::{Constraint, Layout, Rect};
 use unicode_width::UnicodeWidthStr;
 
 use super::{search_bar::SearchBar, sheet::Sheet};
