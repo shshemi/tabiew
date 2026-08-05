@@ -65,40 +65,40 @@ name = "tw"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.6.5", features = ["derive"] }
 crossterm = { version = "0.29.0", features = ["use-dev-tty"] }
 fwf-rs = "0.2.2"
 itertools = "0.15.0"
-polars = { version = "0.54.4", features = ["full", "avro"] }
-polars-sql = "0.54.4"
-polars-lazy = "0.54.4"
-rand = "0.10.1"
-ratatui = { version = "0.30.0", features = ["serde", "unstable-rendered-line-info"] }
+polars = { version = "0.55.1", features = ["full", "avro"] }
+polars-sql = "0.55.1"
+polars-lazy = "0.55.1"
+rand = "0.10.2"
+ratatui = { version = "0.30.2", features = ["serde", "unstable-rendered-line-info"] }
 rayon = "1.12.0"
-regex = "1.12.3"
+regex = "1.13.1"
 rusqlite = { version = "0.40.1", features = [
     "bundled",
     "bundled-sqlcipher-vendored-openssl",
 ] }
 tempfile = "3.27.0"
-anyhow = "1.0.102"
+anyhow = "1.0.104"
 fuzzy-matcher = "0.3.7"
 tui-input = "0.15.3"
 home = "0.5.12"
 unicode-width = "0.2.2"
-calamine = "0.36.0"
-base64 = "0.22.1"
+calamine = "0.36.1"
+base64 = "0.23.1"
 chrono = "0.4.45"
 num_cpus = "1.17.0"
-serde = { version = "1.0.228", features = ["derive"] }
-toml = "1.1.2"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.1.4"
 shell-words = "1.1.1"
-tui-scrollview = "0.6.4"
+tui-scrollview = "0.6.7"
 sqlparser = "0.62.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 ryu = "1.0.23"
-itoa = "1.0.17"
+itoa = "1.0.18"
 logfmt-zerocopy = "0.1.3"
 indexmap = "2.14.0"
 ureq = "3.3.0"
@@ -110,13 +110,13 @@ pulldown-cmark = { version = "0.13", default-features = false }
 rstest = "0.26.1"
 
 [build-dependencies]
-clap = { version = "4.5.54", features = ["derive"] }
-clap_mangen = { version = "0.3.0" }
-clap_complete = { version = "4.6.0" }
+clap = { version = "4.6.5", features = ["derive"] }
+clap_mangen = { version = "0.3.1" }
+clap_complete = { version = "4.6.8" }
 strum = "0.28.0"
 strum_macros = "0.28.0"
 url = "2.5.8"
-anyhow = "1.0.102"
+anyhow = "1.0.104"
 
 [profile.release]
 opt-level = 3
