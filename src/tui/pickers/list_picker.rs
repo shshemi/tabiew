@@ -140,6 +140,14 @@ impl<T> Component for ListPicker<T> {
                 }
                 true
             }
+            (KeyCode::Home, KeyModifiers::NONE) | (KeyCode::Char('g'), KeyModifiers::NONE) => {
+                self.list.select_first();
+                true
+            }
+            (KeyCode::End, KeyModifiers::NONE) | (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
+                self.list.select_last();
+                true
+            }
             _ => false,
         }
     }
