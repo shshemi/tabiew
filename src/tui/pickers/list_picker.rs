@@ -48,6 +48,10 @@ where
         }
     }
 
+    pub fn select(&mut self, idx: impl Into<Option<usize>>) {
+        self.list.select(idx.into());
+    }
+
     pub fn selected(&self) -> Option<usize> {
         self.list.selected()
     }
