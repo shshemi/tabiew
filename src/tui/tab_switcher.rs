@@ -1,64 +1,56 @@
-use std::ops::Div;
-
 use crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::{
-    layout::{Constraint, Rect},
-    widgets::{Cell, Clear, Row, StatefulWidget, Table, TableState, Widget},
-};
-use unicode_width::UnicodeWidthStr;
+use ratatui::layout::Rect;
 
 use crate::{
     handler::message::Message,
-    misc::config::theme,
-    tui::{component::Component, widgets::block::Block},
+    tui::{component::Component, pickers::list_picker::ListPicker},
 };
 
 #[derive(Debug)]
 pub struct TabSwitcher {
-    tabs: Vec<String>,
-    title: String,
-    list_state: TableState,
+    picker: ListPicker<String>,
     rollback: usize,
 }
 
 impl TabSwitcher {
     pub fn new(title: impl Into<String>, tabs: Vec<String>, idx: usize) -> TabSwitcher {
+        let title = title.into();
+        let mut picker = ListPicker::new(tabs.clone()).with_title(title.clone());
+        picker.select(idx);
         Self {
-            list_state: TableState::default().with_selected(idx),
-            tabs,
-            title: title.into(),
+            picker,
             rollback: idx,
         }
     }
 
     pub fn selected(&self) -> Option<usize> {
-        self.list_state.selected()
+        self.picker.selected()
     }
 
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {
-        self.list_state.select(idx.into());
+        self.picker.select(idx);
     }
 
     pub fn select_prev(&mut self) {
-        self.list_state.select_previous();
+        self.picker.select_up();
     }
 
     pub fn select_next(&mut self) {
         let idx = self
-            .list_state
+            .picker
             .selected()
             .unwrap_or_default()
             .saturating_add(1)
-            .min(self.tabs.len().saturating_sub(1));
-        self.list_state.select(Some(idx));
+            .min(self.picker.len().saturating_sub(1));
+        self.picker.select(Some(idx));
     }
 
     pub fn select_first(&mut self) {
-        self.list_state.select(Some(0));
+        self.picker.select(Some(0));
     }
     pub fn select_last(&mut self) {
-        self.list_state
-            .select(Some(self.tabs.len().saturating_sub(1)));
+        self.picker
+            .select(Some(self.picker.len().saturating_sub(1)));
     }
 }
 
@@ -69,95 +61,30 @@ impl Component for TabSwitcher {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        let num_width = (self.tabs.len().checked_ilog10().unwrap_or_default() + 1) as u16;
-        let text_width = self
-            .tabs
-            .iter()
-            .map(|s| s.width() as u16)
-            .max()
-            .unwrap_or_default()
-            .max(34)
-            .min(area.width.div(2));
-        let width = num_width + text_width + 3;
-        let area = Rect::new(
-            area.x.saturating_add(area.width).saturating_sub(width),
-            area.y,
-            width,
-            area.height,
-        );
-
-        Widget::render(Clear, area, buf);
-
-        let rows = self.tabs.iter().enumerate().map(|(i, s)| {
-            Row::new([
-                Cell::new(format!(" {:>width$}", i + 1, width = num_width as usize))
-                    .style(theme().subtext()),
-                Cell::new(s.as_str()).style(theme().text()),
-            ])
-        });
-        let table = Table::default()
-            .rows(rows)
-            .style(theme().text())
-            .row_highlight_style(theme().row_highlighted())
-            .widths([
-                Constraint::Length(num_width + 1),
-                Constraint::Length(text_width),
-            ])
-            .column_spacing(1)
-            .block(Block::default().title(self.title.as_str()).into_widget());
-        if focus_state.is_focused() {
-            StatefulWidget::render(table, area, buf, &mut self.list_state);
-        } else {
-            StatefulWidget::render(table, area, buf, &mut self.list_state.with_selected(None));
-        }
+        self.picker.render(area, buf, focus_state);
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        match (event.code, event.modifiers) {
-            (KeyCode::Up, KeyModifiers::NONE)
-            | (KeyCode::Char('k'), KeyModifiers::NONE)
-            | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
-                self.select_prev();
-                if let Some(select) = self.list_state.selected() {
-                    Message::TabsSelect(select).enqueue();
+        if self.picker.handle(event) {
+            if let Some(select) = self.picker.selected() {
+                Message::TabsSelect(select).enqueue();
+            }
+            true
+        } else {
+            match (event.code, event.modifiers) {
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::TabsDismissSwitcher.enqueue();
+                    true
                 }
-                true
-            }
-            (KeyCode::Down, KeyModifiers::NONE)
-            | (KeyCode::Char('j'), KeyModifiers::NONE)
-            | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-                self.select_next();
-                if let Some(select) = self.list_state.selected() {
-                    Message::TabsSelect(select).enqueue();
+                (KeyCode::Esc, KeyModifiers::NONE)
+                | (KeyCode::Char('q'), KeyModifiers::NONE)
+                | (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                    Message::TabsDismissSwitcher.enqueue();
+                    Message::TabsSelect(self.rollback).enqueue();
+                    true
                 }
-                true
+                _ => false,
             }
-            (KeyCode::Home, KeyModifiers::NONE) | (KeyCode::Char('g'), KeyModifiers::NONE) => {
-                self.select_first();
-                if let Some(select) = self.list_state.selected() {
-                    Message::TabsSelect(select).enqueue();
-                }
-                true
-            }
-            (KeyCode::End, KeyModifiers::NONE) | (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                self.select_last();
-                if let Some(select) = self.list_state.selected() {
-                    Message::TabsSelect(select).enqueue();
-                }
-                true
-            }
-            (KeyCode::Enter, KeyModifiers::NONE) => {
-                Message::TabsDismissSwitcher.enqueue();
-                true
-            }
-            (KeyCode::Esc, KeyModifiers::NONE)
-            | (KeyCode::Char('q'), KeyModifiers::NONE)
-            | (KeyCode::Char('t'), KeyModifiers::NONE) => {
-                Message::TabsDismissSwitcher.enqueue();
-                Message::TabsSelect(self.rollback).enqueue();
-                true
-            }
-            _ => false,
         }
     }
 }
