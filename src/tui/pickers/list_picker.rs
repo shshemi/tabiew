@@ -72,6 +72,14 @@ where
     pub fn select_down(&mut self) {
         self.list.select_next();
     }
+
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<T> Component for ListPicker<T> {
