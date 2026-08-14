@@ -1,4 +1,6 @@
-use crate::tui::{pickers::text_picker_with_suggestion::Suggestion, widgets::input::Input};
+use crate::tui::{
+    pickers::text_picker_with_suggestion::Suggestion, themes::vague, widgets::input::Input,
+};
 
 use super::extraction::{cursor_byte_offset, is_separator};
 
@@ -42,8 +44,14 @@ impl Suggestion for SqlSuggestion {
         }
 
         // Insert the completed text.
-        for character in self.text.chars() {
-            input.insert(character);
+        if self.text.contains(' ') {
+            for character in format!("\"{}\"", self.text).chars() {
+                input.insert(character);
+            }
+        } else {
+            for character in self.text.chars() {
+                input.insert(character);
+            }
         }
 
         // Add a trailing space unless the character at the old cursor is already whitespace.
