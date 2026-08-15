@@ -60,7 +60,6 @@ impl Component for SqlQueryPicker {
                         self.picker.apply_selected_suggestion();
                     } else {
                         let value = self.picker.value();
-                        HISTORY.push(value.to_owned());
                         match sql().execute(value, self.dataframe.clone()) {
                             Ok(df) => {
                                 if df.columns().is_empty() {
@@ -70,7 +69,8 @@ impl Component for SqlQueryPicker {
                                     .enqueue()
                                 } else {
                                     Message::AppDismissOverlay.enqueue();
-                                    Message::TabsAddQueryPane(df, value.to_owned()).enqueue()
+                                    Message::TabsAddQueryPane(df, value.to_owned()).enqueue();
+                                    HISTORY.push(value.to_owned());
                                 }
                             }
                             Err(error) => Message::AppShowToast(error.to_string()).enqueue(),
