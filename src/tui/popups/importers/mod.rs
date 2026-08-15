@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path, sync::Arc};
 
 use crate::{
     handler::message::Message,
@@ -53,7 +53,7 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
             };
             let count = frames.len();
             for (name, df) in frames {
-                let name = sql().register(&name, df.clone(), TableSource::Stdin);
+                let name = sql().register(&name, df.clone(), TableSource::File(path_buf.clone()));
                 Message::TabsAddNamePane(df, name).enqueue();
             }
             Message::AppShowToast(format!(
