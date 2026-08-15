@@ -139,7 +139,10 @@ impl Styler for Custom {
         if self.table_headers.is_empty() {
             Default::default()
         } else {
-            self.rows[idx % self.rows.len()]
+            self.rows
+                .get(idx % self.rows.len())
+                .copied()
+                .unwrap_or_default()
         }
     }
 
