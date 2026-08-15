@@ -7,11 +7,11 @@ use crate::{
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
-        pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
+        pickers::text_picker_with_suggestion::{Provider, Suggestion, TextPickerWithSuggestion},
     },
 };
 
-static HISTORY: History<String> = History::<String>::new(24);
+static HISTORY: History<HistoryOrSqlSuggestion> = History::<HistoryOrSqlSuggestion>::new(24);
 
 #[derive(Debug)]
 pub struct SqlQueryPicker {
@@ -25,11 +25,7 @@ impl SqlQueryPicker {
         let provider = SqlQueryProvider {
             dataframe: dataframe.clone(),
             all_columns,
-            history: HISTORY
-                .to_vec()
-                .into_iter()
-                .map(SqlSuggestion::new)
-                .collect(),
+            history: HISTORY.to_vec(),
         };
         Self {
             picker: TextPickerWithSuggestion::new("SQL", provider),
@@ -70,7 +66,9 @@ impl Component for SqlQueryPicker {
                                 } else {
                                     Message::AppDismissOverlay.enqueue();
                                     Message::TabsAddQueryPane(df, value.to_owned()).enqueue();
-                                    HISTORY.push(value.to_owned());
+                                    HISTORY.push(HistoryOrSqlSuggestion::History {
+                                        text: value.to_owned(),
+                                    });
                                 }
                             }
                             Err(error) => Message::AppShowToast(error.to_string()).enqueue(),
@@ -91,13 +89,13 @@ impl Component for SqlQueryPicker {
 struct SqlQueryProvider {
     dataframe: Option<DataFrame>,
     all_columns: Vec<String>,
-    history: Vec<SqlSuggestion>,
+    history: Vec<HistoryOrSqlSuggestion>,
 }
 
 impl Provider for SqlQueryProvider {
-    type Suggestion = SqlSuggestion;
+    type Suggestion = HistoryOrSqlSuggestion;
 
-    fn suggestions(&self, value: &str, cursor: usize) -> Vec<SqlSuggestion> {
+    fn suggestions(&self, value: &str, cursor: usize) -> Vec<HistoryOrSqlSuggestion> {
         if value.is_empty() {
             self.history.clone()
         } else {
@@ -108,6 +106,35 @@ impl Provider for SqlQueryProvider {
                 &self.all_columns,
                 self.dataframe.as_ref(),
             )
+            .into_iter()
+            .map(|suggestion| HistoryOrSqlSuggestion::SqlSuggestion { suggestion })
+            .collect()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum HistoryOrSqlSuggestion {
+    SqlSuggestion { suggestion: SqlSuggestion },
+    History { text: String },
+}
+
+impl Suggestion for HistoryOrSqlSuggestion {
+    fn title(&self) -> &str {
+        match self {
+            HistoryOrSqlSuggestion::SqlSuggestion { suggestion } => suggestion.title(),
+            HistoryOrSqlSuggestion::History { text } => text,
+        }
+    }
+
+    fn apply_to(&self, input: &mut crate::tui::widgets::input::Input) {
+        match self {
+            HistoryOrSqlSuggestion::SqlSuggestion { suggestion } => suggestion.apply_to(input),
+            HistoryOrSqlSuggestion::History { text } => {
+                for c in text.chars() {
+                    input.insert(c);
+                }
+            }
         }
     }
 }
