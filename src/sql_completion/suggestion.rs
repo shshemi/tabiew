@@ -1,6 +1,4 @@
-use crate::tui::{
-    pickers::text_picker_with_suggestion::Suggestion, themes::vague, widgets::input::Input,
-};
+use crate::tui::{pickers::text_picker_with_suggestion::Suggestion, widgets::input::Input};
 
 use super::extraction::{cursor_byte_offset, is_separator};
 
