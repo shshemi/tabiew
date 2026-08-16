@@ -98,6 +98,7 @@ impl OverlayStep for State {
                             .with_value("\"".to_owned()),
                     }
                 } else {
+                    Message::AppShowToast("Invalid separator".to_owned()).enqueue();
                     State::PickSeparator {
                         source,
                         has_header,
@@ -111,8 +112,8 @@ impl OverlayStep for State {
                 has_header,
                 picker,
             } => {
-                Message::AppDismissOverlay.enqueue();
                 if let Some(quote) = picker.value().chars().next() {
+                    Message::AppDismissOverlay.enqueue();
                     dismiss_overlay_and_load_data_frame(
                         source,
                         CsvToDataFrame::default()
@@ -120,8 +121,16 @@ impl OverlayStep for State {
                             .with_separator(separator)
                             .with_quote_char(quote),
                     );
+                    Default::default()
+                } else {
+                    Message::AppShowToast("Invalid quote char".to_owned()).enqueue();
+                    State::PickQuote {
+                        separator,
+                        source,
+                        has_header,
+                        picker,
+                    }
                 }
-                Default::default()
             }
         }
     }
