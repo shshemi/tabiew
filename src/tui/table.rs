@@ -148,7 +148,9 @@ impl Table {
     }
 
     pub fn set_data_frame(&mut self, df: DataFrame) {
-        self.df = df;
+        if self.df.schema_equal(&df).is_ok() {
+            self.df = df;
+        }
     }
 
     pub fn set_gutter_visibility(&mut self, value: bool) {
