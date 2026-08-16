@@ -48,10 +48,7 @@ impl Component for FilePicker {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     self.text_picker.apply_selected_suggestion();
                     self.text_picker.clear_suggestion_selection();
-                    self.text_picker
-                        .selected_suggestion()
-                        .map(|sug| sug.is_dir())
-                        .unwrap_or_default()
+                    self.path().is_dir()
                 }
                 (KeyCode::Tab, KeyModifiers::NONE) => {
                     self.text_picker.apply_selected_suggestion();
