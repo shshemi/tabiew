@@ -29,7 +29,7 @@ pub struct SearchPicker<T> {
     list: ListState,
     items: Vec<T>,
     strings: Vec<String>,
-    cached_filter: CachedFilter,
+    cached_filter: Cache,
     darken_bg: bool,
 }
 
@@ -238,12 +238,12 @@ impl<T> Component for SearchPicker<T> {
 }
 
 #[derive(Debug, Default)]
-struct CachedFilter {
+struct Cache {
     indices: Vec<(usize, Vec<usize>)>,
     query_hash: u64,
 }
 
-impl CachedFilter {
+impl Cache {
     pub fn query<T>(&mut self, query: &str, items: &[T]) -> &[(usize, Vec<usize>)]
     where
         T: AsRef<str>,
