@@ -30,7 +30,7 @@ where
     }
 
     pub fn is_running(&self) -> bool {
-        self.hndl.is_finished()
+        !self.hndl.is_finished()
     }
 }
 
