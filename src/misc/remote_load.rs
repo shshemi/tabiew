@@ -99,6 +99,6 @@ impl DownloadInfo {
     pub fn percent(&self) -> Option<u16> {
         let tt = self.total();
         let pg = self.progress() * 100;
-        pg.min(tt).checked_div(tt).map(|u| u as u16)
+        pg.checked_div(tt).map(|u| u.min(100) as u16)
     }
 }
