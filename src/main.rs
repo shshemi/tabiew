@@ -84,7 +84,9 @@ fn main() {
         }
     }
 
-    let _ = start_app(name_dfs);
+    start_tui().unwrap_or_graceful_shutdown();
+    start_app(name_dfs).unwrap_or_graceful_shutdown();
+    let _ = stop_tui();
 }
 
 fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
@@ -92,8 +94,6 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         .into_iter()
         .map(|(name, df)| Pane::new(df, TableDescription::Table(name)))
         .collect();
-
-    start_tui()?;
 
     // Initialize the app
     let mut app = App::new(tabs);
@@ -134,7 +134,6 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     }
 
     // Exit the user interface.
-    stop_tui()?;
     Ok(())
 }
 
