@@ -157,8 +157,7 @@ impl Component for App {
         } else {
             self.tabs.handle(event)
         }) || match (event.modifiers, event.code) {
-            (KeyModifiers::NONE, KeyCode::Char(':'))
-            | (KeyModifiers::CONTROL, KeyCode::Char('P')) => {
+            (KeyModifiers::NONE, KeyCode::Char(':')) => {
                 self.show_palette();
                 true
             }
