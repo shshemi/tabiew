@@ -1,4 +1,4 @@
-use std::{path, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     handler::message::Message,
