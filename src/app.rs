@@ -150,22 +150,25 @@ impl Component for App {
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        (if let Some(overlay) = self.overlay.as_mut() {
-            overlay.responder().handle(event)
-        } else if let Some(schema) = self.schema.as_mut() {
-            schema.handle(event)
+        if let Some(overlay) = self.overlay.as_mut() {
+            overlay.responder().handle(event);
+            true
         } else {
-            self.tabs.handle(event)
-        }) || match (event.modifiers, event.code) {
-            (KeyModifiers::NONE, KeyCode::Char(':')) => {
-                self.show_palette();
-                true
+            (if let Some(schema) = self.schema.as_mut() {
+                schema.handle(event)
+            } else {
+                self.tabs.handle(event)
+            }) || match (event.modifiers, event.code) {
+                (KeyModifiers::NONE, KeyCode::Char(':')) => {
+                    self.show_palette();
+                    true
+                }
+                (KeyModifiers::SHIFT, KeyCode::Char('Q')) => {
+                    self.quit();
+                    true
+                }
+                _ => false,
             }
-            (KeyModifiers::SHIFT, KeyCode::Char('Q')) => {
-                self.quit();
-                true
-            }
-            _ => false,
         }
     }
 
