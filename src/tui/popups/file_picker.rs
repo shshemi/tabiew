@@ -83,12 +83,6 @@ struct FileSuggestion {
     path: PathBuf,
 }
 
-impl FileSuggestion {
-    fn is_dir(&self) -> bool {
-        self.path.is_dir()
-    }
-}
-
 impl text_picker_with_suggestion::Suggestion for FileSuggestion {
     fn title(&self) -> &str {
         &self.title
