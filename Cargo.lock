@@ -1008,9 +1008,6 @@ name = "either"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e5e8f6c15a24b9a3ee5efec809ccd006d3b30e8b3bb63c39af737c7f87daa1d"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "encoding_rs"
@@ -2019,16 +2016,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "matrixmultiply"
-version = "0.3.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f607c237553f086e7043417a51df26b2eb899d3caff94e6a67592ff992fedc7"
-dependencies = [
- "autocfg",
- "rawpointer",
-]
-
-[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2087,21 +2074,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ndarray"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "520080814a7a6b4a6e9070823bb24b4531daac8c4627e08ba5de8c5ef2f2752d"
-dependencies = [
- "matrixmultiply",
- "num-complex",
- "num-integer",
- "num-traits",
- "portable-atomic",
- "portable-atomic-util",
- "rawpointer",
-]
-
-[[package]]
 name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2149,15 +2121,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-complex"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "num-conv"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2172,15 +2135,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
-]
-
-[[package]]
-name = "num-integer"
-version = "0.1.46"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
-dependencies = [
- "num-traits",
 ]
 
 [[package]]
@@ -2600,7 +2554,6 @@ dependencies = [
  "polars-compute",
  "polars-core",
  "polars-error",
- "polars-expr",
  "polars-io",
  "polars-lazy",
  "polars-ops",
@@ -2745,7 +2698,6 @@ dependencies = [
  "hashbrown 0.17.1",
  "indexmap",
  "itoa",
- "ndarray",
  "num-traits",
  "polars-arrow",
  "polars-async",
@@ -2807,7 +2759,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b59262210ac41f3b30f49f46855501206eba27baaa6bd919545703bc706dd617"
 dependencies = [
  "bitflags 2.13.1",
- "chrono-tz",
  "hashbrown 0.17.1",
  "num-traits",
  "polars-arrow",
@@ -2839,11 +2790,9 @@ dependencies = [
  "blake3",
  "bytes",
  "chrono",
- "chrono-tz",
  "crossbeam-queue",
  "fast-float2",
  "fastrand",
- "flate2",
  "fs4",
  "futures",
  "glob",
@@ -2877,7 +2826,6 @@ dependencies = [
  "simdutf8",
  "tokio",
  "zmij",
- "zstd",
 ]
 
 [[package]]
@@ -2887,7 +2835,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "495117c99362a05d4ea744c21f54d570991fd8ae3ec9dfb1f0e01f055747553f"
 dependencies = [
  "chrono",
- "chrono-tz",
  "fallible-streaming-iterator",
  "hashbrown 0.17.1",
  "indexmap",
@@ -2911,7 +2858,6 @@ dependencies = [
  "bitflags 2.13.1",
  "chrono",
  "either",
- "futures",
  "memchr",
  "polars-arrow",
  "polars-buffer",
@@ -2928,7 +2874,6 @@ dependencies = [
  "polars-time",
  "polars-utils",
  "rayon",
- "tokio",
  "version_check",
 ]
 
@@ -2951,7 +2896,6 @@ dependencies = [
  "polars-utils",
  "rayon",
  "recursive",
- "tokio",
 ]
 
 [[package]]
@@ -3003,12 +2947,9 @@ dependencies = [
  "polars-json",
  "polars-schema",
  "polars-utils",
- "rand 0.10.2",
- "rand_distr",
  "rayon",
  "regex",
  "regex-syntax",
- "serde",
  "serde_json",
  "strum_macros",
  "unicode-normalization",
@@ -3093,7 +3034,6 @@ dependencies = [
  "rayon",
  "recursive",
  "regex",
- "serde",
  "sha2 0.11.0",
  "slotmap",
  "strum_macros",
@@ -3215,7 +3155,6 @@ dependencies = [
  "polars-utils",
  "rayon",
  "regex",
- "serde",
  "strum_macros",
 ]
 
@@ -3264,15 +3203,6 @@ name = "portable-atomic"
 version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d20d5497ef88037a52ff98267d066e7f11fcc5e99bbfbd58a42336193aacec3"
-
-[[package]]
-name = "portable-atomic-util"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2a106d1259c23fac8e543272398ae0e3c0b8d33c88ed73d0cc71b0f1d902618"
-dependencies = [
- "portable-atomic",
-]
 
 [[package]]
 name = "potential_utf"
@@ -3604,12 +3534,6 @@ checksum = "498cd0dc59d73224351ee52a95fee0f1a617a2eae0e7d9d720cc622c73a54186"
 dependencies = [
  "bitflags 2.13.1",
 ]
-
-[[package]]
-name = "rawpointer"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
 
 [[package]]
 name = "rayon"
@@ -4249,7 +4173,6 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdd58c3c93c3d278ca835519292445cb4b0d4dc59ccfdf7ceadaab3f8aeb4038"
 dependencies = [
- "serde",
  "version_check",
 ]
 
