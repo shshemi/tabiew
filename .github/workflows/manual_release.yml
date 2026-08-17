@@ -130,6 +130,47 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-') && endsWith(matrix.target, '-musl')
         run: echo "RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
 
+      # The arm64 runners die mid-build with a bare "runner has received a
+      # shutdown signal" (exit 143) during the fat-LTO link, which the x86
+      # runners survive. Unlike x86, these runners ship without swap, so give
+      # the LTO step somewhere to spill instead of taking the VM down.
+      - name: Add Swap (ARM Linux)
+        if: matrix.os == 'ubuntu-22.04-arm'
+        run: |
+          echo "Swap before:"
+          swapon --show || echo "(none)"
+          free -h
+
+          # Put the swapfile wherever there is the most room.
+          if [ -d /mnt ] && [ "$(df -m --output=avail /mnt | tail -1)" -gt "$(df -m --output=avail / | tail -1)" ]; then
+            swap_dir=/mnt
+          else
+            swap_dir=""
+          fi
+          swap_file="${swap_dir}/ci-swapfile"
+
+          # Leave 8G of headroom for target/, which this build also needs.
+          avail_mb=$(df -m --output=avail "${swap_dir:-/}" | tail -1)
+          size_gb=$(( (avail_mb - 8192) / 1024 ))
+          [ "$size_gb" -gt 16 ] && size_gb=16
+          if [ "$size_gb" -lt 4 ]; then
+            echo "Only ${avail_mb}MB free on ${swap_dir:-/}; not enough for a swapfile."
+            echo "Disk, not memory, is the binding constraint here."
+            exit 1
+          fi
+
+          sudo fallocate -l "${size_gb}G" "$swap_file"
+          sudo chmod 600 "$swap_file"
+          sudo mkswap "$swap_file"
+          sudo swapon "$swap_file"
+          # Swap is an overflow safety net, not somewhere the LTO working set
+          # should live, so only spill under real pressure.
+          sudo sysctl vm.swappiness=10
+
+          echo "Swap after:"
+          swapon --show
+          free -h
+
       - name: Build (Linux)
         if: startsWith(matrix.os, 'ubuntu-')
         run: |
