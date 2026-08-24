@@ -29,7 +29,9 @@ use crate::{
 pub struct SearchPickerState<T> {
     input: InputState,
     list: ListState,
-    cache: CachedFilter<T>,
+    items: Vec<T>,
+    indices: Vec<(usize, Vec<usize>)>,
+    query_hash: u64,
 }
 
 impl<T> SearchPickerState<T> {
@@ -37,11 +39,9 @@ impl<T> SearchPickerState<T> {
         Self {
             input: InputState::default(),
             list: ListState::default().with_selected(Some(0)),
-            cache: CachedFilter {
-                items,
-                indices: Default::default(),
-                query_hash: 0,
-            },
+            items,
+            indices: Vec::new(),
+            query_hash: 0,
         }
     }
 
@@ -67,24 +67,24 @@ impl<T> SearchPickerState<T> {
         } else {
             self.list
                 .selected()
-                .and_then(|idx| self.cache.indices.get(idx))
+                .and_then(|idx| self.indices.get(idx))
                 .map(|(idx, _)| *idx)
         }
     }
 
     pub fn selected_item(&self) -> Option<&T> {
-        self.selected().and_then(|idx| self.cache.items.get(idx))
+        self.selected().and_then(|idx| self.items.get(idx))
     }
 
     pub fn into_items(self) -> Vec<T> {
-        self.cache.items
+        self.items
     }
 
     pub fn len(&self) -> usize {
         if self.text().is_empty() {
-            self.cache.items.len()
+            self.items.len()
         } else {
-            self.cache.indices.len()
+            self.indices.len()
         }
     }
 
@@ -131,6 +131,29 @@ where
 {
     pub fn selected_str(&self) -> Option<String> {
         self.selected_item().map(ToString::to_string)
+    }
+
+    pub fn refresh_matches(&mut self) {
+        let query = self.input.value();
+        let mut hasher = DefaultHasher::new();
+        query.hash(&mut hasher);
+        let query_hash = hasher.finish();
+
+        if self.query_hash != query_hash {
+            self.indices.clear();
+            self.indices.extend(
+                self.items
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, item)| {
+                        let text = item.to_string();
+                        subsequence_pos(&text, query).map(|pos| (idx, text.len(), pos))
+                    })
+                    .sorted_by_key(|(_, len, _)| *len)
+                    .map(|(idx, _, pos)| (idx, pos)),
+            );
+            self.query_hash = query_hash;
+        }
     }
 }
 
@@ -179,21 +202,16 @@ where
             buf.darken();
         }
 
-        let strings = state
-            .cache
-            .items
-            .iter()
-            .map(ToString::to_string)
-            .collect_vec();
+        let strings = state.items.iter().map(ToString::to_string).collect_vec();
         let items = if state.input.value().is_empty() {
             strings
                 .iter()
                 .map(|item| ListItem::new(item.as_str()))
                 .collect_vec()
         } else {
+            state.refresh_matches();
             state
-                .cache
-                .query(state.input.value())
+                .indices
                 .iter()
                 .map(|(idx, matches)| match_item(&strings[*idx], matches))
                 .collect_vec()
@@ -242,41 +260,6 @@ fn match_item<'a>(text: &'a str, matches: &[usize]) -> ListItem<'a> {
             .map(|(content, style)| Span::styled(content, style))
             .collect_vec(),
     ))
-}
-
-#[derive(Debug)]
-struct CachedFilter<T> {
-    items: Vec<T>,
-    indices: Vec<(usize, Vec<usize>)>,
-    query_hash: u64,
-}
-
-impl<T> CachedFilter<T>
-where
-    T: Display,
-{
-    fn query(&mut self, query: &str) -> &[(usize, Vec<usize>)] {
-        let mut hasher = DefaultHasher::new();
-        query.hash(&mut hasher);
-        let query_hash = hasher.finish();
-
-        if self.query_hash != query_hash {
-            self.indices.clear();
-            self.indices.extend(
-                self.items
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(idx, item)| {
-                        let text = item.to_string();
-                        subsequence_pos(&text, query).map(|pos| (idx, text.len(), pos))
-                    })
-                    .sorted_by_key(|(_, len, _)| *len)
-                    .map(|(idx, _, pos)| (idx, pos)),
-            );
-            self.query_hash = query_hash;
-        }
-        &self.indices
-    }
 }
 
 fn subsequence_pos(larger: &str, other: &str) -> Option<Vec<usize>> {
