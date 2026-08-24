@@ -2,10 +2,7 @@ use std::{fmt::Display, marker::PhantomData};
 
 use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
-use crate::{
-    misc::config::theme,
-    sw::{app_default::AppDefault, buffer_ext::BufferExt, rect_ext::RectExt},
-};
+use crate::sw::{app_default::AppDefault, buffer_ext::BufferExt, rect_ext::RectExt};
 
 #[derive(Debug)]
 pub struct ListPickerState<T> {
@@ -131,9 +128,7 @@ where
         let area = buf.area.palette(state.items.len());
         buf.clear(area);
 
-        List::default()
-            .style(theme().text())
-            .highlight_style(theme().row_highlighted())
+        List::app_default()
             .items(
                 state
                     .items
