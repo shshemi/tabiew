@@ -20,4 +20,5 @@ pub mod buffer_ext;
 pub mod pickers;
 pub mod rect_ext;
 pub mod table;
+pub mod toast;
 pub mod widgets;
