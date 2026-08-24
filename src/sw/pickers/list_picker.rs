@@ -125,7 +125,7 @@ where
             buf.darken();
         }
 
-        let area = buf.area.palette(state.items.len());
+        let area = buf.area.palette(state.items.len().saturating_add(2).min(25) as u16);
         buf.clear(area);
 
         List::app_default()

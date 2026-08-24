@@ -1,18 +1,19 @@
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 
 pub trait RectExt {
-    fn palette(self, items: usize) -> Self;
+    fn palette(self, height: u16) -> Self;
 }
 
 impl RectExt for Rect {
-    fn palette(self, items: usize) -> Self {
+    fn palette(self, height: u16) -> Self {
         const WIDTH: u16 = 80;
-        let height = items.saturating_add(2).min(25) as u16;
+        const MARGIN_TOP: u16 = 3;
         let [area] = Layout::horizontal([Constraint::Length(WIDTH)])
             .flex(Flex::Center)
             .areas(self);
         let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
+            Layout::vertical([Constraint::Length(MARGIN_TOP), Constraint::Length(height)])
+                .areas(area);
         area
     }
 }
