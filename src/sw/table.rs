@@ -19,12 +19,6 @@ use crate::misc::{
     type_ext::ConstraintExt,
 };
 
-#[derive(Debug, Clone, Copy)]
-enum ColumnMode {
-    Compact,
-    Expanded(usize),
-}
-
 #[derive(Debug, Clone)]
 pub struct TableState {
     df: DataFrame,
@@ -33,10 +27,9 @@ pub struct TableState {
     col_space: u16,
     selected: Option<usize>,
     offset: usize,
+    col_offset: usize,
     rendered_rows: usize,
     rendered_width: u16,
-    column_mode: ColumnMode,
-    gutter: bool,
 }
 
 impl TableState {
@@ -51,10 +44,9 @@ impl TableState {
             col_space,
             selected: None,
             offset: 0,
+            col_offset: 0,
             rendered_rows: 0,
             rendered_width: 0,
-            column_mode: ColumnMode::Compact,
-            gutter: true,
         }
     }
 
@@ -68,10 +60,9 @@ impl TableState {
             col_space: self.col_space,
             selected: self.selected,
             offset: 0,
+            col_offset: self.col_offset,
             rendered_rows: self.rendered_rows,
             rendered_width: self.rendered_width,
-            column_mode: self.column_mode,
-            gutter: self.gutter,
         }
     }
 
@@ -90,20 +81,6 @@ impl TableState {
         }
     }
 
-    pub fn with_compact_column(self) -> Self {
-        Self {
-            column_mode: ColumnMode::Compact,
-            ..self
-        }
-    }
-
-    pub fn with_extended_column(self) -> Self {
-        Self {
-            column_mode: ColumnMode::Expanded(0),
-            ..self
-        }
-    }
-
     pub fn data_frame(&self) -> &DataFrame {
         &self.df
     }
@@ -116,10 +93,6 @@ impl TableState {
         if self.df.schema_equal(&df).is_ok() {
             self.df = df;
         }
-    }
-
-    pub fn set_gutter_visibility(&mut self, value: bool) {
-        self.gutter = value;
     }
 
     pub fn selected(&self) -> Option<usize> {
@@ -139,25 +112,6 @@ impl TableState {
 
     pub fn fits_in_page(&self) -> bool {
         self.minimum_compact_width() <= self.rendered_width
-    }
-
-    pub fn toggle_view_mode(&mut self) {
-        match self.column_mode {
-            ColumnMode::Compact => {
-                self.column_mode = ColumnMode::Expanded(0);
-            }
-            ColumnMode::Expanded(_) if self.fits_in_page() => {
-                self.column_mode = ColumnMode::Compact;
-            }
-            _ => (),
-        }
-    }
-
-    pub fn expended_column(&self) -> bool {
-        match self.column_mode {
-            ColumnMode::Compact => false,
-            ColumnMode::Expanded(_) => true,
-        }
     }
 
     pub fn select_up(&mut self) {
@@ -214,45 +168,32 @@ impl TableState {
         }
     }
 
+    pub fn col_offset(&self) -> usize {
+        self.col_offset
+    }
+
     pub fn scroll_left(&mut self) {
-        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = offset.saturating_sub(1)
-        }
+        self.col_offset = self.col_offset.saturating_sub(1);
     }
 
     pub fn scroll_right(&mut self) {
-        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = offset.saturating_add(1)
-        }
+        self.col_offset = self.col_offset.saturating_add(1);
     }
 
     pub fn scroll_to_left_column(&mut self) {
-        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = prev_column_offset(&self.col_offsets, offset);
-        }
+        self.col_offset = prev_column_offset(&self.col_offsets, &self.col_offset);
     }
 
     pub fn scroll_to_right_column(&mut self) {
-        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = next_column_offset(&self.col_offsets, offset);
-        }
+        self.col_offset = next_column_offset(&self.col_offsets, &self.col_offset);
     }
 
     pub fn scroll_to_first_column(&mut self) {
-        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = 0;
-        }
+        self.col_offset = 0;
     }
 
     pub fn scroll_to_last_column(&mut self) {
-        if let ColumnMode::Expanded(offset) = &mut self.column_mode {
-            *offset = self.col_offsets.last().copied().unwrap_or(0);
-        }
-    }
-
-    fn gutter_width(&self) -> Option<u16> {
-        self.gutter
-            .then(|| self.df.height().to_string().len() as u16)
+        self.col_offset = self.col_offsets.last().copied().unwrap_or(0);
     }
 
     fn minimum_compact_width(&self) -> u16 {
@@ -266,6 +207,8 @@ pub struct Table {
     striped: bool,
     show_header: bool,
     selection: bool,
+    gutter: bool,
+    expanded: bool,
 }
 
 impl Table {
@@ -283,6 +226,16 @@ impl Table {
         self.selection = selection;
         self
     }
+
+    pub fn gutter(mut self, gutter: bool) -> Self {
+        self.gutter = gutter;
+        self
+    }
+
+    pub fn expanded(mut self, expanded: bool) -> Self {
+        self.expanded = expanded;
+        self
+    }
 }
 
 impl Default for Table {
@@ -291,6 +244,8 @@ impl Default for Table {
             striped: false,
             show_header: false,
             selection: true,
+            gutter: true,
+            expanded: false,
         }
     }
 }
@@ -320,7 +275,9 @@ impl StatefulWidget for Table {
             state.offset = state.offset.min(state.df.height().saturating_sub(height))
         }
 
-        let gutter_width = state.gutter_width();
+        let gutter_width = self
+            .gutter
+            .then(|| state.df.height().to_string().len() as u16);
         let (gutter_area, table_area) = gutter_table_area(area, gutter_width, self.show_header);
         let highlighted = |state: &TableState| {
             self.selection
@@ -342,82 +299,78 @@ impl StatefulWidget for Table {
                 );
         }
 
-        if table_area.width < state.minimum_compact_width()
-            && matches!(state.column_mode, ColumnMode::Compact)
-        {
-            state.column_mode = ColumnMode::Expanded(0);
-        }
+        let expanded = self.expanded || table_area.width < state.minimum_compact_width();
 
         let selected = highlighted(state);
-        match &mut state.column_mode {
-            ColumnMode::Compact => {
-                let df = state.df.slice(state.offset as i64, height);
-                build_table(
-                    &df,
-                    &state.col_widths,
-                    state.col_space,
-                    self.show_header,
-                    self.striped,
-                    state.offset,
-                    0,
-                )
-                .render(
-                    table_area,
-                    buf,
-                    &mut RatatuiTableState::default().with_selected(selected),
-                );
+        if !expanded {
+            let df = state.df.slice(state.offset as i64, height);
+            build_table(
+                &df,
+                &state.col_widths,
+                state.col_space,
+                self.show_header,
+                self.striped,
+                state.offset,
+                0,
+            )
+            .render(
+                table_area,
+                buf,
+                &mut RatatuiTableState::default().with_selected(selected),
+            );
+        } else {
+            if state.df.columns().is_empty() {
+                return;
             }
-            ColumnMode::Expanded(x) => {
-                if state.df.columns().is_empty() {
-                    return;
-                }
-                let total_width = state
-                    .col_offsets
-                    .last()
-                    .copied()
-                    .unwrap_or(0)
-                    .max(table_area.width as usize);
-                *x = (*x).min(total_width.saturating_sub(table_area.width as usize));
-                let col_start = column_index(&state.col_offsets, x);
-                let col_end = column_index(&state.col_offsets, &x.add(table_area.width as usize));
-                let df = state
-                    .df
-                    .select(&state.df.get_column_names()[col_start..=col_end])
-                    .unwrap()
-                    .slice(state.offset as i64, height);
-                let table = build_table(
-                    &df,
-                    &state.col_widths[col_start..=col_end],
-                    state.col_space,
-                    self.show_header,
-                    self.striped,
-                    state.offset,
-                    col_start,
-                );
-                let width = (state.col_offsets[col_end + 1] - state.col_offsets[col_start])
-                    .max(table_area.width as usize);
-                let size = ratatui::layout::Size {
-                    width: width as u16,
-                    height: table_area.height,
-                };
-                let mut scroll_area =
-                    ScrollView::new(size).scrollbars_visibility(ScrollbarVisibility::Never);
-                scroll_area.render_stateful_widget(
-                    table,
-                    scroll_area.area(),
-                    &mut RatatuiTableState::default().with_selected(selected),
-                );
-                scroll_area.render(
-                    table_area,
-                    buf,
-                    &mut ScrollViewState::with_offset(Position {
-                        x: x.saturating_sub(
-                            state.col_offsets.get(col_start).copied().unwrap_or_default(),
-                        ) as u16,
-                        y: 0,
-                    }),
-                );
-            }
+            let total_width = state
+                .col_offsets
+                .last()
+                .copied()
+                .unwrap_or(0)
+                .max(table_area.width as usize);
+            state.col_offset = state
+                .col_offset
+                .min(total_width.saturating_sub(table_area.width as usize));
+            let x = &state.col_offset;
+            let col_start = column_index(&state.col_offsets, x);
+            let col_end = column_index(&state.col_offsets, &x.add(table_area.width as usize));
+            let df = state
+                .df
+                .select(&state.df.get_column_names()[col_start..=col_end])
+                .unwrap()
+                .slice(state.offset as i64, height);
+            let table = build_table(
+                &df,
+                &state.col_widths[col_start..=col_end],
+                state.col_space,
+                self.show_header,
+                self.striped,
+                state.offset,
+                col_start,
+            );
+            let width = (state.col_offsets[col_end + 1] - state.col_offsets[col_start])
+                .max(table_area.width as usize);
+            let size = ratatui::layout::Size {
+                width: width as u16,
+                height: table_area.height,
+            };
+            let mut scroll_area =
+                ScrollView::new(size).scrollbars_visibility(ScrollbarVisibility::Never);
+            scroll_area.render_stateful_widget(
+                table,
+                scroll_area.area(),
+                &mut RatatuiTableState::default().with_selected(selected),
+            );
+            scroll_area.render(
+                table_area,
+                buf,
+                &mut ScrollViewState::with_offset(Position {
+                    x: x.saturating_sub(
+                        state.col_offsets.get(col_start).copied().unwrap_or_default(),
+                    ) as u16,
+                    y: 0,
+                }),
+            );
         }
     }
 }
@@ -729,69 +682,70 @@ mod tests {
         }
     }
 
-    mod column_mode {
+    mod columns {
         use super::*;
 
         #[test]
-        fn new_state_starts_compact() {
-            assert!(!state(5).expended_column());
-        }
-
-        #[test]
-        fn with_extended_column_starts_expanded() {
-            assert!(state(5).with_extended_column().expended_column());
-        }
-
-        #[test]
-        fn toggle_switches_compact_to_expanded() {
+        fn a_wide_area_fits_the_table_in_compact_mode() {
             let mut state = state(5);
-            state.toggle_view_mode();
-            assert!(state.expended_column());
-        }
-
-        #[test]
-        fn toggle_returns_to_compact_only_when_the_table_fits() {
-            let mut state = state(5).with_extended_column();
             render(&mut state, Table::default(), 40, 10);
             assert!(state.fits_in_page());
-
-            state.toggle_view_mode();
-            assert!(!state.expended_column());
         }
 
         #[test]
-        fn toggle_stays_expanded_when_the_table_does_not_fit() {
-            let mut state = state(5).with_extended_column();
-            state.rendered_width = 1;
-
-            state.toggle_view_mode();
-            assert!(state.expended_column());
+        fn a_narrow_area_does_not_fit_the_table() {
+            let mut state = state(5);
+            render(&mut state, Table::default(), 1, 10);
+            assert!(!state.fits_in_page());
         }
 
         #[test]
-        fn horizontal_scroll_is_ignored_in_compact_mode() {
+        fn horizontal_scroll_moves_the_column_offset() {
             let mut state = state(5);
             state.scroll_right();
-            assert!(!state.expended_column());
+            assert_eq!(state.col_offset(), 1);
+            state.scroll_left();
+            assert_eq!(state.col_offset(), 0);
         }
 
         #[test]
-        fn scroll_to_last_column_jumps_to_the_final_offset() {
-            let mut state = state(5).with_extended_column();
+        fn horizontal_scroll_saturates_at_zero() {
+            let mut state = state(5);
+            state.scroll_left();
+            assert_eq!(state.col_offset(), 0);
+        }
+
+        #[test]
+        fn scroll_to_last_and_first_column_jump_to_the_edge_offsets() {
+            let mut state = state(5);
             let last = *state.col_offsets.last().unwrap();
 
             state.scroll_to_last_column();
-            assert!(matches!(state.column_mode, ColumnMode::Expanded(x) if x == last));
+            assert_eq!(state.col_offset(), last);
 
             state.scroll_to_first_column();
-            assert!(matches!(state.column_mode, ColumnMode::Expanded(0)));
+            assert_eq!(state.col_offset(), 0);
         }
 
         #[test]
-        fn narrow_area_forces_expanded_mode_during_render() {
+        fn scroll_to_next_and_prev_column_step_between_boundaries() {
             let mut state = state(5);
-            render(&mut state, Table::default(), 1, 10);
-            assert!(state.expended_column());
+            let boundary = state.col_offsets[1];
+
+            state.scroll_to_right_column();
+            assert_eq!(state.col_offset(), boundary);
+
+            state.scroll_to_left_column();
+            assert_eq!(state.col_offset(), 0);
+        }
+
+        #[test]
+        fn column_offset_is_clamped_to_the_scrollable_width_during_render() {
+            let mut state = state(5);
+            state.scroll_to_last_column();
+            render(&mut state, Table::default().expanded(true), 40, 10);
+
+            assert!(state.col_offset() < *state.col_offsets.last().unwrap());
         }
     }
 
@@ -836,13 +790,26 @@ mod tests {
 
         #[test]
         fn hidden_gutter_gives_the_table_the_full_width() {
-            let mut state = state(3);
-            state.set_gutter_visibility(false);
-            assert_eq!(state.gutter_width(), None);
-
             let (gutter, table) = gutter_table_area(Rect::new(0, 0, 40, 10), None, false);
             assert_eq!(gutter, None);
             assert_eq!(table, Rect::new(0, 0, 40, 10));
+        }
+
+        #[test]
+        fn hidden_gutter_does_not_render_row_numbers() {
+            let mut state = state(3);
+            let buf = render(&mut state, Table::default().gutter(false), 40, 10);
+
+            let [gutter_area, _] = Layout::horizontal([
+                Constraint::Length(5),
+                Constraint::Fill(1),
+            ])
+            .areas(Rect::new(0, 0, 40, 10));
+            let gutter_cells: String = (gutter_area.x..gutter_area.right())
+                .flat_map(|x| (0..10).map(move |y| (x, y)))
+                .map(|(x, y)| buf[(x, y)].symbol())
+                .collect();
+            assert!(!gutter_cells.contains("3"));
         }
 
         #[test]
@@ -886,10 +853,14 @@ mod tests {
         }
 
         #[test]
-        fn gutter_width_tracks_the_row_count() {
-            assert_eq!(state(9).gutter_width(), Some(1));
-            assert_eq!(state(10).gutter_width(), Some(2));
-            assert_eq!(state(100).gutter_width(), Some(3));
+        fn gutter_widens_with_the_row_count() {
+            let mut nine = state(9);
+            let mut hundred = state(100);
+            let narrow = render(&mut nine, Table::default(), 40, 12);
+            let wide = render(&mut hundred, Table::default(), 40, 12);
+
+            assert_eq!(content(&narrow).find('1'), Some(2));
+            assert_eq!(content(&wide).find('1'), Some(4));
         }
 
         #[test]
@@ -901,8 +872,8 @@ mod tests {
 
         #[test]
         fn no_column_frame_renders_without_panicking() {
-            let mut state = TableState::new(DataFrame::empty()).with_extended_column();
-            render(&mut state, Table::default(), 40, 10);
+            let mut state = TableState::new(DataFrame::empty());
+            render(&mut state, Table::default().expanded(true), 40, 10);
             assert_eq!(state.selected(), None);
         }
     }
