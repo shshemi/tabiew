@@ -64,18 +64,14 @@ where
             .and_then(|i| self.strings.get(i).map(String::as_str))
     }
 
-    /// Moves the selection up by one, clamping at the first item.
     pub fn select_up(&mut self) {
         self.list.select_previous();
     }
 
-    /// Moves the selection down by one. Unbounded: relies on the next render
-    /// to clamp against the item count, same as `ratatui::ListState`.
     pub fn select_down(&mut self) {
         self.list.select_next();
     }
 
-    /// Moves the selection up by one, wrapping around to the last item.
     pub fn cycle_up(&mut self) {
         if self.selected() != Some(0) {
             self.select_up();
@@ -84,7 +80,6 @@ where
         }
     }
 
-    /// Moves the selection down by one, wrapping around to the first item.
     pub fn cycle_down(&mut self) {
         if self.selected() != Some(self.items.len().saturating_sub(1)) {
             self.select_down();
@@ -98,9 +93,6 @@ where
     }
 
     pub fn select_last(&mut self) {
-        // `ListState::select_last` sets a `usize::MAX` placeholder that only
-        // gets corrected once the list is rendered; we already know the item
-        // count, so select the real index directly.
         self.select(Some(self.items.len().saturating_sub(1)));
     }
 
@@ -200,7 +192,7 @@ mod tests {
             let mut state = ListPickerState::new(vec!["a", "b", "c"]);
             state.select(Some(0));
             state.select_up();
-            assert_eq!(state.selected(), Some(0)); // clamped, no wrap
+            assert_eq!(state.selected(), Some(0));
 
             state.select(Some(0));
             state.select_down();
@@ -263,7 +255,6 @@ mod tests {
             let mut state = ListPickerState::new(vec!["a", "b"]);
             ListPicker::default().render(area, &mut buf, &mut state);
 
-            // corner cell sits outside the centered popup, so only darkening touches it
             assert_eq!(buf[(0, 0)].bg, Color::Rgb(20, 30, 40));
             assert_eq!(buf[(0, 0)].fg, Color::Rgb(20, 30, 40));
         }
