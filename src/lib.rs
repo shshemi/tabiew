@@ -1,6 +1,10 @@
 /// User interface.
 pub mod tui;
 
+/// User interface, take two: State/Widget split, built incrementally
+/// alongside `tui` until it can replace it. See `sw` module docs.
+pub mod sw;
+
 /// SQL autocompletion logic.
 pub mod sql_completion;
 
