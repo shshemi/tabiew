@@ -1,49 +1,23 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use ratatui::{
-    layout::{Constraint, Flex, Layout},
-    widgets::{Block, Clear, List, ListItem, ListState, StatefulWidget, Widget},
-};
+use ratatui::widgets::{Block, Clear, List, ListItem, ListState, StatefulWidget, Widget};
 
 use crate::{
     misc::{color_ext::ColorExt, config::theme},
-    sw::app_default::AppDefault,
+    sw::{app_default::AppDefault, rect_ext::RectExt},
 };
 
 #[derive(Debug)]
 pub struct ListPickerState<T> {
-    title: String,
     list: ListState,
     items: Vec<T>,
-    strings: Vec<String>,
-    darken_bg: bool,
 }
 
-impl<T> ListPickerState<T>
-where
-    T: Display,
-{
+impl<T> ListPickerState<T> {
     pub fn new(items: Vec<T>) -> Self {
         Self {
             list: ListState::default().with_selected(0.into()),
-            strings: items.iter().map(ToString::to_string).collect(),
-            title: Default::default(),
             items,
-            darken_bg: true,
-        }
-    }
-
-    pub fn with_title(self, title: impl Into<String>) -> Self {
-        Self {
-            title: title.into(),
-            ..self
-        }
-    }
-
-    pub fn no_darken_bg(self) -> Self {
-        Self {
-            darken_bg: false,
-            ..self
         }
     }
 
@@ -57,11 +31,6 @@ where
 
     pub fn selected_item(&self) -> Option<&T> {
         self.selected().and_then(|i| self.items.get(i))
-    }
-
-    pub fn selected_str(&self) -> Option<&str> {
-        self.selected()
-            .and_then(|i| self.strings.get(i).map(String::as_str))
     }
 
     pub fn select_up(&mut self) {
@@ -105,16 +74,48 @@ where
     }
 }
 
-#[derive(Debug)]
-pub struct ListPicker<T>(PhantomData<T>);
-
-impl<T> Default for ListPicker<T> {
-    fn default() -> Self {
-        Self(PhantomData)
+impl<T> ListPickerState<T>
+where
+    T: Display,
+{
+    pub fn selected_str(&self) -> Option<String> {
+        self.selected_item().map(ToString::to_string)
     }
 }
 
-impl<T> StatefulWidget for ListPicker<T> {
+#[derive(Debug)]
+pub struct ListPicker<T> {
+    title: String,
+    darken_bg: bool,
+    marker: PhantomData<T>,
+}
+
+impl<T> ListPicker<T> {
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
+        self
+    }
+
+    pub fn no_darken_bg(mut self) -> Self {
+        self.darken_bg = false;
+        self
+    }
+}
+
+impl<T> Default for ListPicker<T> {
+    fn default() -> Self {
+        Self {
+            title: String::new(),
+            darken_bg: true,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<T> StatefulWidget for ListPicker<T>
+where
+    T: Display,
+{
     type State = ListPickerState<T>;
 
     fn render(
@@ -123,29 +124,28 @@ impl<T> StatefulWidget for ListPicker<T> {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        if state.darken_bg {
+        if self.darken_bg {
             for cell in buf.content.iter_mut() {
                 cell.bg = cell.bg.darken();
                 cell.fg = cell.fg.darken();
             }
         }
 
-        let width = 80;
-        let height = state.strings.len().saturating_add(2).min(25) as u16;
-
-        let [area] = Layout::horizontal([Constraint::Length(width)])
-            .flex(Flex::Center)
-            .areas(buf.area);
-        let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(height)]).areas(area);
+        let area = buf.area.palette(state.items.len());
         Clear.render(area, buf);
 
         StatefulWidget::render(
             List::default()
                 .style(theme().text())
                 .highlight_style(theme().row_highlighted())
-                .items(state.strings.iter().map(|s| ListItem::from(s.as_str())))
-                .block(Block::app_default().title(state.title.as_str())),
+                .items(
+                    state
+                        .items
+                        .iter()
+                        .map(ToString::to_string)
+                        .map(ListItem::from),
+                )
+                .block(Block::app_default().title(self.title.as_str())),
             area,
             buf,
             &mut state.list,
@@ -167,7 +167,7 @@ mod tests {
             state.select(Some(1));
             assert_eq!(state.selected(), Some(1));
             assert_eq!(state.selected_item(), Some(&"b"));
-            assert_eq!(state.selected_str(), Some("b"));
+            assert_eq!(state.selected_str(), Some("b".to_owned()));
         }
 
         #[test]
@@ -265,8 +265,10 @@ mod tests {
             let mut buf = Buffer::empty(area);
             buf[(0, 0)].set_bg(Color::Rgb(100, 150, 200));
 
-            let mut state = ListPickerState::new(vec!["a", "b"]).no_darken_bg();
-            ListPicker::default().render(area, &mut buf, &mut state);
+            let mut state = ListPickerState::new(vec!["a", "b"]);
+            ListPicker::default()
+                .no_darken_bg()
+                .render(area, &mut buf, &mut state);
 
             assert_eq!(buf[(0, 0)].bg, Color::Rgb(100, 150, 200));
         }
@@ -275,8 +277,10 @@ mod tests {
         fn renders_title_and_items() {
             let area = Rect::new(0, 0, 100, 30);
             let mut buf = Buffer::empty(area);
-            let mut state = ListPickerState::new(vec!["alpha", "beta"]).with_title("Pick one");
-            ListPicker::default().render(area, &mut buf, &mut state);
+            let mut state = ListPickerState::new(vec!["alpha", "beta"]);
+            ListPicker::default()
+                .title("Pick one")
+                .render(area, &mut buf, &mut state);
 
             let content = buf.content().iter().map(|c| c.symbol()).collect::<String>();
             assert!(content.contains("Pick one"));

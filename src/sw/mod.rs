@@ -17,4 +17,5 @@
 
 pub mod app_default;
 pub mod pickers;
+pub mod rect_ext;
 pub mod widgets;
