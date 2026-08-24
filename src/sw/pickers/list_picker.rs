@@ -81,15 +81,15 @@ where
 }
 
 #[derive(Debug)]
-pub struct ListPicker<T> {
-    title: String,
+pub struct ListPicker<'a, T> {
+    title: &'a str,
     darken_bg: bool,
     marker: PhantomData<T>,
 }
 
-impl<T> ListPicker<T> {
-    pub fn title(mut self, title: impl Into<String>) -> Self {
-        self.title = title.into();
+impl<'a, T> ListPicker<'a, T> {
+    pub fn title(mut self, title: &'a str) -> Self {
+        self.title = title;
         self
     }
 
@@ -99,17 +99,17 @@ impl<T> ListPicker<T> {
     }
 }
 
-impl<T> Default for ListPicker<T> {
+impl<'a, T> Default for ListPicker<'a, T> {
     fn default() -> Self {
         Self {
-            title: String::new(),
+            title: Default::default(),
             darken_bg: true,
             marker: PhantomData,
         }
     }
 }
 
-impl<T> StatefulWidget for ListPicker<T>
+impl<'a, T> StatefulWidget for ListPicker<'a, T>
 where
     T: Display,
 {
@@ -136,7 +136,7 @@ where
                     .map(ToString::to_string)
                     .map(ListItem::from),
             )
-            .block(Block::app_default().title(self.title.as_str()))
+            .block(Block::app_default().title(self.title))
             .render(area, buf, &mut state.list);
     }
 }
