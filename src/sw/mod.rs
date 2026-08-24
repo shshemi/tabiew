@@ -16,6 +16,7 @@
 //! `crate::app` / the `Component` trait are deleted.
 
 pub mod app_default;
+pub mod buffer_ext;
 pub mod pickers;
 pub mod rect_ext;
 pub mod widgets;

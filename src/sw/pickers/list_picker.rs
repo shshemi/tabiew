@@ -1,10 +1,10 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use ratatui::widgets::{Block, Clear, List, ListItem, ListState, StatefulWidget, Widget};
+use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
 use crate::{
-    misc::{color_ext::ColorExt, config::theme},
-    sw::{app_default::AppDefault, rect_ext::RectExt},
+    misc::config::theme,
+    sw::{app_default::AppDefault, buffer_ext::BufferExt, rect_ext::RectExt},
 };
 
 #[derive(Debug)]
@@ -125,31 +125,24 @@ where
         state: &mut Self::State,
     ) {
         if self.darken_bg {
-            for cell in buf.content.iter_mut() {
-                cell.bg = cell.bg.darken();
-                cell.fg = cell.fg.darken();
-            }
+            buf.darken();
         }
 
         let area = buf.area.palette(state.items.len());
-        Clear.render(area, buf);
+        buf.clear(area);
 
-        StatefulWidget::render(
-            List::default()
-                .style(theme().text())
-                .highlight_style(theme().row_highlighted())
-                .items(
-                    state
-                        .items
-                        .iter()
-                        .map(ToString::to_string)
-                        .map(ListItem::from),
-                )
-                .block(Block::app_default().title(self.title.as_str())),
-            area,
-            buf,
-            &mut state.list,
-        );
+        List::default()
+            .style(theme().text())
+            .highlight_style(theme().row_highlighted())
+            .items(
+                state
+                    .items
+                    .iter()
+                    .map(ToString::to_string)
+                    .map(ListItem::from),
+            )
+            .block(Block::app_default().title(self.title.as_str()))
+            .render(area, buf, &mut state.list);
     }
 }
 
