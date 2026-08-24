@@ -1,4 +1,4 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::{borrow::Cow, fmt::Display, marker::PhantomData};
 
 use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
@@ -82,14 +82,14 @@ where
 
 #[derive(Debug)]
 pub struct ListPicker<'a, T> {
-    title: &'a str,
+    title: Cow<'a, str>,
     darken_bg: bool,
     marker: PhantomData<T>,
 }
 
 impl<'a, T> ListPicker<'a, T> {
-    pub fn title(mut self, title: &'a str) -> Self {
-        self.title = title;
+    pub fn title(mut self, title: impl Into<Cow<'a, str>>) -> Self {
+        self.title = title.into();
         self
     }
 
@@ -102,7 +102,7 @@ impl<'a, T> ListPicker<'a, T> {
 impl<'a, T> Default for ListPicker<'a, T> {
     fn default() -> Self {
         Self {
-            title: Default::default(),
+            title: Cow::Borrowed(""),
             darken_bg: true,
             marker: PhantomData,
         }
