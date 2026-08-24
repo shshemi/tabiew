@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
-use crate::{misc::config::theme, tui::widgets::block::Block};
+use crate::misc::config::theme;
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
-    widgets::{Paragraph, StatefulWidget, Widget},
+    widgets::{Block, Paragraph, StatefulWidget, Widget},
 };
 
 #[derive(Debug, Default)]

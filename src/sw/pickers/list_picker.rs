@@ -2,12 +2,12 @@ use std::{fmt::Display, marker::PhantomData};
 
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Clear, List, ListItem, ListState, StatefulWidget, Widget},
+    widgets::{Block, Clear, List, ListItem, ListState, StatefulWidget, Widget},
 };
 
 use crate::{
     misc::{color_ext::ColorExt, config::theme},
-    tui::widgets::block::Block,
+    sw::app_default::AppDefault,
 };
 
 #[derive(Debug)]
@@ -145,7 +145,7 @@ impl<T> StatefulWidget for ListPicker<T> {
                 .style(theme().text())
                 .highlight_style(theme().row_highlighted())
                 .items(state.strings.iter().map(|s| ListItem::from(s.as_str())))
-                .block(Block::default().title(state.title.as_str()).into_widget()),
+                .block(Block::app_default().title(state.title.as_str())),
             area,
             buf,
             &mut state.list,
@@ -278,11 +278,7 @@ mod tests {
             let mut state = ListPickerState::new(vec!["alpha", "beta"]).with_title("Pick one");
             ListPicker::default().render(area, &mut buf, &mut state);
 
-            let content = buf
-                .content()
-                .iter()
-                .map(|c| c.symbol())
-                .collect::<String>();
+            let content = buf.content().iter().map(|c| c.symbol()).collect::<String>();
             assert!(content.contains("Pick one"));
             assert!(content.contains("alpha"));
             assert!(content.contains("beta"));

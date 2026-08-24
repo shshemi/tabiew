@@ -15,5 +15,6 @@
 //! covers the whole tree, `main.rs` switches over and `crate::tui` /
 //! `crate::app` / the `Component` trait are deleted.
 
+pub mod app_default;
 pub mod pickers;
 pub mod widgets;
