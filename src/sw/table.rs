@@ -22,12 +22,13 @@ use crate::misc::{
 #[derive(Debug, Default, Clone)]
 pub struct TableState {
     schema: Option<SchemaRef>,
+    col_space: Option<u16>,
     col_widths: Vec<Constraint>,
     col_offsets: Vec<usize>,
     selected: Option<usize>,
     offset: usize,
     col_offset: usize,
-    rows: usize,
+    df_height: usize,
     rendered_rows: usize,
     rendered_width: u16,
     min_compact_width: u16,
@@ -46,12 +47,12 @@ impl TableState {
     }
 
     pub fn offset(&mut self, idx: impl Into<usize>) {
-        self.offset = idx.into().min(self.rows);
+        self.offset = idx.into().min(self.df_height);
     }
 
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {
-        if self.rows > 0 {
-            self.selected = idx.into().map(|idx| idx.min(self.rows - 1));
+        if self.df_height > 0 {
+            self.selected = idx.into().map(|idx| idx.min(self.df_height - 1));
         }
     }
 
@@ -63,7 +64,7 @@ impl TableState {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(1));
         } else {
-            self.select(self.rows.saturating_sub(1));
+            self.select(self.df_height.saturating_sub(1));
         }
     }
 
@@ -80,7 +81,7 @@ impl TableState {
     }
 
     pub fn select_last(&mut self) {
-        self.select(self.rows.saturating_sub(1));
+        self.select(self.df_height.saturating_sub(1));
     }
 
     pub fn page_up(&mut self) {
@@ -142,13 +143,17 @@ impl TableState {
     }
 
     fn sync(&mut self, df: &DataFrame, col_space: u16) {
-        if self.schema.as_ref() != Some(df.schema()) {
+        let new_schema = self.schema.as_ref() != Some(df.schema());
+        if new_schema {
             self.schema = Some(df.schema().clone());
             self.col_widths = column_widths(df);
         }
-        self.col_offsets = col_offsets(&self.col_widths, col_space);
-        self.rows = df.height();
-        self.min_compact_width = minimum_compact_width(df.width(), col_space);
+        if new_schema || self.col_space != Some(col_space) {
+            self.col_space = Some(col_space);
+            self.col_offsets = col_offsets(&self.col_widths, col_space);
+            self.min_compact_width = minimum_compact_width(df.width(), col_space);
+        }
+        self.df_height = df.height();
     }
 }
 
@@ -323,7 +328,11 @@ impl StatefulWidget for Table<'_> {
                 buf,
                 &mut ScrollViewState::with_offset(Position {
                     x: x.saturating_sub(
-                        state.col_offsets.get(col_start).copied().unwrap_or_default(),
+                        state
+                            .col_offsets
+                            .get(col_start)
+                            .copied()
+                            .unwrap_or_default(),
                     ) as u16,
                     y: 0,
                 }),
@@ -345,8 +354,12 @@ fn column_widths(df: &DataFrame) -> Vec<Constraint> {
 }
 
 fn gutter_item<'a>(idx: usize, width: u16) -> ListItem<'a> {
-    ListItem::new(Text::raw(format!("  {:>w$}  ", idx + 1, w = width as usize)))
-        .style(theme().gutter(idx))
+    ListItem::new(Text::raw(format!(
+        "  {:>w$}  ",
+        idx + 1,
+        w = width as usize
+    )))
+    .style(theme().gutter(idx))
 }
 
 fn gutter_table_area(
@@ -508,9 +521,10 @@ mod tests {
         #[test]
         fn a_default_state_knows_nothing_until_it_renders() {
             let state = TableState::default();
-            assert_eq!(state.rows, 0);
+            assert_eq!(state.df_height, 0);
             assert!(state.col_widths.is_empty());
             assert!(state.schema.is_none());
+            assert!(state.col_space.is_none());
         }
 
         #[test]
@@ -520,7 +534,7 @@ mod tests {
 
             assert_eq!(state.schema.as_ref(), Some(df.schema()));
             assert_eq!(state.col_widths.len(), 2);
-            assert_eq!(state.rows, 5);
+            assert_eq!(state.df_height, 5);
         }
 
         #[test]
@@ -549,11 +563,11 @@ mod tests {
                 state.col_widths,
                 vec![Constraint::Length(99), Constraint::Length(99)]
             );
-            assert_eq!(state.rows, 7);
+            assert_eq!(state.df_height, 7);
         }
 
         #[test]
-        fn col_space_is_applied_to_the_offsets_every_render() {
+        fn a_new_col_space_widens_the_offsets() {
             let df = frame(5);
             let mut state = synced(&df);
             let tight = state.col_offsets.clone();
@@ -565,7 +579,7 @@ mod tests {
         }
 
         #[test]
-        fn col_space_widens_the_minimum_compact_width() {
+        fn a_new_col_space_widens_the_minimum_compact_width() {
             let df = frame(5);
             let mut state = synced(&df);
             let tight = state.min_compact_width;
@@ -573,6 +587,32 @@ mod tests {
             render(&mut state, Table::new(&df).col_space(5), 40, 10);
 
             assert!(state.min_compact_width > tight);
+        }
+
+        #[test]
+        fn an_unchanged_col_space_keeps_the_cached_offsets() {
+            let df = frame(5);
+            let mut state = synced(&df);
+            state.col_offsets = vec![7, 7, 7];
+            state.min_compact_width = 77;
+
+            render(&mut state, Table::new(&frame(9)), 40, 10);
+
+            assert_eq!(state.col_offsets, vec![7, 7, 7]);
+            assert_eq!(state.min_compact_width, 77);
+            assert_eq!(state.df_height, 9);
+        }
+
+        #[test]
+        fn a_new_schema_recomputes_the_offsets_even_at_the_same_col_space() {
+            let narrow = frame(5);
+            let mut state = synced(&narrow);
+            state.col_offsets = vec![7, 7, 7];
+
+            render(&mut state, Table::new(&wide_frame(5, 4)), 40, 10);
+
+            assert_ne!(state.col_offsets, vec![7, 7, 7]);
+            assert_eq!(state.col_offsets.len(), 5);
         }
     }
 
@@ -853,9 +893,8 @@ mod tests {
             let mut state = TableState::default();
             let buf = render(&mut state, Table::new(&df).gutter(false), 40, 10);
 
-            let [gutter_area, _] =
-                Layout::horizontal([Constraint::Length(5), Constraint::Fill(1)])
-                    .areas(Rect::new(0, 0, 40, 10));
+            let [gutter_area, _] = Layout::horizontal([Constraint::Length(5), Constraint::Fill(1)])
+                .areas(Rect::new(0, 0, 40, 10));
             let gutter_cells: String = (gutter_area.x..gutter_area.right())
                 .flat_map(|x| (0..10).map(move |y| (x, y)))
                 .map(|(x, y)| buf[(x, y)].symbol())
