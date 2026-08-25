@@ -18,12 +18,14 @@ use crate::{
 #[derive(Debug)]
 pub struct JsonLineToDataFrame {
     ignore_errors: bool,
+    max_rows: Option<usize>,
 }
 
 impl JsonLineToDataFrame {
     pub fn from_args(args: &Args) -> Self {
         Self {
             ignore_errors: args.ignore_errors,
+            max_rows: args.max_rows,
         }
     }
 }
@@ -32,6 +34,7 @@ impl Default for JsonLineToDataFrame {
     fn default() -> Self {
         Self {
             ignore_errors: true,
+            max_rows: None,
         }
     }
 }
@@ -52,6 +55,8 @@ impl DataFrameReader for JsonLineToDataFrame {
                 .set_rechunk(true)
                 .finish()?,
         };
+        // JsonReader has no native row limit, so cap the frame after reading.
+        let df = df.head(self.max_rows);
         Ok([(input.table_name(), df)].into())
     }
 }
