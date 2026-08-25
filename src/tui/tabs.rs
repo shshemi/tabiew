@@ -180,7 +180,7 @@ impl Component for Tabs {
         }
     }
 
-    fn update(&mut self, action: &Message, focus_state: FocusState) {
+    fn update(&mut self, action: &Message) {
         match action {
             Message::TabsAddNamePane(df, name) => {
                 self.add(Pane::new(
@@ -194,26 +194,15 @@ impl Component for Tabs {
                     TableDescription::Query(query.to_owned()),
                 ));
             }
-            Message::TabsSelect(idx) if focus_state.is_focused() => self.select(*idx),
-            Message::TabsDismissSwitcher if focus_state.is_focused() => self.dismiss_tab_switcher(),
+            Message::TabsSelect(idx) => self.select(*idx),
+            Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
             _ => (),
         }
         if let Some(switcher) = self.switcher.as_mut() {
-            switcher.update(action, focus_state);
-            for pane in self.panes.iter_mut() {
-                pane.update(action, FocusState::NotFocused);
-            }
-        } else {
-            for (idx, pane) in self.panes.iter_mut().enumerate() {
-                pane.update(
-                    action,
-                    if idx == self.idx {
-                        focus_state
-                    } else {
-                        FocusState::NotFocused
-                    },
-                );
-            }
+            switcher.update(action);
+        }
+        if let Some(pane) = self.panes.get_mut(self.idx) {
+            pane.update(action);
         }
     }
 

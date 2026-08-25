@@ -172,7 +172,7 @@ impl Component for App {
         }
     }
 
-    fn update(&mut self, action: &Message, _: FocusState) {
+    fn update(&mut self, action: &Message) {
         match action {
             Message::Quit => self.quit(),
             Message::AppDismissOverlay => self.dismiss_overlay(),
@@ -188,24 +188,13 @@ impl Component for App {
             Message::AppDownloadDataSource(url, reader) => self.add_download(url, reader.clone()),
             _ => (),
         };
-        match (self.overlay.as_mut(), self.schema.as_mut()) {
-            (Some(overlay), Some(schema)) => {
-                overlay.responder().update(action, FocusState::Focused);
-                schema.update(action, FocusState::NotFocused);
-                self.tabs.update(action, FocusState::NotFocused);
-            }
-            (Some(overlay), None) => {
-                overlay.responder().update(action, FocusState::Focused);
-                self.tabs.update(action, FocusState::NotFocused);
-            }
-            (None, Some(schema)) => {
-                schema.update(action, FocusState::Focused);
-                self.tabs.update(action, FocusState::NotFocused);
-            }
-            (None, None) => {
-                self.tabs.update(action, FocusState::Focused);
-            }
+        if let Some(overlay) = self.overlay.as_mut() {
+            overlay.responder().update(action);
         }
+        if let Some(schema) = self.schema.as_mut() {
+            schema.update(action);
+        }
+        self.tabs.update(action);
     }
 
     fn tick(&mut self) {
