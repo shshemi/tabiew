@@ -1,11 +1,11 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use polars::frame::DataFrame;
-use ratatui::widgets::Widget;
+use ratatui::widgets::{Block, Widget};
 
 use crate::{
     handler::message::Message,
     misc::search::{self, Contain, Skim},
-    tui::{component::Component, widgets::block::Block},
+    tui::{app_default::AppDefault, component::Component},
 };
 
 use super::widgets::input::Input;
@@ -78,7 +78,7 @@ impl Component for SearchBar {
             Searcher::Exact(_) => "Search",
         };
         let area = {
-            let block = Block::default().title(title);
+            let block = Block::app_default().title(title);
             let inner = block.inner(area);
             block.render(area, buf);
             inner

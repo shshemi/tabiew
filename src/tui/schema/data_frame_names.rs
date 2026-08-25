@@ -2,15 +2,15 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Span,
-    widgets::{Row, StatefulWidget, Table, TableState},
+    widgets::{Block, Row, StatefulWidget, Table, TableState},
 };
 
 use crate::{
     misc::{config::theme, sql::sql},
     tui::{
+        app_default::AppDefault,
         component::Component,
         tag_line::{Tag, TagLine},
-        widgets::block::Block,
     },
 };
 
@@ -73,17 +73,16 @@ impl Component for DataFrameNames {
             ])
             .column_spacing(1)
             .block(
-                Block::default()
+                Block::app_default()
                     .title("Tables")
-                    .bottom(
+                    .title_bottom(
                         TagLine::new()
                             .mono_color()
                             .centered()
                             .tag(Tag::new(" Open ", " Enter"))
                             .tag(Tag::new(" Unload ", " Delete ")),
                     )
-                    .title_alignment(Alignment::Center)
-                    .into_widget(),
+                    .title_alignment(Alignment::Center),
             );
         if focus_state.is_focused() {
             table.render(area, buf, &mut self.table);

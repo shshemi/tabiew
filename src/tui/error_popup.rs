@@ -2,12 +2,12 @@ use crate::misc::{buffer_ext::BufferExt, config::theme};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Block, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     handler::message::Message,
-    tui::{component::Component, widgets::block::Block},
+    tui::{app_default::AppDefault, component::Component},
 };
 
 #[derive(Debug, Default)]
@@ -35,11 +35,10 @@ impl Component for ErrorPopup {
         let pg = Paragraph::new(self.message.as_str())
             .left_aligned()
             .block(
-                Block::default()
+                Block::app_default()
                     .title(" Error ")
                     .title_alignment(Alignment::Center)
-                    .style(theme().error())
-                    .into_widget(),
+                    .style(theme().error()),
             )
             .wrap(Wrap { trim: true });
         let text_width = pg.line_width().min(64) as u16;

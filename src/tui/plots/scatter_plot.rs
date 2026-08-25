@@ -5,14 +5,14 @@ use ratatui::{
     layout::{Alignment, Constraint, Margin},
     symbols::Marker,
     text::Span,
-    widgets::{Axis, Chart, Dataset, GraphType, LegendPosition, Padding, Widget},
+    widgets::{Axis, Block, Chart, Dataset, GraphType, LegendPosition, Padding, Widget},
 };
 
 use crate::{
     AppResult,
     handler::message::Message,
     misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
-    tui::{component::Component, widgets::block::Block},
+    tui::{app_default::AppDefault, component::Component},
 };
 
 #[derive(Debug)]
@@ -106,11 +106,10 @@ impl Component for ScatterPlot {
             )
             .style(theme().text())
             .block(
-                Block::default()
+                Block::app_default()
                     .title("Scatter Plot")
                     .title_alignment(Alignment::Center)
-                    .padding(Padding::new(1, 2, 0, 0))
-                    .into_widget(),
+                    .padding(Padding::new(1, 2, 0, 0)),
             )
             .legend_position(Some(LegendPosition::TopRight))
             .hidden_legend_constraints((Constraint::Min(0), Constraint::Min(0)));

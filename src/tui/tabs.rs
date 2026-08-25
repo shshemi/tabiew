@@ -2,16 +2,17 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    widgets::{Borders, Widget},
+    widgets::{Block, Borders, Widget},
 };
 
 use crate::{
     handler::message::Message,
     misc::config::config,
     tui::{
+        app_default::AppDefault,
         component::{Component, FocusState},
         pane::TableDescription,
-        widgets::{block::Block, status_bar::StatusBar},
+        widgets::status_bar::StatusBar,
     },
 };
 
@@ -100,7 +101,7 @@ impl Component for Tabs {
 
         let area = {
             if config().show_table_borders() {
-                let blk = Block::default().borders(Borders::all());
+                let blk = Block::app_default().borders(Borders::all());
                 let new = blk.inner(area);
                 blk.render(area, buf);
                 if let Some(pane) = self.panes.get(self.idx) {

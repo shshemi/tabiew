@@ -5,7 +5,7 @@ use ratatui::{
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Span,
-    widgets::{Row, Table, Widget},
+    widgets::{Block, Row, Table, Widget},
 };
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
         sql::{self, TableInfo},
         type_ext::human_readable_size,
     },
-    tui::{component::Component, widgets::block::Block},
+    tui::{app_default::AppDefault, component::Component},
 };
 
 #[derive(Debug)]
@@ -68,15 +68,14 @@ impl Component for DataFrameMetaInfo {
             ])
             .widths([Constraint::Max(23), Constraint::Fill(1)])
             .block(
-                Block::default()
+                Block::app_default()
                     .border_set(Set {
                         bottom_left: VERTICAL_RIGHT,
                         bottom_right: VERTICAL_LEFT,
                         ..ROUNDED
                     })
                     .title_alignment(Alignment::Center)
-                    .title("Info")
-                    .into_widget(),
+                    .title("Info"),
             )
             .render(area, buf);
     }
