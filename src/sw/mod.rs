@@ -21,6 +21,7 @@ pub mod error_popup;
 pub mod pickers;
 pub mod popups;
 pub mod rect_ext;
+pub mod search_bar;
 pub mod sheet;
 pub mod table;
 pub mod toast;
