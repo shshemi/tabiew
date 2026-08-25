@@ -22,6 +22,7 @@ pub struct CsvToDataFrame {
     no_header: bool,
     ignore_errors: bool,
     truncate_ragged_lines: bool,
+    max_rows: Option<usize>,
 }
 
 impl CsvToDataFrame {
@@ -33,6 +34,7 @@ impl CsvToDataFrame {
             no_header: args.no_header,
             ignore_errors: args.ignore_errors,
             truncate_ragged_lines: args.truncate_ragged_lines,
+            max_rows: args.max_rows,
         }
     }
 
@@ -56,6 +58,7 @@ impl CsvToDataFrame {
             .with_ignore_errors(self.ignore_errors)
             .with_infer_schema_length(self.infer_schema.to_csv_infer_schema_length())
             .with_has_header(!self.no_header)
+            .with_n_rows(self.max_rows)
             .with_parse_options(
                 CsvParseOptions::default()
                     .with_truncate_ragged_lines(self.truncate_ragged_lines)
@@ -82,6 +85,7 @@ impl Default for CsvToDataFrame {
             no_header: false,
             ignore_errors: true,
             truncate_ragged_lines: false,
+            max_rows: None,
         }
     }
 }
@@ -93,5 +97,41 @@ impl DataFrameReader for CsvToDataFrame {
             ReaderSource::Stdin => self.try_into_frame(stdin()),
         }?;
         Ok([(input.table_name(), df)].into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::*;
+
+    const CSV: &[u8] = b"a,b\n1,2\n3,4\n5,6\n7,8\n";
+
+    #[test]
+    fn reads_every_row_without_a_cap() {
+        let reader = CsvToDataFrame::default();
+        let df = reader.try_into_frame(Cursor::new(CSV.to_vec())).unwrap();
+        assert_eq!(df.height(), 4);
+    }
+
+    #[test]
+    fn caps_rows_when_max_rows_is_set() {
+        let reader = CsvToDataFrame {
+            max_rows: Some(2),
+            ..Default::default()
+        };
+        let df = reader.try_into_frame(Cursor::new(CSV.to_vec())).unwrap();
+        assert_eq!(df.height(), 2);
+    }
+
+    #[test]
+    fn max_rows_larger_than_the_file_keeps_every_row() {
+        let reader = CsvToDataFrame {
+            max_rows: Some(100),
+            ..Default::default()
+        };
+        let df = reader.try_into_frame(Cursor::new(CSV.to_vec())).unwrap();
+        assert_eq!(df.height(), 4);
     }
 }
