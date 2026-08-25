@@ -3,9 +3,12 @@ use ratatui::{
     widgets::Paragraph,
 };
 
+const MAX_WIDTH: u16 = 64;
+
 pub trait RectExt {
     fn palette(self, height: u16) -> Self;
     fn toast(self, paragraph: &Paragraph) -> Self;
+    fn popup(self, paragraph: &Paragraph) -> Self;
 }
 
 impl RectExt for Rect {
@@ -22,10 +25,8 @@ impl RectExt for Rect {
     }
 
     fn toast(self, paragraph: &Paragraph) -> Self {
-        const MAX_WIDTH: u16 = 64;
         const MARGIN_BOTTOM: u16 = 3;
-        let width = paragraph.line_width().min(MAX_WIDTH as usize) as u16;
-        let height = paragraph.line_count(width) as u16;
+        let (width, height) = paragraph_size(paragraph);
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
             .areas(self);
@@ -37,6 +38,17 @@ impl RectExt for Rect {
         .areas(area);
         area
     }
+
+    fn popup(self, paragraph: &Paragraph) -> Self {
+        let (width, height) = paragraph_size(paragraph);
+        self.centered(Constraint::Length(width), Constraint::Length(height))
+    }
+}
+
+fn paragraph_size(paragraph: &Paragraph) -> (u16, u16) {
+    let width = paragraph.line_width().min(MAX_WIDTH as usize) as u16;
+    let height = paragraph.line_count(width) as u16;
+    (width, height)
 }
 
 #[cfg(test)]
@@ -123,6 +135,53 @@ mod tests {
             let area = Rect::new(4, 6, 100, 30).toast(&paragraph("hello".to_owned()));
             assert_eq!(area.x, 52);
             assert_eq!(area.bottom(), 36 - 3);
+        }
+    }
+
+    mod popup {
+        use super::*;
+        use ratatui::widgets::Wrap;
+
+        fn paragraph(text: String) -> Paragraph<'static> {
+            Paragraph::new(text).wrap(Wrap { trim: true })
+        }
+
+        #[test]
+        fn short_content_keeps_its_own_width() {
+            let area = Rect::new(0, 0, 100, 30).popup(&paragraph("hello".to_owned()));
+            assert_eq!(area.width, 5);
+        }
+
+        #[test]
+        fn wide_content_is_capped() {
+            let area = Rect::new(0, 0, 100, 30).popup(&paragraph("w".repeat(90)));
+            assert_eq!(area.width, 64);
+        }
+
+        #[test]
+        fn is_centered_on_both_axes() {
+            let area = Rect::new(0, 0, 100, 30).popup(&paragraph("w".repeat(90)));
+
+            assert_eq!(area.x, 100 - area.right());
+            assert_eq!(area.y, 30 - area.bottom());
+        }
+
+        #[test]
+        fn taller_content_grows_in_both_directions() {
+            let short = Rect::new(0, 0, 100, 30).popup(&paragraph("hello".to_owned()));
+            let tall = Rect::new(0, 0, 100, 30).popup(&paragraph("w ".repeat(80)));
+
+            assert!(tall.y < short.y);
+            assert!(tall.bottom() > short.bottom());
+        }
+
+        #[test]
+        fn honours_the_origin_of_the_source_rect() {
+            let plain = Rect::new(0, 0, 100, 30).popup(&paragraph("hello".to_owned()));
+            let shifted = Rect::new(4, 6, 100, 30).popup(&paragraph("hello".to_owned()));
+
+            assert_eq!(shifted.x, plain.x + 4);
+            assert_eq!(shifted.y, plain.y + 6);
         }
     }
 }
