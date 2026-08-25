@@ -2,7 +2,6 @@ use std::{
     borrow::Cow,
     fmt::Display,
     hash::{DefaultHasher, Hash, Hasher},
-    marker::PhantomData,
 };
 
 use itertools::Itertools;
@@ -11,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     misc::config::theme,
@@ -26,25 +26,15 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct SearchPickerState<T> {
+pub struct SearchPickerState {
     input: InputState,
     list: ListState,
-    items: Vec<T>,
-    indices: Vec<(usize, Vec<usize>)>,
+    indices: Vec<(usize, String, Vec<usize>)>,
     query_hash: u64,
+    item_count: usize,
 }
 
-impl<T> SearchPickerState<T> {
-    pub fn new(items: Vec<T>) -> Self {
-        Self {
-            input: InputState::default(),
-            list: ListState::default().with_selected(Some(0)),
-            items,
-            indices: Vec::new(),
-            query_hash: 0,
-        }
-    }
-
+impl SearchPickerState {
     pub fn input(&self) -> &InputState {
         &self.input
     }
@@ -68,21 +58,13 @@ impl<T> SearchPickerState<T> {
             self.list
                 .selected()
                 .and_then(|idx| self.indices.get(idx))
-                .map(|(idx, _)| *idx)
+                .map(|(idx, _, _)| *idx)
         }
-    }
-
-    pub fn selected_item(&self) -> Option<&T> {
-        self.selected().and_then(|idx| self.items.get(idx))
-    }
-
-    pub fn into_items(self) -> Vec<T> {
-        self.items
     }
 
     pub fn len(&self) -> usize {
         if self.text().is_empty() {
-            self.items.len()
+            self.item_count
         } else {
             self.indices.len()
         }
@@ -123,48 +105,61 @@ impl<T> SearchPickerState<T> {
             self.select_first();
         }
     }
-}
 
-impl<T> SearchPickerState<T>
-where
-    T: Display,
-{
-    pub fn selected_str(&self) -> Option<String> {
-        self.selected_item().map(ToString::to_string)
-    }
+    fn sync<T: Display>(&mut self, items: &[T]) {
+        self.item_count = items.len();
 
-    pub fn refresh_matches(&mut self) {
         let query = self.input.value();
+        if query.is_empty() {
+            return;
+        }
+
         let mut hasher = DefaultHasher::new();
         query.hash(&mut hasher);
         let query_hash = hasher.finish();
 
         if self.query_hash != query_hash {
             self.indices.clear();
-            self.indices.extend(
-                self.items
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(idx, item)| {
-                        let text = item.to_string();
-                        subsequence_pos(&text, query).map(|pos| (idx, text.len(), pos))
-                    })
-                    .sorted_by_key(|(_, len, _)| *len)
-                    .map(|(idx, _, pos)| (idx, pos)),
-            );
+            for (idx, item) in items.iter().enumerate() {
+                let text = item.to_string();
+                if let Some(pos) = subsequence_pos(&text, query) {
+                    self.indices.push((idx, text, pos));
+                }
+            }
+            self.indices.sort_by_key(|(_, text, _)| text.width());
             self.query_hash = query_hash;
+        }
+    }
+}
+
+impl Default for SearchPickerState {
+    fn default() -> Self {
+        Self {
+            input: InputState::default(),
+            list: ListState::default().with_selected(Some(0)),
+            indices: Vec::new(),
+            query_hash: 0,
+            item_count: 0,
         }
     }
 }
 
 #[derive(Debug)]
 pub struct SearchPicker<'a, T> {
+    items: &'a [T],
     title: Cow<'a, str>,
     darken_bg: bool,
-    marker: PhantomData<T>,
 }
 
 impl<'a, T> SearchPicker<'a, T> {
+    pub fn new(items: &'a [T]) -> Self {
+        Self {
+            items,
+            title: Cow::Borrowed(""),
+            darken_bg: true,
+        }
+    }
+
     pub fn title(mut self, title: impl Into<Cow<'a, str>>) -> Self {
         self.title = title.into();
         self
@@ -176,21 +171,11 @@ impl<'a, T> SearchPicker<'a, T> {
     }
 }
 
-impl<'a, T> Default for SearchPicker<'a, T> {
-    fn default() -> Self {
-        Self {
-            title: Cow::Borrowed(""),
-            darken_bg: true,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, T> StatefulWidget for SearchPicker<'a, T>
+impl<T> StatefulWidget for SearchPicker<'_, T>
 where
     T: Display,
 {
-    type State = SearchPickerState<T>;
+    type State = SearchPickerState;
 
     fn render(
         self,
@@ -198,22 +183,23 @@ where
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
+        state.sync(self.items);
+
         if self.darken_bg {
             buf.darken();
         }
 
-        let strings = state.items.iter().map(ToString::to_string).collect_vec();
         let items = if state.input.value().is_empty() {
-            strings
+            self.items
                 .iter()
-                .map(|item| ListItem::new(item.as_str()))
+                .map(ToString::to_string)
+                .map(ListItem::new)
                 .collect_vec()
         } else {
-            state.refresh_matches();
             state
                 .indices
                 .iter()
-                .map(|(idx, matches)| match_item(&strings[*idx], matches))
+                .map(|(_, text, matches)| match_item(text, matches))
                 .collect_vec()
         };
 
@@ -280,17 +266,23 @@ mod tests {
     use super::*;
     use ratatui::{buffer::Buffer, layout::Rect, style::Color};
 
-    fn typed<T>(state: &mut SearchPickerState<T>, text: &str) {
+    fn typed(state: &mut SearchPickerState, text: &str) {
         for c in text.chars() {
             state.input_mut().insert(c);
         }
     }
 
-    fn render_once<T: Display>(state: &mut SearchPickerState<T>) -> Buffer {
+    fn render<T: Display>(state: &mut SearchPickerState, picker: SearchPicker<T>) -> Buffer {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
-        SearchPicker::default().render(area, &mut buf, state);
+        picker.render(area, &mut buf, state);
         buf
+    }
+
+    fn synced<T: Display>(items: &[T]) -> SearchPickerState {
+        let mut state = SearchPickerState::default();
+        render(&mut state, SearchPicker::new(items));
+        state
     }
 
     fn content(buf: &Buffer) -> String {
@@ -301,31 +293,38 @@ mod tests {
         use super::*;
 
         #[test]
-        fn unfiltered_selection_maps_directly_to_items() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta", "gamma"]);
+        fn unfiltered_selection_is_the_item_index() {
+            let mut state = synced(&["alpha", "beta", "gamma"]);
             state.select(Some(1));
             assert_eq!(state.selected(), Some(1));
-            assert_eq!(state.selected_item(), Some(&"beta"));
-            assert_eq!(state.selected_str().as_deref(), Some("beta"));
         }
 
         #[test]
-        fn unfiltered_len_is_item_count() {
-            let state = SearchPickerState::new(vec!["a", "b", "c"]);
+        fn rendering_adopts_the_item_count() {
+            let state = synced(&["a", "b", "c"]);
             assert_eq!(state.len(), 3);
             assert!(!state.is_empty());
         }
 
         #[test]
-        fn empty_state_is_empty() {
-            let state = SearchPickerState::<&str>::new(vec![]);
+        fn the_item_count_follows_the_rendered_list() {
+            let mut state = SearchPickerState::default();
+            render(&mut state, SearchPicker::new(&["a", "b", "c"]));
+            assert_eq!(state.len(), 3);
+
+            render(&mut state, SearchPicker::new(&["a"]));
+            assert_eq!(state.len(), 1);
+        }
+
+        #[test]
+        fn an_empty_item_list_leaves_the_state_empty() {
+            let state = synced::<&str>(&[]);
             assert!(state.is_empty());
-            assert_eq!(state.selected_item(), None);
         }
 
         #[test]
         fn cycle_up_wraps_to_last_item() {
-            let mut state = SearchPickerState::new(vec!["a", "b", "c"]);
+            let mut state = synced(&["a", "b", "c"]);
             state.select(Some(0));
             state.cycle_up();
             assert_eq!(state.selected(), Some(2));
@@ -333,7 +332,7 @@ mod tests {
 
         #[test]
         fn cycle_down_wraps_to_first_item() {
-            let mut state = SearchPickerState::new(vec!["a", "b", "c"]);
+            let mut state = synced(&["a", "b", "c"]);
             state.select(Some(2));
             state.cycle_down();
             assert_eq!(state.selected(), Some(0));
@@ -341,7 +340,7 @@ mod tests {
 
         #[test]
         fn select_first_and_last() {
-            let mut state = SearchPickerState::new(vec!["a", "b", "c"]);
+            let mut state = synced(&["a", "b", "c"]);
             state.select_last();
             assert_eq!(state.selected(), Some(2));
             state.select_first();
@@ -350,15 +349,9 @@ mod tests {
 
         #[test]
         fn text_reflects_typed_input() {
-            let mut state = SearchPickerState::new(vec!["a"]);
+            let mut state = SearchPickerState::default();
             typed(&mut state, "ab");
             assert_eq!(state.text(), "ab");
-        }
-
-        #[test]
-        fn into_items_returns_original_items() {
-            let state = SearchPickerState::new(vec!["a", "b"]);
-            assert_eq!(state.into_items(), vec!["a", "b"]);
         }
     }
 
@@ -367,40 +360,43 @@ mod tests {
 
         #[test]
         fn len_reflects_matches_after_render() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta", "gamma"]);
+            let items = ["alpha", "beta", "gamma"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "mm");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             assert_eq!(state.len(), 1);
         }
 
         #[test]
         fn selected_maps_through_filter_to_original_index() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta", "gamma"]);
+            let items = ["alpha", "beta", "gamma"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "mm");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             state.select(Some(0));
             assert_eq!(state.selected(), Some(2));
-            assert_eq!(state.selected_item(), Some(&"gamma"));
         }
 
         #[test]
         fn subsequence_match_is_case_insensitive_and_non_contiguous() {
-            let mut state = SearchPickerState::new(vec!["Alpha", "beta"]);
+            let items = ["Alpha", "beta"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "AP");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             state.select(Some(0));
-            assert_eq!(state.selected_item(), Some(&"Alpha"));
+            assert_eq!(state.selected(), Some(0));
             assert_eq!(state.len(), 1);
         }
 
         #[test]
         fn no_match_leaves_zero_length() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta"]);
+            let items = ["alpha", "beta"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "zzz");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             assert_eq!(state.len(), 0);
             assert!(state.is_empty());
@@ -408,28 +404,80 @@ mod tests {
 
         #[test]
         fn shorter_matches_sort_first() {
-            let mut state = SearchPickerState::new(vec!["aaaa", "aa", "aaa"]);
+            let items = ["aaaa", "aa", "aaa"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "a");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             state.select(Some(0));
-            assert_eq!(state.selected_item(), Some(&"aa"));
+            assert_eq!(state.selected(), Some(1));
+        }
+
+        #[test]
+        fn sorting_uses_display_width_not_byte_length() {
+            // "aéé" is 5 bytes but 3 columns; "abcd" is 4 bytes and 4 columns
+            let items = ["abcd", "aéé"];
+            let mut state = SearchPickerState::default();
+            typed(&mut state, "a");
+            render(&mut state, SearchPicker::new(&items));
+
+            state.select(Some(0));
+            assert_eq!(state.selected(), Some(1));
+        }
+
+        #[test]
+        fn wide_characters_count_as_two_columns_when_sorting() {
+            // "a日" is 4 bytes like "abcd", but 3 columns against 4
+            let items = ["abcd", "a日"];
+            let mut state = SearchPickerState::default();
+            typed(&mut state, "a");
+            render(&mut state, SearchPicker::new(&items));
+
+            state.select(Some(0));
+            assert_eq!(state.selected(), Some(1));
+        }
+
+        #[test]
+        fn an_unchanged_query_keeps_the_cached_matches() {
+            let items = ["alpha", "beta"];
+            let mut state = SearchPickerState::default();
+            typed(&mut state, "a");
+            render(&mut state, SearchPicker::new(&items));
+
+            state.indices = vec![(0, "sentinel".to_owned(), Vec::new())];
+            render(&mut state, SearchPicker::new(&items));
+
+            assert_eq!(state.indices.len(), 1);
+            assert_eq!(state.indices[0].1, "sentinel");
+        }
+
+        #[test]
+        fn matched_text_is_cached_alongside_the_index() {
+            let items = ["alpha", "beta"];
+            let mut state = SearchPickerState::default();
+            typed(&mut state, "et");
+            render(&mut state, SearchPicker::new(&items));
+
+            assert_eq!(state.indices.len(), 1);
+            assert_eq!(state.indices[0].0, 1);
+            assert_eq!(state.indices[0].1, "beta");
         }
 
         #[test]
         fn refiltering_after_query_change_updates_results() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta", "gamma"]);
+            let items = ["alpha", "beta", "gamma"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "mm");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
             assert_eq!(state.len(), 1);
 
             state.input_mut().delete_prev();
             state.input_mut().delete_prev();
             typed(&mut state, "et");
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             state.select(Some(0));
-            assert_eq!(state.selected_item(), Some(&"beta"));
+            assert_eq!(state.selected(), Some(1));
         }
     }
 
@@ -438,12 +486,10 @@ mod tests {
 
         #[test]
         fn renders_title_and_all_items_when_query_is_empty() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta"]);
-            let area = Rect::new(0, 0, 100, 30);
-            let mut buf = Buffer::empty(area);
-            SearchPicker::default()
-                .title("Format")
-                .render(area, &mut buf, &mut state);
+            let buf = render(
+                &mut SearchPickerState::default(),
+                SearchPicker::new(&["alpha", "beta"]).title("Format"),
+            );
 
             let content = content(&buf);
             assert!(content.contains("Format"));
@@ -453,9 +499,10 @@ mod tests {
 
         #[test]
         fn renders_only_matching_items_when_filtered() {
-            let mut state = SearchPickerState::new(vec!["alpha", "beta"]);
+            let items = ["alpha", "beta"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "mm");
-            let buf = render_once(&mut state);
+            let buf = render(&mut state, SearchPicker::new(&items));
 
             let content = content(&buf);
             assert!(!content.contains("alpha"));
@@ -464,28 +511,28 @@ mod tests {
 
         #[test]
         fn renders_typed_query_in_input_row() {
-            let mut state = SearchPickerState::new(vec!["alpha"]);
+            let items = ["alpha"];
+            let mut state = SearchPickerState::default();
             typed(&mut state, "alp");
-            let buf = render_once(&mut state);
+            let buf = render(&mut state, SearchPicker::new(&items));
 
             assert!(content(&buf).contains("alp"));
         }
 
         #[test]
         fn height_grows_with_item_count() {
-            let two = SearchPickerState::new(vec!["a", "b"]);
-            let four = SearchPickerState::new(vec!["a", "b", "c", "d"]);
             let area = Rect::new(0, 0, 100, 30);
 
-            assert_eq!(area.palette(two.len().saturating_add(4) as u16).height, 6);
-            assert_eq!(area.palette(four.len().saturating_add(4) as u16).height, 8);
+            assert_eq!(area.palette(2u16.saturating_add(4)).height, 6);
+            assert_eq!(area.palette(4u16.saturating_add(4)).height, 8);
         }
 
         #[test]
         fn selects_first_item_when_nothing_is_selected() {
-            let mut state = SearchPickerState::new(vec!["a", "b"]);
+            let items = ["a", "b"];
+            let mut state = SearchPickerState::default();
             state.select(None);
-            render_once(&mut state);
+            render(&mut state, SearchPicker::new(&items));
 
             assert_eq!(state.selected(), Some(0));
         }
@@ -497,8 +544,11 @@ mod tests {
             buf[(0, 0)].set_bg(Color::Rgb(100, 150, 200));
             buf[(0, 0)].set_fg(Color::Rgb(100, 150, 200));
 
-            let mut state = SearchPickerState::new(vec!["a", "b"]);
-            SearchPicker::default().render(area, &mut buf, &mut state);
+            SearchPicker::new(&["a", "b"]).render(
+                area,
+                &mut buf,
+                &mut SearchPickerState::default(),
+            );
 
             assert_eq!(buf[(0, 0)].bg, Color::Rgb(20, 30, 40));
             assert_eq!(buf[(0, 0)].fg, Color::Rgb(20, 30, 40));
@@ -510,10 +560,11 @@ mod tests {
             let mut buf = Buffer::empty(area);
             buf[(0, 0)].set_bg(Color::Rgb(100, 150, 200));
 
-            let mut state = SearchPickerState::new(vec!["a", "b"]);
-            SearchPicker::default()
-                .no_darken_bg()
-                .render(area, &mut buf, &mut state);
+            SearchPicker::new(&["a", "b"]).no_darken_bg().render(
+                area,
+                &mut buf,
+                &mut SearchPickerState::default(),
+            );
 
             assert_eq!(buf[(0, 0)].bg, Color::Rgb(100, 150, 200));
         }
@@ -522,13 +573,16 @@ mod tests {
         fn input_and_list_are_separated_by_a_joined_divider() {
             let area = Rect::new(0, 0, 100, 30);
             let mut buf = Buffer::empty(area);
-            let mut state = SearchPickerState::new(vec!["a", "b"]);
-            SearchPicker::default().render(area, &mut buf, &mut state);
+            SearchPicker::new(&["a", "b"]).render(
+                area,
+                &mut buf,
+                &mut SearchPickerState::default(),
+            );
 
             let popup = area.palette(6);
             let divider_y = popup.y + 2;
-            assert_eq!(buf[(popup.x, divider_y)].symbol(), "├");
-            assert_eq!(buf[(popup.right() - 1, divider_y)].symbol(), "┤");
+            assert_eq!(buf[(popup.x, divider_y)].symbol(), "\u{251c}");
+            assert_eq!(buf[(popup.right() - 1, divider_y)].symbol(), "\u{2524}");
         }
     }
 
@@ -580,9 +634,9 @@ mod tests {
 
         #[test]
         fn positions_are_char_indices_not_byte_offsets() {
-            let cells = cells("héllo", &[1]);
+            let cells = cells("h\u{e9}llo", &[1]);
 
-            assert_eq!(cells[1].0, "é");
+            assert_eq!(cells[1].0, "\u{e9}");
             assert_eq!(cells[1].1, hit());
         }
 
