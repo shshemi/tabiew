@@ -26,6 +26,7 @@ pub mod rect_ext;
 pub mod search_bar;
 pub mod sheet;
 pub mod sql_backend_schema;
+pub mod tab_switcher;
 pub mod table;
 pub mod toast;
 pub mod widgets;
