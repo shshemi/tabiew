@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
 use crate::{
-    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, rect_ext::RectExt},
     tui::{app_default::AppDefault, component::Component},
 };
 
@@ -95,9 +95,7 @@ impl<T> Component for ListPicker<T> {
         buf.clear(area);
 
         StatefulWidget::render(
-            List::default()
-                .style(theme().text())
-                .highlight_style(theme().row_highlighted())
+            List::app_default()
                 .items(self.strings.iter().map(|s| ListItem::from(s.as_str())))
                 .block(Block::app_default().title(self.title.as_str())),
             area,
