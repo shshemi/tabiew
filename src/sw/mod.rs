@@ -17,6 +17,7 @@
 
 pub mod app_default;
 pub mod buffer_ext;
+pub mod data_frame_schema;
 pub mod error_popup;
 pub mod pickers;
 pub mod plots;
