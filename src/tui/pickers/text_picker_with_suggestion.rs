@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, rect_ext::RectExt},
     tui::{app_default::AppDefault, component::Component, widgets::input::Input},
 };
 
@@ -105,9 +105,7 @@ where
                 .suggestions(self.input.value(), self.input.cursor());
         }
 
-        let list = List::default()
-            .style(theme().text())
-            .highlight_style(theme().row_highlighted())
+        let list = List::app_default()
             .block(Block::app_default().border_set(Set {
                 top_left: VERTICAL_RIGHT,
                 top_right: VERTICAL_LEFT,

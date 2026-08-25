@@ -165,8 +165,8 @@ impl<T> Component for SearchPicker<T> {
                 })
                 .collect_vec()
         };
-        let list = List::new(items)
-            .highlight_style(theme().row_highlighted())
+        let list = List::app_default()
+            .items(items)
             .block(Block::app_default().border_set(Set {
                 top_left: VERTICAL_RIGHT,
                 top_right: VERTICAL_LEFT,
