@@ -30,3 +30,5 @@ pub mod tab_switcher;
 pub mod table;
 pub mod toast;
 pub mod widgets;
+
+pub mod wizard;
