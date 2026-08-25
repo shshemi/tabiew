@@ -1,10 +1,7 @@
-use ratatui::{
-    layout::{Constraint, Flex, Layout},
-    widgets::{Clear, Widget},
-};
+use ratatui::widgets::{Clear, Widget};
 
 use crate::{
-    misc::color_ext::ColorExt,
+    misc::{color_ext::ColorExt, rect_ext::RectExt},
     tui::{
         component::Component,
         widgets::{
@@ -101,11 +98,7 @@ impl Component for TextPicker {
             }
         }
 
-        let [area] = Layout::horizontal([Constraint::Length(80)])
-            .flex(Flex::Center)
-            .areas(buf.area);
-        let [_, area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Length(3)]).areas(area);
+        let area = buf.area.palette(3);
         Widget::render(Clear, area, buf);
 
         let area = {
