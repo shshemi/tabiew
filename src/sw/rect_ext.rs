@@ -9,6 +9,7 @@ pub trait RectExt {
     fn palette(self, height: u16) -> Self;
     fn toast(self, paragraph: &Paragraph) -> Self;
     fn popup(self, paragraph: &Paragraph) -> Self;
+    fn goto_line(self, width: u16, height: u16) -> Self;
 }
 
 impl RectExt for Rect {
@@ -42,6 +43,19 @@ impl RectExt for Rect {
     fn popup(self, paragraph: &Paragraph) -> Self {
         let (width, height) = paragraph_size(paragraph);
         self.centered(Constraint::Length(width), Constraint::Length(height))
+    }
+
+    fn goto_line(self, width: u16, height: u16) -> Self {
+        const MARGIN: u16 = 1;
+        let [area, _] = Layout::horizontal([
+            Constraint::Length(width),
+            Constraint::Length(MARGIN),
+        ])
+        .flex(Flex::End)
+        .areas(self);
+        let [_, area] =
+            Layout::vertical([Constraint::Length(MARGIN), Constraint::Length(height)]).areas(area);
+        area
     }
 }
 
@@ -182,6 +196,34 @@ mod tests {
 
             assert_eq!(shifted.x, plain.x + 4);
             assert_eq!(shifted.y, plain.y + 6);
+        }
+    }
+
+    mod goto_line {
+        use super::*;
+
+        #[test]
+        fn hugs_the_right_edge_with_a_one_cell_margin() {
+            let area = Rect::new(0, 0, 100, 30).goto_line(32, 3);
+
+            assert_eq!(area.width, 32);
+            assert_eq!(area.right(), 99);
+        }
+
+        #[test]
+        fn hangs_below_a_one_cell_top_margin() {
+            let area = Rect::new(0, 0, 100, 30).goto_line(32, 3);
+
+            assert_eq!(area.y, 1);
+            assert_eq!(area.height, 3);
+        }
+
+        #[test]
+        fn honours_the_origin_of_the_source_rect() {
+            let area = Rect::new(4, 6, 100, 30).goto_line(32, 3);
+
+            assert_eq!(area.right(), 103);
+            assert_eq!(area.y, 7);
         }
     }
 }
