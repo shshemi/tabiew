@@ -11,11 +11,11 @@ use ratatui::{
         border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
-    widgets::{Borders, Clear, List, ListItem, ListState, StatefulWidget, Widget},
+    widgets::{Borders, List, ListItem, ListState, StatefulWidget, Widget},
 };
 
 use crate::{
-    misc::{color_ext::ColorExt, config::theme, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
     tui::{
         component::Component,
         widgets::{block::Block, highlighted_line::HighlightedLine, input::Input},
@@ -139,10 +139,7 @@ impl<T> Component for SearchPicker<T> {
         focus_state: crate::tui::component::FocusState,
     ) {
         if self.darken_bg {
-            for cell in buf.content.iter_mut() {
-                cell.bg = cell.bg.darken();
-                cell.fg = cell.fg.darken();
-            }
+            buf.darken();
         }
 
         let items = if self.input.value().is_empty() {
@@ -182,7 +179,7 @@ impl<T> Component for SearchPicker<T> {
         let height = list.len().saturating_add(4).min(25) as u16;
         let area = buf.area.palette(height);
 
-        Clear.render(area, buf);
+        buf.clear(area);
         let [input_area, list_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 

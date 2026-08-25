@@ -1,8 +1,8 @@
-use crate::misc::{color_ext::ColorExt, config::theme};
+use crate::misc::{buffer_ext::BufferExt, config::theme};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
-    widgets::{Clear, Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::{
@@ -30,10 +30,7 @@ impl Component for ErrorPopup {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        for cell in buf.content.iter_mut() {
-            cell.bg = cell.bg.darken();
-            cell.fg = cell.fg.darken();
-        }
+        buf.darken();
 
         let pg = Paragraph::new(self.message.as_str())
             .left_aligned()
@@ -52,7 +49,7 @@ impl Component for ErrorPopup {
         let [area] = Layout::vertical([Constraint::Length((pg.line_count(text_width)) as u16)])
             .flex(Flex::Center)
             .areas(area);
-        Clear.render(area, buf);
+        buf.clear(area);
         pg.render(area, buf);
     }
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {

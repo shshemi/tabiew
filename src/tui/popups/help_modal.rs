@@ -1,11 +1,11 @@
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
     text::{Line, Span},
-    widgets::{Clear, Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::{
-    misc::config::theme,
+    misc::{buffer_ext::BufferExt, config::theme},
     tui::{
         component::Component,
         tag_line::{Tag, TagLine},
@@ -41,7 +41,7 @@ impl Component for Help {
         let [_, area] =
             Layout::vertical([Constraint::Length(2), Constraint::Length(50)]).areas(area);
 
-        Clear.render(area, buf);
+        buf.clear(area);
 
         let mut lines = vec![
             Line::raw(""),

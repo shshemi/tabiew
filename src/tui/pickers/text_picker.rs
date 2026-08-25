@@ -1,7 +1,7 @@
-use ratatui::widgets::{Clear, Widget};
+use ratatui::widgets::Widget;
 
 use crate::{
-    misc::{color_ext::ColorExt, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, rect_ext::RectExt},
     tui::{
         component::Component,
         widgets::{
@@ -92,14 +92,11 @@ impl Component for TextPicker {
         focus_state: crate::tui::component::FocusState,
     ) {
         if self.darken_bg {
-            for cell in buf.content.iter_mut() {
-                cell.bg = cell.bg.darken();
-                cell.fg = cell.fg.darken();
-            }
+            buf.darken();
         }
 
         let area = buf.area.palette(3);
-        Widget::render(Clear, area, buf);
+        buf.clear(area);
 
         let area = {
             let block = Block::default().title(self.title.as_str());

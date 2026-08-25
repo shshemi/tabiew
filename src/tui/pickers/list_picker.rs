@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
 use crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::widgets::{Clear, List, ListItem, ListState, StatefulWidget, Widget};
+use ratatui::widgets::{List, ListItem, ListState, StatefulWidget};
 
 use crate::{
-    misc::{color_ext::ColorExt, config::theme, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
     tui::{component::Component, widgets::block::Block},
 };
 
@@ -87,15 +87,12 @@ impl<T> Component for ListPicker<T> {
         _focus_state: crate::tui::component::FocusState,
     ) {
         if self.darken_bg {
-            for cell in buf.content.iter_mut() {
-                cell.bg = cell.bg.darken();
-                cell.fg = cell.fg.darken();
-            }
+            buf.darken();
         }
 
         let height = self.strings.len().saturating_add(2).min(25) as u16;
         let area = buf.area.palette(height);
-        Clear.render(area, buf);
+        buf.clear(area);
 
         StatefulWidget::render(
             List::default()

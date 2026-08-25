@@ -3,13 +3,13 @@ use itertools::Itertools;
 use ratatui::{
     layout::{Alignment, Direction, Margin},
     text::Line,
-    widgets::{Bar, BarChart, BarGroup, Clear, Widget},
+    widgets::{Bar, BarChart, BarGroup, Widget},
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handler::message::Message,
-    misc::config::theme,
+    misc::{buffer_ext::BufferExt, config::theme},
     tui::{
         component::Component,
         tag_line::{Tag, TagLine},
@@ -50,7 +50,7 @@ impl Component for HistogramPlot {
         _focus_state: crate::tui::component::FocusState,
     ) {
         let area = buf.area.inner(Margin::new(7, 3));
-        Widget::render(Clear, area, buf);
+        buf.clear(area);
         let area = {
             let blk = Block::default()
                 .title("Histogram Plot")
