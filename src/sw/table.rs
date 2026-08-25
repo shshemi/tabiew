@@ -1,7 +1,7 @@
 use std::ops::{Add, Div};
 
 use itertools::Itertools;
-use polars::frame::DataFrame;
+use polars::{frame::DataFrame, prelude::SchemaRef};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
@@ -19,79 +19,25 @@ use crate::misc::{
     type_ext::ConstraintExt,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TableState {
-    df: DataFrame,
+    schema: Option<SchemaRef>,
     col_widths: Vec<Constraint>,
     col_offsets: Vec<usize>,
-    col_space: u16,
     selected: Option<usize>,
     offset: usize,
     col_offset: usize,
+    rows: usize,
     rendered_rows: usize,
     rendered_width: u16,
+    min_compact_width: u16,
 }
 
 impl TableState {
-    pub fn new(df: DataFrame) -> Self {
-        let col_space = 1;
-        let col_widths = column_widths(&df);
-        let col_offsets = col_offsets(&col_widths, col_space);
-        Self {
-            df,
-            col_widths,
-            col_offsets,
-            col_space,
-            selected: None,
-            offset: 0,
-            col_offset: 0,
-            rendered_rows: 0,
-            rendered_width: 0,
-        }
-    }
-
-    pub fn clone_with_data_frame(&self, df: DataFrame) -> Self {
-        let col_widths = column_widths(&df);
-        let col_offsets = col_offsets(&col_widths, self.col_space);
-        Self {
-            df,
-            col_widths,
-            col_offsets,
-            col_space: self.col_space,
-            selected: self.selected,
-            offset: 0,
-            col_offset: self.col_offset,
-            rendered_rows: self.rendered_rows,
-            rendered_width: self.rendered_width,
-        }
-    }
-
     pub fn with_selected(self, selected: impl Into<Option<usize>>) -> Self {
         Self {
             selected: selected.into(),
             ..self
-        }
-    }
-
-    pub fn with_col_space(self, col_space: u16) -> Self {
-        Self {
-            col_offsets: col_offsets(&self.col_widths, col_space),
-            col_space,
-            ..self
-        }
-    }
-
-    pub fn data_frame(&self) -> &DataFrame {
-        &self.df
-    }
-
-    pub fn data_frame_mut(&mut self) -> &mut DataFrame {
-        &mut self.df
-    }
-
-    pub fn set_data_frame(&mut self, df: DataFrame) {
-        if self.df.schema_equal(&df).is_ok() {
-            self.df = df;
         }
     }
 
@@ -100,25 +46,24 @@ impl TableState {
     }
 
     pub fn offset(&mut self, idx: impl Into<usize>) {
-        self.offset = idx.into().min(self.df.height());
+        self.offset = idx.into().min(self.rows);
     }
 
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {
-        let height = self.df.height();
-        if height > 0 {
-            self.selected = idx.into().map(|idx| idx.min(height - 1));
+        if self.rows > 0 {
+            self.selected = idx.into().map(|idx| idx.min(self.rows - 1));
         }
     }
 
     pub fn fits_in_page(&self) -> bool {
-        self.minimum_compact_width() <= self.rendered_width
+        self.min_compact_width <= self.rendered_width
     }
 
     pub fn select_up(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(1));
         } else {
-            self.select(self.df.height().saturating_sub(1));
+            self.select(self.rows.saturating_sub(1));
         }
     }
 
@@ -135,7 +80,7 @@ impl TableState {
     }
 
     pub fn select_last(&mut self) {
-        self.select(self.df.height().saturating_sub(1));
+        self.select(self.rows.saturating_sub(1));
     }
 
     pub fn page_up(&mut self) {
@@ -196,14 +141,21 @@ impl TableState {
         self.col_offset = self.col_offsets.last().copied().unwrap_or(0);
     }
 
-    fn minimum_compact_width(&self) -> u16 {
-        let col_count = self.df.width() as u16;
-        col_count + (col_count.saturating_sub(1) * self.col_space)
+    fn sync(&mut self, df: &DataFrame, col_space: u16) {
+        if self.schema.as_ref() != Some(df.schema()) {
+            self.schema = Some(df.schema().clone());
+            self.col_widths = column_widths(df);
+        }
+        self.col_offsets = col_offsets(&self.col_widths, col_space);
+        self.rows = df.height();
+        self.min_compact_width = minimum_compact_width(df.width(), col_space);
     }
 }
 
 #[derive(Debug)]
-pub struct Table {
+pub struct Table<'a> {
+    df: &'a DataFrame,
+    col_space: u16,
     striped: bool,
     show_header: bool,
     selection: bool,
@@ -211,7 +163,24 @@ pub struct Table {
     expanded: bool,
 }
 
-impl Table {
+impl<'a> Table<'a> {
+    pub fn new(df: &'a DataFrame) -> Self {
+        Self {
+            df,
+            col_space: 1,
+            striped: false,
+            show_header: false,
+            selection: true,
+            gutter: true,
+            expanded: false,
+        }
+    }
+
+    pub fn col_space(mut self, col_space: u16) -> Self {
+        self.col_space = col_space;
+        self
+    }
+
     pub fn striped(mut self) -> Self {
         self.striped = true;
         self
@@ -238,22 +207,13 @@ impl Table {
     }
 }
 
-impl Default for Table {
-    fn default() -> Self {
-        Self {
-            striped: false,
-            show_header: false,
-            selection: true,
-            gutter: true,
-            expanded: false,
-        }
-    }
-}
-
-impl StatefulWidget for Table {
+impl StatefulWidget for Table<'_> {
     type State = TableState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        let df = self.df;
+        state.sync(df, self.col_space);
+
         let height = if self.show_header {
             area.height.saturating_sub(1)
         } else {
@@ -264,20 +224,18 @@ impl StatefulWidget for Table {
 
         state.selected = state
             .selected
-            .map(|selected| selected.min(state.df.height().saturating_sub(1)));
+            .map(|selected| selected.min(df.height().saturating_sub(1)));
 
         if let Some(selected) = state.selected {
             state.offset = state
                 .offset
                 .clamp(selected.saturating_sub(height.saturating_sub(1)), selected)
-                .min(state.df.height().saturating_sub(height));
+                .min(df.height().saturating_sub(height));
         } else {
-            state.offset = state.offset.min(state.df.height().saturating_sub(height))
+            state.offset = state.offset.min(df.height().saturating_sub(height))
         }
 
-        let gutter_width = self
-            .gutter
-            .then(|| state.df.height().to_string().len() as u16);
+        let gutter_width = self.gutter.then(|| df.height().to_string().len() as u16);
         let (gutter_area, table_area) = gutter_table_area(area, gutter_width, self.show_header);
         let highlighted = |state: &TableState| {
             self.selection
@@ -288,7 +246,7 @@ impl StatefulWidget for Table {
         if let (Some(gutter_area), Some(gutter_width)) = (gutter_area, gutter_width) {
             List::default()
                 .items(
-                    (state.offset..(state.offset + height).min(state.df.height()))
+                    (state.offset..(state.offset + height).min(df.height()))
                         .map(|idx| gutter_item(idx, gutter_width)),
                 )
                 .highlight_style(theme().row_highlighted())
@@ -299,15 +257,15 @@ impl StatefulWidget for Table {
                 );
         }
 
-        let expanded = self.expanded || table_area.width < state.minimum_compact_width();
+        let expanded = self.expanded || table_area.width < state.min_compact_width;
 
         let selected = highlighted(state);
         if !expanded {
-            let df = state.df.slice(state.offset as i64, height);
+            let sliced = df.slice(state.offset as i64, height);
             build_table(
-                &df,
+                &sliced,
                 &state.col_widths,
-                state.col_space,
+                self.col_space,
                 self.show_header,
                 self.striped,
                 state.offset,
@@ -319,7 +277,7 @@ impl StatefulWidget for Table {
                 &mut RatatuiTableState::default().with_selected(selected),
             );
         } else {
-            if state.df.columns().is_empty() {
+            if df.columns().is_empty() {
                 return;
             }
             let total_width = state
@@ -334,15 +292,14 @@ impl StatefulWidget for Table {
             let x = &state.col_offset;
             let col_start = column_index(&state.col_offsets, x);
             let col_end = column_index(&state.col_offsets, &x.add(table_area.width as usize));
-            let df = state
-                .df
-                .select(&state.df.get_column_names()[col_start..=col_end])
+            let sliced = df
+                .select(&df.get_column_names()[col_start..=col_end])
                 .unwrap()
                 .slice(state.offset as i64, height);
             let table = build_table(
-                &df,
+                &sliced,
                 &state.col_widths[col_start..=col_end],
-                state.col_space,
+                self.col_space,
                 self.show_header,
                 self.striped,
                 state.offset,
@@ -373,6 +330,11 @@ impl StatefulWidget for Table {
             );
         }
     }
+}
+
+fn minimum_compact_width(cols: usize, col_space: u16) -> u16 {
+    let cols = cols as u16;
+    cols + (cols.saturating_sub(1) * col_space)
 }
 
 fn column_widths(df: &DataFrame) -> Vec<Constraint> {
@@ -500,10 +462,7 @@ mod tests {
 
     fn frame(rows: usize) -> DataFrame {
         DataFrame::new_infer_height(vec![
-            Column::new(
-                "id".into(),
-                (0..rows).map(|i| i as i64).collect::<Vec<_>>(),
-            ),
+            Column::new("id".into(), (0..rows).map(|i| i as i64).collect::<Vec<_>>()),
             Column::new(
                 "name".into(),
                 (0..rows).map(|i| format!("row{i}")).collect::<Vec<_>>(),
@@ -512,8 +471,18 @@ mod tests {
         .unwrap()
     }
 
-    fn state(rows: usize) -> TableState {
-        TableState::new(frame(rows))
+    fn wide_frame(rows: usize, cols: usize) -> DataFrame {
+        DataFrame::new_infer_height(
+            (0..cols)
+                .map(|c| {
+                    Column::new(
+                        format!("column{c}").into(),
+                        (0..rows).map(|r| format!("v{c}x{r}")).collect::<Vec<_>>(),
+                    )
+                })
+                .collect(),
+        )
+        .unwrap()
     }
 
     fn render(state: &mut TableState, table: Table, width: u16, height: u16) -> Buffer {
@@ -523,8 +492,88 @@ mod tests {
         buf
     }
 
+    fn synced(df: &DataFrame) -> TableState {
+        let mut state = TableState::default();
+        render(&mut state, Table::new(df), 40, 10);
+        state
+    }
+
     fn content(buf: &Buffer) -> String {
         buf.content().iter().map(|c| c.symbol()).collect()
+    }
+
+    mod sync {
+        use super::*;
+
+        #[test]
+        fn a_default_state_knows_nothing_until_it_renders() {
+            let state = TableState::default();
+            assert_eq!(state.rows, 0);
+            assert!(state.col_widths.is_empty());
+            assert!(state.schema.is_none());
+        }
+
+        #[test]
+        fn rendering_adopts_the_frame_schema_and_widths() {
+            let df = frame(5);
+            let state = synced(&df);
+
+            assert_eq!(state.schema.as_ref(), Some(df.schema()));
+            assert_eq!(state.col_widths.len(), 2);
+            assert_eq!(state.rows, 5);
+        }
+
+        #[test]
+        fn a_new_schema_recomputes_the_widths() {
+            let narrow = frame(5);
+            let mut state = synced(&narrow);
+            let before = state.col_widths.clone();
+
+            let wide = wide_frame(5, 4);
+            render(&mut state, Table::new(&wide), 40, 10);
+
+            assert_ne!(state.col_widths, before);
+            assert_eq!(state.col_widths.len(), 4);
+            assert_eq!(state.schema.as_ref(), Some(wide.schema()));
+        }
+
+        #[test]
+        fn the_same_schema_keeps_the_cached_widths() {
+            let df = frame(5);
+            let mut state = synced(&df);
+            state.col_widths = vec![Constraint::Length(99), Constraint::Length(99)];
+
+            render(&mut state, Table::new(&frame(7)), 40, 10);
+
+            assert_eq!(
+                state.col_widths,
+                vec![Constraint::Length(99), Constraint::Length(99)]
+            );
+            assert_eq!(state.rows, 7);
+        }
+
+        #[test]
+        fn col_space_is_applied_to_the_offsets_every_render() {
+            let df = frame(5);
+            let mut state = synced(&df);
+            let tight = state.col_offsets.clone();
+
+            render(&mut state, Table::new(&df).col_space(5), 40, 10);
+
+            assert_ne!(state.col_offsets, tight);
+            assert!(state.col_offsets[1] > tight[1]);
+        }
+
+        #[test]
+        fn col_space_widens_the_minimum_compact_width() {
+            let df = frame(5);
+            let mut state = synced(&df);
+            let tight = state.min_compact_width;
+
+            render(&mut state, Table::new(&df).col_space(5), 40, 10);
+
+            assert!(state.min_compact_width > tight);
+        }
     }
 
     mod offsets {
@@ -585,6 +634,13 @@ mod tests {
             assert_eq!(prev_column_offset(&offsets, &15), 10);
             assert_eq!(prev_column_offset(&offsets, &0), 0);
         }
+
+        #[test]
+        fn minimum_compact_width_counts_columns_and_spacing() {
+            assert_eq!(minimum_compact_width(3, 1), 5);
+            assert_eq!(minimum_compact_width(3, 0), 3);
+            assert_eq!(minimum_compact_width(0, 1), 0);
+        }
     }
 
     mod selection {
@@ -592,35 +648,35 @@ mod tests {
 
         #[test]
         fn select_clamps_to_the_last_row() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.select(99);
             assert_eq!(state.selected(), Some(4));
         }
 
         #[test]
         fn select_is_a_no_op_on_an_empty_frame() {
-            let mut state = state(0);
+            let mut state = synced(&frame(0));
             state.select(3);
             assert_eq!(state.selected(), None);
         }
 
         #[test]
         fn select_up_from_nothing_selects_the_last_row() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.select_up();
             assert_eq!(state.selected(), Some(4));
         }
 
         #[test]
         fn select_down_from_nothing_selects_the_first_row() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.select_down();
             assert_eq!(state.selected(), Some(0));
         }
 
         #[test]
         fn select_up_and_down_saturate_at_the_edges() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.select(0);
             state.select_up();
             assert_eq!(state.selected(), Some(0));
@@ -632,7 +688,7 @@ mod tests {
 
         #[test]
         fn select_first_and_last() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.select_last();
             assert_eq!(state.selected(), Some(4));
             state.select_first();
@@ -640,19 +696,10 @@ mod tests {
         }
 
         #[test]
-        fn offset_is_clamped_to_the_frame_height() {
-            let mut state = state(5);
-            state.offset(99usize);
-            state.select(0);
-            render(&mut state, Table::default(), 40, 10);
-            assert_eq!(state.selected(), Some(0));
-        }
-
-        #[test]
         fn paging_moves_selection_by_the_rendered_row_count() {
-            let mut state = state(100);
+            let df = frame(100);
+            let mut state = synced(&df);
             state.select(0);
-            render(&mut state, Table::default(), 40, 10);
 
             state.page_down();
             assert_eq!(state.selected(), Some(10));
@@ -662,9 +709,9 @@ mod tests {
 
         #[test]
         fn half_paging_moves_selection_by_half_the_rendered_row_count() {
-            let mut state = state(100);
+            let df = frame(100);
+            let mut state = synced(&df);
             state.select(0);
-            render(&mut state, Table::default(), 40, 10);
 
             state.half_page_down();
             assert_eq!(state.selected(), Some(5));
@@ -674,8 +721,8 @@ mod tests {
 
         #[test]
         fn paging_does_nothing_without_a_selection() {
-            let mut state = state(100);
-            render(&mut state, Table::default(), 40, 10);
+            let df = frame(100);
+            let mut state = synced(&df);
 
             state.page_down();
             assert_eq!(state.selected(), None);
@@ -687,21 +734,21 @@ mod tests {
 
         #[test]
         fn a_wide_area_fits_the_table_in_compact_mode() {
-            let mut state = state(5);
-            render(&mut state, Table::default(), 40, 10);
+            let state = synced(&frame(5));
             assert!(state.fits_in_page());
         }
 
         #[test]
         fn a_narrow_area_does_not_fit_the_table() {
-            let mut state = state(5);
-            render(&mut state, Table::default(), 1, 10);
+            let df = wide_frame(5, 30);
+            let mut state = TableState::default();
+            render(&mut state, Table::new(&df), 10, 10);
             assert!(!state.fits_in_page());
         }
 
         #[test]
         fn horizontal_scroll_moves_the_column_offset() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.scroll_right();
             assert_eq!(state.col_offset(), 1);
             state.scroll_left();
@@ -710,14 +757,14 @@ mod tests {
 
         #[test]
         fn horizontal_scroll_saturates_at_zero() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             state.scroll_left();
             assert_eq!(state.col_offset(), 0);
         }
 
         #[test]
         fn scroll_to_last_and_first_column_jump_to_the_edge_offsets() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             let last = *state.col_offsets.last().unwrap();
 
             state.scroll_to_last_column();
@@ -729,7 +776,7 @@ mod tests {
 
         #[test]
         fn scroll_to_next_and_prev_column_step_between_boundaries() {
-            let mut state = state(5);
+            let mut state = synced(&frame(5));
             let boundary = state.col_offsets[1];
 
             state.scroll_to_right_column();
@@ -741,9 +788,10 @@ mod tests {
 
         #[test]
         fn column_offset_is_clamped_to_the_scrollable_width_during_render() {
-            let mut state = state(5);
+            let df = frame(5);
+            let mut state = synced(&df);
             state.scroll_to_last_column();
-            render(&mut state, Table::default().expanded(true), 40, 10);
+            render(&mut state, Table::new(&df).expanded(true), 40, 10);
 
             assert!(state.col_offset() < *state.col_offsets.last().unwrap());
         }
@@ -754,8 +802,9 @@ mod tests {
 
         #[test]
         fn renders_cell_values() {
-            let mut state = state(3);
-            let buf = render(&mut state, Table::default(), 40, 10);
+            let df = frame(3);
+            let mut state = TableState::default();
+            let buf = render(&mut state, Table::new(&df), 40, 10);
 
             let content = content(&buf);
             assert!(content.contains("row0"));
@@ -764,24 +813,27 @@ mod tests {
 
         #[test]
         fn renders_the_header_when_asked() {
-            let mut state = state(3);
-            let buf = render(&mut state, Table::default().show_header(true), 40, 10);
+            let df = frame(3);
+            let mut state = TableState::default();
+            let buf = render(&mut state, Table::new(&df).show_header(true), 40, 10);
 
             assert!(content(&buf).contains("name"));
         }
 
         #[test]
         fn hides_the_header_by_default() {
-            let mut state = state(3);
-            let buf = render(&mut state, Table::default(), 40, 10);
+            let df = frame(3);
+            let mut state = TableState::default();
+            let buf = render(&mut state, Table::new(&df), 40, 10);
 
             assert!(!content(&buf).contains("name"));
         }
 
         #[test]
         fn renders_gutter_row_numbers() {
-            let mut state = state(3);
-            let buf = render(&mut state, Table::default(), 40, 10);
+            let df = frame(3);
+            let mut state = TableState::default();
+            let buf = render(&mut state, Table::new(&df), 40, 10);
 
             let content = content(&buf);
             assert!(content.contains("1"));
@@ -797,14 +849,13 @@ mod tests {
 
         #[test]
         fn hidden_gutter_does_not_render_row_numbers() {
-            let mut state = state(3);
-            let buf = render(&mut state, Table::default().gutter(false), 40, 10);
+            let df = frame(3);
+            let mut state = TableState::default();
+            let buf = render(&mut state, Table::new(&df).gutter(false), 40, 10);
 
-            let [gutter_area, _] = Layout::horizontal([
-                Constraint::Length(5),
-                Constraint::Fill(1),
-            ])
-            .areas(Rect::new(0, 0, 40, 10));
+            let [gutter_area, _] =
+                Layout::horizontal([Constraint::Length(5), Constraint::Fill(1)])
+                    .areas(Rect::new(0, 0, 40, 10));
             let gutter_cells: String = (gutter_area.x..gutter_area.right())
                 .flat_map(|x| (0..10).map(move |y| (x, y)))
                 .map(|(x, y)| buf[(x, y)].symbol())
@@ -814,50 +865,53 @@ mod tests {
 
         #[test]
         fn rendered_rows_excludes_the_header_row() {
-            let mut state = state(50);
-            render(&mut state, Table::default(), 40, 10);
+            let df = frame(50);
+            let mut state = TableState::default();
+            render(&mut state, Table::new(&df), 40, 10);
             assert_eq!(state.rendered_rows, 10);
 
-            render(&mut state, Table::default().show_header(true), 40, 10);
+            render(&mut state, Table::new(&df).show_header(true), 40, 10);
             assert_eq!(state.rendered_rows, 9);
         }
 
         #[test]
         fn scroll_offset_follows_the_selection_downward() {
-            let mut state = state(50);
+            let df = frame(50);
+            let mut state = synced(&df);
             state.select(30);
-            render(&mut state, Table::default(), 40, 10);
+            render(&mut state, Table::new(&df), 40, 10);
 
             assert_eq!(state.offset, 21);
         }
 
         #[test]
         fn scroll_offset_follows_the_selection_upward() {
-            let mut state = state(50);
+            let df = frame(50);
+            let mut state = synced(&df);
             state.select(40);
-            render(&mut state, Table::default(), 40, 10);
+            render(&mut state, Table::new(&df), 40, 10);
             state.select(5);
-            render(&mut state, Table::default(), 40, 10);
+            render(&mut state, Table::new(&df), 40, 10);
 
             assert_eq!(state.offset, 5);
         }
 
         #[test]
         fn selection_out_of_range_is_clamped_during_render() {
-            let mut state = state(50);
+            let df = frame(50);
+            let mut state = synced(&df);
             state.select(40);
-            state.set_data_frame(frame(10));
-            render(&mut state, Table::default(), 40, 10);
+            render(&mut state, Table::new(&frame(10)), 40, 10);
 
             assert_eq!(state.selected(), Some(9));
         }
 
         #[test]
         fn gutter_widens_with_the_row_count() {
-            let mut nine = state(9);
-            let mut hundred = state(100);
-            let narrow = render(&mut nine, Table::default(), 40, 12);
-            let wide = render(&mut hundred, Table::default(), 40, 12);
+            let nine = frame(9);
+            let hundred = frame(100);
+            let narrow = render(&mut TableState::default(), Table::new(&nine), 40, 12);
+            let wide = render(&mut TableState::default(), Table::new(&hundred), 40, 12);
 
             assert_eq!(content(&narrow).find('1'), Some(2));
             assert_eq!(content(&wide).find('1'), Some(4));
@@ -865,15 +919,17 @@ mod tests {
 
         #[test]
         fn empty_frame_renders_without_panicking() {
-            let mut state = state(0);
-            render(&mut state, Table::default().show_header(true), 40, 10);
+            let df = frame(0);
+            let mut state = TableState::default();
+            render(&mut state, Table::new(&df).show_header(true), 40, 10);
             assert_eq!(state.selected(), None);
         }
 
         #[test]
         fn no_column_frame_renders_without_panicking() {
-            let mut state = TableState::new(DataFrame::empty());
-            render(&mut state, Table::default().expanded(true), 40, 10);
+            let df = DataFrame::empty();
+            let mut state = TableState::default();
+            render(&mut state, Table::new(&df).expanded(true), 40, 10);
             assert_eq!(state.selected(), None);
         }
     }
