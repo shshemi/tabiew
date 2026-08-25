@@ -20,6 +20,7 @@ pub mod buffer_ext;
 pub mod error_popup;
 pub mod pickers;
 pub mod rect_ext;
+pub mod sheet;
 pub mod table;
 pub mod toast;
 pub mod widgets;
