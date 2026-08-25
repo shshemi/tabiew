@@ -19,6 +19,7 @@ pub mod app_default;
 pub mod buffer_ext;
 pub mod error_popup;
 pub mod pickers;
+pub mod popups;
 pub mod rect_ext;
 pub mod sheet;
 pub mod table;
