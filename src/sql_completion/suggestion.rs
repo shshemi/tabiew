@@ -13,16 +13,9 @@ impl SqlSuggestion {
     pub fn new(text: String) -> Self {
         Self { text }
     }
-}
 
-impl Suggestion for SqlSuggestion {
-    fn title(&self) -> &str {
-        &self.text
-    }
-
-    fn apply_to(&self, input: &mut Input) {
-        let value = input.value().to_owned();
-        let cursor = cursor_byte_offset(&value, input.cursor());
+    pub fn edit(&self, value: &str, cursor: usize) -> (usize, String) {
+        let cursor = cursor_byte_offset(value, cursor);
         let before_cursor = &value[..cursor];
         let at_cursor = value[cursor..].chars().next();
 
@@ -34,27 +27,51 @@ impl Suggestion for SqlSuggestion {
             .map(|(index, character)| index + character.len_utf8())
             .unwrap_or(0);
 
-        let token_character_length = before_cursor[token_start..].chars().count();
+        let delete = before_cursor[token_start..].chars().count();
 
-        // Delete the partial token.
-        for _ in 0..token_character_length {
-            input.delete_prev();
-        }
-
-        // Insert the completed text.
-        if self.text.contains(' ') {
-            for character in format!("\"{}\"", self.text).chars() {
-                input.insert(character);
-            }
+        let mut insert = if self.text.contains(' ') {
+            format!("\"{}\"", self.text)
         } else {
-            for character in self.text.chars() {
-                input.insert(character);
-            }
-        }
+            self.text.clone()
+        };
 
         // Add a trailing space unless the character at the old cursor is already whitespace.
         if !at_cursor.is_some_and(|character| character.is_whitespace()) {
-            input.insert(' ');
+            insert.push(' ');
+        }
+
+        (delete, insert)
+    }
+}
+
+impl Suggestion for SqlSuggestion {
+    fn title(&self) -> &str {
+        &self.text
+    }
+
+    fn apply_to(&self, input: &mut Input) {
+        let (delete, insert) = self.edit(input.value(), input.cursor());
+        for _ in 0..delete {
+            input.delete_prev();
+        }
+        for character in insert.chars() {
+            input.insert(character);
+        }
+    }
+}
+
+impl crate::sw::pickers::text_picker_with_suggestion::Suggestion for SqlSuggestion {
+    fn title(&self) -> &str {
+        &self.text
+    }
+
+    fn apply_to(&self, input: &mut crate::sw::widgets::input::InputState) {
+        let (delete, insert) = self.edit(input.value(), input.cursor());
+        for _ in 0..delete {
+            input.delete_prev();
+        }
+        for character in insert.chars() {
+            input.insert(character);
         }
     }
 }
