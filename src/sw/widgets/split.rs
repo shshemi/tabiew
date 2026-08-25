@@ -87,12 +87,13 @@ fn draw_divider(
     style: Style,
     buf: &mut Buffer,
 ) {
+    let joined = has_block && !outer.is_empty();
     match direction {
         Direction::Horizontal => {
             for y in spacer.top()..spacer.bottom() {
                 buf.set_string(spacer.x, y, line::NORMAL.vertical, style);
             }
-            if has_block {
+            if joined {
                 buf.set_string(spacer.x, outer.top(), line::NORMAL.horizontal_down, style);
                 buf.set_string(
                     spacer.x,
@@ -106,7 +107,7 @@ fn draw_divider(
             for x in spacer.left()..spacer.right() {
                 buf.set_string(x, spacer.y, line::NORMAL.horizontal, style);
             }
-            if has_block {
+            if joined {
                 buf.set_string(outer.left(), spacer.y, line::NORMAL.vertical_right, style);
                 buf.set_string(
                     outer.right() - 1,
@@ -132,8 +133,8 @@ mod tests {
     fn split_leaves_one_cell_gaps_horizontal() {
         let area = Rect::new(0, 0, 11, 5);
         let mut buf = Buffer::empty(area);
-        let areas = Split::horizontal([Constraint::Length(5), Constraint::Length(5)])
-            .split(&mut buf, area);
+        let areas =
+            Split::horizontal([Constraint::Length(5), Constraint::Length(5)]).split(&mut buf, area);
 
         assert_eq!(areas, [Rect::new(0, 0, 5, 5), Rect::new(6, 0, 5, 5)]);
     }
@@ -163,8 +164,8 @@ mod tests {
     fn split_without_block_draws_plain_divider_no_junctions() {
         let area = Rect::new(0, 0, 11, 3);
         let mut buf = Buffer::empty(area);
-        let areas = Split::horizontal([Constraint::Length(5), Constraint::Length(5)])
-            .split(&mut buf, area);
+        let areas =
+            Split::horizontal([Constraint::Length(5), Constraint::Length(5)]).split(&mut buf, area);
 
         assert_eq!(areas, [Rect::new(0, 0, 5, 3), Rect::new(6, 0, 5, 3)]);
         for y in 0..3 {
@@ -180,7 +181,10 @@ mod tests {
             .block(Block::bordered())
             .split(&mut buf, area);
 
-        assert_eq!(areas, [Rect::new(1, 1, 5, 5 - 2), Rect::new(7, 1, 5, 5 - 2)]);
+        assert_eq!(
+            areas,
+            [Rect::new(1, 1, 5, 5 - 2), Rect::new(7, 1, 5, 5 - 2)]
+        );
 
         let divider_x = 6;
         assert_eq!(cell_symbol(&buf, divider_x, 0), "┬");
@@ -246,5 +250,32 @@ mod tests {
             .split(&mut buf, area);
 
         assert_eq!(cell_symbol(&buf, 0, 0), "╔");
+    }
+
+    #[test]
+    fn an_empty_area_draws_nothing() {
+        let area = Rect::new(0, 0, 20, 5);
+        let mut buf = Buffer::empty(area);
+        let empty = Rect::new(0, 0, 0, 0);
+
+        let areas = Split::vertical([Constraint::Length(1), Constraint::Fill(1)])
+            .block(Block::bordered())
+            .split(&mut buf, empty);
+
+        assert!(areas.iter().all(|area| area.is_empty()));
+        assert!(buf.content().iter().all(|cell| cell.symbol() == " "));
+    }
+
+    #[test]
+    fn an_empty_area_draws_nothing_horizontally() {
+        let area = Rect::new(0, 0, 20, 5);
+        let mut buf = Buffer::empty(area);
+        let empty = Rect::new(0, 0, 0, 0);
+
+        Split::horizontal([Constraint::Length(1), Constraint::Fill(1)])
+            .block(Block::bordered())
+            .split(&mut buf, empty);
+
+        assert!(buf.content().iter().all(|cell| cell.symbol() == " "));
     }
 }
