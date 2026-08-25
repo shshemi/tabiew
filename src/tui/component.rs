@@ -21,6 +21,6 @@ pub trait Component {
     fn handle(&mut self, event: KeyEvent) -> bool {
         false
     }
-    fn update(&mut self, action: &Message, focus_state: FocusState) {}
+    fn update(&mut self, action: &Message) {}
     fn tick(&mut self) {}
 }

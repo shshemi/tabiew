@@ -17,7 +17,7 @@ use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
 use tabiew::misc::type_inferer::TypeInferer;
-use tabiew::tui::component::{Component, FocusState};
+use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
 
@@ -128,7 +128,7 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         }
 
         while let Some(action) = Message::dequeue() {
-            app.update(&action, FocusState::Focused);
+            app.update(&action);
         }
         flush_osc52_buffer();
     }

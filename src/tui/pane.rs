@@ -445,53 +445,39 @@ impl Component for Pane {
         }
     }
 
-    fn update(&mut self, action: &crate::handler::message::Message, focus_state: FocusState) {
+    fn update(&mut self, action: &crate::handler::message::Message) {
         if let Some(modal) = self.modal.as_mut() {
-            modal.responder().update(action, focus_state);
+            modal.responder().update(action);
         }
-        self.tstack.last_mut().update(action, focus_state);
+        self.tstack.last_mut().update(action);
         match action {
-            Message::PaneShowInlineSelect if focus_state.is_focused() => {
-                self.show_inline_query_picker(QueryType::Select)
-            }
-            Message::PaneShowInlineFilter if focus_state.is_focused() => {
-                self.show_inline_query_picker(QueryType::Filter)
-            }
-            Message::PaneShowInlineOrder if focus_state.is_focused() => {
-                self.show_inline_query_picker(QueryType::Order)
-            }
-            Message::PaneShowExporter if focus_state.is_focused() => self.show_exporter(),
-            Message::PaneShowScatterPlotBuilder if focus_state.is_focused() => {
-                self.show_scatter_plot_builder()
-            }
-            Message::PaneShowHistogramBuilder if focus_state.is_focused() => {
-                self.show_histogram_builder()
-            }
-            Message::PaneShowHistogram(col, buckets) if focus_state.is_focused() => {
+            Message::PaneShowInlineSelect => self.show_inline_query_picker(QueryType::Select),
+            Message::PaneShowInlineFilter => self.show_inline_query_picker(QueryType::Filter),
+            Message::PaneShowInlineOrder => self.show_inline_query_picker(QueryType::Order),
+            Message::PaneShowExporter => self.show_exporter(),
+            Message::PaneShowScatterPlotBuilder => self.show_scatter_plot_builder(),
+            Message::PaneShowHistogramBuilder => self.show_histogram_builder(),
+            Message::PaneShowHistogram(col, buckets) => {
                 self.show_histogram(col, *buckets).unwrap_or_enqueue_error();
             }
-            Message::PaneShowScatterPlot(x, y, grp) if focus_state.is_focused() => {
+            Message::PaneShowScatterPlot(x, y, grp) => {
                 self.show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
                     .unwrap_or_enqueue_error();
             }
-            Message::PaneShowTableRegisterer if focus_state.is_focused() => {
-                self.show_table_registerer()
-            }
-            Message::PaneDismissModal if focus_state.is_focused() => self.cancel_modal(),
-            Message::PanePushDataFrame(df, desc) if focus_state.is_focused() => {
-                self.push_data_frame(df.clone(), desc.clone())
-            }
-            Message::PanePopDataFrame if focus_state.is_focused() => self.pop_data_frame(),
-            Message::PaneTableSelect(idx) if focus_state.is_focused() => self.select(*idx),
-            Message::PaneShowTableInfo if focus_state.is_focused() => self.show_data_frame_info(),
-            Message::PaneShowColumnCaster if focus_state.is_focused() => self.show_column_caster(),
-            Message::PaneShowSearch if focus_state.is_focused() => {
+            Message::PaneShowTableRegisterer => self.show_table_registerer(),
+            Message::PaneDismissModal => self.cancel_modal(),
+            Message::PanePushDataFrame(df, desc) => self.push_data_frame(df.clone(), desc.clone()),
+            Message::PanePopDataFrame => self.pop_data_frame(),
+            Message::PaneTableSelect(idx) => self.select(*idx),
+            Message::PaneShowTableInfo => self.show_data_frame_info(),
+            Message::PaneShowColumnCaster => self.show_column_caster(),
+            Message::PaneShowSearch => {
                 self.show_exact_search();
             }
-            Message::PaneShowFuzzySearch if focus_state.is_focused() => {
+            Message::PaneShowFuzzySearch => {
                 self.show_fuzzy_search();
             }
-            Message::PaneEditInExternalEditor if focus_state.is_focused() => {
+            Message::PaneEditInExternalEditor => {
                 match edit_in_external_editor(self.tstack.last().data_frame().clone()) {
                     Ok(df) => self.push_data_frame(
                         df,
