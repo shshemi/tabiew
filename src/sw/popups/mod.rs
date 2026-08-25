@@ -1,3 +1,4 @@
+pub mod command_palette;
 pub mod export_target_picker;
 pub mod file_picker;
 pub mod go_to_line;
