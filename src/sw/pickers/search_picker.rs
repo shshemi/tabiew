@@ -10,8 +10,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
-use unicode_width::UnicodeWidthStr;
-
 use crate::{
     misc::config::theme,
     sw::{
@@ -126,7 +124,8 @@ impl SearchPickerState {
                     self.indices.push((idx, text, pos));
                 }
             }
-            self.indices.sort_by_key(|(_, text, _)| text.width());
+            self.indices
+                .sort_by_key(|(_, text, _)| text.chars().count());
             self.query_hash = query_hash;
         }
     }
@@ -414,8 +413,8 @@ mod tests {
         }
 
         #[test]
-        fn sorting_uses_display_width_not_byte_length() {
-            // "aéé" is 5 bytes but 3 columns; "abcd" is 4 bytes and 4 columns
+        fn sorting_counts_characters_not_bytes() {
+            // "aéé" is 5 bytes but 3 chars; "abcd" is 4 bytes and 4 chars
             let items = ["abcd", "aéé"];
             let mut state = SearchPickerState::default();
             typed(&mut state, "a");
@@ -426,9 +425,9 @@ mod tests {
         }
 
         #[test]
-        fn wide_characters_count_as_two_columns_when_sorting() {
-            // "a日" is 4 bytes like "abcd", but 3 columns against 4
-            let items = ["abcd", "a日"];
+        fn sorting_counts_characters_not_display_columns() {
+            // "a日日" is 3 chars but 5 columns; "abcd" is 4 chars and 4 columns
+            let items = ["abcd", "a日日"];
             let mut state = SearchPickerState::default();
             typed(&mut state, "a");
             render(&mut state, SearchPicker::new(&items));
