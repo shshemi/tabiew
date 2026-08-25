@@ -2,15 +2,15 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Text,
-    widgets::{Borders, Row, StatefulWidget, Table, TableState},
+    widgets::{Block, Borders, Row, StatefulWidget, Table, TableState},
 };
 
 use crate::{
     misc::{buffer_ext::BufferExt, config::theme, sql::TableSchema, type_ext::human_readable_size},
     tui::{
+        app_default::AppDefault,
         component::Component,
         tag_line::{Tag, TagLine},
-        widgets::block::Block,
     },
 };
 
@@ -95,17 +95,16 @@ impl Component for DataFrameFieldInfo {
                 ])
                 .style(theme().text())
                 .block(
-                    Block::default()
+                    Block::app_default()
                         .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
-                        .bottom(
+                        .title_bottom(
                             TagLine::new()
                                 .mono_color()
                                 .centered()
                                 .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
                                 .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
                         )
-                        .title_alignment(Alignment::Center)
-                        .into_widget(),
+                        .title_alignment(Alignment::Center),
                 ),
             area,
             buf,

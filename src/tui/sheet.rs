@@ -2,17 +2,17 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::Alignment,
     text::Line,
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Block, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     handler::message::Message,
     misc::{buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52},
     tui::{
+        app_default::AppDefault,
         component::Component,
         tag_line::{Tag, TagLine},
         utils::Scroll,
-        widgets::block::Block,
     },
 };
 
@@ -90,8 +90,8 @@ impl Component for Sheet {
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: true })
         .block(
-            Block::default()
-                .bottom(
+            Block::app_default()
+                .title_bottom(
                     TagLine::new()
                         .mono_color()
                         .centered()
@@ -99,8 +99,7 @@ impl Component for Sheet {
                         .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} "))
                         .tag(Tag::new(" Copy ", " C ")),
                 )
-                .title_alignment(Alignment::Center)
-                .into_widget(),
+                .title_alignment(Alignment::Center),
         );
 
         self.scroll

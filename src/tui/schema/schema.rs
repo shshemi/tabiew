@@ -3,16 +3,16 @@ use std::ops::Div;
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Block, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     handler::message::Message,
     misc::{buffer_ext::BufferExt, config::theme, sql::sql},
     tui::{
+        app_default::AppDefault,
         component::Component,
         schema::{data_frame_info::DataFrameInfo, data_frame_names::DataFrameNames},
-        widgets::block::Block,
     },
 };
 
@@ -71,7 +71,7 @@ impl Component for Schema {
             let [center] = Layout::horizontal([Constraint::Length(width)])
                 .flex(Flex::Center)
                 .areas(center);
-            Block::default().render(area, buf);
+            Block::app_default().render(area, buf);
             pg.render(center, buf);
         } else {
             let [area1, area23] =

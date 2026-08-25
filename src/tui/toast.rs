@@ -2,12 +2,12 @@ use std::time::{Duration, Instant};
 
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Block, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     misc::{buffer_ext::BufferExt, config::theme},
-    tui::{component::Component, widgets::block::Block},
+    tui::{app_default::AppDefault, component::Component},
 };
 
 #[derive(Debug)]
@@ -39,7 +39,7 @@ impl Component for Toast {
         let pg = Paragraph::new(self.message.as_str())
             .style(theme().text())
             .left_aligned()
-            .block(Block::default().style(theme().block()).into_widget())
+            .block(Block::app_default().style(theme().block()))
             .wrap(Wrap { trim: true });
         let width = pg.line_width().min(64) as u16;
         let [area] = Layout::horizontal([Constraint::Length(width)])

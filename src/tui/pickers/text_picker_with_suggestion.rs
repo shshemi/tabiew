@@ -5,15 +5,12 @@ use ratatui::{
         border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
-    widgets::{Borders, List, ListItem, ListState, StatefulWidget, Widget},
+    widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget},
 };
 
 use crate::{
     misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
-    tui::{
-        component::Component,
-        widgets::{block::Block, input::Input},
-    },
+    tui::{app_default::AppDefault, component::Component, widgets::input::Input},
 };
 
 #[derive(Debug, Default)]
@@ -111,15 +108,11 @@ where
         let list = List::default()
             .style(theme().text())
             .highlight_style(theme().row_highlighted())
-            .block(
-                Block::default()
-                    .border_set(Set {
-                        top_left: VERTICAL_RIGHT,
-                        top_right: VERTICAL_LEFT,
-                        ..ROUNDED
-                    })
-                    .into_widget(),
-            )
+            .block(Block::app_default().border_set(Set {
+                top_left: VERTICAL_RIGHT,
+                top_right: VERTICAL_LEFT,
+                ..ROUNDED
+            }))
             .items(
                 self.items
                     .iter()
@@ -134,7 +127,7 @@ where
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 
         let input_area = {
-            let block = Block::default()
+            let block = Block::app_default()
                 .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
                 .title(self.title.as_str());
             let input_inner = block.inner(input_area);

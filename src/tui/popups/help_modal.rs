@@ -1,15 +1,15 @@
 use ratatui::{
     layout::{Alignment, Constraint, Flex, Layout},
     text::{Line, Span},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Block, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     misc::{buffer_ext::BufferExt, config::theme},
     tui::{
+        app_default::AppDefault,
         component::Component,
         tag_line::{Tag, TagLine},
-        widgets::block::Block,
     },
 };
 
@@ -217,16 +217,15 @@ impl Component for Help {
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true })
             .block(
-                Block::default()
+                Block::app_default()
                     .title("Help")
-                    .bottom(
+                    .title_bottom(
                         TagLine::new()
                             .mono_color()
                             .centered()
                             .tag(Tag::new(" Close ", " ESC | q ")),
                     )
-                    .title_alignment(Alignment::Center)
-                    .into_widget(),
+                    .title_alignment(Alignment::Center),
             );
 
         pg.render(area, buf);
