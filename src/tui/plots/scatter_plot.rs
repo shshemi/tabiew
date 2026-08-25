@@ -5,13 +5,13 @@ use ratatui::{
     layout::{Alignment, Constraint, Margin},
     symbols::Marker,
     text::Span,
-    widgets::{Axis, Chart, Clear, Dataset, GraphType, LegendPosition, Padding, Widget},
+    widgets::{Axis, Chart, Dataset, GraphType, LegendPosition, Padding, Widget},
 };
 
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::{config::theme, ragged_vec::RaggedVec},
+    misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
     tui::{component::Component, widgets::block::Block},
 };
 
@@ -64,7 +64,7 @@ impl Component for ScatterPlot {
         _focus_state: crate::tui::component::FocusState,
     ) {
         let area = buf.area.inner(Margin::new(7, 3));
-        Widget::render(Clear, area, buf);
+        buf.clear(area);
         let ds = self
             .data
             .iter()

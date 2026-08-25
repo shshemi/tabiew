@@ -2,12 +2,12 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::Alignment,
     text::Line,
-    widgets::{Clear, Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::{
     handler::message::Message,
-    misc::{config::theme, osc52::CopyToClipboardOsc52},
+    misc::{buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52},
     tui::{
         component::Component,
         tag_line::{Tag, TagLine},
@@ -69,7 +69,7 @@ impl Component for Sheet {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        Clear.render(area, buf);
+        buf.clear(area);
 
         let pg = Paragraph::new(
             self.sections

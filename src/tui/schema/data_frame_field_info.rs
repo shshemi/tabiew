@@ -2,11 +2,11 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint},
     text::Text,
-    widgets::{Borders, Clear, Row, StatefulWidget, Table, TableState, Widget},
+    widgets::{Borders, Row, StatefulWidget, Table, TableState},
 };
 
 use crate::{
-    misc::{config::theme, sql::TableSchema, type_ext::human_readable_size},
+    misc::{buffer_ext::BufferExt, config::theme, sql::TableSchema, type_ext::human_readable_size},
     tui::{
         component::Component,
         tag_line::{Tag, TagLine},
@@ -57,7 +57,7 @@ impl Component for DataFrameFieldInfo {
                 .len()
                 .saturating_sub(area.height.saturating_sub(2).into()),
         );
-        Widget::render(Clear, area, buf);
+        buf.clear(area);
         StatefulWidget::render(
             Table::default()
                 .header(

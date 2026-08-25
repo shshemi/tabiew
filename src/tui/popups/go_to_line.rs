@@ -1,11 +1,12 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Clear, Widget},
+    widgets::Widget,
 };
 
 use crate::{
     handler::message::Message,
+    misc::buffer_ext::BufferExt,
     tui::{
         component::Component,
         widgets::{
@@ -53,7 +54,7 @@ impl Component for GoToLine {
             .areas(buf.area);
         let [_, area] =
             Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
-        Clear.render(area, buf);
+        buf.clear(area);
         let area = {
             let block = Block::default().title("Go to Line");
             let inner = block.inner(area);

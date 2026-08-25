@@ -2,11 +2,11 @@ use std::time::{Duration, Instant};
 
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Clear, Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::{
-    misc::config::theme,
+    misc::{buffer_ext::BufferExt, config::theme},
     tui::{component::Component, widgets::block::Block},
 };
 
@@ -51,7 +51,7 @@ impl Component for Toast {
         ])
         .flex(Flex::End)
         .areas(area);
-        Clear.render(area, buf);
+        buf.clear(area);
         pg.render(area, buf);
     }
 }
