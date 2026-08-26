@@ -13,8 +13,7 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         popups::{
-            command_palette::CommandPalette, help_modal::Help, importer::Importer,
-            theme_selector::ThemeSelector,
+            command_palette::CommandPalette, importer::Importer, theme_selector::ThemeSelector,
         },
         schema::schema::Schema,
     },
@@ -237,7 +236,6 @@ pub enum Overlay {
     ThemeSelector(ThemeSelector),
     SqlQueryPicker(SqlQueryPicker),
     Import(Importer),
-    Help(Help),
 }
 
 impl Overlay {
@@ -246,7 +244,6 @@ impl Overlay {
             Overlay::Error(error) => error,
             Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,
-            Overlay::Help(help) => help,
             Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
         }

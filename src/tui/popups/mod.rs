@@ -7,7 +7,6 @@ pub mod exporter;
 pub mod exporters;
 pub mod file_picker;
 pub mod go_to_line;
-pub mod help_modal;
 pub mod histogram_builder;
 pub mod importer;
 pub mod importers;
