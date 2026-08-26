@@ -118,6 +118,13 @@ pub struct Args {
         default_value_t = false
     )]
     pub no_type_inference: bool,
+
+    #[arg(
+        long,
+        help = "Limits the number of rows read from the input. Applies to CSV/DSV/TSV, Parquet, JSON, JSON Lines, Arrow, and Avro files.",
+        required = false
+    )]
+    pub max_rows: Option<usize>,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

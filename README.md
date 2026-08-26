@@ -131,6 +131,12 @@ tw data.txt -f tsv
 tw data.txt -f dsv --separator '|'
 ```
 
+Preview only the first rows of a large file:
+```bash
+tw big.csv --max-rows 1000
+```
+`--max-rows` is handy for sanity-checking the schema and a sample of the data before loading a multi-GB file. It applies to CSV/DSV/TSV, Parquet, JSON, JSON Lines, Arrow, and Avro.
+
 Open a URL using curl:
 ```bash
 curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
