@@ -159,11 +159,13 @@ impl Component for App {
             } else {
                 self.tabs.handle(event)
             }) || match (event.modifiers, event.code) {
-                (KeyModifiers::NONE, KeyCode::Char(':')) => {
+                (KeyModifiers::SHIFT, KeyCode::Char(':'))
+                | (KeyModifiers::NONE, KeyCode::Char(':')) => {
                     self.show_palette();
                     true
                 }
-                (KeyModifiers::SHIFT, KeyCode::Char('Q')) => {
+                (KeyModifiers::SHIFT, KeyCode::Char('Q'))
+                | (KeyModifiers::NONE, KeyCode::Char('Q')) => {
                     self.quit();
                     true
                 }
