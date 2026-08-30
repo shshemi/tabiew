@@ -95,7 +95,10 @@ impl text_picker_with_suggestion::Suggestion for FileSuggestion {
 
 fn suggestions(query: &str, _: usize) -> Vec<FileSuggestion> {
     let path = Path::new(query);
-    let filter = query.split('/').next_back().unwrap_or_default();
+    let filter = query
+        .split(std::path::MAIN_SEPARATOR)
+        .next_back()
+        .unwrap_or_default();
     let path = if path.is_dir() && query.ends_with('/') {
         path
     } else if let Some(parent) = path.parent() {
