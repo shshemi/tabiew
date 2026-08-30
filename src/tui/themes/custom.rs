@@ -136,7 +136,7 @@ impl Styler for Custom {
     }
 
     fn row(&self, idx: usize) -> Style {
-        if self.table_headers.is_empty() {
+        if self.rows.is_empty() {
             Default::default()
         } else {
             self.rows
