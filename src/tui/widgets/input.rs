@@ -145,7 +145,8 @@ impl Component for Input {
             let scroll = self
                 .input
                 .visual_scroll(area.width.saturating_sub(1).into());
-            Paragraph::new(self.input.value().chars().skip(scroll).collect::<String>())
+            Paragraph::new(self.input.value())
+                .scroll((0, scroll as u16))
                 .style(style)
                 .render(area, buf);
             // draw cursor
