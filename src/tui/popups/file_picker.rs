@@ -99,7 +99,7 @@ fn suggestions(query: &str, _: usize) -> Vec<FileSuggestion> {
         .split(std::path::MAIN_SEPARATOR)
         .next_back()
         .unwrap_or_default();
-    let path = if path.is_dir() && query.ends_with('/') {
+    let path = if path.is_dir() && query.ends_with(std::path::MAIN_SEPARATOR) {
         path
     } else if let Some(parent) = path.parent() {
         parent
