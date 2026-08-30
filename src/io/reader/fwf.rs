@@ -110,14 +110,18 @@ impl DataFrameReader for FwfToDataFrame {
         let header = reader
             .header()
             .map(|rec| {
-                rec.iter().fold(Vec::new(), |mut vec, slice| {
-                    if let Some(name) = slice.snake_case_names().find(|name| !vec.contains(name)) {
-                        vec.push(name);
-                    } else {
-                        vec.push(format!("column_{}", vec.len() + 1));
-                    }
-                    vec
-                })
+                rec.iter()
+                    .map(str::trim)
+                    .fold(Vec::new(), |mut vec, slice| {
+                        if let Some(name) =
+                            slice.snake_case_names().find(|name| !vec.contains(name))
+                        {
+                            vec.push(name);
+                        } else {
+                            vec.push(format!("column_{}", vec.len() + 1));
+                        }
+                        vec
+                    })
             })
             .unwrap_or_else(|| {
                 (0..widths.len())
