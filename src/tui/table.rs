@@ -414,7 +414,7 @@ impl Component for Table {
                 let df = self
                     .df
                     .select(&self.df.get_column_names()[col_start..=col_end])
-                    .unwrap()
+                    .unwrap_or_default()
                     .slice(self.offset as i64, height);
                 let table = build_table(
                     &df,
