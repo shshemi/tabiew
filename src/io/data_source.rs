@@ -28,12 +28,16 @@ impl FromStr for DataSource {
         if s == "-" {
             return Ok(DataSource::Stdin);
         }
+        let path = PathBuf::from(s);
+        if path.exists() {
+            return Ok(DataSource::File(path));
+        }
         match Url::parse(s) {
             Ok(url) => match url.scheme() {
                 "http" | "https" => Ok(DataSource::Url(url)),
                 _ => Err(anyhow!("Unsupported url scheme: {}", url.scheme())),
             },
-            Err(_) => Ok(DataSource::File(PathBuf::from(s))),
+            Err(_) => Ok(DataSource::File(path)),
         }
     }
 }
