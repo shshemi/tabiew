@@ -78,7 +78,9 @@ pub fn download_to_temp(url: &Url) -> AppResult<NamedTempFile> {
         .and_then(|mut splts| splts.next_back())
         .and_then(|s| Path::new(s).extension().and_then(|os_str| os_str.to_str()))
         .unwrap_or_default();
-    let mut temp = tempfile::Builder::new().suffix(ext).tempfile()?;
+    let mut temp = tempfile::Builder::new()
+        .suffix(&format!(".{ext}"))
+        .tempfile()?;
     let response = http::get(url).call()?;
     std::io::copy(&mut response.into_body().into_reader(), temp.as_file_mut())?;
     Ok(temp)
