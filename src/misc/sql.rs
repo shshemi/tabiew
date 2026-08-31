@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use polars::{
     error::PolarsResult,
     frame::DataFrame,
-    prelude::{AnyValue, DataType, IntoLazy, LazyFrame},
+    prelude::{DataType, IntoLazy, LazyFrame},
     series::Series,
 };
 use polars_sql::SQLContext;
@@ -283,30 +283,10 @@ pub fn sql() -> impl DerefMut<Target = SqlBackend> {
 }
 
 fn min_max(series: &Series) -> (String, String) {
-    let dtype = series.dtype();
-    if dtype.is_primitive_numeric()
-        || matches!(
-            dtype,
-            DataType::Time | DataType::Date | DataType::Datetime(_, _)
-        )
-    {
-        let (a, b) =
-            series
-                .iter()
-                .fold((AnyValue::Null, AnyValue::Null), |(mut min, mut max), a| {
-                    if matches!(a, AnyValue::Null) {
-                        return (min, max);
-                    }
-                    if matches!(min, AnyValue::Null) || a < min {
-                        min = a.clone();
-                    }
-                    if matches!(max, AnyValue::Null) || a > max {
-                        max = a;
-                    }
-                    (min, max)
-                });
-        (a.into_single_line(), b.into_single_line())
-    } else {
-        ("-".to_owned(), "-".to_owned())
-    }
+    let min = series.min_reduce().unwrap_or_default();
+    let max = series.max_reduce().unwrap_or_default();
+    (
+        min.into_value().to_single_line().into_owned(),
+        max.into_value().to_single_line().into_owned(),
+    )
 }
