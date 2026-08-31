@@ -9,11 +9,10 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TextPicker {
     input: Input,
     title: String,
-    darken_bg: bool,
 }
 
 impl TextPicker {
@@ -52,13 +51,6 @@ impl TextPicker {
         }
     }
 
-    pub fn no_darken_bg(self) -> Self {
-        Self {
-            darken_bg: false,
-            ..self
-        }
-    }
-
     pub fn input(&self) -> &Input {
         &self.input
     }
@@ -72,16 +64,6 @@ impl TextPicker {
     }
 }
 
-impl Default for TextPicker {
-    fn default() -> Self {
-        Self {
-            input: Default::default(),
-            title: Default::default(),
-            darken_bg: true,
-        }
-    }
-}
-
 impl Component for TextPicker {
     fn render(
         &mut self,
@@ -89,10 +71,6 @@ impl Component for TextPicker {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        if self.darken_bg {
-            buf.darken();
-        }
-
         let area = buf.area.palette(3);
         buf.clear(area);
 

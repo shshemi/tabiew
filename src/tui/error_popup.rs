@@ -30,8 +30,6 @@ impl Component for ErrorPopup {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        buf.darken();
-
         let pg = Paragraph::new(self.message.as_str())
             .left_aligned()
             .block(
