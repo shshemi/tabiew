@@ -55,8 +55,9 @@ pub fn draw(app: &mut App) -> AppResult<()> {
     terminal().draw(|frame| {
         let area = frame.area();
         let buf = frame.buffer_mut();
+        let bg = theme().background();
         for cell in buf.content.iter_mut() {
-            cell.set_style(theme().background());
+            cell.set_style(bg);
         }
         app.render(area, buf, FocusState::Focused);
     })?;
