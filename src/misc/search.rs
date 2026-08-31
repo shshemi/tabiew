@@ -75,6 +75,7 @@ where
         } else {
             // search
             // communication between search and collector threads
+            sync_df.insert(df.clear());
             let (tx, rx) = channel();
 
             // search thread
