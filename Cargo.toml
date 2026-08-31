@@ -116,6 +116,7 @@ ureq = "3.4.0"
 url = "2.5.8"
 scraper = "0.27.0"
 pulldown-cmark = { version = "0.13", default-features = false }
+terminal-colorsaurus = "1.0.3"
 
 [dev-dependencies]
 rstest = "0.26.1"
