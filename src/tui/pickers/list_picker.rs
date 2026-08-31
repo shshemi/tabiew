@@ -14,7 +14,6 @@ pub struct ListPicker<T> {
     list: ListState,
     items: Vec<T>,
     strings: Vec<String>,
-    darken_bg: bool,
 }
 
 impl<T> ListPicker<T>
@@ -27,20 +26,12 @@ where
             strings: items.iter().map(ToString::to_string).collect(),
             title: Default::default(),
             items,
-            darken_bg: true,
         }
     }
 
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
-            ..self
-        }
-    }
-
-    pub fn no_darken_bg(self) -> Self {
-        Self {
-            darken_bg: false,
             ..self
         }
     }
@@ -86,10 +77,6 @@ impl<T> Component for ListPicker<T> {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        if self.darken_bg {
-            buf.darken();
-        }
-
         let height = self.strings.len().saturating_add(2).min(25) as u16;
         let area = buf.area.palette(height);
         buf.clear(area);
