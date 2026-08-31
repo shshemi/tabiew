@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     ops::{Add, Div},
     sync::{
         Arc,
@@ -22,34 +23,34 @@ use crate::{AppResult, misc::ragged_vec::RaggedVec, tui::sheet::SheetSection};
 
 use super::type_ext::HasSubsequence;
 
-pub trait AnyValueExt {
-    fn into_single_line(self) -> String;
+pub trait AnyValueExt<'a> {
+    fn to_single_line(&'a self) -> Cow<'a, str>;
     fn width(self, num_buffer: &mut NumBuffer) -> usize;
-    fn into_multi_line(self) -> String;
-    fn into_cell(self, width: usize) -> Cell<'static>;
+    fn to_multi_line(&'a self) -> Cow<'a, str>;
+    fn to_cell(&'a self, width: usize) -> Cell<'a>;
     fn fuzzy_cmp(self, other: &str) -> bool;
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
     fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
     fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
 }
 
-impl AnyValueExt for AnyValue<'_> {
-    fn into_single_line(self) -> String {
+impl<'a> AnyValueExt<'a> for AnyValue<'a> {
+    fn to_single_line(&'a self) -> Cow<'a, str> {
         match self {
-            AnyValue::Null => "".to_owned(),
-            AnyValue::StringOwned(v) => {
-                v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect()
-            }
-            AnyValue::String(v) => v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect(),
+            AnyValue::Null => Cow::Borrowed(""),
+            AnyValue::StringOwned(v) if v.contains('\t') => Cow::Owned(v.replace("\t", " ")),
+            AnyValue::StringOwned(v) => Cow::Borrowed(v),
+            AnyValue::String(v) if v.contains('\t') => Cow::Owned(v.replace("\t", " ")),
+            AnyValue::String(v) => Cow::Borrowed(v),
             AnyValue::Categorical(idx, rev_map) => {
-                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
             }
             AnyValue::CategoricalOwned(idx, rev_map) => {
-                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
             }
-            AnyValue::Binary(buf) => format!("Blob (Length: {})", buf.len()),
-            AnyValue::BinaryOwned(buf) => format!("Blob (Length: {})", buf.len()),
-            _ => self.to_string(),
+            AnyValue::Binary(buf) => Cow::Owned(format!("Blob (Length: {})", buf.len())),
+            AnyValue::BinaryOwned(buf) => Cow::Owned(format!("Blob (Length: {})", buf.len())),
+            _ => Cow::Owned(self.to_string()),
         }
     }
 
@@ -82,30 +83,30 @@ impl AnyValueExt for AnyValue<'_> {
         }
     }
 
-    fn into_multi_line(self) -> String {
+    fn to_multi_line(&'a self) -> Cow<'a, str> {
         match self {
-            AnyValue::Null => "".to_owned(),
-            AnyValue::StringOwned(v) => {
-                v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect()
-            }
-            AnyValue::String(v) => v.chars().map(|c| if c == '\t' { ' ' } else { c }).collect(),
+            AnyValue::Null => Cow::Borrowed(""),
+            AnyValue::StringOwned(v) if v.contains("\t") => Cow::Owned(v.replace("\t", " ")),
+            AnyValue::StringOwned(v) => Cow::Borrowed(v),
+            AnyValue::String(v) if v.contains("\t") => Cow::Owned(v.replace("\t", " ")),
+            AnyValue::String(v) => Cow::Borrowed(v),
             AnyValue::Categorical(idx, rev_map) => {
-                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
             }
             AnyValue::CategoricalOwned(idx, rev_map) => {
-                rev_map.cat_to_str(idx).unwrap_or_default().to_owned()
+                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
             }
-            AnyValue::Binary(buf) => bytes_to_string(buf),
-            AnyValue::BinaryOwned(buf) => bytes_to_string(buf),
-            _ => self.to_string(),
+            AnyValue::Binary(buf) => Cow::Owned(bytes_to_string(buf)),
+            AnyValue::BinaryOwned(buf) => Cow::Owned(bytes_to_string(buf)),
+            _ => Cow::Owned(self.to_string()),
         }
     }
 
-    fn into_cell(self, width: usize) -> Cell<'static> {
+    fn to_cell(&'a self, width: usize) -> Cell<'a> {
         match self {
             AnyValue::Float32(f) => Cell::new(format!("{f:>w$.2}", w = width)),
             AnyValue::Float64(f) => Cell::new(format!("{f:>w$.2}", w = width)),
-            _ => Cell::new(self.into_single_line()),
+            _ => Cell::new(self.to_single_line()),
         }
     }
 
@@ -114,7 +115,7 @@ impl AnyValueExt for AnyValue<'_> {
             AnyValue::Null => false,
             AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other),
             AnyValue::String(val) => val.has_subsequence(other),
-            _ => self.into_multi_line().has_subsequence(other),
+            _ => self.to_multi_line().has_subsequence(other),
         }
     }
 
@@ -338,7 +339,7 @@ impl DataFrameExt for DataFrame {
             self.get(pos)
                 .unwrap_or_default()
                 .into_iter()
-                .map(AnyValueExt::into_multi_line),
+                .map(|val| val.to_multi_line().into_owned()),
             self.dtypes()
         )
         .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
@@ -376,7 +377,7 @@ impl DataFrameExt for DataFrame {
                 let name = df
                     .column(group_by)
                     .and_then(|column| column.get(0))
-                    .map(AnyValueExt::into_single_line)
+                    .map(|val| val.to_single_line().into_owned())
                     .unwrap_or("null".to_owned());
                 (name, df)
             })
@@ -417,14 +418,15 @@ impl DataFrameExt for DataFrame {
 }
 
 fn series_width(series: &Series) -> usize {
+    let num_cpus = num_cpus::get();
+    let slen = series.len().div_ceil(num_cpus);
     series.name().width().max(
-        series
-            .iter()
+        (0..num_cpus)
+            .map(|i| (i * slen) as i64)
+            .map(|start| (NumBuffer::default(), series.slice(start, slen)))
             .par_bridge()
-            .fold_with((0_usize, NumBuffer::default()), |(width, mut buf), val| {
-                (width.max(val.width(&mut buf)), buf)
-            })
-            .map(|(w, _)| w)
+            .map(|(mut buf, series)| series.iter().map(|val| val.width(&mut buf)).max())
+            .flatten()
             .max()
             .unwrap_or_default(),
     )
@@ -472,7 +474,7 @@ fn discrete_histogram(mut counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
     Ok(counts[0]
         .as_materialized_series()
         .iter()
-        .map(AnyValue::into_single_line)
+        .map(|val| val.to_single_line().into_owned())
         .zip(counts[1].as_materialized_series().u32()?.iter())
         .map(|(v, c)| (v, c.unwrap_or_default() as u64))
         .collect_vec())

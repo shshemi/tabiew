@@ -613,7 +613,7 @@ fn build_table<'a>(
                 .map(|(idx, vals)| {
                     let cells = vals
                         .into_iter()
-                        .map(|val| Cell::new(val.into_single_line()));
+                        .map(|val| Cell::new(val.to_single_line().into_owned()));
                     Row::new(cells).style(if striped {
                         theme().row(offset_row + idx)
                     } else {
