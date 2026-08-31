@@ -91,7 +91,7 @@ where
                         .par_bridge()
                         .take_any_while(|_| alive.load(Ordering::Relaxed))
                         .filter_map(|(idx, value)| {
-                            let value = value.into_multi_line();
+                            let value = value.to_multi_line();
                             if value == pat {
                                 Some((idx, i64::MAX))
                             } else {
