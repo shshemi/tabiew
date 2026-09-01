@@ -2,7 +2,7 @@ use ratatui::widgets::{Block, Gauge, Paragraph, Widget};
 
 use crate::{
     misc::{config::theme, remote_load::RemoteLoad},
-    tui::{app_default::AppDefault, component::Component},
+    tui::{app_default::{AppDefault, AppTitle}, component::Component},
 };
 
 pub struct DownloadNotification {
@@ -33,13 +33,13 @@ impl Component for DownloadNotification {
     ) {
         if let Some(percent) = self.dl.info().percent() {
             Gauge::default()
-                .block(Block::app_default().title(self.title.as_str()))
+                .block(Block::app_default().app_title(self.title.as_str()))
                 .gauge_style(theme().block())
                 .percent(percent)
                 .render(area, buf);
         } else {
             Paragraph::new("Downloading...")
-                .block(Block::app_default().title(self.title.as_str()))
+                .block(Block::app_default().app_title(self.title.as_str()))
                 .render(area, buf);
         }
     }

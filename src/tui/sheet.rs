@@ -20,7 +20,7 @@ use crate::{
         buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52, polars_ext::AnyValueExt,
     },
     tui::{
-        app_default::AppDefault,
+        app_default::{AppDefault, AppTitle},
         component::Component,
         tag_line::{Tag, TagLine},
         utils::Scroll,
@@ -72,13 +72,13 @@ impl Component for Sheet {
 
         let pg = paragraph(&self.values).block(
             Block::app_default()
-                .title(format!("Row {}", self.row + 1))
+                .app_title(format!("Row {}", self.row + 1))
                 .title_bottom(
                     TagLine::new()
                         .mono_color()
                         .centered()
-                        .tag(Tag::new(" Scroll ", " Shift + J / K "))
-                        .tag(Tag::new(" Copy ", " C ")),
+                        .tag(Tag::new("Scroll", "Shift + J / K"))
+                        .tag(Tag::new("Copy", "C")),
                 )
                 .title_alignment(Alignment::Center),
         );

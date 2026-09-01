@@ -8,7 +8,7 @@ use crate::{
     handler::message::Message,
     misc::buffer_ext::BufferExt,
     tui::{
-        app_default::AppDefault,
+        app_default::{AppDefault, AppTitle},
         component::Component,
         widgets::input::{Input, InputType},
     },
@@ -54,7 +54,7 @@ impl Component for GoToLine {
             Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
         buf.clear(area);
         let area = {
-            let block = Block::app_default().title("Line");
+            let block = Block::app_default().app_title("Line");
             let inner = block.inner(area);
             block.render(area, buf);
             inner

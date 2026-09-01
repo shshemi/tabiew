@@ -3,7 +3,7 @@ use ratatui::widgets::{Block, Widget};
 use crate::{
     misc::{buffer_ext::BufferExt, rect_ext::RectExt},
     tui::{
-        app_default::AppDefault,
+        app_default::{AppDefault, AppTitle},
         component::Component,
         widgets::input::{Input, InputType},
     },
@@ -75,7 +75,7 @@ impl Component for TextPicker {
         buf.clear(area);
 
         let area = {
-            let block = Block::app_default().title(self.title.as_str());
+            let block = Block::app_default().app_title(self.title.as_str());
             let inner = block.inner(area);
             block.render(area, buf);
             inner
