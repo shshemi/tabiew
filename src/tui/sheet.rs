@@ -1,13 +1,24 @@
+use std::iter;
+
 use crossterm::event::{KeyCode, KeyModifiers};
+use indexmap::IndexMap;
+use itertools::chain;
+use polars::{
+    datatypes::PlSmallStr,
+    prelude::{AnyValue, DataType},
+};
 use ratatui::{
     layout::Alignment,
-    text::Line,
+    style::Modifier,
+    text::{Line, Span},
     widgets::{Block, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52},
+    misc::{
+        buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52, polars_ext::AnyValueExt,
+    },
     tui::{
         app_default::AppDefault,
         component::Component,
@@ -17,30 +28,18 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct SheetSection {
-    header: String,
-    content: String,
-}
-
-impl SheetSection {
-    pub fn new(header: String, content: String) -> Self {
-        Self { header, content }
-    }
-}
-
-#[derive(Debug)]
 pub struct Sheet {
     scroll: Scroll,
     row: usize,
-    sections: Vec<SheetSection>,
+    values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
 }
 
 impl Sheet {
-    pub fn new(row: usize, sections: Vec<SheetSection>) -> Self {
+    pub fn new(row: usize, values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>) -> Self {
         Self {
             scroll: Default::default(),
             row,
-            sections,
+            values,
         }
     }
 
@@ -56,9 +55,9 @@ impl Sheet {
         self.row
     }
 
-    pub fn set(&mut self, row: usize, sections: Vec<SheetSection>) {
+    pub fn set(&mut self, row: usize, values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>) {
         self.row = row;
-        self.sections = sections;
+        self.values = values;
     }
 }
 
@@ -71,36 +70,7 @@ impl Component for Sheet {
     ) {
         buf.clear(area);
 
-        let pg = Paragraph::new(
-            self.sections
-                .iter()
-                .enumerate()
-                .flat_map(|(idx, SheetSection { header, content })| {
-                    std::iter::once(Line::raw(header).style(theme().header(idx)))
-                        .chain(
-                            content
-                                .lines()
-                                .map(|line| Line::raw(line).style(theme().text())),
-                        )
-                        .chain(std::iter::once(Line::raw("\n")))
-                })
-                .collect::<Vec<_>>(),
-        )
-        .style(theme().text())
-        .alignment(Alignment::Left)
-        .wrap(Wrap { trim: true })
-        .block(
-            Block::app_default()
-                .title_bottom(
-                    TagLine::new()
-                        .mono_color()
-                        .centered()
-                        .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
-                        .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} "))
-                        .tag(Tag::new(" Copy ", " C ")),
-                )
-                .title_alignment(Alignment::Center),
-        );
+        let pg = paragraph(&self.values, self.row);
 
         self.scroll
             .adjust(pg.line_count(area.width), area.height.saturating_sub(2));
@@ -110,19 +80,23 @@ impl Component for Sheet {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
-            (KeyCode::Char('K'), KeyModifiers::SHIFT) | (KeyCode::Up, KeyModifiers::SHIFT) => {
+            (KeyCode::Char('K'), KeyModifiers::NONE)
+            | (KeyCode::Char('K'), KeyModifiers::SHIFT)
+            | (KeyCode::Up, KeyModifiers::SHIFT) => {
                 self.scroll.up();
                 true
             }
-            (KeyCode::Char('J'), KeyModifiers::SHIFT) | (KeyCode::Down, KeyModifiers::SHIFT) => {
+            (KeyCode::Char('J'), KeyModifiers::NONE)
+            | (KeyCode::Char('J'), KeyModifiers::SHIFT)
+            | (KeyCode::Down, KeyModifiers::SHIFT) => {
                 self.scroll.down();
                 true
             }
             (KeyCode::Char('c'), KeyModifiers::NONE) => {
                 let text = self
-                    .sections
+                    .values
                     .iter()
-                    .map(|s| format!("{}\n{}", s.header, s.content))
+                    .map(|(name, (value, _))| format!("{}\n{}", name, value.to_multi_line()))
                     .collect::<Vec<_>>()
                     .join("\n\n");
                 text.copy_to_clipboard_via_osc52();
@@ -131,11 +105,65 @@ impl Component for Sheet {
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                Message::PaneDismissModal.enqueue();
+                Message::PaneDismissSheet.enqueue();
                 true
             }
 
             _ => false,
         }
     }
+}
+
+fn section_header(idx: usize, name: &str, dtype: &DataType) -> Line<'static> {
+    Line::from(vec![
+        Span::raw(name.to_owned()).style(theme().header(idx)),
+        Span::raw(format!(" ({dtype})")).style(theme().header(idx).remove_modifier(Modifier::BOLD)),
+    ])
+}
+
+fn section_content(value: &AnyValue<'static>) -> Vec<Line<'static>> {
+    match value {
+        AnyValue::Null => {
+            vec![Line::raw("null").style(theme().subtext().add_modifier(Modifier::ITALIC))]
+        }
+        value => value
+            .to_multi_line()
+            .lines()
+            .map(|line| Line::raw(line.to_owned()).style(theme().text()))
+            .collect(),
+    }
+}
+
+fn paragraph(
+    values: &IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
+    row: usize,
+) -> Paragraph<'static> {
+    Paragraph::new(
+        values
+            .iter()
+            .enumerate()
+            .flat_map(|(idx, (name, (value, dtype)))| {
+                chain!(
+                    iter::once(section_header(idx, name, dtype)),
+                    section_content(value),
+                    iter::once(Line::raw("\n"))
+                )
+            })
+            .collect::<Vec<_>>(),
+    )
+    .style(theme().text())
+    .alignment(Alignment::Left)
+    .wrap(Wrap { trim: true })
+    .block(
+        Block::app_default()
+            .title(format!("Row {}", row + 1))
+            .title_bottom(
+                TagLine::new()
+                    .mono_color()
+                    .centered()
+                    .tag(Tag::new(" Scroll ", " Shift + J / K "))
+                    .tag(Tag::new(" Copy ", " C ")),
+            )
+            .title_alignment(Alignment::Center),
+    )
 }

@@ -37,6 +37,7 @@ pub enum Message {
     PaneShowScatterPlotBuilder,
     PaneShowSearch,
     PaneDismissModal,
+    PaneDismissSheet,
     PanePushDataFrame(DataFrame, TableDescription),
     PanePopDataFrame,
     PaneTableSelect(usize),

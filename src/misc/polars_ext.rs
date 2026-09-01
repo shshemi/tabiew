@@ -10,10 +10,11 @@ use std::{
 
 use anyhow::anyhow;
 use chrono::{NaiveDate, NaiveDateTime};
+use indexmap::IndexMap;
 use itertools::{Itertools, izip};
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, SeriesMethods, TimeUnit},
+    prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, PlSmallStr, SeriesMethods, TimeUnit},
     series::{ChunkCompareEq, Series},
 };
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -22,7 +23,6 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     AppResult,
     misc::{config::config, ragged_vec::RaggedVec},
-    tui::sheet::SheetSection,
 };
 
 use super::type_ext::HasSubsequence;
@@ -300,7 +300,7 @@ impl SeriesExt for Series {
 
 pub trait DataFrameExt {
     fn widths(&self) -> Vec<usize>;
-    fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection>;
+    fn get_sheet_values(&self, pos: usize) -> IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>;
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>>;
     #[allow(clippy::type_complexity)]
     fn scatter_plot_data_grouped(
@@ -351,17 +351,17 @@ impl DataFrameExt for DataFrame {
             .collect()
     }
 
-    fn get_sheet_sections(&self, pos: usize) -> Vec<SheetSection> {
+    fn get_sheet_values(&self, pos: usize) -> IndexMap<PlSmallStr, (AnyValue<'static>, DataType)> {
         izip!(
-            self.get_column_names().into_iter(),
+            self.get_column_names_owned(),
             self.get(pos)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|val| val.to_multi_line().into_owned()),
-            self.dtypes()
+                .map(AnyValue::into_static),
+            self.dtypes(),
         )
-        .map(|(header, content, dtype)| SheetSection::new(format!("{header} ({dtype})"), content))
-        .collect_vec()
+        .map(|(name, value, dtype)| (name, (value, dtype)))
+        .collect()
     }
 
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>> {
