@@ -3,7 +3,7 @@ use itertools::{FoldWhile, Itertools};
 use polars::frame::DataFrame;
 use rand::RngExt;
 use ratatui::{
-    layout::{Constraint, Layout, Margin, Rect},
+    layout::{Constraint, Layout, Rect},
     widgets::{Block, Borders, Widget},
 };
 use unicode_width::UnicodeWidthStr;
@@ -45,6 +45,7 @@ use crate::{
 pub struct Pane {
     tstack: NonEmptyStack<Table>,
     dstack: NonEmptyStack<TableDescription>,
+    sheet: Option<Sheet>,
     modal: Option<Modal>,
 }
 
@@ -61,6 +62,7 @@ impl Pane {
                     .with_extended_column(),
             ),
             dstack: NonEmptyStack::new(description),
+            sheet: None,
             modal: None,
         }
     }
@@ -83,8 +85,22 @@ impl Pane {
 
     pub fn show_sheet(&mut self) {
         if let Some(row) = self.tstack.last().selected() {
-            let sections = self.tstack.last().data_frame().get_sheet_sections(row);
-            self.modal = Some(Modal::Sheet(Sheet::new(row, sections)));
+            let sections = self.tstack.last().data_frame().get_sheet_values(row);
+            self.sheet = Some(Sheet::new(row, sections));
+        }
+    }
+
+    fn dismiss_sheet(&mut self) {
+        self.sheet.take();
+    }
+
+    fn sync_sheet(&mut self) {
+        if let Some(sheet) = self.sheet.as_mut()
+            && let Some(row) = self.tstack.last().selected()
+            && row != sheet.row()
+        {
+            let sections = self.tstack.last().data_frame().get_sheet_values(row);
+            sheet.set(row, sections);
         }
     }
 
@@ -272,32 +288,32 @@ impl Component for Pane {
         focus_state: super::component::FocusState,
     ) {
         let bordered = config().show_table_borders();
+        let [mut table_area, status_bar_area, sheet_area] =
+            table_status_bar_areas(area, bordered, self.sheet.is_some());
 
-        if bordered {
-            Block::app_default()
-                .borders(Borders::all())
-                .render(area, buf);
-        }
-
-        let [table_area, status_bar_area] = table_status_bar_areas(area, bordered);
-        StatusBar::new(self).render(status_bar_area, buf);
-
+        // settings
+        self.sync_sheet();
         self.tstack
             .last_mut()
             .set_gutter_visibility(config().show_table_row_numbers());
 
+        // render table borders
+        if bordered {
+            let block = Block::app_default().borders(Borders::all());
+            let inner = block.inner(table_area);
+            block.render(table_area, buf);
+            table_area = inner;
+        }
+
+        // render sheet
+        if let Some(sheet) = self.sheet.as_mut() {
+            sheet.render(sheet_area, buf, focus_state);
+        }
+
+        // render status bar
+        StatusBar::new(self).render(status_bar_area, buf);
+
         match &mut self.modal {
-            Some(Modal::Sheet(sheet_state)) => {
-                let sheet_area = table_area.centered(Constraint::Max(120), Constraint::Fill(1));
-                if let Some(row) = self.tstack.last().selected()
-                    && row != sheet_state.row()
-                {
-                    let sections = self.tstack.last().data_frame().get_sheet_sections(row);
-                    sheet_state.set(row, sections);
-                }
-                self.tstack.last_mut().render(table_area, buf, focus_state);
-                sheet_state.render(sheet_area, buf, focus_state);
-            }
             Some(Modal::SearchBar(search_bar_state)) => {
                 let [search_area, table_area] =
                     Layout::vertical([Constraint::Length(3), Constraint::Fill(1)])
@@ -373,7 +389,6 @@ impl Component for Pane {
                 Modal::SearchBar(search_bar) => {
                     search_bar.handle(event) || self.tstack.last_mut().handle(event)
                 }
-                Modal::Sheet(sheet) => sheet.handle(event) || self.tstack.last_mut().handle(event),
                 Modal::GoToLine(go_to_line) => go_to_line.handle(event),
                 Modal::DataFrameInfo(data_frame_info) => data_frame_info.handle(event),
                 Modal::Exporter(exporter) => exporter.handle(event),
@@ -389,7 +404,11 @@ impl Component for Pane {
             };
             true
         } else {
-            self.tstack.last_mut().handle(event)
+            self.sheet
+                .as_mut()
+                .map(|sheet| sheet.handle(event))
+                .unwrap_or_default()
+                || self.tstack.last_mut().handle(event)
                 || (match (event.code, event.modifiers) {
                     (KeyCode::Enter, KeyModifiers::NONE) => {
                         self.show_sheet();
@@ -467,6 +486,9 @@ impl Component for Pane {
         if let Some(modal) = self.modal.as_mut() {
             modal.responder().update(action);
         }
+        if let Some(sheet) = self.sheet.as_mut() {
+            sheet.update(action);
+        }
         self.tstack.last_mut().update(action);
         match action {
             Message::PaneShowInlineSelect => self.show_inline_query_picker(QueryType::Select),
@@ -484,6 +506,7 @@ impl Component for Pane {
             }
             Message::PaneShowTableRegisterer => self.show_table_registerer(),
             Message::PaneDismissModal => self.cancel_modal(),
+            Message::PaneDismissSheet => self.dismiss_sheet(),
             Message::PanePushDataFrame(df, desc) => self.push_data_frame(df.clone(), desc.clone()),
             Message::PanePopDataFrame => self.pop_data_frame(),
             Message::PaneTableSelect(idx) => self.select(*idx),
@@ -523,7 +546,6 @@ impl Component for Pane {
                     };
                 }
             }
-            Some(Modal::Sheet(_)) => (),
             Some(Modal::DataFrameInfo(_)) => (),
             Some(Modal::ScatterPlot(_)) => (),
             Some(Modal::HistogramPlot(_)) => (),
@@ -539,27 +561,30 @@ impl Component for Pane {
     }
 }
 
-/// Splits the pane area into the table area and the status bar area. The status bar sits in the
-/// bottom border of the block, or takes the last line when there is no block.
-fn table_status_bar_areas(area: Rect, bordered: bool) -> [Rect; 2] {
-    if bordered {
+fn table_status_bar_areas(area: Rect, bordered: bool, sheet: bool) -> [Rect; 3] {
+    let [table_area, sheet_area] = if sheet {
+        Layout::horizontal([Constraint::Fill(1), Constraint::Percentage(30)]).areas(area)
+    } else {
+        [area, area]
+    };
+    let [table_area, status_bar_area] = if bordered {
         [
-            area.inner(Margin::new(1, 1)),
+            table_area,
             Rect {
-                x: area.x + 1,
-                y: area.y + area.height.saturating_sub(1),
-                width: area.width.saturating_sub(2),
+                x: table_area.x + 1,
+                y: table_area.y + table_area.height.saturating_sub(1),
+                width: table_area.width.saturating_sub(2),
                 height: 1,
             },
         ]
     } else {
-        Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area)
-    }
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(table_area)
+    };
+    [table_area, status_bar_area, sheet_area]
 }
 
 #[derive(Debug)]
 pub enum Modal {
-    Sheet(Sheet),
     SearchBar(SearchBar),
     DataFrameInfo(DataFrameInfo),
     ScatterPlot(ScatterPlot),
@@ -576,7 +601,6 @@ pub enum Modal {
 impl Modal {
     fn responder(&mut self) -> &mut dyn Component {
         match self {
-            Modal::Sheet(sheet) => sheet,
             Modal::SearchBar(search_bar) => search_bar,
             Modal::DataFrameInfo(data_frame_info) => data_frame_info,
             Modal::ScatterPlot(scatter_plot_state) => scatter_plot_state,
