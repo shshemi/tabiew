@@ -51,8 +51,8 @@ impl Styler for Terminal {
 
     fn tag(&self, idx: usize) -> Style {
         Style::default()
-            .bg(tag_background())
-            .fg(COLORS[idx % COLORS.len()])
+            .bg(COLORS[idx % COLORS.len()])
+            .fg(tag_background())
     }
 
     fn block_tag(&self) -> Style {
