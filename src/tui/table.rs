@@ -2,7 +2,7 @@ use std::ops::{Add, Div};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
-use polars::frame::DataFrame;
+use polars::{frame::DataFrame, prelude::AnyValue};
 use ratatui::{
     layout::{Constraint, Layout, Position, Rect},
     text::Text,
@@ -590,6 +590,15 @@ fn next_column_offset(col_offsets: &[usize], offset: &usize) -> usize {
         .unwrap_or_default()
 }
 
+fn cell(value: AnyValue<'_>) -> Cell<'static> {
+    let text = Text::raw(value.to_single_line().into_owned());
+    if value.is_primitive_numeric() || matches!(value, AnyValue::Decimal(..)) {
+        Cell::new(text.right_aligned())
+    } else {
+        Cell::new(text)
+    }
+}
+
 fn build_table<'a>(
     df: &'a DataFrame,
     col_widths: &[Constraint],
@@ -611,9 +620,7 @@ fn build_table<'a>(
                 .zip_iters()
                 .enumerate()
                 .map(|(idx, vals)| {
-                    let cells = vals
-                        .into_iter()
-                        .map(|val| Cell::new(val.to_single_line().into_owned()));
+                    let cells = vals.into_iter().map(cell);
                     Row::new(cells).style(if striped {
                         theme().row(offset_row + idx)
                     } else {
@@ -623,13 +630,16 @@ fn build_table<'a>(
         );
 
     if show_header {
-        table =
-            table.header(
-                Row::new(df.columns().iter().enumerate().map(|(i, c)| {
-                    Cell::new(c.name().as_str()).style(theme().header(offset_col + i))
-                }))
-                .style(theme().table_header()),
-            )
+        table = table.header(
+            Row::new(df.columns().iter().enumerate().map(|(i, c)| {
+                let mut text = Text::raw(c.name().as_str());
+                if c.dtype().is_numeric() {
+                    text = text.right_aligned();
+                }
+                Cell::new(text).style(theme().header(offset_col + i))
+            }))
+            .style(theme().table_header()),
+        )
     }
     table
 }
