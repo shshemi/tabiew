@@ -54,7 +54,7 @@ impl Component for GoToLine {
             Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
         buf.clear(area);
         let area = {
-            let block = Block::app_default().title("Go to Line");
+            let block = Block::app_default().title("Line");
             let inner = block.inner(area);
             block.render(area, buf);
             inner
