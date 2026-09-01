@@ -54,6 +54,12 @@ impl Tabs {
         self.idx = idx;
     }
 
+    fn close_selected(&mut self) {
+        if self.len() > 1 {
+            self.remove_selected();
+        }
+    }
+
     fn remove_selected(&mut self) {
         if self.idx < self.panes.len() {
             self.panes.remove(self.idx);
@@ -99,6 +105,13 @@ impl Component for Tabs {
     ) {
         self.idx = self.idx().min(self.len().saturating_sub(1));
 
+        let (tabs_area, area) = if self.switcher.is_some() {
+            let [tabs_area, table_area] = tabs_table_areas(area);
+            (Some(tabs_area), table_area)
+        } else {
+            (None, area)
+        };
+
         let area = {
             if config().show_table_borders() {
                 let blk = Block::app_default().borders(Borders::all());
@@ -133,10 +146,14 @@ impl Component for Tabs {
         match (self.switcher.as_mut(), self.panes.get_mut(self.idx)) {
             (Some(switcher), Some(pane)) => {
                 pane.render(area, buf, FocusState::NotFocused);
-                switcher.render(area, buf, focus_state);
+                if let Some(tabs_area) = tabs_area {
+                    switcher.render(tabs_area, buf, focus_state);
+                }
             }
             (Some(switcher), None) => {
-                switcher.render(area, buf, focus_state);
+                if let Some(tabs_area) = tabs_area {
+                    switcher.render(tabs_area, buf, focus_state);
+                }
             }
             (None, Some(pane)) => {
                 pane.render(area, buf, focus_state);
@@ -148,6 +165,13 @@ impl Component for Tabs {
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         if let Some(switcher) = self.switcher.as_mut() {
             switcher.handle(event)
+                || match (event.code, event.modifiers) {
+                    (KeyCode::Delete, KeyModifiers::NONE) => {
+                        self.close_selected();
+                        true
+                    }
+                    _ => false,
+                }
         } else {
             self.panes
                 .get_mut(self.idx)
@@ -163,6 +187,10 @@ impl Component for Tabs {
                     }
                     (KeyCode::Char('t'), KeyModifiers::NONE) => {
                         self.show_tab_switcher();
+                        true
+                    }
+                    (KeyCode::Delete, KeyModifiers::NONE) => {
+                        self.close_selected();
                         true
                     }
                     (KeyCode::Char('H'), KeyModifiers::SHIFT)
@@ -214,6 +242,11 @@ impl Component for Tabs {
             pane.tick();
         }
     }
+}
+
+fn tabs_table_areas(area: Rect) -> [Rect; 2] {
+    const TABS_WIDTH: u16 = 34;
+    Layout::horizontal([Constraint::Length(TABS_WIDTH), Constraint::Fill(1)]).areas(area)
 }
 
 impl FromIterator<Pane> for Tabs {
