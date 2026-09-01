@@ -17,7 +17,7 @@ use ratatui::{
 use crate::{
     misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
     tui::{
-        app_default::AppDefault,
+        app_default::{AppDefault, AppTitle},
         component::Component,
         widgets::{highlighted_line::HighlightedLine, input::Input},
     },
@@ -25,7 +25,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct SearchPicker<T> {
-    title: String,
+    title: Option<String>,
     input: Input,
     list: ListState,
     items: Vec<T>,
@@ -52,7 +52,7 @@ where
 impl<T> SearchPicker<T> {
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
-            title: title.into(),
+            title: Some(title.into()),
             ..self
         }
     }
@@ -168,9 +168,13 @@ impl<T> Component for SearchPicker<T> {
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 
         let input_area = {
-            let block = Block::app_default()
-                .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
-                .title(self.title.as_str());
+            let mut block =
+                Block::app_default().borders(Borders::LEFT | Borders::RIGHT | Borders::TOP);
+
+            if let Some(title) = &self.title {
+                block = block.app_title(title.as_str());
+            }
+
             let input_inner = block.inner(input_area);
             block.render(area, buf);
             input_inner

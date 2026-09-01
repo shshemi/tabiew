@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(Debug, Default)]
 pub struct TextPickerWithSuggestion<P: Provider> {
-    title: String,
+    title: Option<String>,
     input: Input,
     list: ListState,
     args: (String, usize),
@@ -27,9 +27,9 @@ impl<P> TextPickerWithSuggestion<P>
 where
     P: Provider,
 {
-    pub fn new(title: impl Into<String>, provider: P) -> Self {
+    pub fn new(provider: P) -> Self {
         Self {
-            title: title.into(),
+            title: Default::default(),
             input: Default::default(),
             list: ListState::default().with_selected(0.into()),
             args: (String::default(), 0),
@@ -40,7 +40,7 @@ where
 
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
-            title: title.into(),
+            title: Some(title.into()),
             ..self
         }
     }
@@ -112,9 +112,13 @@ where
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 
         let input_area = {
-            let block = Block::app_default()
-                .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
-                .app_title(self.title.as_str());
+            let mut block =
+                Block::app_default().borders(Borders::LEFT | Borders::RIGHT | Borders::TOP);
+
+            if let Some(title) = &self.title {
+                block = block.app_title(title.as_str());
+            }
+
             let input_inner = block.inner(input_area);
             Widget::render(block, area, buf);
             input_inner
