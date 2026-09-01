@@ -70,7 +70,18 @@ impl Component for Sheet {
     ) {
         buf.clear(area);
 
-        let pg = paragraph(&self.values, self.row);
+        let pg = paragraph(&self.values).block(
+            Block::app_default()
+                .title(format!("Row {}", self.row + 1))
+                .title_bottom(
+                    TagLine::new()
+                        .mono_color()
+                        .centered()
+                        .tag(Tag::new(" Scroll ", " Shift + J / K "))
+                        .tag(Tag::new(" Copy ", " C ")),
+                )
+                .title_alignment(Alignment::Center),
+        );
 
         self.scroll
             .adjust(pg.line_count(area.width), area.height.saturating_sub(2));
@@ -134,10 +145,7 @@ fn section_content(value: &AnyValue<'static>) -> Vec<Line<'static>> {
     }
 }
 
-fn paragraph(
-    values: &IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
-    row: usize,
-) -> Paragraph<'static> {
+fn paragraph(values: &IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>) -> Paragraph<'static> {
     Paragraph::new(
         values
             .iter()
@@ -154,16 +162,4 @@ fn paragraph(
     .style(theme().text())
     .alignment(Alignment::Left)
     .wrap(Wrap { trim: true })
-    .block(
-        Block::app_default()
-            .title(format!("Row {}", row + 1))
-            .title_bottom(
-                TagLine::new()
-                    .mono_color()
-                    .centered()
-                    .tag(Tag::new(" Scroll ", " Shift + J / K "))
-                    .tag(Tag::new(" Copy ", " C ")),
-            )
-            .title_alignment(Alignment::Center),
-    )
 }
