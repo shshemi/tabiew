@@ -13,7 +13,8 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         popups::{
-            command_palette::CommandPalette, importer::Importer, theme_selector::ThemeSelector,
+            command_palette::CommandPalette, fp_precision_picker::FpPrecisionPicker,
+            importer::Importer, theme_selector::ThemeSelector,
         },
         schema::schema::Schema,
     },
@@ -50,6 +51,10 @@ impl App {
 
     fn show_theme_selector(&mut self) {
         self.overlay = Some(Overlay::ThemeSelector(Default::default()));
+    }
+
+    fn show_fp_precision_picker(&mut self) {
+        self.overlay = Some(Overlay::FpPrecisionPicker(Default::default()));
     }
 
     fn show_palette(&mut self) {
@@ -181,6 +186,7 @@ impl Component for App {
             Message::AppShowToast(message) => self.show_toast(message),
             Message::AppShowCommandPicker => self.show_palette(),
             Message::AppShowThemeSelector => self.show_theme_selector(),
+            Message::AppShowFpPrecisionPicker => self.show_fp_precision_picker(),
             Message::AppShowSchema => self.show_schema(),
             Message::AppShowImporter => self.show_importer(),
             Message::AppDismissSchema => self.dismiss_schema(),
@@ -234,6 +240,7 @@ pub enum Overlay {
     Error(ErrorPopup),
     CommandPicker(CommandPalette),
     ThemeSelector(ThemeSelector),
+    FpPrecisionPicker(FpPrecisionPicker),
     SqlQueryPicker(SqlQueryPicker),
     Import(Importer),
 }
@@ -244,6 +251,7 @@ impl Overlay {
             Overlay::Error(error) => error,
             Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,
+            Overlay::FpPrecisionPicker(fp_precision_picker) => fp_precision_picker,
             Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
         }

@@ -84,6 +84,9 @@ impl Component for CommandPalette {
                                 config().toggle_show_table_row_numbers();
                                 config().store().unwrap_or_enqueue_error();
                             }
+                            Command::FloatingPointPrecision => {
+                                Message::AppShowFpPrecisionPicker.enqueue()
+                            }
                             Command::FuzzySearch => Message::PaneShowFuzzySearch.enqueue(),
                             Command::Search => Message::PaneShowSearch.enqueue(),
                             Command::Edit => Message::PaneEditInExternalEditor.enqueue(),
@@ -108,6 +111,7 @@ enum Command {
     Edit,
     Export,
     Filter,
+    FloatingPointPrecision,
     FuzzySearch,
     Histogram,
     Import,

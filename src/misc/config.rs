@@ -89,6 +89,10 @@ impl Config {
         }
     }
 
+    pub fn set_fp_precision(&self, precision: i8) {
+        self.fp_precision.swap(precision, Ordering::Relaxed);
+    }
+
     pub fn show_table_row_numbers(&self) -> bool {
         self.show_table_row_numbers.load(Ordering::Relaxed)
     }
