@@ -1,18 +1,12 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use ratatui::{
-    layout::{Constraint, Layout, Rect},
-    widgets::{Block, Borders, Widget},
-};
+use ratatui::layout::{Constraint, Layout, Rect};
 
 use crate::{
     handler::message::Message,
-    misc::config::config,
     tui::{
-        app_default::AppDefault,
         component::{Component, FocusState},
         pane::TableDescription,
-        widgets::status_bar::StatusBar,
     },
 };
 
@@ -110,36 +104,6 @@ impl Component for Tabs {
             (Some(tabs_area), table_area)
         } else {
             (None, area)
-        };
-
-        let area = {
-            if config().show_table_borders() {
-                let blk = Block::app_default().borders(Borders::all());
-                let new = blk.inner(area);
-                blk.render(area, buf);
-                if let Some(pane) = self.panes.get(self.idx) {
-                    let status_bar = StatusBar::new(pane, self.idx, self.len());
-                    status_bar.render(
-                        Rect {
-                            x: area.x + 1,
-                            y: area.height.saturating_sub(1),
-                            width: area.width.saturating_sub(2),
-                            height: 1,
-                        },
-                        buf,
-                    );
-                }
-                new
-            } else {
-                let [pane_area, statusbar_area] =
-                    Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area);
-
-                if let Some(pane) = self.panes.get(self.idx) {
-                    let status_bar = StatusBar::new(pane, self.idx, self.len());
-                    status_bar.render(statusbar_area, buf);
-                }
-                pane_area
-            }
         };
 
         // render tabular

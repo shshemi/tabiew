@@ -156,6 +156,10 @@ impl Table {
         }
     }
 
+    pub fn gutter_visible(&self) -> bool {
+        matches!(self.gutter_mode, GutterMode::Visible(_))
+    }
+
     pub fn set_gutter_visibility(&mut self, value: bool) {
         if value {
             self.gutter_mode = GutterMode::Visible(self.df.height().to_string().len() as u16)

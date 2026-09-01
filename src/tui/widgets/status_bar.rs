@@ -16,17 +16,11 @@ use crate::{
 
 pub struct StatusBar<'a> {
     pane: &'a Pane,
-    sel_tab: usize,
-    tot_tab: usize,
 }
 
 impl<'a> StatusBar<'a> {
-    pub fn new(pane: &'a Pane, selected_tab: usize, total_tabs: usize) -> Self {
-        Self {
-            pane,
-            sel_tab: selected_tab,
-            tot_tab: total_tabs,
-        }
+    pub fn new(pane: &'a Pane) -> Self {
+        Self { pane }
     }
 }
 
@@ -35,25 +29,17 @@ impl<'a> Widget for StatusBar<'a> {
     where
         Self: Sized,
     {
-        let tab_tag = Tag::new(
-            "Tab",
-            format!(
-                "{:>width$} / {}",
-                self.sel_tab.add(1),
-                self.tot_tab,
-                width = self.tot_tab.to_string().len()
-            ),
-            1,
-        );
-        let row_tag = Tag::new(
-            "Row",
-            format!(
-                "{:>width$}",
-                self.pane.table().selected().unwrap_or_default().add(1),
-                width = self.pane.table().data_frame().height().to_string().len(),
-            ),
-            2,
-        );
+        let row_tag = (!self.pane.table().gutter_visible()).then(|| {
+            Tag::new(
+                "Row",
+                format!(
+                    "{:>width$}",
+                    self.pane.table().selected().unwrap_or_default().add(1),
+                    width = self.pane.table().data_frame().height().to_string().len(),
+                ),
+                2,
+            )
+        });
         let shp_tag = Tag::new(
             "Shape",
             format!(
@@ -63,20 +49,20 @@ impl<'a> Widget for StatusBar<'a> {
             ),
             3,
         );
-        let [history_area, tab_area, row_area, shp_area] = Layout::horizontal([
-            Constraint::Fill(3),
-            Constraint::Length(tab_tag.width()),
-            Constraint::Length(row_tag.width()),
-            Constraint::Length(shp_tag.width()),
-        ])
+        let tags = row_tag.into_iter().chain([shp_tag]).collect::<Vec<_>>();
+        let areas = Layout::horizontal(
+            std::iter::once(Constraint::Fill(3))
+                .chain(tags.iter().map(|tag| Constraint::Length(tag.width()))),
+        )
         .spacing(1)
-        .areas(area);
+        .split(area);
 
-        tab_tag.line().render(tab_area, buf);
-        row_tag.line().render(row_area, buf);
-        shp_tag.line().render(shp_area, buf);
+        for (tag, area) in tags.iter().zip(areas.iter().skip(1)) {
+            tag.line().render(*area, buf);
+        }
 
         if let Some(history) = History::new(self.pane.iter_descriptions()) {
+            let history_area = areas[0];
             history
                 .fitted(history_area.width)
                 .line()
