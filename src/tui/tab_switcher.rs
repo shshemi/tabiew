@@ -1,56 +1,65 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::Rect;
+use ratatui::{
+    layout::{Alignment, Rect},
+    text::{Line, Span},
+    widgets::{Block, List, ListItem, ListState, StatefulWidget},
+};
 
 use crate::{
     handler::message::Message,
-    tui::{component::Component, pickers::list_picker::ListPicker},
+    misc::{buffer_ext::BufferExt, config::theme},
+    tui::{
+        app_default::AppDefault,
+        component::Component,
+        tag_line::{Tag, TagLine},
+    },
 };
 
 #[derive(Debug)]
 pub struct TabSwitcher {
-    picker: ListPicker<String>,
+    title: String,
+    list: ListState,
+    tabs: Vec<String>,
     rollback: usize,
 }
 
 impl TabSwitcher {
     pub fn new(title: impl Into<String>, tabs: Vec<String>, idx: usize) -> TabSwitcher {
-        let title = title.into();
-        let mut picker = ListPicker::new(tabs.clone()).with_title(title.clone());
-        picker.select(idx);
         Self {
-            picker,
+            title: title.into(),
             rollback: idx,
+            list: ListState::default().with_selected(Some(idx)),
+            tabs,
         }
     }
 
     pub fn selected(&self) -> Option<usize> {
-        self.picker.selected()
+        self.list.selected()
     }
 
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {
-        self.picker.select(idx);
+        self.list.select(idx.into());
     }
 
     pub fn select_prev(&mut self) {
-        self.picker.select_up();
+        self.list.select_previous();
     }
 
     pub fn select_next(&mut self) {
         let idx = self
-            .picker
+            .list
             .selected()
             .unwrap_or_default()
             .saturating_add(1)
-            .min(self.picker.len().saturating_sub(1));
-        self.picker.select(Some(idx));
+            .min(self.tabs.len().saturating_sub(1));
+        self.list.select(Some(idx));
     }
 
     pub fn select_first(&mut self) {
-        self.picker.select(Some(0));
+        self.list.select(Some(0));
     }
     pub fn select_last(&mut self) {
-        self.picker
-            .select(Some(self.picker.len().saturating_sub(1)));
+        self.list.select(Some(self.tabs.len().saturating_sub(1)));
     }
 }
 
@@ -59,32 +68,73 @@ impl Component for TabSwitcher {
         &mut self,
         area: Rect,
         buf: &mut ratatui::prelude::Buffer,
-        focus_state: super::component::FocusState,
+        _focus_state: super::component::FocusState,
     ) {
-        self.picker.render(area, buf, focus_state);
+        buf.clear(area);
+        let num_width = self.tabs.len().to_string().len();
+        StatefulWidget::render(
+            List::app_default()
+                .items(self.tabs.iter().enumerate().map(|(idx, tab)| {
+                    ListItem::from(Line::from(vec![
+                        Span::raw(format!("{:>num_width$}. ", idx + 1)).style(theme().subtext()),
+                        Span::raw(tab.as_str()).style(theme().text()),
+                    ]))
+                }))
+                .block(
+                    Block::app_default()
+                        .title(self.title.as_str())
+                        .title_bottom(
+                            TagLine::new()
+                                .mono_color()
+                                .centered()
+                                .tag(Tag::new(" Close ", " Delete ")),
+                        )
+                        .title_alignment(Alignment::Center),
+                ),
+            area,
+            buf,
+            &mut ListState::default().with_selected(self.list.selected()),
+        );
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
-        if self.picker.handle(event) {
-            if let Some(select) = self.picker.selected() {
-                Message::TabsSelect(select).enqueue();
+        match (event.code, event.modifiers) {
+            (KeyCode::Up, KeyModifiers::NONE)
+            | (KeyCode::Char('k'), KeyModifiers::NONE)
+            | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+                self.select_prev();
+                Message::TabsSelect(self.selected().unwrap_or_default()).enqueue();
+                true
             }
-            true
-        } else {
-            match (event.code, event.modifiers) {
-                (KeyCode::Enter, KeyModifiers::NONE) => {
-                    Message::TabsDismissSwitcher.enqueue();
-                    true
-                }
-                (KeyCode::Esc, KeyModifiers::NONE)
-                | (KeyCode::Char('q'), KeyModifiers::NONE)
-                | (KeyCode::Char('t'), KeyModifiers::NONE) => {
-                    Message::TabsDismissSwitcher.enqueue();
-                    Message::TabsSelect(self.rollback).enqueue();
-                    true
-                }
-                _ => false,
+            (KeyCode::Down, KeyModifiers::NONE)
+            | (KeyCode::Char('j'), KeyModifiers::NONE)
+            | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+                self.select_next();
+                Message::TabsSelect(self.selected().unwrap_or_default()).enqueue();
+                true
             }
+            (KeyCode::Home, KeyModifiers::NONE) | (KeyCode::Char('g'), KeyModifiers::NONE) => {
+                self.select_first();
+                Message::TabsSelect(self.selected().unwrap_or_default()).enqueue();
+                true
+            }
+            (KeyCode::End, KeyModifiers::NONE) | (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
+                self.select_last();
+                Message::TabsSelect(self.selected().unwrap_or_default()).enqueue();
+                true
+            }
+            (KeyCode::Enter, KeyModifiers::NONE) => {
+                Message::TabsDismissSwitcher.enqueue();
+                true
+            }
+            (KeyCode::Esc, KeyModifiers::NONE)
+            | (KeyCode::Char('q'), KeyModifiers::NONE)
+            | (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                Message::TabsDismissSwitcher.enqueue();
+                Message::TabsSelect(self.rollback).enqueue();
+                true
+            }
+            _ => false,
         }
     }
 }
