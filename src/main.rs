@@ -11,7 +11,7 @@ use tabiew::handler::message::Message;
 use tabiew::io::DataSource;
 use tabiew::io::reader::ReaderSource;
 use tabiew::io::reader::{BuildReader, NamedFrames};
-use tabiew::misc::config::config;
+use tabiew::misc::config;
 use tabiew::misc::download::download_to_temp;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
@@ -36,7 +36,7 @@ fn main() {
         }
     };
 
-    let _ = config().reload();
+    config::init().unwrap_or_graceful_shutdown();
 
     let type_infer = TypeInferer::from_args(&args);
 

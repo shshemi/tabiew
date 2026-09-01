@@ -115,8 +115,20 @@ impl Default for Config {
     }
 }
 
+static CONFIG: OnceLock<Config> = OnceLock::new();
+pub fn init() -> AppResult<()> {
+    let config = if let Ok(path) = config_path()
+        && path.exists()
+    {
+        toml::from_str(&fs::read_to_string(path)?)?
+    } else {
+        Default::default()
+    };
+    CONFIG.get_or_init(move || config);
+    Ok(())
+}
+
 pub fn config() -> &'static Config {
-    static CONFIG: OnceLock<Config> = OnceLock::new();
     CONFIG.get_or_init(Config::default)
 }
 
