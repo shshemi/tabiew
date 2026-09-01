@@ -12,7 +12,7 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
     misc::{
-        config::theme,
+        config::{config, theme},
         iter_ext::ZipItersExt,
         polars_ext::{AnyValueExt, DataFrameExt},
         type_ext::ConstraintExt,
@@ -34,6 +34,7 @@ pub struct Table {
     rendered_width: u16,
     column_mode: ColumnMode,
     gutter_mode: GutterMode,
+    fp_precision: Option<usize>,
 }
 
 impl Table {
@@ -57,6 +58,7 @@ impl Table {
             striped: false,
             show_header: false,
             gutter_mode: GutterMode::Visible(gutter_width),
+            fp_precision: config().fp_precision(),
             df,
             col_space,
         }
@@ -82,6 +84,7 @@ impl Table {
             striped: self.striped,
             show_header: self.show_header,
             gutter_mode: GutterMode::Visible(gutter_width),
+            fp_precision: config().fp_precision(),
             col_space: self.col_space,
         }
     }
@@ -316,6 +319,19 @@ impl Table {
         }
     }
 
+    /// Column widths depend on the configured floating point precision, so they are recomputed
+    /// whenever it changes.
+    fn refresh_col_widths(&mut self) {
+        self.fp_precision = config().fp_precision();
+        self.col_widths = self
+            .df
+            .widths()
+            .into_iter()
+            .map(|u| Constraint::Length(u as u16))
+            .collect_vec();
+        self.col_offsets = col_offsets(&self.col_widths, self.col_space);
+    }
+
     fn minimum_compact_width(&self) -> u16 {
         let col_count = self.df.width() as u16;
         col_count + (col_count.saturating_sub(1) * self.col_space)
@@ -336,6 +352,10 @@ impl Component for Table {
         } as usize;
         self.rendered_rows = height;
         self.rendered_width = area.width;
+
+        if self.fp_precision != config().fp_precision() {
+            self.refresh_col_widths();
+        }
 
         self.selected = self
             .selected

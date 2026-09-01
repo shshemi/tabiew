@@ -15,6 +15,7 @@ pub enum Message {
     AppShowError(String),
     AppShowToast(String),
     AppShowThemeSelector,
+    AppShowFpPrecisionPicker,
     AppShowSchema,
     AppShowImporter,
     AppDismissSchema,

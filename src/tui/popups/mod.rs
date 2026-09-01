@@ -6,6 +6,7 @@ pub mod export_target_picker;
 pub mod exporter;
 pub mod exporters;
 pub mod file_picker;
+pub mod fp_precision_picker;
 pub mod go_to_line;
 pub mod histogram_builder;
 pub mod importer;
