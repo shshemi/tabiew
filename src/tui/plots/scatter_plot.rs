@@ -12,7 +12,7 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
-    tui::{app_default::AppDefault, component::Component},
+    tui::{app_default::{AppDefault, AppTitle}, component::Component},
 };
 
 #[derive(Debug)]
@@ -107,7 +107,7 @@ impl Component for ScatterPlot {
             .style(theme().text())
             .block(
                 Block::app_default()
-                    .title("Scatter Plot")
+                    .app_title("Scatter Plot")
                     .title_alignment(Alignment::Center)
                     .padding(Padding::new(1, 2, 0, 0)),
             )

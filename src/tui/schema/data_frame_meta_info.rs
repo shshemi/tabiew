@@ -15,7 +15,7 @@ use crate::{
         sql::{self, TableInfo},
         type_ext::human_readable_size,
     },
-    tui::{app_default::AppDefault, component::Component},
+    tui::{app_default::{AppDefault, AppTitle}, component::Component},
 };
 
 #[derive(Debug)]
@@ -75,7 +75,7 @@ impl Component for DataFrameMetaInfo {
                         ..ROUNDED
                     })
                     .title_alignment(Alignment::Center)
-                    .title("Info"),
+                    .app_title("Info"),
             )
             .render(area, buf);
     }

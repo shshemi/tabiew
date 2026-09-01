@@ -9,7 +9,7 @@ use crate::{
     handler::message::Message,
     misc::{buffer_ext::BufferExt, config::theme},
     tui::{
-        app_default::AppDefault,
+        app_default::{AppDefault, AppTitle},
         component::Component,
         tag_line::{Tag, TagLine},
     },
@@ -82,12 +82,12 @@ impl Component for TabSwitcher {
                 }))
                 .block(
                     Block::app_default()
-                        .title(self.title.as_str())
+                        .app_title(self.title.as_str())
                         .title_bottom(
                             TagLine::new()
                                 .mono_color()
                                 .centered()
-                                .tag(Tag::new(" Close ", " Delete ")),
+                                .tag(Tag::new("Close", "Delete")),
                         )
                         .title_alignment(Alignment::Center),
                 ),

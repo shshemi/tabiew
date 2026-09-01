@@ -101,8 +101,8 @@ impl Component for DataFrameFieldInfo {
                             TagLine::new()
                                 .mono_color()
                                 .centered()
-                                .tag(Tag::new(" Scroll Up ", " Shift+K | Shift+\u{2191} "))
-                                .tag(Tag::new(" Scroll Down ", " Shift+J | Shift+\u{2193} ")),
+                                .tag(Tag::new("Scroll Up", "Shift+K | Shift+\u{2191}"))
+                                .tag(Tag::new("Scroll Down", "Shift+J | Shift+\u{2193}")),
                         )
                         .title_alignment(Alignment::Center),
                 ),

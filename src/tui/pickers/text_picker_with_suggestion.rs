@@ -10,7 +10,7 @@ use ratatui::{
 
 use crate::{
     misc::{buffer_ext::BufferExt, rect_ext::RectExt},
-    tui::{app_default::AppDefault, component::Component, widgets::input::Input},
+    tui::{app_default::{AppDefault, AppTitle}, component::Component, widgets::input::Input},
 };
 
 #[derive(Debug, Default)]
@@ -114,7 +114,7 @@ where
         let input_area = {
             let block = Block::app_default()
                 .borders(Borders::LEFT | Borders::RIGHT | Borders::TOP)
-                .title(self.title.as_str());
+                .app_title(self.title.as_str());
             let input_inner = block.inner(input_area);
             Widget::render(block, area, buf);
             input_inner

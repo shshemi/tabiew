@@ -8,7 +8,7 @@ use ratatui::{
 use crate::{
     misc::{config::theme, sql::sql},
     tui::{
-        app_default::AppDefault,
+        app_default::{AppDefault, AppTitle},
         component::Component,
         tag_line::{Tag, TagLine},
     },
@@ -74,13 +74,13 @@ impl Component for DataFrameNames {
             .column_spacing(1)
             .block(
                 Block::app_default()
-                    .title("Tables")
+                    .app_title("Tables")
                     .title_bottom(
                         TagLine::new()
                             .mono_color()
                             .centered()
-                            .tag(Tag::new(" Open ", " Enter"))
-                            .tag(Tag::new(" Unload ", " Delete ")),
+                            .tag(Tag::new("Open", "Enter"))
+                            .tag(Tag::new("Unload", "Delete")),
                     )
                     .title_alignment(Alignment::Center),
             );

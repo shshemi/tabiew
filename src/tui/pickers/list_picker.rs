@@ -5,7 +5,7 @@ use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
 use crate::{
     misc::{buffer_ext::BufferExt, rect_ext::RectExt},
-    tui::{app_default::AppDefault, component::Component},
+    tui::{app_default::{AppDefault, AppTitle}, component::Component},
 };
 
 #[derive(Debug)]
@@ -84,7 +84,7 @@ impl<T> Component for ListPicker<T> {
         StatefulWidget::render(
             List::app_default()
                 .items(self.strings.iter().map(|s| ListItem::from(s.as_str())))
-                .block(Block::app_default().title(self.title.as_str())),
+                .block(Block::app_default().app_title(self.title.as_str())),
             area,
             buf,
             &mut self.list,
