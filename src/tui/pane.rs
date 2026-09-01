@@ -2,7 +2,10 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::{FoldWhile, Itertools};
 use polars::frame::DataFrame;
 use rand::RngExt;
-use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::{
+    layout::{Constraint, Layout, Margin, Rect},
+    widgets::{Block, Borders, Widget},
+};
 use unicode_width::UnicodeWidthStr;
 
 use super::{search_bar::SearchBar, sheet::Sheet};
@@ -18,6 +21,7 @@ use crate::{
         type_ext::UnwrapOrEnqueueError,
     },
     tui::{
+        app_default::AppDefault,
         component::{Component, FocusState},
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
@@ -33,6 +37,7 @@ use crate::{
         },
         search_bar::Searcher,
         table::Table,
+        widgets::status_bar::StatusBar,
     },
 };
 
@@ -266,86 +271,99 @@ impl Component for Pane {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
+        let bordered = config().show_table_borders();
+
+        if bordered {
+            Block::app_default()
+                .borders(Borders::all())
+                .render(area, buf);
+        }
+
+        let [table_area, status_bar_area] = table_status_bar_areas(area, bordered);
+        StatusBar::new(self).render(status_bar_area, buf);
+
         self.tstack
             .last_mut()
             .set_gutter_visibility(config().show_table_row_numbers());
+
         match &mut self.modal {
             Some(Modal::Sheet(sheet_state)) => {
+                let sheet_area = table_area.centered(Constraint::Max(120), Constraint::Fill(1));
                 if let Some(row) = self.tstack.last().selected()
                     && row != sheet_state.row()
                 {
                     let sections = self.tstack.last().data_frame().get_sheet_sections(row);
                     sheet_state.set(row, sections);
                 }
-                self.tstack.last_mut().render(area, buf, focus_state);
-                let area = area.centered(Constraint::Max(120), Constraint::Fill(1));
-                sheet_state.render(area, buf, focus_state);
+                self.tstack.last_mut().render(table_area, buf, focus_state);
+                sheet_state.render(sheet_area, buf, focus_state);
             }
             Some(Modal::SearchBar(search_bar_state)) => {
                 let [search_area, table_area] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
+                    Layout::vertical([Constraint::Length(3), Constraint::Fill(1)])
+                        .areas(table_area);
                 self.tstack.last_mut().render(table_area, buf, focus_state);
                 search_bar_state.render(search_area, buf, focus_state);
             }
-            Some(Modal::GoToLine(state)) => {
-                self.tstack.last_mut().render(area, buf, focus_state);
-                state.render(area, buf, focus_state);
+            Some(Modal::GoToLine(go_to_line)) => {
+                self.tstack.last_mut().render(table_area, buf, focus_state);
+                go_to_line.render(table_area, buf, focus_state);
             }
             Some(Modal::DataFrameInfo(data_frame_info)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                data_frame_info.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                data_frame_info.render(table_area, buf, focus_state);
             }
-            Some(Modal::ScatterPlot(state)) => {
+            Some(Modal::ScatterPlot(scatter_plot)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                scatter_plot.render(table_area, buf, focus_state);
             }
-            Some(Modal::HistogramPlot(state)) => {
+            Some(Modal::HistogramPlot(histogram_plot)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                histogram_plot.render(table_area, buf, focus_state);
             }
-            Some(Modal::InlineQueryPicker(state)) => {
+            Some(Modal::InlineQueryPicker(inline_query_picker)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                inline_query_picker.render(table_area, buf, focus_state);
             }
-            Some(Modal::Exporter(state)) => {
+            Some(Modal::Exporter(exporter)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
             }
-            Some(Modal::HistogramBuilder(state)) => {
+            Some(Modal::HistogramBuilder(histogram_builder)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                histogram_builder.render(table_area, buf, focus_state);
             }
-            Some(Modal::ScatterPlotBuilder(state)) => {
+            Some(Modal::ScatterPlotBuilder(scatter_plot_builder)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                scatter_plot_builder.render(table_area, buf, focus_state);
             }
-            Some(Modal::TableRegisterer(state)) => {
+            Some(Modal::TableRegisterer(table_registerer)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                table_registerer.render(table_area, buf, focus_state);
             }
-            Some(Modal::ColumnCaster(state)) => {
+            Some(Modal::ColumnCaster(column_caster)) => {
                 self.tstack
                     .last_mut()
-                    .render(area, buf, FocusState::NotFocused);
-                state.render(area, buf, focus_state);
+                    .render(table_area, buf, FocusState::NotFocused);
+                column_caster.render(table_area, buf, focus_state);
             }
-            None => self.tstack.last_mut().render(area, buf, focus_state),
+            None => self.tstack.last_mut().render(table_area, buf, focus_state),
         }
     }
 
@@ -518,6 +536,24 @@ impl Component for Pane {
             Some(Modal::ColumnCaster(_)) => (),
             None => (),
         }
+    }
+}
+
+/// Splits the pane area into the table area and the status bar area. The status bar sits in the
+/// bottom border of the block, or takes the last line when there is no block.
+fn table_status_bar_areas(area: Rect, bordered: bool) -> [Rect; 2] {
+    if bordered {
+        [
+            area.inner(Margin::new(1, 1)),
+            Rect {
+                x: area.x + 1,
+                y: area.y + area.height.saturating_sub(1),
+                width: area.width.saturating_sub(2),
+                height: 1,
+            },
+        ]
+    } else {
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(area)
     }
 }
 
