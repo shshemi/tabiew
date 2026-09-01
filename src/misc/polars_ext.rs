@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    fmt::{Display, Write},
     ops::{Add, Div},
     sync::{
         Arc,
@@ -15,11 +16,14 @@ use polars::{
     prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, SeriesMethods, TimeUnit},
     series::{ChunkCompareEq, Series},
 };
-use ratatui::widgets::Cell;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{AppResult, misc::ragged_vec::RaggedVec, tui::sheet::SheetSection};
+use crate::{
+    AppResult,
+    misc::{config::config, ragged_vec::RaggedVec},
+    tui::sheet::SheetSection,
+};
 
 use super::type_ext::HasSubsequence;
 
@@ -27,7 +31,6 @@ pub trait AnyValueExt<'a> {
     fn to_single_line(&'a self) -> Cow<'a, str>;
     fn width(self, num_buffer: &mut NumBuffer) -> usize;
     fn to_multi_line(&'a self) -> Cow<'a, str>;
-    fn to_cell(&'a self, width: usize) -> Cell<'a>;
     fn fuzzy_cmp(self, other: &str) -> bool;
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
     fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
@@ -50,6 +53,14 @@ impl<'a> AnyValueExt<'a> for AnyValue<'a> {
             }
             AnyValue::Binary(buf) => Cow::Owned(format!("Blob (Length: {})", buf.len())),
             AnyValue::BinaryOwned(buf) => Cow::Owned(format!("Blob (Length: {})", buf.len())),
+            AnyValue::Float32(v) => match config().fp_precision() {
+                Some(precision) => Cow::Owned(format!("{v:.precision$}")),
+                None => Cow::Owned(self.to_string()),
+            },
+            AnyValue::Float64(v) => match config().fp_precision() {
+                Some(precision) => Cow::Owned(format!("{v:.precision$}")),
+                None => Cow::Owned(self.to_string()),
+            },
             _ => Cow::Owned(self.to_string()),
         }
     }
@@ -75,8 +86,14 @@ impl<'a> AnyValueExt<'a> for AnyValue<'a> {
             AnyValue::Int32(i) => num_buffer.itoa.format(i).len(),
             AnyValue::Int64(i) => num_buffer.itoa.format(i).len(),
             AnyValue::Int128(i) => num_buffer.itoa.format(i).len(),
-            AnyValue::Float32(f) => num_buffer.ryu.format(f).len(),
-            AnyValue::Float64(f) => num_buffer.ryu.format(f).len(),
+            AnyValue::Float32(f) => match config().fp_precision() {
+                Some(precision) => num_buffer.precise_float_width(f, precision),
+                None => num_buffer.ryu.format(f).len(),
+            },
+            AnyValue::Float64(f) => match config().fp_precision() {
+                Some(precision) => num_buffer.precise_float_width(f, precision),
+                None => num_buffer.ryu.format(f).len(),
+            },
             AnyValue::Date(_) => 10, // 1970-10-10
             AnyValue::Datetime(_, _, _) | AnyValue::DatetimeOwned(_, _, _) => 19, // 2019-06-30 07:49:05
             _ => self.to_string().width(),
@@ -99,14 +116,6 @@ impl<'a> AnyValueExt<'a> for AnyValue<'a> {
             AnyValue::Binary(buf) => Cow::Owned(bytes_to_string(buf)),
             AnyValue::BinaryOwned(buf) => Cow::Owned(bytes_to_string(buf)),
             _ => Cow::Owned(self.to_string()),
-        }
-    }
-
-    fn to_cell(&'a self, width: usize) -> Cell<'a> {
-        match self {
-            AnyValue::Float32(f) => Cell::new(format!("{f:>w$.2}", w = width)),
-            AnyValue::Float64(f) => Cell::new(format!("{f:>w$.2}", w = width)),
-            _ => Cell::new(self.to_single_line()),
         }
     }
 
@@ -156,6 +165,15 @@ impl<'a> AnyValueExt<'a> for AnyValue<'a> {
 pub struct NumBuffer {
     ryu: ryu::Buffer,
     itoa: itoa::Buffer,
+    fmt: String,
+}
+
+impl NumBuffer {
+    fn precise_float_width(&mut self, float: impl Display, precision: usize) -> usize {
+        self.fmt.clear();
+        let _ = write!(self.fmt, "{float:.precision$}");
+        self.fmt.len()
+    }
 }
 
 pub trait SeriesExt {
