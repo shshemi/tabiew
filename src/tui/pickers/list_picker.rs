@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ListPicker<T> {
-    title: String,
+    title: Option<String>,
     list: ListState,
     items: Vec<T>,
     strings: Vec<String>,
@@ -31,7 +31,7 @@ where
 
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
-            title: title.into(),
+            title: Some(title.into()),
             ..self
         }
     }
@@ -81,10 +81,15 @@ impl<T> Component for ListPicker<T> {
         let area = buf.area.palette(height);
         buf.clear(area);
 
+        let mut block = Block::app_default();
+        if let Some(title) = &self.title {
+            block = block.app_title(title.as_str());
+        }
+
         StatefulWidget::render(
             List::app_default()
                 .items(self.strings.iter().map(|s| ListItem::from(s.as_str())))
-                .block(Block::app_default().app_title(self.title.as_str())),
+                .block(block),
             area,
             buf,
             &mut self.list,

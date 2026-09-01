@@ -28,7 +28,7 @@ impl SqlQueryPicker {
             history: HISTORY.to_vec(),
         };
         Self {
-            picker: TextPickerWithSuggestion::new("SQL", provider),
+            picker: TextPickerWithSuggestion::new(provider).with_title("SQL"),
             dataframe,
         }
     }

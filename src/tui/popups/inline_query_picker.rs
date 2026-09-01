@@ -28,7 +28,7 @@ impl InlineQueryPicker {
             all_columns,
         };
         Self {
-            picker: TextPickerWithSuggestion::new(query_type.title(), provider),
+            picker: TextPickerWithSuggestion::new(provider).with_title(query_type.title()),
             dataframe,
             query_type,
         }

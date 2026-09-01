@@ -12,7 +12,7 @@ use crate::{
 #[derive(Debug, Default)]
 pub struct TextPicker {
     input: Input,
-    title: String,
+    title: Option<String>,
 }
 
 impl TextPicker {
@@ -39,7 +39,7 @@ impl TextPicker {
 
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
-            title: title.into(),
+            title: Some(title.into()),
             ..self
         }
     }
@@ -75,7 +75,11 @@ impl Component for TextPicker {
         buf.clear(area);
 
         let area = {
-            let block = Block::app_default().app_title(self.title.as_str());
+            let mut block = Block::app_default();
+            if let Some(title) = &self.title {
+                block = block.app_title(title.as_str());
+            }
+
             let inner = block.inner(area);
             block.render(area, buf);
             inner

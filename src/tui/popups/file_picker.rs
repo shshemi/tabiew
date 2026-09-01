@@ -63,9 +63,9 @@ impl Default for FilePicker {
     fn default() -> Self {
         Self {
             text_picker: TextPickerWithSuggestion::new(
-                "File Path",
                 suggestions as for<'a> fn(&'a str, usize) -> Vec<FileSuggestion>,
             )
+            .with_title("File Path")
             .with_value(
                 std::env::current_dir()
                     .ok()
