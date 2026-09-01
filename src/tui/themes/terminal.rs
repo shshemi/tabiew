@@ -56,10 +56,7 @@ impl Styler for Terminal {
     }
 
     fn block_tag(&self) -> Style {
-        Style::default()
-            .bg(Color::Reset)
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::REVERSED)
+        Style::default().bg(Color::Yellow).fg(tag_background())
     }
 
     fn block(&self) -> Style {
