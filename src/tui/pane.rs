@@ -104,6 +104,15 @@ impl Pane {
         }
     }
 
+    fn force_sync_sheet(&mut self) {
+        if let Some(sheet) = self.sheet.as_mut()
+            && let Some(row) = self.tstack.last().selected()
+        {
+            let sections = self.tstack.last().data_frame().get_sheet_values(row);
+            sheet.set(row, sections);
+        }
+    }
+
     fn show_fuzzy_search(&mut self) {
         let tbl = self.tstack.last().to_owned();
         self.tstack.push(tbl);
@@ -544,6 +553,7 @@ impl Component for Pane {
                             TableDescription::Search(search_bar.value().to_owned())
                         }
                     };
+                    self.force_sync_sheet();
                 }
             }
             Some(Modal::DataFrameInfo(_)) => (),
