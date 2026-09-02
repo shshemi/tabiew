@@ -84,6 +84,10 @@ impl Component for CommandPalette {
                                 config().toggle_show_table_row_numbers();
                                 config().store().unwrap_or_enqueue_error();
                             }
+                            Command::ToggleNerdFont => {
+                                config().toggle_use_nerd_font();
+                                config().store().unwrap_or_enqueue_error();
+                            }
                             Command::FloatingPointPrecision => {
                                 Message::AppShowFpPrecisionPicker.enqueue()
                             }
@@ -128,6 +132,7 @@ enum Command {
     Sort,
     ThemeSelector,
     ToggleBorders,
+    ToggleNerdFont,
     ToggleRowNumbers,
 }
 
