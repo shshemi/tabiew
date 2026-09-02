@@ -6,6 +6,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::tui::{
     component::Component,
+    icons,
     pickers::search_picker::SearchPicker,
     popups::{
         exporters::{arrow, avro, csv, json, jsonl, markdown, parquet, tsv},
@@ -51,7 +52,8 @@ impl From<DataFrame> for State {
     fn from(value: DataFrame) -> Self {
         State::PickFormat {
             df: value,
-            picker: SearchPicker::new(Format::iter().collect()).with_title("Format"),
+            picker: SearchPicker::new(Format::iter().collect())
+                .with_title(icons::FORMAT.into_title("Format")),
         }
     }
 }
@@ -124,8 +126,19 @@ pub enum Format {
     Avro,
 }
 
+impl Format {
+    fn icon(&self) -> icons::Icon {
+        match self {
+            Format::Csv | Format::Tsv => icons::TABLE,
+            Format::Json | Format::JsonL => icons::JSON,
+            Format::Parquet | Format::Arrow | Format::Avro => icons::DATABASE,
+            Format::Markdown => icons::MARKDOWN,
+        }
+    }
+}
+
 impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
+        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
     }
 }

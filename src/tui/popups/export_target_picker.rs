@@ -3,7 +3,7 @@ use std::fmt::Display;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::{component::Component, pickers::list_picker::ListPicker};
+use crate::tui::{component::Component, icons, pickers::list_picker::ListPicker};
 
 #[derive(Debug)]
 pub struct ExportTargetPicker {
@@ -35,7 +35,7 @@ impl Default for ExportTargetPicker {
     fn default() -> Self {
         Self {
             list_picker: ListPicker::new(Target::iter().to_owned().collect())
-                .with_title("Export Target"),
+                .with_title(icons::EXPORT.into_title("Export Target")),
         }
     }
 }
@@ -46,8 +46,17 @@ pub enum Target {
     Clipboard,
 }
 
+impl Target {
+    fn icon(&self) -> icons::Icon {
+        match self {
+            Target::File => icons::FILE,
+            Target::Clipboard => icons::CLIPBOARD,
+        }
+    }
+}
+
 impl Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
+        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
     }
 }
