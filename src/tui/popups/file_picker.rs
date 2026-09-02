@@ -9,13 +9,11 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use home::home_dir;
 use itertools::Itertools;
 
-use crate::{
-    misc::config::config,
-    tui::{
-        component::Component,
-        pickers::text_picker_with_suggestion::{self, TextPickerWithSuggestion},
-        widgets::input::Input,
-    },
+use crate::tui::{
+    component::Component,
+    icons,
+    pickers::text_picker_with_suggestion::{self, TextPickerWithSuggestion},
+    widgets::input::Input,
 };
 
 #[derive(Debug)]
@@ -68,7 +66,7 @@ impl Default for FilePicker {
             text_picker: TextPickerWithSuggestion::new(
                 suggestions as for<'a> fn(&'a str, usize) -> Vec<FileSuggestion>,
             )
-            .with_title("File Path")
+            .with_title(icons::FOLDER_OPEN.into_title("File Path"))
             .with_value(
                 std::env::current_dir()
                     .ok()
@@ -133,44 +131,24 @@ fn suggestions(query: &str, _: usize) -> Vec<FileSuggestion> {
 }
 
 fn suggestion_title(path: &Path, name: &str) -> String {
-    let is_dir = path.is_dir();
-    let use_nerd = config().use_nerd_font();
-    match (is_dir, use_nerd) {
-        (true, true) => format!(" {}  {}{}", icon(path), name, MAIN_SEPARATOR),
-        (true, false) => format!("{}{}", name, MAIN_SEPARATOR),
-        (false, true) => format!(" {}  {}", icon(path), name),
-        (false, false) => name.to_owned(),
-    }
+    let name = if path.is_dir() {
+        format!("{name}{MAIN_SEPARATOR}")
+    } else {
+        name.to_owned()
+    };
+    icon(path).into_item(name)
 }
 
-fn icon(path: &Path) -> &'static str {
-    const FOLDER_ICON: &str = "\u{F07B}";
-    const FILE_ICON: &str = "\u{F15B}";
-    const TABLE_ICON: &str = "\u{F0CE}";
-    const JSON_ICON: &str = "\u{E60B}";
-    const DATABASE_ICON: &str = "\u{F1C0}";
-    const EXCEL_ICON: &str = "\u{F1C3}";
-    const HTML_ICON: &str = "\u{F121}";
-    const MARKDOWN_ICON: &str = "\u{E609}";
-    const TEXT_ICON: &str = "\u{F0F6}";
-
+fn icon(path: &Path) -> icons::Icon {
     if path.is_dir() {
-        return FOLDER_ICON;
-    }
-    match path
-        .extension()
-        .and_then(OsStr::to_str)
-        .map(str::to_lowercase)
-        .as_deref()
-    {
-        Some("csv" | "tsv") => TABLE_ICON,
-        Some("json" | "jsonl") => JSON_ICON,
-        Some("parquet" | "pqt" | "arrow" | "avro" | "db" | "sqlite") => DATABASE_ICON,
-        Some("xls" | "xlsx" | "xlsm" | "xlsb") => EXCEL_ICON,
-        Some("html" | "htm") => HTML_ICON,
-        Some("md" | "markdown") => MARKDOWN_ICON,
-        Some("fwf" | "log" | "txt") => TEXT_ICON,
-        _ => FILE_ICON,
+        icons::FOLDER
+    } else {
+        icons::extension(
+            path.extension()
+                .and_then(OsStr::to_str)
+                .map(str::to_lowercase)
+                .as_deref(),
+        )
     }
 }
 

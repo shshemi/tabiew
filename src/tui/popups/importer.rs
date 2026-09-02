@@ -4,6 +4,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::tui::{
+    icons,
     pickers::search_picker::SearchPicker,
     popups::{
         importers::{
@@ -131,7 +132,8 @@ impl OverlayStep for State {
 impl Default for State {
     fn default() -> Self {
         Self::PickFormat {
-            picker: SearchPicker::new(Format::iter().collect()),
+            picker: SearchPicker::new(Format::iter().collect())
+                .with_title(icons::FORMAT.into_title("Format")),
         }
     }
 }
@@ -153,8 +155,22 @@ pub enum Format {
     Markdown,
 }
 
+impl Format {
+    fn icon(&self) -> icons::Icon {
+        match self {
+            Format::Csv | Format::Tsv => icons::TABLE,
+            Format::Json | Format::Jsonl => icons::JSON,
+            Format::Parquet | Format::Arrow | Format::Avro | Format::Sqlite => icons::DATABASE,
+            Format::Excel => icons::EXCEL,
+            Format::Html => icons::HTML,
+            Format::Markdown => icons::MARKDOWN,
+            Format::Fwf | Format::Logfmt => icons::TEXT,
+        }
+    }
+}
+
 impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
+        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
     }
 }

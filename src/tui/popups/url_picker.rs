@@ -3,7 +3,7 @@ use url::Url;
 
 use crate::{
     AppResult,
-    tui::{component::Component, pickers::text_picker::TextPicker},
+    tui::{component::Component, icons, pickers::text_picker::TextPicker},
 };
 
 #[derive(Debug)]
@@ -40,7 +40,7 @@ impl Component for UrlPicker {
 impl Default for UrlPicker {
     fn default() -> Self {
         Self {
-            text_picker: TextPicker::default().with_title("URL"),
+            text_picker: TextPicker::default().with_title(icons::GLOBE.into_title("URL")),
         }
     }
 }

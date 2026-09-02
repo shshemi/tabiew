@@ -2,6 +2,7 @@ use crate::{
     handler::message::Message,
     io::{DataSource, reader::FwfToDataFrame},
     tui::{
+        icons,
         pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
@@ -63,7 +64,7 @@ impl OverlayStep for State {
                     source: DataSource::Stdin,
                     picker: TextPicker::default()
                         .with_input_type(InputType::MultiNumeric)
-                        .with_title("Widths")
+                        .with_title(icons::WIDTH.into_title("Widths"))
                         .with_hint("4 8 12 or leave empty to auto detect"),
                 },
                 Some(ImportSource::Url) => State::PickUrl {
@@ -75,7 +76,7 @@ impl OverlayStep for State {
                 source: DataSource::File(picker.path()),
                 picker: TextPicker::default()
                     .with_input_type(InputType::MultiNumeric)
-                    .with_title("Widths")
+                    .with_title(icons::WIDTH.into_title("Widths"))
                     .with_hint("4 8 12 or leave empty to auto detect"),
             },
             State::PickUrl { picker } => match picker.url() {
@@ -83,7 +84,7 @@ impl OverlayStep for State {
                     source: DataSource::Url(url),
                     picker: TextPicker::default()
                         .with_input_type(InputType::MultiNumeric)
-                        .with_title("Widths")
+                        .with_title(icons::WIDTH.into_title("Widths"))
                         .with_hint("4 8 12 or leave empty to auto detect"),
                 },
                 Err(err) => {
@@ -101,7 +102,8 @@ impl OverlayStep for State {
                 State::PickHeader {
                     widths,
                     source,
-                    picker: YesNoPicker::default().with_title("Has Header"),
+                    picker: YesNoPicker::default()
+                        .with_title(icons::HEADER.into_title("Has Header")),
                 }
             }
             State::PickHeader {
@@ -115,7 +117,7 @@ impl OverlayStep for State {
                     source,
                     picker: TextPicker::default()
                         .with_input_type(InputType::Numeric)
-                        .with_title("Separator Legnth"),
+                        .with_title(icons::SEPARATOR.into_title("Separator Length")),
                 },
                 None => State::PickHeader {
                     widths,
@@ -135,7 +137,8 @@ impl OverlayStep for State {
                     has_header,
                     widths,
                     source,
-                    picker: YesNoPicker::default().with_title("Flexible Width"),
+                    picker: YesNoPicker::default()
+                        .with_title(icons::EXPAND.into_title("Flexible Width")),
                 }
             }
             State::PickFlexibleWidth {

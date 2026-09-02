@@ -2,6 +2,7 @@ use crate::{
     handler::message::Message,
     io::{DataSource, reader::SqliteToDataFrames},
     tui::{
+        icons,
         pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
@@ -39,7 +40,7 @@ impl OverlayStep for State {
                 Some(ImportSource::Stdin) => State::PickPassword {
                     source: DataSource::Stdin,
                     picker: TextPicker::default()
-                        .with_title("Password")
+                        .with_title(icons::LOCK.into_title("Password"))
                         .with_hint("Leave empty for no password"),
                 },
                 Some(ImportSource::File) => State::PickPath {
@@ -53,14 +54,14 @@ impl OverlayStep for State {
             State::PickPath { picker } => State::PickPassword {
                 source: DataSource::File(picker.path()),
                 picker: TextPicker::default()
-                    .with_title("Password")
+                    .with_title(icons::LOCK.into_title("Password"))
                     .with_hint("Leave empty for no password"),
             },
             State::PickUrl { picker } => match picker.url() {
                 Ok(url) => State::PickPassword {
                     source: DataSource::Url(url),
                     picker: TextPicker::default()
-                        .with_title("Password")
+                        .with_title(icons::LOCK.into_title("Password"))
                         .with_hint("Leave empty for no password"),
                 },
                 Err(err) => {

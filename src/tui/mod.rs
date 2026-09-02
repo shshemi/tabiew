@@ -1,6 +1,7 @@
 pub mod app_default;
 pub mod component;
 pub mod error_popup;
+pub mod icons;
 pub mod pane;
 pub mod pickers;
 pub mod plots;

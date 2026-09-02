@@ -10,8 +10,8 @@ use ratatui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    misc::config::{config, theme},
-    tui::{Pane, pane::TableDescription},
+    misc::config::theme,
+    tui::{Pane, icons, pane::TableDescription},
 };
 
 pub struct StatusBar<'a> {
@@ -71,16 +71,10 @@ impl<'a> Widget for StatusBar<'a> {
     }
 }
 
-const NERD_SEPARATOR: &str = "\u{E0B0}";
-const SEPARATOR: &str = "\u{25B6}";
 const SUMMARIZED: &str = " ... ";
 
 fn separator() -> &'static str {
-    if config().use_nerd_font() {
-        NERD_SEPARATOR
-    } else {
-        SEPARATOR
-    }
+    icons::WEDGE.into_str(icons::TRIANGLE)
 }
 
 struct History<'a> {
