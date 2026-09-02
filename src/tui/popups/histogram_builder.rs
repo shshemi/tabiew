@@ -5,6 +5,7 @@ use polars::{frame::DataFrame, prelude::DataType};
 use crate::{
     handler::message::Message,
     tui::{
+        icons,
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
         popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
         widgets::input::InputType,
@@ -39,7 +40,7 @@ impl State {
             .collect();
 
         State::PickColumn {
-            picker: SearchPicker::new(items).with_title("Column"),
+            picker: SearchPicker::new(items).with_title(icons::COLUMN.into_title("Column")),
         }
     }
 }
@@ -57,7 +58,7 @@ impl OverlayStep for State {
                         State::PickBucketCount {
                             column: name.to_owned(),
                             picker: TextPicker::default()
-                                .with_title("Buckets")
+                                .with_title(icons::CHART.into_title("Buckets"))
                                 .with_input_type(InputType::Numeric)
                                 .with_value(DEFAULT_BUCKET_COUNT.to_owned()),
                         }
