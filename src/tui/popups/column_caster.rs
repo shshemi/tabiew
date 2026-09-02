@@ -10,6 +10,7 @@ use crate::{
     handler::message::Message,
     misc::polars_ext::SeriesExt,
     tui::{
+        icons,
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
         popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
@@ -39,7 +40,8 @@ impl OverlayStep for State {
                     Self::PickType {
                         df,
                         col_name: col_name.to_owned(),
-                        picker: SearchPicker::new(TargetType::iter().collect()).with_title("Type"),
+                        picker: SearchPicker::new(TargetType::iter().collect())
+                            .with_title(icons::CAST.into_title("Type")),
                     }
                 } else {
                     Self::PickColumn { df, picker }
@@ -99,7 +101,7 @@ impl From<DataFrame> for State {
                     .map(|col| col.name().as_str().to_owned())
                     .collect(),
             )
-            .with_title("Column"),
+            .with_title(icons::COLUMN.into_title("Column")),
             df: value,
         }
     }
