@@ -7,6 +7,7 @@ use crate::{
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
+        icons,
         pickers::text_picker_with_suggestion::{Provider, Suggestion, TextPickerWithSuggestion},
     },
 };
@@ -28,7 +29,8 @@ impl SqlQueryPicker {
             history: HISTORY.to_vec(),
         };
         Self {
-            picker: TextPickerWithSuggestion::new(provider).with_title("SQL"),
+            picker: TextPickerWithSuggestion::new(provider)
+                .with_title(icons::DATABASE.into_title("SQL")),
             dataframe,
         }
     }
