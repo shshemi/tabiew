@@ -3,6 +3,7 @@ use polars::frame::DataFrame;
 use crate::{
     handler::message::Message,
     tui::{
+        icons,
         pickers::search_picker::SearchPicker,
         popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
     },
@@ -38,7 +39,7 @@ impl State {
             .collect();
         Self::PickX {
             df,
-            picker: SearchPicker::new(items).with_title("Axis X"),
+            picker: SearchPicker::new(items).with_title(icons::WIDTH.into_title("Axis X")),
         }
     }
 }
@@ -56,7 +57,8 @@ impl OverlayStep for State {
                     State::PickY {
                         df,
                         x,
-                        picker: SearchPicker::new(items).with_title("Axis Y"),
+                        picker: SearchPicker::new(items)
+                            .with_title(icons::HEIGHT.into_title("Axis Y")),
                     }
                 } else {
                     State::PickX { df, picker }
@@ -82,7 +84,7 @@ impl OverlayStep for State {
                                 )
                                 .collect(),
                         )
-                        .with_title("Color By"),
+                        .with_title(icons::PALETTE.into_title("Color By")),
                     }
                 } else {
                     State::PickY { df, x, picker }
