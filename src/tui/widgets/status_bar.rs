@@ -3,14 +3,14 @@ use std::{borrow::Cow, ops::Add};
 
 use ratatui::{
     layout::{Constraint, Layout},
-    style::Modifier,
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::Widget,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    misc::config::theme,
+    misc::config::{config, theme},
     tui::{Pane, pane::TableDescription},
 };
 
@@ -71,38 +71,49 @@ impl<'a> Widget for StatusBar<'a> {
     }
 }
 
+const NERD_SEPARATOR: &str = "\u{E0B0}";
 const SEPARATOR: &str = "\u{25B6}";
 const SUMMARIZED: &str = " ... ";
 
+fn separator() -> &'static str {
+    if config().use_nerd_font() {
+        NERD_SEPARATOR
+    } else {
+        SEPARATOR
+    }
+}
+
 struct History<'a> {
-    first: FirstHistoryItem<'a>,
-    nexts: Vec<NextHistoryItem<'a>>,
+    first: HistoryItem<'a>,
+    nexts: Vec<HistoryItem<'a>>,
     shrinked: bool,
 }
 
 impl<'a> History<'a> {
     fn new(t: impl IntoIterator<Item = &'a TableDescription>) -> Option<Self> {
-        let mut iter = t.into_iter();
-        let first = iter.next()?;
+        let mut iter = t
+            .into_iter()
+            .enumerate()
+            .map(|(pos, td)| HistoryItem::new(td, pos));
         Some(Self {
-            first: FirstHistoryItem::new(first),
-            nexts: iter.map(NextHistoryItem::new).collect(),
+            first: iter.next()?,
+            nexts: iter.collect(),
             shrinked: false,
         })
     }
 
     fn required_width(&self) -> u16 {
-        let first = self.first.width();
-        let nexts = self
-            .nexts
-            .iter()
-            .map(|n| n.width() + SEPARATOR.width() as u16)
+        let separator = separator().width() as u16;
+        let items = std::iter::once(&self.first)
+            .chain(self.nexts.iter())
+            .map(|item| item.width())
             .sum::<u16>();
+        let separators = self.nexts.len() as u16 * separator;
 
         if self.shrinked {
-            first + nexts + (SUMMARIZED.width() + SEPARATOR.width()) as u16
+            items + separators + SUMMARIZED.width() as u16 + separator
         } else {
-            first + nexts
+            items + separators
         }
     }
 
@@ -125,15 +136,19 @@ impl<'a> History<'a> {
     }
 
     fn line(self) -> Line<'a> {
+        let mut prev = self.first.tail_style();
         let mut spans = self.first.spans().collect::<Vec<_>>();
+
         if self.shrinked {
-            spans.extend([
-                Span::styled(SEPARATOR, theme().tag(0).reversed()),
-                Span::styled(SUMMARIZED, theme().tag(0).reversed()),
-            ]);
+            let style = theme().tag(1);
+            spans.push(chevron(prev, style));
+            spans.push(Span::styled(SUMMARIZED, style));
+            prev = style;
         }
+
         for item in self.nexts {
-            spans.push(Span::styled(SEPARATOR, theme().tag(0).reversed()));
+            spans.push(chevron(prev, item.head_style()));
+            prev = item.tail_style();
             spans.extend(item.spans());
         }
 
@@ -141,57 +156,66 @@ impl<'a> History<'a> {
     }
 }
 
-struct FirstHistoryItem<'a> {
-    td: &'a TableDescription,
+fn reversed(style: Style) -> Style {
+    Style::default()
+        .fg(style.bg.unwrap_or(Color::Reset))
+        .bg(style.fg.unwrap_or(Color::Reset))
 }
 
-impl<'a> FirstHistoryItem<'a> {
-    fn new(td: &'a TableDescription) -> Self {
-        Self { td }
+fn chevron(left: Style, right: Style) -> Span<'static> {
+    Span::styled(
+        separator(),
+        Style::default()
+            .fg(left.bg.unwrap_or(Color::Reset))
+            .bg(right.bg.unwrap_or(Color::Reset)),
+    )
+}
+
+struct HistoryItem<'a> {
+    td: &'a TableDescription,
+    pos: usize,
+}
+
+impl<'a> HistoryItem<'a> {
+    fn new(td: &'a TableDescription, pos: usize) -> Self {
+        Self { td, pos }
+    }
+
+    fn head_style(&self) -> Style {
+        theme().tag(self.pos)
+    }
+
+    fn tail_style(&self) -> Style {
+        if self.td.description().trim().is_empty() {
+            self.head_style()
+        } else {
+            reversed(self.head_style())
+        }
     }
 
     fn width(&self) -> u16 {
-        (4 + self.td.variant().width() + self.td.description().width()) as u16
+        let description = self.td.description().trim();
+        if description.is_empty() {
+            (2 + self.td.variant().width()) as u16
+        } else {
+            (4 + self.td.variant().width() + description.width()) as u16
+        }
     }
 
     fn spans(&self) -> impl Iterator<Item = Span<'a>> {
+        let head = self.head_style();
+        let tail = self.tail_style();
+        let description = self.td.description().trim();
         [
-            Span::styled(" ", theme().tag(0)),
-            Span::styled(self.td.variant(), theme().tag(0)),
-            Span::styled(" ", theme().tag(0)),
-            Span::styled(" ", theme().tag(0).add_modifier(Modifier::REVERSED)),
-            Span::styled(
-                self.td.description().trim(),
-                theme().tag(0).add_modifier(Modifier::REVERSED),
-            ),
-            Span::styled(" ", theme().tag(0).add_modifier(Modifier::REVERSED)),
+            Some(Span::styled(" ", head)),
+            Some(Span::styled(self.td.variant(), head)),
+            Some(Span::styled(" ", head)),
+            (!description.is_empty()).then(|| Span::styled(" ", tail)),
+            (!description.is_empty()).then(|| Span::styled(description, tail)),
+            (!description.is_empty()).then(|| Span::styled(" ", tail)),
         ]
         .into_iter()
-    }
-}
-
-struct NextHistoryItem<'a> {
-    td: &'a TableDescription,
-}
-
-impl<'a> NextHistoryItem<'a> {
-    fn new(td: &'a TableDescription) -> Self {
-        Self { td }
-    }
-
-    fn width(&self) -> u16 {
-        (4 + self.td.variant().width() + self.td.description().width()) as u16
-    }
-
-    fn spans(&self) -> impl Iterator<Item = Span<'a>> {
-        [
-            Span::styled(" ", theme().tag(0).reversed()),
-            Span::styled(self.td.variant(), theme().tag(0).reversed()),
-            Span::styled("[", theme().tag(0).reversed()),
-            Span::styled(self.td.description().trim(), theme().tag(0).reversed()),
-            Span::styled("] ", theme().tag(0).reversed()),
-        ]
-        .into_iter()
+        .flatten()
     }
 }
 
