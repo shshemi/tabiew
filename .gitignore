@@ -20,3 +20,6 @@
 *.fwf
 *.log
 *.html
+*.avro
+*.logfmt
+*.pqt
