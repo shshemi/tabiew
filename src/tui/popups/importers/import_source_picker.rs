@@ -5,7 +5,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
     io::reader::ReaderSource,
-    tui::{component::Component, pickers::list_picker::ListPicker},
+    tui::{component::Component, icons, pickers::list_picker::ListPicker},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr, EnumIter)]
@@ -15,9 +15,19 @@ pub enum ImportSource {
     Url,
 }
 
+impl ImportSource {
+    fn icon(&self) -> icons::Icon {
+        match self {
+            ImportSource::File => icons::FILE,
+            ImportSource::Stdin => icons::TERMINAL,
+            ImportSource::Url => icons::GLOBE,
+        }
+    }
+}
+
 impl Display for ImportSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
+        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
     }
 }
 
@@ -60,7 +70,7 @@ impl Default for ImportSourcePicker {
     fn default() -> Self {
         Self {
             list_picker: ListPicker::new(ImportSource::iter().collect())
-                .with_title("Import Source"),
+                .with_title(icons::IMPORT.into_title("Import Source")),
         }
     }
 }

@@ -3,7 +3,7 @@ use std::fmt::Display;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::{component::Component, pickers::list_picker::ListPicker};
+use crate::tui::{component::Component, icons, pickers::list_picker::ListPicker};
 
 #[derive(Debug)]
 pub struct YesNoPicker {
@@ -56,6 +56,10 @@ pub enum YesNo {
 
 impl Display for YesNo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
+        let glyph = match self {
+            YesNo::Yes => icons::CHECK,
+            YesNo::No => icons::CROSS,
+        };
+        write!(f, "{}", glyph.into_item(Into::<&str>::into(self)))
     }
 }

@@ -6,6 +6,7 @@ use crate::{
     handler::message::Message,
     io::{DataSource, reader::CsvToDataFrame},
     tui::{
+        icons,
         pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker, multi_step_overlay::OverlayStep, url_picker::UrlPicker,
@@ -48,7 +49,8 @@ impl OverlayStep for State {
             State::PickSource { picker } => match picker.value() {
                 Some(ImportSource::Stdin) => State::PickHasHeader {
                     source: DataSource::Stdin,
-                    picker: YesNoPicker::default().with_title("Has Header"),
+                    picker: YesNoPicker::default()
+                        .with_title(icons::HEADER.into_title("Has Header")),
                 },
                 Some(ImportSource::File) => State::PickPath {
                     picker: Default::default(),
@@ -62,12 +64,13 @@ impl OverlayStep for State {
             },
             State::PickPath { picker } => State::PickHasHeader {
                 source: DataSource::File(picker.path()),
-                picker: YesNoPicker::default().with_title("Has Header"),
+                picker: YesNoPicker::default().with_title(icons::HEADER.into_title("Has Header")),
             },
             State::PickUrl { picker } => match picker.url() {
                 Ok(url) => State::PickHasHeader {
                     source: DataSource::Url(url),
-                    picker: YesNoPicker::default().with_title("Has Header"),
+                    picker: YesNoPicker::default()
+                        .with_title(icons::HEADER.into_title("Has Header")),
                 },
                 Err(err) => {
                     Message::AppShowToast(err.to_string()).enqueue();
@@ -78,7 +81,7 @@ impl OverlayStep for State {
                 source,
                 has_header: picker.value().unwrap_or(true),
                 picker: TextPicker::default()
-                    .with_title("Separator")
+                    .with_title(icons::SEPARATOR.into_title("Separator"))
                     .with_max_len(1)
                     .with_value(",".to_owned()),
             },
@@ -93,7 +96,7 @@ impl OverlayStep for State {
                         source,
                         has_header,
                         picker: TextPicker::default()
-                            .with_title("Quote")
+                            .with_title(icons::QUOTE.into_title("Quote"))
                             .with_max_len(1)
                             .with_value("\"".to_owned()),
                     }
