@@ -5,7 +5,7 @@ use crossterm::event::KeyCode;
 use crate::{
     handler::message::Message,
     misc::{config::config, type_ext::UnwrapOrEnqueueError},
-    tui::{component::Component, pickers::list_picker::ListPicker},
+    tui::{component::Component, icons, pickers::list_picker::ListPicker},
 };
 
 #[derive(Debug)]
@@ -48,11 +48,14 @@ impl Component for FpPrecisionPicker {
 impl Default for FpPrecisionPicker {
     fn default() -> Self {
         let items = FpPrecision::all();
-        let rollback = config().fp_precision().map_or(-1, |precision| precision as i8);
+        let rollback = config()
+            .fp_precision()
+            .map_or(-1, |precision| precision as i8);
         let selected = items
             .iter()
             .position(|precision| precision.value() == rollback);
-        let mut list_picker = ListPicker::new(items).with_title("Floating Point Precision");
+        let mut list_picker = ListPicker::new(items)
+            .with_title(icons::PRECISION.into_title("Floating Point Precision"));
         list_picker.select(selected);
         Self {
             list_picker,
