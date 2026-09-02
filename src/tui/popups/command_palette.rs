@@ -7,7 +7,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::{
     handler::message::Message,
     misc::{config::config, type_ext::UnwrapOrEnqueueError},
-    tui::{component::Component, pickers::search_picker::SearchPicker},
+    tui::{component::Component, icons, pickers::search_picker::SearchPicker},
 };
 
 #[derive(Debug)]
@@ -142,8 +142,37 @@ impl Command {
     }
 }
 
+impl Command {
+    fn icon(&self) -> icons::Icon {
+        match self {
+            Command::Cast => icons::CAST,
+            Command::Edit => icons::PENCIL,
+            Command::Export => icons::EXPORT,
+            Command::Filter => icons::FILTER,
+            Command::FloatingPointPrecision => icons::PRECISION,
+            Command::FuzzySearch => icons::FUZZY_SEARCH,
+            Command::Histogram => icons::CHART,
+            Command::Import => icons::IMPORT,
+            Command::Info => icons::INFO,
+            Command::Order | Command::Sort => icons::SORT,
+            Command::Query => icons::DATABASE,
+            Command::Quit => icons::POWER,
+            Command::Register => icons::TAG,
+            Command::ReloadConfig => icons::REFRESH,
+            Command::ScatterPlot => icons::SCATTER,
+            Command::Schema => icons::SCHEMA,
+            Command::Search => icons::SEARCH,
+            Command::Select => icons::COLUMN,
+            Command::ThemeSelector => icons::PALETTE,
+            Command::ToggleBorders => icons::BORDERS,
+            Command::ToggleNerdFont => icons::FONT,
+            Command::ToggleRowNumbers => icons::ROW_NUMBERS,
+        }
+    }
+}
+
 impl Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Into::<&str>::into(self))
+        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
     }
 }
