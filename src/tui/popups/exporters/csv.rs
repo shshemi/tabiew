@@ -9,6 +9,7 @@ use crate::{
     io::writer::WriteToCsv,
     tui::{
         component::Component,
+        icons,
         pickers::text_picker::TextPicker,
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
@@ -48,7 +49,7 @@ impl From<DataFrame> for State {
         Self::PickSeparator {
             df: value,
             picker: TextPicker::default()
-                .with_title("Separator")
+                .with_title(icons::SEPARATOR.into_title("Separator"))
                 .with_max_len(1)
                 .with_value(",".to_owned()),
         }
@@ -64,7 +65,7 @@ impl OverlayStep for State {
                         df,
                         separator,
                         picker: TextPicker::default()
-                            .with_title("Quote")
+                            .with_title(icons::QUOTE.into_title("Quote"))
                             .with_max_len(1)
                             .with_value("\"".to_owned()),
                     }
