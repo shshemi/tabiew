@@ -24,6 +24,7 @@ pub struct Config {
     http: RwLock<HttpConfig>,
     show_table_borders: AtomicBool,
     show_table_row_numbers: AtomicBool,
+    use_nerd_font: AtomicBool,
     fp_precision: AtomicI8,
 }
 
@@ -36,6 +37,7 @@ impl Config {
             http,
             show_table_borders: table_borders,
             show_table_row_numbers: table_row_numbers,
+            use_nerd_font: nerd_font,
             fp_precision,
         } = toml::from_str(&contents)?;
         self.set_theme(theme.into_inner()?);
@@ -44,6 +46,8 @@ impl Config {
             .swap(table_borders.into_inner(), Ordering::Relaxed);
         self.show_table_row_numbers
             .swap(table_row_numbers.into_inner(), Ordering::Relaxed);
+        self.use_nerd_font
+            .swap(nerd_font.into_inner(), Ordering::Relaxed);
         self.fp_precision
             .swap(fp_precision.into_inner(), Ordering::Relaxed);
         Ok(())
@@ -101,6 +105,14 @@ impl Config {
         self.show_table_row_numbers
             .fetch_xor(true, Ordering::Relaxed);
     }
+
+    pub fn use_nerd_font(&self) -> bool {
+        self.use_nerd_font.load(Ordering::Relaxed)
+    }
+
+    pub fn toggle_use_nerd_font(&self) {
+        self.use_nerd_font.fetch_xor(true, Ordering::Relaxed);
+    }
 }
 
 impl Default for Config {
@@ -109,6 +121,7 @@ impl Default for Config {
             theme: RwLock::new(LoadedTheme::default()),
             show_table_borders: AtomicBool::new(true),
             show_table_row_numbers: AtomicBool::new(true),
+            use_nerd_font: AtomicBool::new(false),
             http: RwLock::new(HttpConfig::default()),
             fp_precision: AtomicI8::new(-1),
         }
