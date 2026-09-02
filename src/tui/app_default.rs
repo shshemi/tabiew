@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use ratatui::{
-    style::Modifier,
     text::Span,
     widgets::{Block, BorderType, List},
 };
@@ -18,10 +17,7 @@ pub trait AppTitle {
 
 impl AppTitle for Block<'_> {
     fn app_title(self, title: impl Display) -> Self {
-        self.title(Span::styled(
-            format!(" {title} "),
-            theme().block().add_modifier(Modifier::BOLD),
-        ))
+        self.title(Span::styled(format!(" {title} "), theme().block()))
     }
 }
 
