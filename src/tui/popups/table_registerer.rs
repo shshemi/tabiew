@@ -4,7 +4,7 @@ use polars::frame::DataFrame;
 use crate::{
     handler::message::Message,
     misc::{sql::TableSource, sql::sql},
-    tui::{component::Component, pickers::text_picker::TextPicker},
+    tui::{component::Component, icons, pickers::text_picker::TextPicker},
 };
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ impl TableRegisterer {
     pub fn new(df: DataFrame) -> Self {
         Self {
             df,
-            picker: TextPicker::default().with_title("Name"),
+            picker: TextPicker::default().with_title(icons::TAG.into_title("Name")),
         }
     }
 
