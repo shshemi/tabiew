@@ -11,6 +11,7 @@ use crate::{
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        icons,
         tag_line::{Tag, TagLine},
     },
 };
@@ -87,7 +88,7 @@ impl Component for TabSwitcher {
                             TagLine::new()
                                 .mono_color()
                                 .centered()
-                                .tag(Tag::new("Close", "Delete")),
+                                .tag(Tag::new(icons::TRASH.str("Close"), "Backspace")),
                         )
                         .title_alignment(Alignment::Center),
                 ),

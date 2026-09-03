@@ -31,7 +31,7 @@ impl<'a> Widget for StatusBar<'a> {
     {
         let row_tag = (!self.pane.table().gutter_visible()).then(|| {
             Tag::new(
-                "Row",
+                icons::ROW_NUMBERS.str("Row"),
                 format!(
                     "{:>width$}",
                     self.pane.table().selected().unwrap_or_default().add(1),
@@ -41,7 +41,7 @@ impl<'a> Widget for StatusBar<'a> {
             )
         });
         let shp_tag = Tag::new(
-            "Shape",
+            icons::GRID.str("Shape"),
             format!(
                 "{} x {}",
                 self.pane.table().data_frame().height(),
@@ -71,15 +71,17 @@ impl<'a> Widget for StatusBar<'a> {
     }
 }
 
-const SUMMARIZED: &str = " ... ";
+fn summarized() -> &'static str {
+    icons::ELLIPSIS.str("...")
+}
 
 fn separator() -> &'static str {
-    icons::WEDGE.into_str(icons::TRIANGLE)
+    icons::WEDGE.str("\u{25B6}")
 }
 
 struct History<'a> {
     first: HistoryItem<'a>,
-    nexts: Vec<HistoryItem<'a>>,
+    sibls: Vec<HistoryItem<'a>>,
     shrinked: bool,
 }
 
@@ -91,7 +93,7 @@ impl<'a> History<'a> {
             .map(|(pos, td)| HistoryItem::new(td, pos));
         Some(Self {
             first: iter.next()?,
-            nexts: iter.collect(),
+            sibls: iter.collect(),
             shrinked: false,
         })
     }
@@ -99,13 +101,13 @@ impl<'a> History<'a> {
     fn required_width(&self) -> u16 {
         let separator = separator().width() as u16;
         let items = std::iter::once(&self.first)
-            .chain(self.nexts.iter())
+            .chain(self.sibls.iter())
             .map(|item| item.width())
             .sum::<u16>();
-        let separators = self.nexts.len() as u16 * separator;
+        let separators = self.sibls.len() as u16 * separator;
 
         if self.shrinked {
-            items + separators + SUMMARIZED.width() as u16 + separator
+            items + separators + summarized().width() as u16 + 2 + separator
         } else {
             items + separators
         }
@@ -113,13 +115,13 @@ impl<'a> History<'a> {
 
     fn shrink(&mut self) {
         if self.can_shrink() {
-            self.nexts.remove(0);
+            self.sibls.remove(0);
             self.shrinked = true;
         }
     }
 
     fn can_shrink(&self) -> bool {
-        self.nexts.len() > 1
+        self.sibls.len() > 1
     }
 
     fn fitted(mut self, width: u16) -> Self {
@@ -136,11 +138,11 @@ impl<'a> History<'a> {
         if self.shrinked {
             let style = theme().tag(1);
             spans.push(chevron(prev, style));
-            spans.push(Span::styled(SUMMARIZED, style));
+            spans.push(Span::styled(format!(" {} ", summarized()), style));
             prev = style;
         }
 
-        for item in self.nexts {
+        for item in self.sibls {
             spans.push(chevron(prev, item.head_style()));
             prev = item.tail_style();
             spans.extend(item.spans());
@@ -187,12 +189,16 @@ impl<'a> HistoryItem<'a> {
         }
     }
 
+    fn label(&self) -> &'static str {
+        self.td.icon().str(self.td.variant())
+    }
+
     fn width(&self) -> u16 {
         let description = self.td.description().trim();
         if description.is_empty() {
-            (2 + self.td.variant().width()) as u16
+            (2 + self.label().width()) as u16
         } else {
-            (4 + self.td.variant().width() + description.width()) as u16
+            (4 + self.label().width() + description.width()) as u16
         }
     }
 
@@ -202,7 +208,7 @@ impl<'a> HistoryItem<'a> {
         let description = self.td.description().trim();
         [
             Some(Span::styled(" ", head)),
-            Some(Span::styled(self.td.variant(), head)),
+            Some(Span::styled(self.label(), head)),
             Some(Span::styled(" ", head)),
             (!description.is_empty()).then(|| Span::styled(" ", tail)),
             (!description.is_empty()).then(|| Span::styled(description, tail)),

@@ -10,6 +10,7 @@ use crate::{
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        icons,
         tag_line::{Tag, TagLine},
     },
 };
@@ -79,8 +80,8 @@ impl Component for DataFrameNames {
                         TagLine::new()
                             .mono_color()
                             .centered()
-                            .tag(Tag::new("Open", "Enter"))
-                            .tag(Tag::new("Unload", "Delete")),
+                            .tag(Tag::new(icons::FOLDER_OPEN.str("Open"), "Enter"))
+                            .tag(Tag::new(icons::TRASH.str("Unload"), "Backspace")),
                     )
                     .title_alignment(Alignment::Center),
             );
@@ -113,7 +114,7 @@ impl Component for DataFrameNames {
                 self.select_last();
                 true
             }
-            (KeyCode::Delete, KeyModifiers::NONE) => {
+            (KeyCode::Backspace, KeyModifiers::NONE) => {
                 if let Some(name) = self
                     .selected()
                     .and_then(|idx| sql().schema().get_by_index(idx).map(|(s, _)| s.to_owned()))

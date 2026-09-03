@@ -54,8 +54,8 @@ impl Default for FpPrecisionPicker {
         let selected = items
             .iter()
             .position(|precision| precision.value() == rollback);
-        let mut list_picker = ListPicker::new(items)
-            .with_title(icons::PRECISION.into_title("Floating Point Precision"));
+        let mut list_picker =
+            ListPicker::new(items).with_title(icons::PRECISION.title("Floating Point Precision"));
         list_picker.select(selected);
         Self {
             list_picker,

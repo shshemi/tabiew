@@ -6,6 +6,7 @@ use crate::{
     handler::message::Message,
     tui::{
         component::{Component, FocusState},
+        icons,
         pane::TableDescription,
     },
 };
@@ -76,7 +77,7 @@ impl Tabs {
     }
     fn show_tab_switcher(&mut self) {
         self.switcher = Some(TabSwitcher::new(
-            "Tabs",
+            icons::TAB.title("Tabs"),
             self.panes
                 .iter()
                 .map(|pane| pane.title().to_owned())
@@ -153,7 +154,8 @@ impl Component for Tabs {
                         self.show_tab_switcher();
                         true
                     }
-                    (KeyCode::Delete, KeyModifiers::NONE) => {
+                    // TODO move it to switcher
+                    (KeyCode::Backspace, KeyModifiers::NONE) => {
                         self.close_selected();
                         true
                     }
