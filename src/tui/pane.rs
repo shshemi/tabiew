@@ -574,7 +574,7 @@ impl Component for Pane {
 
 fn table_status_bar_areas(area: Rect, bordered: bool, sheet: bool) -> [Rect; 3] {
     let [table_area, sheet_area] = if sheet {
-        Layout::horizontal([Constraint::Fill(1), Constraint::Percentage(30)]).areas(area)
+        Layout::horizontal([Constraint::Percentage(70), Constraint::Min(48)]).areas(area)
     } else {
         [area, area]
     };
