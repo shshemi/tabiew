@@ -5,7 +5,10 @@ use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
 use crate::{
     misc::{buffer_ext::BufferExt, rect_ext::RectExt},
-    tui::{app_default::{AppDefault, AppTitle}, component::Component},
+    tui::{
+        app_default::{AppDefault, AppTitle},
+        component::Component,
+    },
 };
 
 #[derive(Debug)]

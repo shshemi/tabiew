@@ -102,8 +102,7 @@ impl OverlayStep for State {
                 State::PickHeader {
                     widths,
                     source,
-                    picker: YesNoPicker::default()
-                        .with_title(icons::HEADER.title("Has Header")),
+                    picker: YesNoPicker::default().with_title(icons::HEADER.title("Has Header")),
                 }
             }
             State::PickHeader {

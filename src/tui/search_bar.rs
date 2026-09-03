@@ -5,7 +5,10 @@ use ratatui::widgets::{Block, Widget};
 use crate::{
     handler::message::Message,
     misc::search::{self, Contain, Skim},
-    tui::{app_default::{AppDefault, AppTitle}, component::Component},
+    tui::{
+        app_default::{AppDefault, AppTitle},
+        component::Component,
+    },
 };
 
 use super::widgets::input::Input;

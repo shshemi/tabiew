@@ -2,7 +2,10 @@ use ratatui::widgets::{Block, Gauge, Paragraph, Widget};
 
 use crate::{
     misc::{config::theme, remote_load::RemoteLoad},
-    tui::{app_default::{AppDefault, AppTitle}, component::Component},
+    tui::{
+        app_default::{AppDefault, AppTitle},
+        component::Component,
+    },
 };
 
 pub struct DownloadNotification {

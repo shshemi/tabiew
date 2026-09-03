@@ -57,8 +57,7 @@ impl OverlayStep for State {
                     State::PickY {
                         df,
                         x,
-                        picker: SearchPicker::new(items)
-                            .with_title(icons::HEIGHT.title("Axis Y")),
+                        picker: SearchPicker::new(items).with_title(icons::HEIGHT.title("Axis Y")),
                     }
                 } else {
                     State::PickX { df, picker }

@@ -12,7 +12,10 @@ use crate::{
     AppResult,
     handler::message::Message,
     misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
-    tui::{app_default::{AppDefault, AppTitle}, component::Component},
+    tui::{
+        app_default::{AppDefault, AppTitle},
+        component::Component,
+    },
 };
 
 #[derive(Debug)]

@@ -10,7 +10,11 @@ use ratatui::{
 
 use crate::{
     misc::{buffer_ext::BufferExt, rect_ext::RectExt},
-    tui::{app_default::{AppDefault, AppTitle}, component::Component, widgets::input::Input},
+    tui::{
+        app_default::{AppDefault, AppTitle},
+        component::Component,
+        widgets::input::Input,
+    },
 };
 
 #[derive(Debug, Default)]

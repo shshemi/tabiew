@@ -15,7 +15,10 @@ use crate::{
         sql::{self, TableInfo},
         type_ext::human_readable_size,
     },
-    tui::{app_default::{AppDefault, AppTitle}, component::Component},
+    tui::{
+        app_default::{AppDefault, AppTitle},
+        component::Component,
+    },
 };
 
 #[derive(Debug)]
