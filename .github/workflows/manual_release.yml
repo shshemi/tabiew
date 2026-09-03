@@ -50,7 +50,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Install cargo-deny
-        run: cargo install cargo-deny
+        run: cargo install --locked cargo-deny
 
       - name: Run cargo deny
         run: cargo deny check
