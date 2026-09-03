@@ -10,6 +10,7 @@ use crate::{
     tui::{
         app_default::AppDefault,
         component::Component,
+        icons,
         tag_line::{Tag, TagLine},
     },
 };
@@ -97,13 +98,10 @@ impl Component for DataFrameFieldInfo {
                 .block(
                     Block::app_default()
                         .borders(Borders::BOTTOM | Borders::RIGHT | Borders::LEFT)
-                        .title_bottom(
-                            TagLine::new()
-                                .mono_color()
-                                .centered()
-                                .tag(Tag::new("Scroll Up", "Shift+K | Shift+\u{2191}"))
-                                .tag(Tag::new("Scroll Down", "Shift+J | Shift+\u{2193}")),
-                        )
+                        .title_bottom(TagLine::new().mono_color().centered().tag(Tag::new(
+                            icons::HEIGHT.str("Scroll"),
+                            "Shift+\u{2193}\u{2191}/JK",
+                        )))
                         .title_alignment(Alignment::Center),
                 ),
             area,

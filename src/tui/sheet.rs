@@ -22,6 +22,7 @@ use crate::{
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        icons,
         tag_line::{Tag, TagLine},
         utils::Scroll,
     },
@@ -77,8 +78,11 @@ impl Component for Sheet {
                     TagLine::new()
                         .mono_color()
                         .centered()
-                        .tag(Tag::new("Scroll", "Shift + J / K"))
-                        .tag(Tag::new("Copy", "C")),
+                        .tag(Tag::new(
+                            icons::HEIGHT.str("Scroll"),
+                            "Shift+\u{2193}\u{2191}/JK",
+                        ))
+                        .tag(Tag::new(icons::COPY.str("Copy"), "C")),
                 )
                 .title_alignment(Alignment::Center),
         );

@@ -6,7 +6,7 @@ use crate::misc::config::config;
 pub struct Icon(&'static str);
 
 impl Icon {
-    pub fn into_str(self, fallback: &'static str) -> &'static str {
+    pub fn str(self, fallback: &'static str) -> &'static str {
         if config().use_nerd_font() {
             self.0
         } else {
@@ -14,17 +14,17 @@ impl Icon {
         }
     }
 
-    pub fn into_title(self, text: impl Display) -> String {
+    pub fn title(self, text: impl Display) -> String {
         if config().use_nerd_font() {
-            format!("{}  {text}", self.0)
+            format!("{} {text}", self.0)
         } else {
             text.to_string()
         }
     }
 
-    pub fn into_item(self, text: impl Display) -> String {
+    pub fn item(self, text: impl Display) -> String {
         if config().use_nerd_font() {
-            format!(" {}  {text}", self.0)
+            format!(" {} {text}", self.0)
         } else {
             text.to_string()
         }
@@ -82,7 +82,9 @@ pub const ARROW_DOWN: Icon = Icon("\u{F063} ");
 pub const COPY: Icon = Icon("\u{F0C5} ");
 pub const TRASH: Icon = Icon("\u{F1F8} ");
 pub const WEDGE: Icon = Icon("\u{E0B0} ");
-pub const TRIANGLE: &str = "\u{25B6 }";
+pub const TAB: Icon = Icon("\u{F04E9} ");
+pub const SHIFT: Icon = Icon("\u{F0636} ");
+pub const BACKSPACE: Icon = Icon("\u{EE23} ");
 
 pub fn extension(ext: Option<&str>) -> Icon {
     match ext {

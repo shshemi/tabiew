@@ -40,7 +40,7 @@ impl Component for UrlPicker {
 impl Default for UrlPicker {
     fn default() -> Self {
         Self {
-            text_picker: TextPicker::default().with_title(icons::GLOBE.into_title("URL")),
+            text_picker: TextPicker::default().with_title(icons::GLOBE.title("URL")),
         }
     }
 }

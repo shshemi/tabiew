@@ -66,7 +66,7 @@ impl Default for FilePicker {
             text_picker: TextPickerWithSuggestion::new(
                 suggestions as for<'a> fn(&'a str, usize) -> Vec<FileSuggestion>,
             )
-            .with_title(icons::FOLDER_OPEN.into_title("File Path"))
+            .with_title(icons::FOLDER_OPEN.title("File Path"))
             .with_value(
                 std::env::current_dir()
                     .ok()
@@ -136,7 +136,7 @@ fn suggestion_title(path: &Path, name: &str) -> String {
     } else {
         name.to_owned()
     };
-    icon(path).into_item(name)
+    icon(path).item(name)
 }
 
 fn icon(path: &Path) -> icons::Icon {

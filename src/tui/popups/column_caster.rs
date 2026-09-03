@@ -41,7 +41,7 @@ impl OverlayStep for State {
                         df,
                         col_name: col_name.to_owned(),
                         picker: SearchPicker::new(TargetType::iter().collect())
-                            .with_title(icons::CAST.into_title("Type")),
+                            .with_title(icons::CAST.title("Type")),
                     }
                 } else {
                     Self::PickColumn { df, picker }
@@ -101,7 +101,7 @@ impl From<DataFrame> for State {
                     .map(|col| col.name().as_str().to_owned())
                     .collect(),
             )
-            .with_title(icons::COLUMN.into_title("Column")),
+            .with_title(icons::COLUMN.title("Column")),
             df: value,
         }
     }

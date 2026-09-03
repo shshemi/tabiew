@@ -53,7 +53,7 @@ impl From<DataFrame> for State {
         State::PickFormat {
             df: value,
             picker: SearchPicker::new(Format::iter().collect())
-                .with_title(icons::FORMAT.into_title("Format")),
+                .with_title(icons::FORMAT.title("Format")),
         }
     }
 }
@@ -139,6 +139,6 @@ impl Format {
 
 impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
+        write!(f, "{}", self.icon().item(Into::<&str>::into(self)))
     }
 }

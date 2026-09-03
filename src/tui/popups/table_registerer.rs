@@ -17,7 +17,7 @@ impl TableRegisterer {
     pub fn new(df: DataFrame) -> Self {
         Self {
             df,
-            picker: TextPicker::default().with_title(icons::TAG.into_title("Name")),
+            picker: TextPicker::default().with_title(icons::TAG.title("Name")),
         }
     }
 

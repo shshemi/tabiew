@@ -60,6 +60,6 @@ impl Display for YesNo {
             YesNo::Yes => icons::CHECK,
             YesNo::No => icons::CROSS,
         };
-        write!(f, "{}", glyph.into_item(Into::<&str>::into(self)))
+        write!(f, "{}", glyph.item(Into::<&str>::into(self)))
     }
 }

@@ -23,6 +23,7 @@ use crate::{
     tui::{
         app_default::AppDefault,
         component::{Component, FocusState},
+        icons,
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             column_caster::ColumnCaster,
@@ -638,7 +639,7 @@ pub enum TableDescription {
     FuzzySearch(String),
 }
 impl TableDescription {
-    pub fn variant(&self) -> &str {
+    pub fn variant(&self) -> &'static str {
         match self {
             TableDescription::Table(_) => "Table",
             TableDescription::Query(_) => "Query",
@@ -650,6 +651,19 @@ impl TableDescription {
             TableDescription::FuzzySearch(_) => "Fuzzy Search",
         }
     }
+    pub fn icon(&self) -> icons::Icon {
+        match self {
+            TableDescription::Table(_) => icons::TABLE,
+            TableDescription::Query(_) => icons::DATABASE,
+            TableDescription::Filter(_) => icons::FILTER,
+            TableDescription::Order(_) => icons::SORT,
+            TableDescription::Select(_) => icons::COLUMN,
+            TableDescription::Cast(_) => icons::CAST,
+            TableDescription::Search(_) => icons::SEARCH,
+            TableDescription::FuzzySearch(_) => icons::FUZZY_SEARCH,
+        }
+    }
+
     pub fn description(&self) -> &str {
         match self {
             TableDescription::Table(desc)

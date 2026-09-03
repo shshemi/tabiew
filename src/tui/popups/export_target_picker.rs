@@ -35,7 +35,7 @@ impl Default for ExportTargetPicker {
     fn default() -> Self {
         Self {
             list_picker: ListPicker::new(Target::iter().to_owned().collect())
-                .with_title(icons::EXPORT.into_title("Export Target")),
+                .with_title(icons::EXPORT.title("Export Target")),
         }
     }
 }
@@ -57,6 +57,6 @@ impl Target {
 
 impl Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
+        write!(f, "{}", self.icon().item(Into::<&str>::into(self)))
     }
 }

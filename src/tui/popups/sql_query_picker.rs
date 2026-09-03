@@ -30,7 +30,7 @@ impl SqlQueryPicker {
         };
         Self {
             picker: TextPickerWithSuggestion::new(provider)
-                .with_title(icons::DATABASE.into_title("SQL")),
+                .with_title(icons::DATABASE.title("SQL")),
             dataframe,
         }
     }

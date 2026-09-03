@@ -27,7 +27,7 @@ impl ImportSource {
 
 impl Display for ImportSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.icon().into_item(Into::<&str>::into(self)))
+        write!(f, "{}", self.icon().item(Into::<&str>::into(self)))
     }
 }
 
@@ -70,7 +70,7 @@ impl Default for ImportSourcePicker {
     fn default() -> Self {
         Self {
             list_picker: ListPicker::new(ImportSource::iter().collect())
-                .with_title(icons::IMPORT.into_title("Import Source")),
+                .with_title(icons::IMPORT.title("Import Source")),
         }
     }
 }
