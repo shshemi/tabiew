@@ -13,6 +13,7 @@ use crate::{
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        icons,
         tag_line::{Tag, TagLine},
     },
 };
@@ -55,13 +56,10 @@ impl Component for HistogramPlot {
             let blk = Block::app_default()
                 .app_title("Histogram Plot")
                 .title_alignment(Alignment::Center)
-                .title_bottom(
-                    TagLine::default()
-                        .mono_color()
-                        .centered()
-                        .tag(Tag::new("Scroll Up", "Shift+K | Shift+\u{2191}"))
-                        .tag(Tag::new("Scroll Down", "Shift+J | Shift+\u{2193}")),
-                );
+                .title_bottom(TagLine::default().mono_color().centered().tag(Tag::new(
+                    icons::HEIGHT.str("Scroll"),
+                    "Shift+\u{2193}\u{2191}/JK",
+                )));
             let new_area = blk.inner(area);
             blk.render(area, buf);
             new_area
