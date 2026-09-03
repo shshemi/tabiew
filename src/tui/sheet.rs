@@ -230,7 +230,6 @@ fn json_body(values: &IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>) -> Ve
     let last = values.len().saturating_sub(1);
 
     for (field, (name, (value, _))) in values.iter().enumerate() {
-        Line::default().extend(iter);
         let key = serde_json::to_string(name.as_str()).unwrap_or_else(|_| format!("\"{name}\""));
         let rendered =
             serde_json::to_string_pretty(&to_json(value)).unwrap_or_else(|_| String::from("null"));
