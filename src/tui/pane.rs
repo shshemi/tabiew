@@ -85,9 +85,11 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if let Some(row) = self.tstack.last().selected() {
-            let sections = self.tstack.last().data_frame().get_sheet_values(row);
-            self.sheet = Some(Sheet::new(row, sections));
+        if self.sheet.is_none()
+            && let Some(row) = self.tstack.last().selected()
+        {
+            let values = self.tstack.last().data_frame().get_sheet_values(row);
+            self.sheet = Some(Sheet::new(row, values));
         }
     }
 

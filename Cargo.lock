@@ -4429,12 +4429,14 @@ dependencies = [
  "ryu",
  "scraper",
  "serde",
+ "serde_json",
  "shell-words",
  "sqlparser",
  "strum",
  "strum_macros",
  "tempfile",
  "terminal-colorsaurus",
+ "textwrap",
  "toml",
  "tui-input",
  "tui-scrollview",
@@ -4577,6 +4579,15 @@ dependencies = [
  "wezterm-dynamic",
  "wezterm-input-types",
  "winapi",
+]
+
+[[package]]
+name = "textwrap"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c13547615a44dc9c452a8a534638acdf07120d4b6847c8178705da06306a3057"
+dependencies = [
+ "unicode-width",
 ]
 
 [[package]]

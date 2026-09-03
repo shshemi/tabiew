@@ -21,4 +21,9 @@ impl Scroll {
     pub fn val_u16(&self) -> u16 {
         self.val as u16
     }
+
+    pub fn reset(&mut self) {
+        self.val = 0;
+        self.max = 0;
+    }
 }
