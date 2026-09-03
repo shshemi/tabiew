@@ -75,6 +75,12 @@ pub const INFO: Icon = Icon("\u{F05A}");
 pub const FONT: Icon = Icon("\u{F031}");
 pub const ROW_NUMBERS: Icon = Icon("\u{F0CB}");
 pub const BORDERS: Icon = Icon("\u{F096}");
+pub const GRID: Icon = Icon("\u{F00A}");
+pub const ELLIPSIS: Icon = Icon("\u{F141}");
+pub const ARROW_UP: Icon = Icon("\u{F062}");
+pub const ARROW_DOWN: Icon = Icon("\u{F063}");
+pub const COPY: Icon = Icon("\u{F0C5}");
+pub const TRASH: Icon = Icon("\u{F1F8}");
 pub const WEDGE: Icon = Icon("\u{E0B0}");
 pub const TRIANGLE: &str = "\u{25B6}";
 
