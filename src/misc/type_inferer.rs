@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use polars::{
     frame::DataFrame,
@@ -9,7 +9,8 @@ use polars::{
 use crate::{
     AppResult,
     args::{Args, Type},
-    misc::{polars_ext::SeriesExt, type_ext::UnwrapOrGracefulShutdown},
+    io::reader::{DataFrameReader, NamedFrames, ReaderSource},
+    misc::{polars_ext::SeriesExt, remote_load::Reader, type_ext::UnwrapOrGracefulShutdown},
 };
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -107,5 +108,32 @@ impl TypeInferer {
     pub fn datetime(mut self) -> Self {
         self.datetime = true;
         self
+    }
+}
+
+/// A [`DataFrameReader`] that applies type inference to every frame read by the inner reader,
+/// so that re-reading a source reproduces the frames of the original load.
+#[derive(Debug)]
+pub struct TypeInferredReader {
+    reader: Arc<dyn Reader>,
+    type_infer: TypeInferer,
+}
+
+impl TypeInferredReader {
+    pub fn new(reader: impl Into<Arc<dyn Reader>>, type_infer: TypeInferer) -> Self {
+        Self {
+            reader: reader.into(),
+            type_infer,
+        }
+    }
+}
+
+impl DataFrameReader for TypeInferredReader {
+    fn read_to_data_frames(&self, source: ReaderSource) -> AppResult<NamedFrames> {
+        let mut frames = self.reader.read_to_data_frames(source)?;
+        for (_, df) in frames.iter_mut() {
+            self.type_infer.update(df);
+        }
+        Ok(frames)
     }
 }

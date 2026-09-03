@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     ops::DerefMut,
     path::PathBuf,
-    sync::{LazyLock, Mutex},
+    sync::{Arc, LazyLock, Mutex},
 };
 
 use indexmap::IndexMap;
@@ -15,7 +15,10 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
+use crate::{
+    io::DataSource,
+    misc::{remote_load::Reader, table_name_generator::TableNameGeneratorExt},
+};
 
 use super::polars_ext::AnyValueExt;
 use super::type_ext::UnwrapOrGracefulShutdown;
@@ -25,6 +28,7 @@ const DEFAULT_TABLE_NAME: &str = "_";
 pub struct SqlBackend {
     sql: SQLContext,
     schema: BackendSchema,
+    readers: IndexMap<String, Arc<dyn Reader>>,
 }
 
 impl SqlBackend {
@@ -32,6 +36,7 @@ impl SqlBackend {
         Self {
             sql: SQLContext::new(),
             schema: Default::default(),
+            readers: Default::default(),
         }
     }
 
@@ -52,8 +57,37 @@ impl SqlBackend {
         name
     }
 
+    /// Registers a table together with the reader that produced it, so the table can later be
+    /// refreshed from its source.
+    pub fn register_with_reader(
+        &mut self,
+        name: &str,
+        data_frame: DataFrame,
+        input: impl Into<TableSource>,
+        reader: Arc<dyn Reader>,
+    ) -> String {
+        let name = self.register(name, data_frame, input);
+        self.readers.insert(name.clone(), reader);
+        name
+    }
+
+    pub fn reader(&self, name: &str) -> Option<Arc<dyn Reader>> {
+        self.readers.get(name).cloned()
+    }
+
+    /// Replaces the data frame of an already registered table, keeping its name, position, and
+    /// source, and recomputing its stats.
+    pub fn replace_data_frame(&mut self, name: &str, data_frame: DataFrame) {
+        if let Some(origin) = self.schema.get(name).map(|info| info.source().clone()) {
+            self.schema
+                .insert(name.to_owned(), TableInfo::new(origin, &data_frame));
+            self.sql.register(name, data_frame.lazy());
+        }
+    }
+
     pub fn unregister(&mut self, name: &str) {
         self.schema.remove(name);
+        self.readers.shift_remove(name);
         self.sql.unregister(name);
     }
 
@@ -289,4 +323,63 @@ fn min_max(series: &Series) -> (String, String) {
         min.into_value().to_single_line().into_owned(),
         max.into_value().to_single_line().into_owned(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use polars::df;
+
+    use super::*;
+    use crate::{AppResult, io::reader::NamedFrames, io::reader::ReaderSource};
+
+    #[derive(Debug)]
+    struct StubReader;
+
+    impl crate::io::reader::DataFrameReader for StubReader {
+        fn read_to_data_frames(&self, _: ReaderSource) -> AppResult<NamedFrames> {
+            Ok([("stub".to_owned(), DataFrame::empty())].into())
+        }
+    }
+
+    #[test]
+    fn register_with_reader_keeps_the_reader_until_unregister() {
+        let mut backend = SqlBackend::new();
+        let name = backend.register_with_reader(
+            "test",
+            df!("a" => [1, 2]).unwrap(),
+            TableSource::File("test.csv".into()),
+            Arc::new(StubReader),
+        );
+        assert!(backend.reader(&name).is_some());
+        backend.unregister(&name);
+        assert!(backend.reader(&name).is_none());
+        assert!(backend.schema().get(&name).is_none());
+    }
+
+    #[test]
+    fn replace_data_frame_updates_queries_stats_and_keeps_the_source() {
+        let mut backend = SqlBackend::new();
+        let name = backend.register(
+            "test",
+            df!("a" => [1, 2]).unwrap(),
+            TableSource::File("test.csv".into()),
+        );
+
+        backend.replace_data_frame(&name, df!("a" => [1, 2, 3]).unwrap());
+
+        let df = backend
+            .execute(&format!("SELECT * FROM {name}"), None)
+            .unwrap();
+        assert_eq!(df.height(), 3);
+        let info = backend.schema().get(&name).unwrap();
+        assert_eq!(info.height(), 3);
+        assert_eq!(info.source(), &TableSource::File("test.csv".into()),);
+    }
+
+    #[test]
+    fn replace_data_frame_ignores_unregistered_names() {
+        let mut backend = SqlBackend::new();
+        backend.replace_data_frame("missing", df!("a" => [1]).unwrap());
+        assert!(backend.schema().get("missing").is_none());
+    }
 }

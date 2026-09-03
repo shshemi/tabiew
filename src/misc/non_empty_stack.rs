@@ -36,6 +36,10 @@ impl<T> NonEmptyStack<T> {
         &self.base
     }
 
+    pub fn base_mut(&mut self) -> &mut T {
+        &mut self.base
+    }
+
     pub fn iter(&self) -> impl DoubleEndedIterator<Item = &T> {
         std::iter::once(&self.base).chain(self.stack.iter())
     }
@@ -81,6 +85,15 @@ mod tests {
         *s.last_mut() += 7;
         assert_eq!(s.pop(), Some(27));
         assert_eq!(s.last(), &10);
+    }
+
+    #[test]
+    fn base_mut_modifies_base_even_when_stack_is_non_empty() {
+        let mut s = NonEmptyStack::new(1);
+        s.push(2);
+        *s.base_mut() = 7;
+        assert_eq!(s.base(), &7);
+        assert_eq!(s.last(), &2);
     }
 
     #[test]

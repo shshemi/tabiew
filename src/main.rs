@@ -14,9 +14,10 @@ use tabiew::io::reader::{BuildReader, NamedFrames};
 use tabiew::misc::config;
 use tabiew::misc::download::download_to_temp;
 use tabiew::misc::osc52::flush_osc52_buffer;
+use tabiew::misc::remote_load::Reader;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
-use tabiew::misc::type_inferer::TypeInferer;
+use tabiew::misc::type_inferer::{TypeInferer, TypeInferredReader};
 use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
@@ -46,7 +47,9 @@ fn main() {
     // Load multiparts to data frames
     let mut multiparts = IndexMap::<Arc<Schema>, (String, DataFrame)>::new();
     for resource in args.multiparts.iter() {
-        for (name, new_df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
+        // Multipart tables merge several files, so no single reader can refresh them.
+        let (frames, _) = try_read_path(&args, resource).unwrap_or_graceful_shutdown();
+        for (name, new_df) in frames {
             let schema = new_df.schema().clone();
             if let Some((_, df)) = multiparts.get_mut(&schema) {
                 df.vstack_mut_owned(new_df).unwrap_or_graceful_shutdown();
@@ -64,9 +67,19 @@ fn main() {
 
     // Load files to data frames
     for resource in args.resources.iter() {
-        for (name, mut df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
+        let (frames, reader) = try_read_path(&args, resource).unwrap_or_graceful_shutdown();
+        // The stored reader replays type inference too, so a refresh reproduces the frames of
+        // the original load.
+        let reader = reader
+            .map(|reader| Arc::new(TypeInferredReader::new(reader, type_infer)) as Arc<dyn Reader>);
+        for (name, mut df) in frames {
             type_infer.update(&mut df);
-            let name = sql().register(&name, df.clone(), resource.clone());
+            let name = match reader.clone() {
+                Some(reader) => {
+                    sql().register_with_reader(&name, df.clone(), resource.clone(), reader)
+                }
+                None => sql().register(&name, df.clone(), resource.clone()),
+            };
             name_dfs.push((name, df))
         }
     }
@@ -137,18 +150,30 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     Ok(())
 }
 
-fn try_read_path(args: &Args, resource: &DataSource) -> AppResult<NamedFrames> {
+/// Reads a resource into data frames. For file resources the reader is returned as well, so it
+/// can be stored to refresh the table later; stdin and downloaded URLs cannot be re-read.
+fn try_read_path(
+    args: &Args,
+    resource: &DataSource,
+) -> AppResult<(NamedFrames, Option<Arc<dyn Reader>>)> {
     match resource {
-        DataSource::Stdin => args
-            .build_reader("")?
-            .read_to_data_frames(ReaderSource::Stdin),
-        DataSource::File(path_buf) => args
-            .build_reader(path_buf)?
-            .read_to_data_frames(ReaderSource::File(path_buf.clone())),
+        DataSource::Stdin => Ok((
+            args.build_reader("")?
+                .read_to_data_frames(ReaderSource::Stdin)?,
+            None,
+        )),
+        DataSource::File(path_buf) => {
+            let reader: Arc<dyn Reader> = args.build_reader(path_buf)?.into();
+            let frames = reader.read_to_data_frames(ReaderSource::File(path_buf.clone()))?;
+            Ok((frames, Some(reader)))
+        }
         DataSource::Url(url) => {
             let file = download_to_temp(url)?;
-            args.build_reader(file.path())?
-                .read_to_data_frames(ReaderSource::File(file.path().to_owned()))
+            Ok((
+                args.build_reader(file.path())?
+                    .read_to_data_frames(ReaderSource::File(file.path().to_owned()))?,
+                None,
+            ))
         }
     }
 }

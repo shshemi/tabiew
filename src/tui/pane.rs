@@ -12,6 +12,7 @@ use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     AppResult,
     handler::message::Message,
+    io::reader::{NamedFrames, ReaderSource},
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
@@ -231,6 +232,67 @@ impl Pane {
         self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(
             self.tstack.last().data_frame().clone().into(),
         )))
+    }
+
+    /// Re-reads the pane's base table from its source file and replaces the data frame in
+    /// place, keeping the current selection and scroll positions.
+    fn refresh_data_frame(&mut self) {
+        let TableDescription::Table(name) = self.dstack.base() else {
+            Message::AppShowToast("Only file-backed tables can be refreshed".to_owned()).enqueue();
+            return;
+        };
+        let name = name.to_owned();
+        let (source, reader) = {
+            let backend = sql();
+            (
+                backend
+                    .schema()
+                    .get(&name)
+                    .map(|info| info.source().clone()),
+                backend.reader(&name),
+            )
+        };
+        let (path, reader) = match (source, reader) {
+            (Some(TableSource::File(path)), Some(reader)) => (path, reader),
+            (Some(TableSource::Stdin), _) => {
+                Message::AppShowToast("Tables loaded from stdin cannot be refreshed".to_owned())
+                    .enqueue();
+                return;
+            }
+            (Some(TableSource::Url(_)), _) => {
+                Message::AppShowToast("Tables loaded from URLs cannot be refreshed".to_owned())
+                    .enqueue();
+                return;
+            }
+            _ => {
+                Message::AppShowToast(format!("Table '{name}' has no source file to refresh from"))
+                    .enqueue();
+                return;
+            }
+        };
+        match reader.read_to_data_frames(ReaderSource::File(path.clone())) {
+            Ok(frames) => match find_refreshed_frame(frames, &name) {
+                Some(df) => {
+                    sql().replace_data_frame(&name, df.clone());
+                    self.tstack.base_mut().replace_data_frame(df);
+                    self.force_sync_sheet();
+                    Message::AppShowToast(if self.tstack.len_without_base() > 0 {
+                        format!("Table '{name}' was refreshed (derived views keep the old data)")
+                    } else {
+                        format!("Table '{name}' was refreshed")
+                    })
+                    .enqueue();
+                }
+                None => Message::AppShowError(format!(
+                    "No data frame matching '{name}' was found in {}",
+                    path.to_string_lossy()
+                ))
+                .enqueue(),
+            },
+            Err(err) => {
+                Message::AppShowError(format!("Refreshing table '{name}' failed: {err}")).enqueue()
+            }
+        }
     }
 
     fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
@@ -476,6 +538,10 @@ impl Component for Pane {
                         self.show_fuzzy_search();
                         true
                     }
+                    (KeyCode::Char('r'), KeyModifiers::NONE) => {
+                        self.refresh_data_frame();
+                        true
+                    }
                     (KeyCode::Char('R'), KeyModifiers::SHIFT) => {
                         self.select_random();
                         true
@@ -519,6 +585,7 @@ impl Component for Pane {
                     .unwrap_or_enqueue_error();
             }
             Message::PaneShowTableRegisterer => self.show_table_registerer(),
+            Message::PaneRefreshDataFrame => self.refresh_data_frame(),
             Message::PaneDismissModal => self.cancel_modal(),
             Message::PaneDismissSheet => self.dismiss_sheet(),
             Message::PanePushDataFrame(df, desc) => self.push_data_frame(df.clone(), desc.clone()),
@@ -574,6 +641,27 @@ impl Component for Pane {
             None => (),
         }
     }
+}
+
+/// Picks the frame among `frames` that corresponds to the registered table `name`. Single-frame
+/// sources always match. Multi-frame sources (e.g. sqlite or excel) match by frame name, also
+/// accounting for the `_N` suffix appended on registration to make names unique.
+fn find_refreshed_frame(frames: NamedFrames, name: &str) -> Option<DataFrame> {
+    let mut frames = frames.into_vec();
+    if frames.len() == 1 {
+        return frames.pop().map(|(_, df)| df);
+    }
+    let base_name = name
+        .rsplit_once('_')
+        .filter(|(_, suffix)| !suffix.is_empty() && suffix.chars().all(|c| c.is_ascii_digit()))
+        .map(|(base, _)| base);
+    frames
+        .iter()
+        .position(|(frame_name, _)| frame_name == name)
+        .or_else(|| {
+            base_name.and_then(|base| frames.iter().position(|(frame_name, _)| frame_name == base))
+        })
+        .map(|idx| frames.swap_remove(idx).1)
 }
 
 fn table_status_bar_areas(area: Rect, bordered: bool, sheet: bool) -> [Rect; 3] {
@@ -679,5 +767,86 @@ impl TableDescription {
             | TableDescription::Search(desc)
             | TableDescription::FuzzySearch(desc) => desc,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use polars::df;
+
+    use super::*;
+
+    fn frames(names: &[&str]) -> NamedFrames {
+        names
+            .iter()
+            .enumerate()
+            .map(|(idx, name)| (name.to_string(), df!("a" => [idx as i64]).unwrap()))
+            .collect()
+    }
+
+    #[test]
+    fn find_refreshed_frame_takes_the_only_frame_regardless_of_name() {
+        let df = find_refreshed_frame(frames(&["other"]), "table_2").unwrap();
+        assert_eq!(df, df!("a" => [0i64]).unwrap());
+    }
+
+    #[test]
+    fn find_refreshed_frame_matches_multiple_frames_by_name() {
+        let df = find_refreshed_frame(frames(&["users", "orders"]), "orders").unwrap();
+        assert_eq!(df, df!("a" => [1i64]).unwrap());
+    }
+
+    #[test]
+    fn find_refreshed_frame_matches_names_with_a_uniquifying_suffix() {
+        let df = find_refreshed_frame(frames(&["users", "orders"]), "orders_2").unwrap();
+        assert_eq!(df, df!("a" => [1i64]).unwrap());
+    }
+
+    #[test]
+    fn find_refreshed_frame_prefers_an_exact_match_over_a_stripped_suffix() {
+        let df = find_refreshed_frame(frames(&["sales", "sales_2"]), "sales_2").unwrap();
+        assert_eq!(df, df!("a" => [1i64]).unwrap());
+    }
+
+    #[test]
+    fn find_refreshed_frame_rejects_unmatched_names() {
+        assert!(find_refreshed_frame(frames(&["users", "orders"]), "sales").is_none());
+        assert!(find_refreshed_frame(frames(&[]), "sales").is_none());
+    }
+
+    #[test]
+    fn refresh_data_frame_reloads_the_base_table_from_its_file() {
+        use std::sync::Arc;
+
+        use crate::io::reader::CsvToDataFrame;
+        use crate::misc::remote_load::Reader;
+
+        let file = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(file.path(), "a,b\n1,2\n3,4\n").unwrap();
+
+        let reader: Arc<dyn Reader> = Arc::new(CsvToDataFrame::default());
+        let df = reader
+            .read_to_data_frames(ReaderSource::File(file.path().to_owned()))
+            .unwrap()
+            .into_vec()
+            .pop()
+            .unwrap()
+            .1;
+        let name = sql().register_with_reader(
+            "refresh_data_frame_reloads_the_base_table_from_its_file",
+            df.clone(),
+            TableSource::File(file.path().to_owned()),
+            reader,
+        );
+        let mut pane = Pane::new(df, TableDescription::Table(name.clone()));
+        pane.update(&Message::PaneTableSelect(1));
+
+        std::fs::write(file.path(), "a,b\n5,6\n7,8\n9,10\n").unwrap();
+        pane.update(&Message::PaneRefreshDataFrame);
+
+        assert_eq!(pane.table().data_frame().height(), 3);
+        assert_eq!(pane.table().selected(), Some(1));
+        assert_eq!(sql().schema().get(&name).unwrap().height(), 3);
+        sql().unregister(&name);
     }
 }

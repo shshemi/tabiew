@@ -26,6 +26,7 @@ pub mod tsv;
 
 fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Reader) {
     Message::AppDismissOverlay.enqueue();
+    let reader: Arc<dyn remote_load::Reader> = Arc::new(reader);
     match source {
         DataSource::Stdin => {
             let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
@@ -53,7 +54,12 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
             };
             let count = frames.len();
             for (name, df) in frames {
-                let name = sql().register(&name, df.clone(), TableSource::File(path_buf.clone()));
+                let name = sql().register_with_reader(
+                    &name,
+                    df.clone(),
+                    TableSource::File(path_buf.clone()),
+                    reader.clone(),
+                );
                 Message::TabsAddNamePane(df, name).enqueue();
             }
             Message::AppShowToast(format!(
@@ -63,6 +69,6 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
             ))
             .enqueue();
         }
-        DataSource::Url(url) => Message::AppDownloadDataSource(url, Arc::new(reader)).enqueue(),
+        DataSource::Url(url) => Message::AppDownloadDataSource(url, reader).enqueue(),
     };
 }
