@@ -26,6 +26,7 @@ pub enum Message {
     TabsDismissSwitcher,
     TabsAddNamePane(DataFrame, String),
     TabsAddQueryPane(DataFrame, String),
+    TabsCloseSelected,
     PaneEditInExternalEditor,
     PaneShowExporter,
     PaneShowFuzzySearch,

@@ -128,6 +128,10 @@ impl Component for TabSwitcher {
                 Message::TabsDismissSwitcher.enqueue();
                 true
             }
+            (KeyCode::Backspace, KeyModifiers::NONE) => {
+                Message::TabsCloseSelected.enqueue();
+                true
+            }
             (KeyCode::Esc, KeyModifiers::NONE)
             | (KeyCode::Char('q'), KeyModifiers::NONE)
             | (KeyCode::Char('t'), KeyModifiers::NONE) => {

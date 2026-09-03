@@ -154,11 +154,6 @@ impl Component for Tabs {
                         self.show_tab_switcher();
                         true
                     }
-                    // TODO move it to switcher
-                    (KeyCode::Backspace, KeyModifiers::NONE) => {
-                        self.close_selected();
-                        true
-                    }
                     (KeyCode::Char('H'), KeyModifiers::SHIFT)
                     | (KeyCode::Left, KeyModifiers::SHIFT) => {
                         self.select_prev();
@@ -190,6 +185,7 @@ impl Component for Tabs {
             }
             Message::TabsSelect(idx) => self.select(*idx),
             Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
+            Message::TabsCloseSelected => self.close_selected(),
             _ => (),
         }
         if let Some(switcher) = self.switcher.as_mut() {
