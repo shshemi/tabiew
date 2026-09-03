@@ -72,7 +72,7 @@ cargo install --locked tabiew
 
 ### Build from Source
 
-Ensure you have rustc version 1.80 (or higher) installed. Download the desired source version from the [release page](https://github.com/shshemi/tabiew/releases). Extract the downloaded file and navigate into the extracted directory. Then run the following command:
+Ensure you have rustc version 1.95 (or higher) installed. Download the desired source version from the [release page](https://github.com/shshemi/tabiew/releases). Extract the downloaded file and navigate into the extracted directory. Then run the following command:
 ```bash
 cargo build --release
 cp ./target/release/tw <system_or_local_bin_path>
