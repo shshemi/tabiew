@@ -2,7 +2,7 @@
 
 Tabiew is a lightweight TUI application that allows users to view and query tabular data files, such as CSV, Parquet, Arrow, and ...
 
-![Image Alt text](images/main.gif "Screenshot")
+![Image Alt text](https://raw.githubusercontent.com/wiki/shshemi/tabiew/gifs/demo.gif "Screenshot")
 
 ## Features
 
