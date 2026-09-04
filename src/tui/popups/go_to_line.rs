@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
-    layout::{Constraint, Flex, Layout},
+    layout::{Constraint, Flex, Layout, Rect},
     widgets::{Block, Widget},
 };
 
@@ -14,6 +14,10 @@ use crate::{
     },
 };
 
+const WIDTH: u16 = 32;
+const HEIGHT: u16 = 3;
+const MAX_LEN: usize = (WIDTH - 2) as usize;
+
 #[derive(Debug)]
 pub struct GoToLine {
     rollback: usize,
@@ -23,7 +27,9 @@ pub struct GoToLine {
 impl GoToLine {
     pub fn new(rollback: usize) -> Self {
         Self {
-            input: Input::default().with_input_type(InputType::Numeric),
+            input: Input::default()
+                .with_input_type(InputType::Numeric)
+                .with_max_len(MAX_LEN),
             rollback,
         }
     }
@@ -43,15 +49,16 @@ impl GoToLine {
 impl Component for GoToLine {
     fn render(
         &mut self,
-        _area: ratatui::prelude::Rect,
+        area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        let [area, _] = Layout::horizontal([Constraint::Length(32), Constraint::Length(1)])
-            .flex(Flex::End)
-            .areas(buf.area);
-        let [_, area] =
-            Layout::vertical([Constraint::Length(1), Constraint::Length(3)]).areas(area);
+        let area = Rect {
+            x: area.right().saturating_sub(WIDTH),
+            y: area.y,
+            width: WIDTH,
+            height: HEIGHT,
+        };
         buf.clear(area);
         let area = {
             let block = Block::app_default().app_title("Line");
