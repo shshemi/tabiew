@@ -8,6 +8,7 @@ use crate::{
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        icons,
     },
 };
 
@@ -77,8 +78,8 @@ impl Component for SearchBar {
         focus_state: super::component::FocusState,
     ) {
         let title = match &self.searcher {
-            Searcher::Fuzzy(_) => "Fuzzy Search",
-            Searcher::Exact(_) => "Search",
+            Searcher::Fuzzy(_) => icons::FUZZY_SEARCH.title("Fuzzy Search"),
+            Searcher::Exact(_) => icons::FUZZY_SEARCH.title("Search"),
         };
         let area = {
             let block = Block::app_default().app_title(title);
