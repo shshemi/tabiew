@@ -95,6 +95,11 @@ Tabiew automatically detects the file format based on the file extension. Suppor
 - **FWF** (`.fwf`) - Fixed-width format
 - **SQLite** (`.db`, `.sqlite`)
 - **Excel** (`.xls`, `.xlsx`, `.xlsm`, `.xlsb`)
+- **Avro** (`.avro`)
+- **HTML** (`.html`, `.htm`) - reads `<table>` elements
+- **Markdown** (`.md`, `.markdown`) - reads pipe tables
+
+Logfmt has no extension of its own, so it needs an explicit format: `tw app.log -f logfmt`.
 
 Examples:
 
@@ -147,6 +152,9 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 |Key Combination|Functionality|
 |-|-|
 | `Enter`| Open sheet|
+| `f`| In sheet, switch between the default and JSON format|
+| `c`| In sheet, copy the row to the clipboard|
+| `t`| Tab switcher|
 | `h j k l` or `← ↓ ↑ →`| Navigation |
 | `b` / `w` | Previous / next column|
 | `e` | Toggle Auto-Fit|
@@ -162,17 +170,25 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 
 ## Useful Commands
 
-|Command|Example|Description|
-|-|-|-|
-|`Q` or `query`|`Q SELECT * FROM df`|Query the data in Structured Query Language(SQL). The table name is the file name without extension|
-|`S` or `select`| `S price, area, bedrooms, parking`|Query current data frame for columns/functions|
-|`F` or `filter`| `F price < 20000 AND bedrooms > 4`|Filter current data frame, keeping rows were the condition(s) match|
-|`O` or `order`| `O area`|Sort current data frame by column(s)|
-|`tabn`| `tabn SELECT * FORM user WHERE balance > 1000`|Create a new tab with the given query|
-|`q` or `quit` |`q`| Return to table from sheet view otherwise quit|
-|`schema`| `schema`| Show loaded data frame(s) alongside their path(s)|
-|`reset`| `reset`| Reset the table to the original data frame|
-|`help`| `help`| Show command reference in a new tab|
+Press `:` to open the command palette and type to filter. It lists everything Tabiew can
+do, including `Query`, `Filter`, `Order`, `Select`, `Cast`, `Import`, `Export`, `Schema`,
+`ThemeSelector`, and `ToggleNerdFont`.
+
+Four prefixes skip the list and open an inline editor directly:
+
+|Prefix|Opens|
+|-|-|
+|`q `|SQL query|
+|`s `|Select|
+|`o `|Order|
+|`f `|Filter|
+
+## Configuration
+
+Settings live in `~/.config/tabiew/config.toml` and are written back whenever you change
+one from the command palette. Of note, `use_nerd_font` (default `false`) turns on the
+glyphs in the status bar and pickers; leave it off unless your terminal uses a patched
+font, or they render as empty boxes.
 
 ## Contributing
 
