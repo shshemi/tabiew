@@ -79,7 +79,7 @@ impl Component for SearchBar {
     ) {
         let title = match &self.searcher {
             Searcher::Fuzzy(_) => icons::FUZZY_SEARCH.title("Fuzzy Search"),
-            Searcher::Exact(_) => icons::FUZZY_SEARCH.title("Search"),
+            Searcher::Exact(_) => icons::SEARCH.title("Search"),
         };
         let area = {
             let block = Block::app_default().app_title(title);
