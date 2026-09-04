@@ -188,7 +188,8 @@ impl Pane {
 
     fn show_go_to_line_with_value(&mut self, value: usize) {
         if let Some(selected) = self.tstack.last().selected() {
-            self.modal = Some(Modal::GoToLine(GoToLine::new(selected).with_value(value)))
+            self.modal = Some(Modal::GoToLine(GoToLine::new(selected).with_value(value)));
+            self.select(value.saturating_sub(1));
         }
     }
 
