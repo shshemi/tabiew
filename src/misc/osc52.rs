@@ -12,9 +12,10 @@ static OSC52_BUFFER: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(Strin
 pub fn flush_osc52_buffer() {
     let mut buffer = OSC52_BUFFER.lock().unwrap_or_graceful_shutdown();
     if !buffer.is_empty() {
-        for seq in buffer.drain(..) {
-            print!("{}", seq);
-        }
+        std::io::stdout()
+            .write_all(buffer.as_ref())
+            .unwrap_or_graceful_shutdown();
+        buffer.clear();
         let _ = std::io::stdout().flush();
     }
 }
