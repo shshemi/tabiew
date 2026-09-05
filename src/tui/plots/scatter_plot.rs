@@ -122,7 +122,7 @@ impl Component for ScatterPlot {
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
         match (event.code, event.modifiers) {
-            (KeyCode::Char('q'), KeyModifiers::NONE) => {
+            (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                 Message::PaneDismissModal.enqueue();
                 true
             }
