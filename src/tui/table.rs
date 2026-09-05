@@ -632,10 +632,11 @@ fn build_table<'a>(
     offset_row: usize,
     offset_col: usize,
 ) -> ratatui::widgets::Table<'a> {
+    let theme = theme();
     let mut table = ratatui::widgets::Table::default()
         .widths(col_widths)
-        .style(theme().text())
-        .row_highlight_style(theme().row_highlighted())
+        .style(theme.text())
+        .row_highlight_style(theme.row_highlighted())
         .column_spacing(col_space)
         .rows(
             df.columns()
@@ -646,9 +647,9 @@ fn build_table<'a>(
                 .map(|(idx, vals)| {
                     let cells = vals.into_iter().map(cell);
                     Row::new(cells).style(if striped {
-                        theme().row(offset_row + idx)
+                        theme.row(offset_row + idx)
                     } else {
-                        theme().row(0)
+                        theme.row(0)
                     })
                 }),
         );
@@ -660,9 +661,9 @@ fn build_table<'a>(
                 if c.dtype().is_numeric() {
                     text = text.right_aligned();
                 }
-                Cell::new(text).style(theme().header(offset_col + i))
+                Cell::new(text).style(theme.header(offset_col + i))
             }))
-            .style(theme().table_header()),
+            .style(theme.table_header()),
         )
     }
     table
