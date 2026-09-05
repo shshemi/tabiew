@@ -13,7 +13,9 @@ use tabiew::io::reader::ReaderSource;
 use tabiew::io::reader::{BuildReader, NamedFrames};
 use tabiew::misc::config;
 use tabiew::misc::download::download_to_temp;
+use tabiew::misc::file_identity::FileIdentity;
 use tabiew::misc::osc52::flush_osc52_buffer;
+use tabiew::misc::refresh::RefreshSource;
 use tabiew::misc::remote_load::Reader;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
@@ -67,17 +69,25 @@ fn main() {
 
     // Load files to data frames
     for resource in args.resources.iter() {
-        let (frames, reader) = try_read_path(&args, resource).unwrap_or_graceful_shutdown();
+        let (frames, origin) = try_read_path(&args, resource).unwrap_or_graceful_shutdown();
         // The stored reader replays type inference too, so a refresh reproduces the frames of
         // the original load.
-        let reader = reader
-            .map(|reader| Arc::new(TypeInferredReader::new(reader, type_infer)) as Arc<dyn Reader>);
-        for (name, mut df) in frames {
+        let origin = origin.map(|(reader, identity)| {
+            (
+                Arc::new(TypeInferredReader::new(reader, type_infer)) as Arc<dyn Reader>,
+                identity,
+            )
+        });
+        let frame_count = frames.len();
+        for (frame_index, (name, mut df)) in frames.into_iter().enumerate() {
             type_infer.update(&mut df);
-            let name = match reader.clone() {
-                Some(reader) => {
-                    sql().register_with_reader(&name, df.clone(), resource.clone(), reader)
-                }
+            let name = match origin.clone() {
+                Some((reader, identity)) => sql().register_refreshable(
+                    &name,
+                    df.clone(),
+                    resource.clone(),
+                    RefreshSource::new(reader, identity, &name, frame_index, frame_count),
+                ),
                 None => sql().register(&name, df.clone(), resource.clone()),
             };
             name_dfs.push((name, df))
@@ -150,12 +160,15 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     Ok(())
 }
 
-/// Reads a resource into data frames. For file resources the reader is returned as well, so it
-/// can be stored to refresh the table later; stdin and downloaded URLs cannot be re-read.
+/// The reader that produced a set of frames and the identity of the file it read.
+type ReadOrigin = (Arc<dyn Reader>, FileIdentity);
+
+/// Reads a resource into data frames. For file resources the origin is returned as well, so the
+/// table can be refreshed later; stdin and downloaded URLs cannot be re-read.
 fn try_read_path(
     args: &Args,
     resource: &DataSource,
-) -> AppResult<(NamedFrames, Option<Arc<dyn Reader>>)> {
+) -> AppResult<(NamedFrames, Option<ReadOrigin>)> {
     match resource {
         DataSource::Stdin => Ok((
             args.build_reader("")?
@@ -164,8 +177,11 @@ fn try_read_path(
         )),
         DataSource::File(path_buf) => {
             let reader: Arc<dyn Reader> = args.build_reader(path_buf)?.into();
+            // Anything that is not a regular file (a fifo from process substitution, say) loads
+            // fine but has nothing stable to re-read, so it is simply not refreshable.
+            let identity = FileIdentity::capture(path_buf).ok();
             let frames = reader.read_to_data_frames(ReaderSource::File(path_buf.clone()))?;
-            Ok((frames, Some(reader)))
+            Ok((frames, identity.map(|identity| (reader, identity))))
         }
         DataSource::Url(url) => {
             let file = download_to_temp(url)?;

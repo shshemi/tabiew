@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     ops::DerefMut,
     path::PathBuf,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{LazyLock, Mutex},
 };
 
 use indexmap::IndexMap;
@@ -17,7 +17,7 @@ use url::Url;
 
 use crate::{
     io::DataSource,
-    misc::{remote_load::Reader, table_name_generator::TableNameGeneratorExt},
+    misc::{refresh::RefreshSource, table_name_generator::TableNameGeneratorExt},
 };
 
 use super::polars_ext::AnyValueExt;
@@ -28,7 +28,7 @@ const DEFAULT_TABLE_NAME: &str = "_";
 pub struct SqlBackend {
     sql: SQLContext,
     schema: BackendSchema,
-    readers: IndexMap<String, Arc<dyn Reader>>,
+    refresh_sources: IndexMap<String, RefreshSource>,
 }
 
 impl SqlBackend {
@@ -36,7 +36,7 @@ impl SqlBackend {
         Self {
             sql: SQLContext::new(),
             schema: Default::default(),
-            readers: Default::default(),
+            refresh_sources: Default::default(),
         }
     }
 
@@ -57,22 +57,22 @@ impl SqlBackend {
         name
     }
 
-    /// Registers a table together with the reader that produced it, so the table can later be
-    /// refreshed from its source.
-    pub fn register_with_reader(
+    /// Registers a table together with everything needed to re-read it, so the table can later
+    /// be refreshed from its source.
+    pub fn register_refreshable(
         &mut self,
         name: &str,
         data_frame: DataFrame,
         input: impl Into<TableSource>,
-        reader: Arc<dyn Reader>,
+        source: RefreshSource,
     ) -> String {
         let name = self.register(name, data_frame, input);
-        self.readers.insert(name.clone(), reader);
+        self.refresh_sources.insert(name.clone(), source);
         name
     }
 
-    pub fn reader(&self, name: &str) -> Option<Arc<dyn Reader>> {
-        self.readers.get(name).cloned()
+    pub fn refresh_source(&self, name: &str) -> Option<RefreshSource> {
+        self.refresh_sources.get(name).cloned()
     }
 
     /// Replaces the data frame of an already registered table, keeping its name, position, and
@@ -87,7 +87,7 @@ impl SqlBackend {
 
     pub fn unregister(&mut self, name: &str) {
         self.schema.remove(name);
-        self.readers.shift_remove(name);
+        self.refresh_sources.shift_remove(name);
         self.sql.unregister(name);
     }
 
@@ -327,10 +327,16 @@ fn min_max(series: &Series) -> (String, String) {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use polars::df;
 
     use super::*;
-    use crate::{AppResult, io::reader::NamedFrames, io::reader::ReaderSource};
+    use crate::{
+        AppResult,
+        io::reader::{NamedFrames, ReaderSource},
+        misc::file_identity::FileIdentity,
+    };
 
     #[derive(Debug)]
     struct StubReader;
@@ -342,17 +348,24 @@ mod tests {
     }
 
     #[test]
-    fn register_with_reader_keeps_the_reader_until_unregister() {
+    fn register_refreshable_keeps_the_source_until_unregister() {
+        let file = tempfile::NamedTempFile::new().unwrap();
         let mut backend = SqlBackend::new();
-        let name = backend.register_with_reader(
+        let name = backend.register_refreshable(
             "test",
             df!("a" => [1, 2]).unwrap(),
-            TableSource::File("test.csv".into()),
-            Arc::new(StubReader),
+            TableSource::File(file.path().to_owned()),
+            RefreshSource::new(
+                Arc::new(StubReader),
+                FileIdentity::capture(file.path()).unwrap(),
+                "stub",
+                0,
+                1,
+            ),
         );
-        assert!(backend.reader(&name).is_some());
+        assert!(backend.refresh_source(&name).is_some());
         backend.unregister(&name);
-        assert!(backend.reader(&name).is_none());
+        assert!(backend.refresh_source(&name).is_none());
         assert!(backend.schema().get(&name).is_none());
     }
 

@@ -1,3 +1,5 @@
+use std::thread::JoinHandle;
+
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::{FoldWhile, Itertools};
 use polars::frame::DataFrame;
@@ -12,12 +14,12 @@ use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     AppResult,
     handler::message::Message,
-    io::reader::{NamedFrames, ReaderSource},
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
         non_empty_stack::NonEmptyStack,
         polars_ext::DataFrameExt,
+        refresh,
         sql::{TableSource, sql},
         type_ext::UnwrapOrEnqueueError,
     },
@@ -49,6 +51,14 @@ pub struct Pane {
     dstack: NonEmptyStack<TableDescription>,
     sheet: Option<Sheet>,
     modal: Option<Modal>,
+    refresh: Option<RefreshTask>,
+}
+
+/// A source file being re-read on a worker thread on behalf of [`Pane::refresh_data_frame`].
+#[derive(Debug)]
+struct RefreshTask {
+    name: String,
+    hndl: JoinHandle<AppResult<DataFrame>>,
 }
 
 impl Pane {
@@ -66,6 +76,7 @@ impl Pane {
             dstack: NonEmptyStack::new(description),
             sheet: None,
             modal: None,
+            refresh: None,
         }
     }
 
@@ -234,26 +245,34 @@ impl Pane {
         )))
     }
 
-    /// Re-reads the pane's base table from its source file and replaces the data frame in
-    /// place, keeping the current selection and scroll positions.
+    /// Re-reads the pane's base table from its source file and replaces the data frame in place,
+    /// keeping the current selection and scroll positions.
+    ///
+    /// The file is read on a worker thread: a source that has grown large, sits on a stalled
+    /// mount, or is being written to would otherwise freeze the terminal for as long as the read
+    /// takes, with no way to quit. [`Pane::tick`] picks the result up.
     fn refresh_data_frame(&mut self) {
+        if self.refresh.is_some() {
+            Message::AppShowToast("A refresh is already in progress".to_owned()).enqueue();
+            return;
+        }
         let TableDescription::Table(name) = self.dstack.base() else {
             Message::AppShowToast("Only file-backed tables can be refreshed".to_owned()).enqueue();
             return;
         };
         let name = name.to_owned();
-        let (source, reader) = {
+        let (source, refresh_source) = {
             let backend = sql();
             (
                 backend
                     .schema()
                     .get(&name)
                     .map(|info| info.source().clone()),
-                backend.reader(&name),
+                backend.refresh_source(&name),
             )
         };
-        let (path, reader) = match (source, reader) {
-            (Some(TableSource::File(path)), Some(reader)) => (path, reader),
+        let (path, refresh_source) = match (source, refresh_source) {
+            (Some(TableSource::File(path)), Some(source)) => (path, source),
             (Some(TableSource::Stdin), _) => {
                 Message::AppShowToast("Tables loaded from stdin cannot be refreshed".to_owned())
                     .enqueue();
@@ -270,28 +289,37 @@ impl Pane {
                 return;
             }
         };
-        match reader.read_to_data_frames(ReaderSource::File(path.clone())) {
-            Ok(frames) => match find_refreshed_frame(frames, &name) {
-                Some(df) => {
-                    sql().replace_data_frame(&name, df.clone());
-                    self.tstack.base_mut().replace_data_frame(df);
-                    self.force_sync_sheet();
-                    Message::AppShowToast(if self.tstack.len_without_base() > 0 {
-                        format!("Table '{name}' was refreshed (derived views keep the old data)")
-                    } else {
-                        format!("Table '{name}' was refreshed")
-                    })
-                    .enqueue();
-                }
-                None => Message::AppShowError(format!(
-                    "No data frame matching '{name}' was found in {}",
-                    path.to_string_lossy()
-                ))
-                .enqueue(),
-            },
-            Err(err) => {
+        Message::AppShowToast(format!("Refreshing table '{name}'...")).enqueue();
+        self.refresh = Some(RefreshTask {
+            name,
+            // The worker touches no shared state beyond the source file: the SQL backend is
+            // only updated from the main thread, in `apply_refresh`.
+            hndl: std::thread::spawn(move || refresh::read(&path, &refresh_source)),
+        });
+    }
+
+    /// Applies the outcome of a finished refresh to the base table and the SQL backend.
+    fn apply_refresh(&mut self, task: RefreshTask) {
+        let RefreshTask { name, hndl } = task;
+        match hndl.join() {
+            Ok(Ok(df)) => {
+                sql().replace_data_frame(&name, df.clone());
+                self.tstack.base_mut().replace_data_frame(df);
+                self.force_sync_sheet();
+                Message::AppShowToast(if self.tstack.len_without_base() > 0 {
+                    format!("Table '{name}' was refreshed (derived views keep the old data)")
+                } else {
+                    format!("Table '{name}' was refreshed")
+                })
+                .enqueue();
+            }
+            Ok(Err(err)) => {
                 Message::AppShowError(format!("Refreshing table '{name}' failed: {err}")).enqueue()
             }
+            Err(_) => Message::AppShowError(format!(
+                "Refreshing table '{name}' failed: the reader thread panicked"
+            ))
+            .enqueue(),
         }
     }
 
@@ -613,6 +641,14 @@ impl Component for Pane {
     }
 
     fn tick(&mut self) {
+        if self
+            .refresh
+            .as_ref()
+            .is_some_and(|task| task.hndl.is_finished())
+            && let Some(task) = self.refresh.take()
+        {
+            self.apply_refresh(task);
+        }
         match &mut self.modal {
             Some(Modal::SearchBar(search_bar)) => {
                 if let Some(df) = search_bar.searcher().latest() {
@@ -641,27 +677,6 @@ impl Component for Pane {
             None => (),
         }
     }
-}
-
-/// Picks the frame among `frames` that corresponds to the registered table `name`. Single-frame
-/// sources always match. Multi-frame sources (e.g. sqlite or excel) match by frame name, also
-/// accounting for the `_N` suffix appended on registration to make names unique.
-fn find_refreshed_frame(frames: NamedFrames, name: &str) -> Option<DataFrame> {
-    let mut frames = frames.into_vec();
-    if frames.len() == 1 {
-        return frames.pop().map(|(_, df)| df);
-    }
-    let base_name = name
-        .rsplit_once('_')
-        .filter(|(_, suffix)| !suffix.is_empty() && suffix.chars().all(|c| c.is_ascii_digit()))
-        .map(|(base, _)| base);
-    frames
-        .iter()
-        .position(|(frame_name, _)| frame_name == name)
-        .or_else(|| {
-            base_name.and_then(|base| frames.iter().position(|(frame_name, _)| frame_name == base))
-        })
-        .map(|idx| frames.swap_remove(idx).1)
 }
 
 fn table_status_bar_areas(area: Rect, bordered: bool, sheet: bool) -> [Rect; 3] {
@@ -772,81 +787,102 @@ impl TableDescription {
 
 #[cfg(test)]
 mod tests {
+    use std::{sync::Arc, time::Duration};
+
     use polars::df;
+
+    use crate::{
+        io::reader::{CsvToDataFrame, ReaderSource},
+        misc::{file_identity::FileIdentity, refresh::RefreshSource, remote_load::Reader},
+    };
 
     use super::*;
 
-    fn frames(names: &[&str]) -> NamedFrames {
-        names
-            .iter()
-            .enumerate()
-            .map(|(idx, name)| (name.to_string(), df!("a" => [idx as i64]).unwrap()))
-            .collect()
+    /// Drives the pane until the worker thread started by a refresh has been applied.
+    fn await_refresh(pane: &mut Pane) {
+        for _ in 0..1000 {
+            pane.tick();
+            if pane.refresh.is_none() {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        panic!("the refresh did not finish in time");
     }
 
-    #[test]
-    fn find_refreshed_frame_takes_the_only_frame_regardless_of_name() {
-        let df = find_refreshed_frame(frames(&["other"]), "table_2").unwrap();
-        assert_eq!(df, df!("a" => [0i64]).unwrap());
-    }
-
-    #[test]
-    fn find_refreshed_frame_matches_multiple_frames_by_name() {
-        let df = find_refreshed_frame(frames(&["users", "orders"]), "orders").unwrap();
-        assert_eq!(df, df!("a" => [1i64]).unwrap());
-    }
-
-    #[test]
-    fn find_refreshed_frame_matches_names_with_a_uniquifying_suffix() {
-        let df = find_refreshed_frame(frames(&["users", "orders"]), "orders_2").unwrap();
-        assert_eq!(df, df!("a" => [1i64]).unwrap());
-    }
-
-    #[test]
-    fn find_refreshed_frame_prefers_an_exact_match_over_a_stripped_suffix() {
-        let df = find_refreshed_frame(frames(&["sales", "sales_2"]), "sales_2").unwrap();
-        assert_eq!(df, df!("a" => [1i64]).unwrap());
-    }
-
-    #[test]
-    fn find_refreshed_frame_rejects_unmatched_names() {
-        assert!(find_refreshed_frame(frames(&["users", "orders"]), "sales").is_none());
-        assert!(find_refreshed_frame(frames(&[]), "sales").is_none());
+    fn register_csv(table_name: &str, path: &std::path::Path) -> (String, DataFrame) {
+        let reader: Arc<dyn Reader> = Arc::new(CsvToDataFrame::default());
+        let (frame_name, df) = reader
+            .read_to_data_frames(ReaderSource::File(path.to_owned()))
+            .unwrap()
+            .into_vec()
+            .pop()
+            .unwrap();
+        let name = sql().register_refreshable(
+            table_name,
+            df.clone(),
+            TableSource::File(path.to_owned()),
+            RefreshSource::new(
+                reader,
+                FileIdentity::capture(path).unwrap(),
+                frame_name,
+                0,
+                1,
+            ),
+        );
+        (name, df)
     }
 
     #[test]
     fn refresh_data_frame_reloads_the_base_table_from_its_file() {
-        use std::sync::Arc;
-
-        use crate::io::reader::CsvToDataFrame;
-        use crate::misc::remote_load::Reader;
-
         let file = tempfile::NamedTempFile::new().unwrap();
         std::fs::write(file.path(), "a,b\n1,2\n3,4\n").unwrap();
-
-        let reader: Arc<dyn Reader> = Arc::new(CsvToDataFrame::default());
-        let df = reader
-            .read_to_data_frames(ReaderSource::File(file.path().to_owned()))
-            .unwrap()
-            .into_vec()
-            .pop()
-            .unwrap()
-            .1;
-        let name = sql().register_with_reader(
+        let (name, df) = register_csv(
             "refresh_data_frame_reloads_the_base_table_from_its_file",
-            df.clone(),
-            TableSource::File(file.path().to_owned()),
-            reader,
+            file.path(),
         );
+
         let mut pane = Pane::new(df, TableDescription::Table(name.clone()));
         pane.update(&Message::PaneTableSelect(1));
 
         std::fs::write(file.path(), "a,b\n5,6\n7,8\n9,10\n").unwrap();
         pane.update(&Message::PaneRefreshDataFrame);
+        await_refresh(&mut pane);
 
         assert_eq!(pane.table().data_frame().height(), 3);
         assert_eq!(pane.table().selected(), Some(1));
         assert_eq!(sql().schema().get(&name).unwrap().height(), 3);
         sql().unregister(&name);
+    }
+
+    #[test]
+    fn refresh_data_frame_keeps_the_old_data_when_the_source_is_gone() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("data.csv");
+        std::fs::write(&path, "a,b\n1,2\n3,4\n").unwrap();
+        let (name, df) = register_csv(
+            "refresh_data_frame_keeps_the_old_data_when_the_source_is_gone",
+            &path,
+        );
+
+        let mut pane = Pane::new(df, TableDescription::Table(name.clone()));
+        std::fs::remove_file(&path).unwrap();
+        pane.update(&Message::PaneRefreshDataFrame);
+        await_refresh(&mut pane);
+
+        assert_eq!(pane.table().data_frame().height(), 2);
+        assert_eq!(sql().schema().get(&name).unwrap().height(), 2);
+        sql().unregister(&name);
+    }
+
+    #[test]
+    fn refresh_data_frame_ignores_tables_without_a_source_file() {
+        let mut pane = Pane::new(
+            df!("a" => [1, 2]).unwrap(),
+            TableDescription::Table("never_registered".to_owned()),
+        );
+        pane.update(&Message::PaneRefreshDataFrame);
+        assert!(pane.refresh.is_none());
+        assert_eq!(pane.table().data_frame().height(), 2);
     }
 }
