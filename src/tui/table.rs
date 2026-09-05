@@ -156,6 +156,18 @@ impl Table {
         }
     }
 
+    /// Unlike [`Table::set_data_frame`], the new data frame may have a different schema, so
+    /// column widths are recomputed. The selection is kept, clamped to the new height.
+    pub fn replace_data_frame(&mut self, df: DataFrame) {
+        self.df = df;
+        self.refresh_col_widths();
+        self.set_gutter_visibility(self.gutter_visible());
+        let height = self.df.height();
+        self.selected = (height > 0)
+            .then(|| self.selected.map(|selected| selected.min(height - 1)))
+            .flatten();
+    }
+
     pub fn gutter_visible(&self) -> bool {
         matches!(self.gutter_mode, GutterMode::Visible(_))
     }
@@ -666,4 +678,42 @@ fn build_table<'a>(
         )
     }
     table
+}
+
+#[cfg(test)]
+mod tests {
+    use polars::df;
+
+    use super::*;
+
+    #[test]
+    fn set_data_frame_ignores_frames_with_a_different_schema() {
+        let mut table = Table::new(df!("a" => [1, 2, 3]).unwrap());
+        table.set_data_frame(df!("b" => ["x"]).unwrap());
+        assert_eq!(table.data_frame().get_column_names(), ["a"]);
+    }
+
+    #[test]
+    fn replace_data_frame_accepts_frames_with_a_different_schema() {
+        let mut table = Table::new(df!("a" => [1, 2, 3]).unwrap());
+        table.replace_data_frame(df!("b" => ["x"]).unwrap());
+        assert_eq!(table.data_frame().get_column_names(), ["b"]);
+    }
+
+    #[test]
+    fn replace_data_frame_keeps_selection_within_the_new_height() {
+        let mut table = Table::new(df!("a" => [1, 2, 3, 4, 5]).unwrap()).with_selected(4);
+        table.replace_data_frame(df!("a" => [1, 2]).unwrap());
+        assert_eq!(table.selected(), Some(1));
+
+        table.replace_data_frame(df!("a" => [1, 2, 3]).unwrap());
+        assert_eq!(table.selected(), Some(1));
+    }
+
+    #[test]
+    fn replace_data_frame_clears_selection_when_the_new_frame_is_empty() {
+        let mut table = Table::new(df!("a" => [1, 2, 3]).unwrap()).with_selected(2);
+        table.replace_data_frame(df!("a" => Vec::<i64>::new()).unwrap());
+        assert_eq!(table.selected(), None);
+    }
 }
