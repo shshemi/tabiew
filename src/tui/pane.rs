@@ -99,8 +99,8 @@ impl Pane {
 
     fn sync_sheet(&mut self) {
         if let Some(sheet) = self.sheet.as_mut()
+            && sheet.row() != self.tstack.last().selected()
             && let Some(row) = self.tstack.last().selected()
-            && row != sheet.row()
         {
             let sections = self.tstack.last().data_frame().get_sheet_values(row);
             sheet.set(row, sections);
@@ -246,6 +246,7 @@ impl Pane {
 
     fn select(&mut self, idx: usize) {
         self.tstack.last_mut().select(idx);
+        self.sync_sheet();
     }
 
     fn select_random(&mut self) {

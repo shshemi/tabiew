@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, ops::Add};
 
 use crossterm::event::{KeyCode, KeyModifiers};
 use indexmap::IndexMap;
@@ -49,16 +49,19 @@ impl Format {
 #[derive(Debug)]
 pub struct Sheet {
     scroll: Scroll,
-    row: usize,
+    row: Option<usize>,
     values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
     format: Format,
 }
 
 impl Sheet {
-    pub fn new(row: usize, values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>) -> Self {
+    pub fn new(
+        row: impl Into<Option<usize>>,
+        values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
+    ) -> Self {
         Self {
             scroll: Default::default(),
-            row,
+            row: row.into(),
             values,
             format: Default::default(),
         }
@@ -72,12 +75,16 @@ impl Sheet {
         self.scroll.down();
     }
 
-    pub fn row(&self) -> usize {
+    pub fn row(&self) -> Option<usize> {
         self.row
     }
 
-    pub fn set(&mut self, row: usize, values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>) {
-        self.row = row;
+    pub fn set(
+        &mut self,
+        row: impl Into<Option<usize>>,
+        values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
+    ) {
+        self.row = row.into();
         self.values = values;
     }
 }
@@ -97,7 +104,11 @@ impl Component for Sheet {
         }
         .block(
             Block::app_default()
-                .app_title(format!("Row {}", self.row + 1))
+                .app_title(
+                    self.row()
+                        .map(|row| format!("Row {}", row.add(1)))
+                        .unwrap_or_default(),
+                )
                 .title_bottom(
                     TagLine::new()
                         .mono_color()
@@ -143,8 +154,12 @@ impl Component for Sheet {
                     Format::Json => json_text(&self.values),
                 };
                 text.copy_to_clipboard_via_osc52();
-                Message::AppShowToast(format!("Row #{} copied to clipboard", self.row + 1))
-                    .enqueue();
+                if let Some(row) = self.row {
+                    Message::AppShowToast(format!("Row #{} copied to clipboard", row + 1))
+                        .enqueue();
+                } else {
+                    Message::AppShowToast("Unkown row copied to clipboard".to_owned()).enqueue();
+                }
                 true
             }
             (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
