@@ -61,6 +61,7 @@ impl Component for CommandPalette {
                     Message::AppDismissOverlay.enqueue();
                     if let Some(item) = self.picker.selected_item() {
                         match item {
+                            Command::About => Message::AppShowAbout.enqueue(),
                             Command::Cast => Message::PaneShowColumnCaster.enqueue(),
                             Command::Info => Message::PaneShowTableInfo.enqueue(),
                             Command::Export => Message::PaneShowExporter.enqueue(),
@@ -111,6 +112,7 @@ impl Component for CommandPalette {
 
 #[derive(Debug, Clone, Copy, EnumIter, IntoStaticStr)]
 enum Command {
+    About,
     Cast,
     Edit,
     Export,
@@ -145,6 +147,7 @@ impl Command {
 impl Command {
     fn icon(&self) -> icons::Icon {
         match self {
+            Command::About => icons::INFO,
             Command::Cast => icons::CAST,
             Command::Edit => icons::PENCIL,
             Command::Export => icons::EXPORT,

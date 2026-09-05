@@ -13,7 +13,7 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         popups::{
-            command_palette::CommandPalette, fp_precision_picker::FpPrecisionPicker,
+            about::About, command_palette::CommandPalette, fp_precision_picker::FpPrecisionPicker,
             importer::Importer, theme_selector::ThemeSelector,
         },
         schema::schema::Schema,
@@ -47,6 +47,10 @@ impl App {
 
     pub fn running(&self) -> bool {
         self.running
+    }
+
+    fn show_about(&mut self) {
+        self.overlay = Some(Overlay::About(Default::default()));
     }
 
     fn show_theme_selector(&mut self) {
@@ -184,6 +188,7 @@ impl Component for App {
             Message::AppDismissOverlay => self.dismiss_overlay(),
             Message::AppShowError(message) => self.show_error(message),
             Message::AppShowToast(message) => self.show_toast(message),
+            Message::AppShowAbout => self.show_about(),
             Message::AppShowCommandPicker => self.show_palette(),
             Message::AppShowThemeSelector => self.show_theme_selector(),
             Message::AppShowFpPrecisionPicker => self.show_fp_precision_picker(),
@@ -237,6 +242,7 @@ impl Component for App {
 
 #[derive(Debug)]
 pub enum Overlay {
+    About(About),
     Error(ErrorPopup),
     CommandPicker(CommandPalette),
     ThemeSelector(ThemeSelector),
@@ -248,6 +254,7 @@ pub enum Overlay {
 impl Overlay {
     fn responder(&mut self) -> &mut dyn Component {
         match self {
+            Overlay::About(about) => about,
             Overlay::Error(error) => error,
             Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,

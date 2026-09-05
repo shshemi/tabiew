@@ -11,6 +11,7 @@ use crate::{misc::remote_load::Reader, tui::pane::TableDescription};
 #[derive(Debug)]
 pub enum Message {
     AppDismissOverlay,
+    AppShowAbout,
     AppShowCommandPicker,
     AppShowError(String),
     AppShowToast(String),

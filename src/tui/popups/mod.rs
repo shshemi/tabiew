@@ -1,3 +1,4 @@
+pub mod about;
 pub mod column_caster;
 pub mod command_palette;
 pub mod data_frame_info;
