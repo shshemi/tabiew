@@ -29,10 +29,11 @@ pub struct About;
 impl Component for About {
     fn render(
         &mut self,
-        area: ratatui::prelude::Rect,
+        _area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
+        let area = buf.area;
         let label_width = entries()
             .iter()
             .map(|(label, _)| label.width())
@@ -41,8 +42,6 @@ impl Component for About {
         let chrome_x = FRAME + PADDING_X * 2;
         let chrome_y = FRAME + PADDING_Y * 2;
 
-        // Entries that do not fit the width are dropped rather than forcing the
-        // popup off-screen: a narrow terminal still gets the logo.
         let line_width = |value: &str| label_width + 2 + value.width();
         let room = area.width.saturating_sub(chrome_x) as usize;
         let entries = entries()
