@@ -38,7 +38,7 @@ impl Default for JsonToDataFrame {
 
 impl DataFrameReader for JsonToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
-        let df = match &input {
+        let mut df = match &input {
             ReaderSource::File(path) => JsonReader::new(File::open(path)?)
                 .set_rechunk(true)
                 .infer_schema_len(None)
@@ -51,7 +51,9 @@ impl DataFrameReader for JsonToDataFrame {
                 .finish()?,
         };
         // JsonReader has no native row limit, so cap the frame after reading.
-        let df = df.head(self.max_rows);
+        if self.max_rows.is_some() {
+            df = df.head(self.max_rows);
+        }
         Ok([(input.table_name(), df)].into())
     }
 }
