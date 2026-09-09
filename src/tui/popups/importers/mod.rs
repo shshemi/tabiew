@@ -4,6 +4,8 @@ use crate::{
     handler::message::Message,
     io::{DataSource, reader::ReaderSource},
     misc::{
+        file_identity::FileIdentity,
+        refresh::RefreshSource,
         remote_load,
         sql::{TableSource, sql},
     },
@@ -26,6 +28,7 @@ pub mod tsv;
 
 fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Reader) {
     Message::AppDismissOverlay.enqueue();
+    let reader: Arc<dyn remote_load::Reader> = Arc::new(reader);
     match source {
         DataSource::Stdin => {
             let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
@@ -44,6 +47,9 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
                 .enqueue();
         }
         DataSource::File(path_buf) => {
+            // Captured before the read so that a refresh compares against the file that was
+            // actually imported. Sources that are not regular files are simply not refreshable.
+            let identity = FileIdentity::capture(&path_buf).ok();
             let frames = match reader.read_to_data_frames(ReaderSource::File(path_buf.clone())) {
                 Ok(f) => f,
                 Err(err) => {
@@ -52,8 +58,16 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
                 }
             };
             let count = frames.len();
-            for (name, df) in frames {
-                let name = sql().register(&name, df.clone(), TableSource::File(path_buf.clone()));
+            for (frame_index, (name, df)) in frames.into_iter().enumerate() {
+                let name = match identity.clone() {
+                    Some(identity) => sql().register_refreshable(
+                        &name,
+                        df.clone(),
+                        TableSource::File(path_buf.clone()),
+                        RefreshSource::new(reader.clone(), identity, &name, frame_index, count),
+                    ),
+                    None => sql().register(&name, df.clone(), TableSource::File(path_buf.clone())),
+                };
                 Message::TabsAddNamePane(df, name).enqueue();
             }
             Message::AppShowToast(format!(
@@ -63,6 +77,6 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
             ))
             .enqueue();
         }
-        DataSource::Url(url) => Message::AppDownloadDataSource(url, Arc::new(reader)).enqueue(),
+        DataSource::Url(url) => Message::AppDownloadDataSource(url, reader).enqueue(),
     };
 }

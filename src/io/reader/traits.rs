@@ -13,6 +13,7 @@ use crate::{
             LogfmtToDataFrame, MarkdownToDataFrame, ParquetToDataFrame, SqliteToDataFrames,
         },
     },
+    misc::remote_load::Reader,
 };
 
 pub type NamedFrame = (String, DataFrame);
@@ -23,11 +24,11 @@ pub trait DataFrameReader {
 }
 
 pub trait BuildReader {
-    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFrameReader>>;
+    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn Reader>>;
 }
 
 impl BuildReader for Args {
-    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFrameReader>> {
+    fn build_reader(&self, path: impl AsRef<Path>) -> AppResult<Box<dyn Reader>> {
         match self.format {
             Some(Format::Dsv) | Some(Format::Csv) => Ok(Box::new(CsvToDataFrame::from_args(self))),
             Some(Format::Tsv) => Ok(Box::new(
