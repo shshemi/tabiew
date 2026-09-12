@@ -13,9 +13,9 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 use crate::{
     misc::{
         config::{config, theme},
-        iter_ext::ZipItersExt,
         polars_ext::{AnyValueExt, DataFrameExt},
         type_ext::ConstraintExt,
+        zip_iters::ZipItersExt,
     },
     tui::component::Component,
 };
