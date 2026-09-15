@@ -1,5 +1,6 @@
 use std::{
-    collections::HashMap,
+    cmp::Reverse,
+    collections::{BTreeSet, HashMap},
     fmt::Debug,
     marker::PhantomData,
     sync::{
@@ -11,7 +12,6 @@ use std::{
 };
 
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
-use itertools::Itertools;
 use polars::{frame::DataFrame, prelude::IdxCa};
 
 use rayon::prelude::*;
@@ -108,7 +108,7 @@ where
                 let sync_df = sync_df.clone();
                 move || {
                     let mut interval = Interval::new(Duration::from_millis(100));
-                    let mut idx_score = HashMap::new();
+                    let mut scores = Scores::default();
                     let mut recv = ConnectionAware::new(rx);
                     let mut updated = false;
                     while recv.connected() {
@@ -116,23 +116,13 @@ where
                         let mut should_update = false;
                         for (idx, new_score) in recv.by_ref() {
                             should_update = true;
-                            idx_score
-                                .entry(idx)
-                                .and_modify(|score| *score = new_score.max(*score))
-                                .or_insert(new_score);
+                            scores.insert(idx, new_score);
                         }
 
                         if should_update {
                             sync_df.insert(
-                                df.take(&IdxCa::new_vec(
-                                    "name".into(),
-                                    idx_score
-                                        .iter()
-                                        .sorted_by_key(|(idx, score)| (-*score, *idx))
-                                        .map(|(idx, _)| *idx)
-                                        .collect(),
-                                ))
-                                .unwrap_or_default(),
+                                df.take(&IdxCa::new_vec("name".into(), scores.indices().collect()))
+                                    .unwrap_or_default(),
                             );
                             updated = true;
                         }
@@ -140,15 +130,8 @@ where
                     }
                     if !updated {
                         sync_df.insert(
-                            df.take(&IdxCa::new_vec(
-                                "name".into(),
-                                idx_score
-                                    .iter()
-                                    .sorted_by_key(|(idx, score)| (-*score, *idx))
-                                    .map(|(idx, _)| *idx)
-                                    .collect(),
-                            ))
-                            .unwrap_or_graceful_shutdown(),
+                            df.take(&IdxCa::new_vec("name".into(), scores.indices().collect()))
+                                .unwrap_or_graceful_shutdown(),
                         );
                     }
                 }
@@ -250,5 +233,36 @@ impl Interval {
     pub fn sleep(&mut self) {
         std::thread::sleep(self.tick_rate.saturating_sub(self.last_tick.elapsed()));
         self.last_tick = Instant::now();
+    }
+}
+
+type RowIndex = u32;
+type SimScore = i64;
+
+#[derive(Debug, Default)]
+struct Scores {
+    map: HashMap<RowIndex, SimScore>,
+    bts: BTreeSet<(Reverse<SimScore>, RowIndex)>,
+}
+
+impl Scores {
+    fn insert(&mut self, row: RowIndex, score: SimScore) {
+        self.map
+            .entry(row)
+            .and_modify(|old_score| {
+                if *old_score < score {
+                    self.bts.remove(&(Reverse(*old_score), row));
+                    *old_score = score;
+                    self.bts.insert((Reverse(score), row));
+                }
+            })
+            .or_insert_with(|| {
+                self.bts.insert((Reverse(score), row));
+                score
+            });
+    }
+
+    fn indices(&self) -> impl Iterator<Item = RowIndex> {
+        self.bts.iter().map(|(_, idx)| *idx)
     }
 }
