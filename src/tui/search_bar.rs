@@ -25,7 +25,7 @@ impl SearchBar {
     pub fn exact(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Exact(search::Searcher::excat(
+            searcher: Searcher::Exact(search::Searcher::exact(
                 dataframe.clone(),
                 Default::default(),
             )),
@@ -66,7 +66,7 @@ impl SearchBar {
                     ))
                 }
                 Searcher::Exact(_) => {
-                    self.searcher = Searcher::Exact(search::Searcher::excat(
+                    self.searcher = Searcher::Exact(search::Searcher::exact(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))

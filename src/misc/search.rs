@@ -28,7 +28,7 @@ pub struct Searcher {
 }
 
 impl Searcher {
-    pub fn excat(df: DataFrame, pat: String) -> Self {
+    pub fn exact(df: DataFrame, pat: String) -> Self {
         Self::new::<Exact>(df, pat)
     }
 
