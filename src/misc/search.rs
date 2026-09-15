@@ -49,14 +49,14 @@ impl Score for Contain {
 }
 
 #[derive(Debug)]
-pub struct Search<S> {
+pub struct Searcher<S> {
     pat: String,
     df: SyncDataFrame,
     _alive: SetFalseOnDrop,
     score: PhantomData<S>,
 }
 
-impl<S> Search<S>
+impl<S> Searcher<S>
 where
     S: Score + Default + Sync + Send + 'static,
 {

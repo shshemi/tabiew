@@ -25,7 +25,7 @@ impl SearchBar {
     pub fn exact(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Exact(search::Search::new(dataframe.clone(), Default::default())),
+            searcher: Searcher::Exact(search::Searcher::new(dataframe.clone(), Default::default())),
             rollback_df: dataframe,
         }
     }
@@ -33,7 +33,7 @@ impl SearchBar {
     pub fn fuzzy(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Fuzzy(search::Search::new(dataframe.clone(), Default::default())),
+            searcher: Searcher::Fuzzy(search::Searcher::new(dataframe.clone(), Default::default())),
             rollback_df: dataframe,
         }
     }
@@ -54,13 +54,13 @@ impl SearchBar {
         if self.input.value() != self.searcher.pattern() {
             match self.searcher {
                 Searcher::Fuzzy(_) => {
-                    self.searcher = Searcher::Fuzzy(search::Search::new(
+                    self.searcher = Searcher::Fuzzy(search::Searcher::new(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))
                 }
                 Searcher::Exact(_) => {
-                    self.searcher = Searcher::Exact(search::Search::new(
+                    self.searcher = Searcher::Exact(search::Searcher::new(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))
@@ -113,8 +113,8 @@ impl Component for SearchBar {
 
 #[derive(Debug)]
 pub enum Searcher {
-    Fuzzy(search::Search<Skim>),
-    Exact(search::Search<Contain>),
+    Fuzzy(search::Searcher<Skim>),
+    Exact(search::Searcher<Contain>),
 }
 
 impl Searcher {
