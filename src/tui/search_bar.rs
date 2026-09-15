@@ -4,7 +4,7 @@ use ratatui::widgets::{Block, Widget};
 
 use crate::{
     handler::message::Message,
-    misc::search::{self, Contain, Skim},
+    misc::search::{self},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -25,7 +25,10 @@ impl SearchBar {
     pub fn exact(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Exact(search::Searcher::new(dataframe.clone(), Default::default())),
+            searcher: Searcher::Exact(search::Searcher::excat(
+                dataframe.clone(),
+                Default::default(),
+            )),
             rollback_df: dataframe,
         }
     }
@@ -33,7 +36,10 @@ impl SearchBar {
     pub fn fuzzy(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Fuzzy(search::Searcher::new(dataframe.clone(), Default::default())),
+            searcher: Searcher::Fuzzy(search::Searcher::fuzzy(
+                dataframe.clone(),
+                Default::default(),
+            )),
             rollback_df: dataframe,
         }
     }
@@ -54,13 +60,13 @@ impl SearchBar {
         if self.input.value() != self.searcher.pattern() {
             match self.searcher {
                 Searcher::Fuzzy(_) => {
-                    self.searcher = Searcher::Fuzzy(search::Searcher::new(
+                    self.searcher = Searcher::Fuzzy(search::Searcher::fuzzy(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))
                 }
                 Searcher::Exact(_) => {
-                    self.searcher = Searcher::Exact(search::Searcher::new(
+                    self.searcher = Searcher::Exact(search::Searcher::excat(
                         self.rollback_df.clone(),
                         self.input.value().to_owned(),
                     ))
@@ -113,8 +119,8 @@ impl Component for SearchBar {
 
 #[derive(Debug)]
 pub enum Searcher {
-    Fuzzy(search::Searcher<Skim>),
-    Exact(search::Searcher<Contain>),
+    Fuzzy(search::Searcher),
+    Exact(search::Searcher),
 }
 
 impl Searcher {

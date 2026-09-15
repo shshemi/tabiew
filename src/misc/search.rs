@@ -2,11 +2,10 @@ use std::{
     cmp::Reverse,
     collections::{BTreeSet, HashMap},
     fmt::Debug,
-    marker::PhantomData,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
-        mpsc::{Receiver, TryRecvError, channel},
+        mpsc::{Receiver, Sender, TryRecvError, channel},
     },
     time::{Duration, Instant},
 };
@@ -18,19 +17,68 @@ use rayon::prelude::*;
 
 use crate::misc::{polars_ext::AnyValueExt, type_ext::UnwrapOrGracefulShutdown};
 
-pub trait Score {
+type RowIndex = u32;
+type SimScore = i64;
+
+#[derive(Debug)]
+pub struct Searcher {
+    pat: String,
+    sync_df: SyncDataFrame,
+    alive: Arc<AtomicBool>,
+}
+
+impl Searcher {
+    pub fn excat(df: DataFrame, pat: String) -> Self {
+        Self::new::<Exact>(df, pat)
+    }
+
+    pub fn fuzzy(df: DataFrame, pat: String) -> Self {
+        Self::new::<Skim>(df, pat)
+    }
+
+    fn new<S>(df: DataFrame, pat: String) -> Self
+    where
+        S: Score + Default + Sync + Send + 'static,
+    {
+        let sync_df = SyncDataFrame::new();
+        let alive = Arc::new(AtomicBool::new(true));
+        if pat.is_empty() {
+            sync_df.insert(df);
+        } else {
+            sync_df.insert(df.clear());
+            let (tx, rx) = channel();
+            spawn_search_thread::<S>(df.clone(), pat.to_owned(), alive.clone(), tx);
+            spawn_collector_thread(df, rx, sync_df.clone());
+        }
+        Self {
+            sync_df,
+            alive,
+            pat,
+        }
+    }
+
+    pub fn latest(&self) -> Option<DataFrame> {
+        self.sync_df.take()
+    }
+
+    pub fn pattern(&self) -> &str {
+        &self.pat
+    }
+}
+
+impl Drop for Searcher {
+    fn drop(&mut self) {
+        self.alive.store(false, Ordering::Relaxed);
+    }
+}
+
+trait Score {
     fn score(&self, a: &str, b: &str) -> Option<i64>;
 }
 
 #[derive(Default)]
-pub struct Skim {
+struct Skim {
     matcher: SkimMatcherV2,
-}
-
-impl Debug for Skim {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Skim()")
-    }
 }
 
 impl Score for Skim {
@@ -39,118 +87,12 @@ impl Score for Skim {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct Contain;
+#[derive(Default)]
+struct Exact;
 
-impl Score for Contain {
+impl Score for Exact {
     fn score(&self, a: &str, b: &str) -> Option<i64> {
         a.contains(b).then_some(1)
-    }
-}
-
-#[derive(Debug)]
-pub struct Searcher<S> {
-    pat: String,
-    df: SyncDataFrame,
-    _alive: SetFalseOnDrop,
-    score: PhantomData<S>,
-}
-
-impl<S> Searcher<S>
-where
-    S: Score + Default + Sync + Send + 'static,
-{
-    pub fn new(df: DataFrame, pat: String) -> Self {
-        let sync_df = SyncDataFrame::new();
-        let alive = Arc::new(AtomicBool::new(true));
-        if pat.is_empty() {
-            // avoid search
-            sync_df.insert(df);
-            Self {
-                df: sync_df,
-                _alive: SetFalseOnDrop(alive),
-                score: Default::default(),
-                pat,
-            }
-        } else {
-            // search
-            // communication between search and collector threads
-            sync_df.insert(df.clear());
-            let (tx, rx) = channel();
-
-            // search thread
-            std::thread::spawn({
-                let matcher = S::default();
-                let alive = alive.clone();
-                let df = df.clone();
-                let pat = pat.clone();
-                move || {
-                    let _ = df
-                        .columns()
-                        .iter()
-                        .flat_map(|column| column.as_materialized_series().iter().enumerate())
-                        .par_bridge()
-                        .take_any_while(|_| alive.load(Ordering::Relaxed))
-                        .filter_map(|(idx, value)| {
-                            let value = value.to_multi_line();
-                            if value == pat {
-                                Some((idx, i64::MAX))
-                            } else {
-                                matcher.score(&value, &pat).map(|score| (idx, score))
-                            }
-                        })
-                        .try_for_each(|(idx, score)| tx.send((idx as u32, score)));
-                }
-            });
-
-            // collector thread
-            std::thread::spawn({
-                let sync_df = sync_df.clone();
-                move || {
-                    let mut interval = Interval::new(Duration::from_millis(100));
-                    let mut scores = Scores::default();
-                    let mut recv = ConnectionAware::new(rx);
-                    let mut updated = false;
-                    while recv.connected() {
-                        //do operations
-                        let mut should_update = false;
-                        for (idx, new_score) in recv.by_ref() {
-                            should_update = true;
-                            scores.insert(idx, new_score);
-                        }
-
-                        if should_update {
-                            sync_df.insert(
-                                df.take(&IdxCa::new_vec("name".into(), scores.indices().collect()))
-                                    .unwrap_or_default(),
-                            );
-                            updated = true;
-                        }
-                        interval.sleep();
-                    }
-                    if !updated {
-                        sync_df.insert(
-                            df.take(&IdxCa::new_vec("name".into(), scores.indices().collect()))
-                                .unwrap_or_graceful_shutdown(),
-                        );
-                    }
-                }
-            });
-            Self {
-                df: sync_df,
-                _alive: SetFalseOnDrop(alive),
-                pat,
-                score: Default::default(),
-            }
-        }
-    }
-
-    pub fn latest(&self) -> Option<DataFrame> {
-        self.df.take()
-    }
-
-    pub fn pattern(&self) -> &str {
-        &self.pat
     }
 }
 
@@ -170,15 +112,6 @@ impl SyncDataFrame {
 
     fn take(&self) -> Option<DataFrame> {
         self.0.lock().ok().and_then(|mut mut_grd| mut_grd.take())
-    }
-}
-
-#[derive(Debug, Clone)]
-struct SetFalseOnDrop(Arc<AtomicBool>);
-
-impl Drop for SetFalseOnDrop {
-    fn drop(&mut self) {
-        self.0.store(false, Ordering::Relaxed);
     }
 }
 
@@ -217,7 +150,7 @@ impl<T> Iterator for ConnectionAware<T> {
 }
 
 #[derive(Debug)]
-pub struct Interval {
+struct Interval {
     tick_rate: Duration,
     last_tick: Instant,
 }
@@ -235,9 +168,6 @@ impl Interval {
         self.last_tick = Instant::now();
     }
 }
-
-type RowIndex = u32;
-type SimScore = i64;
 
 #[derive(Debug, Default)]
 struct Scores {
@@ -265,4 +195,67 @@ impl Scores {
     fn indices(&self) -> impl Iterator<Item = RowIndex> {
         self.bts.iter().map(|(_, idx)| *idx)
     }
+}
+
+fn spawn_search_thread<S>(
+    df: DataFrame,
+    pat: String,
+    alive: Arc<AtomicBool>,
+    tx: Sender<(RowIndex, SimScore)>,
+) where
+    S: Score + Default + Sync,
+{
+    std::thread::spawn(move || {
+        let matcher = S::default();
+        let _ = df
+            .columns()
+            .iter()
+            .flat_map(|column| column.as_materialized_series().iter().enumerate())
+            .par_bridge()
+            .take_any_while(|_| alive.load(Ordering::Relaxed))
+            .filter_map(|(idx, value)| {
+                let value = value.to_multi_line();
+                if value == pat {
+                    Some((idx, i64::MAX))
+                } else {
+                    matcher.score(&value, &pat).map(|score| (idx, score))
+                }
+            })
+            .try_for_each(|(idx, score)| tx.send((idx as u32, score)));
+    });
+}
+
+fn spawn_collector_thread(
+    df: DataFrame,
+    rx: Receiver<(RowIndex, SimScore)>,
+    sync_df: SyncDataFrame,
+) {
+    std::thread::spawn(move || {
+        let mut interval = Interval::new(Duration::from_millis(100));
+        let mut scores = Scores::default();
+        let mut recv = ConnectionAware::new(rx);
+        let mut updated = false;
+        while recv.connected() {
+            let mut should_update = false;
+            for (idx, new_score) in recv.by_ref() {
+                should_update = true;
+                scores.insert(idx, new_score);
+            }
+
+            if should_update {
+                sync_df.insert(
+                    df.take(&IdxCa::new_vec("name".into(), scores.indices().collect()))
+                        .unwrap_or_default(),
+                );
+                updated = true;
+            }
+            interval.sleep();
+        }
+        if !updated {
+            sync_df.insert(
+                df.take(&IdxCa::new_vec("name".into(), scores.indices().collect()))
+                    .unwrap_or_graceful_shutdown(),
+            );
+        }
+    });
 }
