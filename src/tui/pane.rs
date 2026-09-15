@@ -36,7 +36,7 @@ use crate::{
             scatter_plot_builder::{self, ScatterPlotBuilder},
             table_registerer::TableRegisterer,
         },
-        search_bar::Searcher,
+        search_bar::SearchType,
         table::Table,
         widgets::status_bar::StatusBar,
     },
@@ -550,11 +550,11 @@ impl Component for Pane {
             Some(Modal::SearchBar(search_bar)) => {
                 if let Some(df) = search_bar.searcher().latest() {
                     self.tstack.last_mut().set_data_frame(df);
-                    *self.description_mut() = match search_bar.searcher() {
-                        Searcher::Fuzzy(_) => {
+                    *self.description_mut() = match search_bar.search_type() {
+                        SearchType::Fuzzy => {
                             TableDescription::FuzzySearch(search_bar.value().to_owned())
                         }
-                        Searcher::Exact(_) => {
+                        SearchType::Exact => {
                             TableDescription::Search(search_bar.value().to_owned())
                         }
                     };

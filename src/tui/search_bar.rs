@@ -4,7 +4,7 @@ use ratatui::widgets::{Block, Widget};
 
 use crate::{
     handler::message::Message,
-    misc::search::{self},
+    misc::search::Searcher,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -15,8 +15,15 @@ use crate::{
 use super::widgets::input::Input;
 
 #[derive(Debug)]
+pub enum SearchType {
+    Fuzzy,
+    Exact,
+}
+
+#[derive(Debug)]
 pub struct SearchBar {
     input: Input,
+    search_type: SearchType,
     searcher: Searcher,
     rollback_df: DataFrame,
 }
@@ -25,10 +32,8 @@ impl SearchBar {
     pub fn exact(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Exact(search::Searcher::exact(
-                dataframe.clone(),
-                Default::default(),
-            )),
+            search_type: SearchType::Exact,
+            searcher: Searcher::exact(dataframe.clone(), Default::default()),
             rollback_df: dataframe,
         }
     }
@@ -36,16 +41,18 @@ impl SearchBar {
     pub fn fuzzy(dataframe: DataFrame) -> Self {
         SearchBar {
             input: Default::default(),
-            searcher: Searcher::Fuzzy(search::Searcher::fuzzy(
-                dataframe.clone(),
-                Default::default(),
-            )),
+            search_type: SearchType::Fuzzy,
+            searcher: Searcher::fuzzy(dataframe.clone(), Default::default()),
             rollback_df: dataframe,
         }
     }
 
     pub fn searcher(&self) -> &Searcher {
         &self.searcher
+    }
+
+    pub fn search_type(&self) -> &SearchType {
+        &self.search_type
     }
 
     pub fn into_rollback_df(self) -> DataFrame {
@@ -58,18 +65,14 @@ impl SearchBar {
 
     fn update_search(&mut self) {
         if self.input.value() != self.searcher.pattern() {
-            match self.searcher {
-                Searcher::Fuzzy(_) => {
-                    self.searcher = Searcher::Fuzzy(search::Searcher::fuzzy(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
+            match self.search_type {
+                SearchType::Fuzzy => {
+                    self.searcher =
+                        Searcher::fuzzy(self.rollback_df.clone(), self.input.value().to_owned())
                 }
-                Searcher::Exact(_) => {
-                    self.searcher = Searcher::Exact(search::Searcher::exact(
-                        self.rollback_df.clone(),
-                        self.input.value().to_owned(),
-                    ))
+                SearchType::Exact => {
+                    self.searcher =
+                        Searcher::exact(self.rollback_df.clone(), self.input.value().to_owned())
                 }
             }
         }
@@ -83,9 +86,9 @@ impl Component for SearchBar {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        let title = match &self.searcher {
-            Searcher::Fuzzy(_) => icons::FUZZY_SEARCH.title("Fuzzy Search"),
-            Searcher::Exact(_) => icons::SEARCH.title("Search"),
+        let title = match &self.search_type {
+            SearchType::Fuzzy => icons::FUZZY_SEARCH.title("Fuzzy Search"),
+            SearchType::Exact => icons::SEARCH.title("Search"),
         };
         let area = {
             let block = Block::app_default().app_title(title);
@@ -113,28 +116,6 @@ impl Component for SearchBar {
                 }
                 _ => false,
             }
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Searcher {
-    Fuzzy(search::Searcher),
-    Exact(search::Searcher),
-}
-
-impl Searcher {
-    pub fn pattern(&self) -> &str {
-        match self {
-            Searcher::Fuzzy(search) => search.pattern(),
-            Searcher::Exact(search) => search.pattern(),
-        }
-    }
-
-    pub fn latest(&self) -> Option<DataFrame> {
-        match self {
-            Searcher::Fuzzy(search) => search.latest(),
-            Searcher::Exact(search) => search.latest(),
         }
     }
 }
