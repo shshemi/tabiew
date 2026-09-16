@@ -1,12 +1,9 @@
 use std::time::{Duration, Instant};
 
-use ratatui::{
-    layout::{Constraint, Flex, Layout},
-    widgets::{Block, Paragraph, Widget, Wrap},
-};
+use ratatui::widgets::{Block, Paragraph, Widget, Wrap};
 
 use crate::{
-    misc::{buffer_ext::BufferExt, config::theme},
+    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
     tui::{app_default::AppDefault, component::Component},
 };
 
@@ -41,16 +38,7 @@ impl Component for Toast {
             .left_aligned()
             .block(Block::app_default().style(theme().block()))
             .wrap(Wrap { trim: true });
-        let width = pg.line_width().min(64) as u16;
-        let [area] = Layout::horizontal([Constraint::Length(width)])
-            .flex(Flex::Center)
-            .areas(buf.area);
-        let [area, _] = Layout::vertical([
-            Constraint::Length((pg.line_count(width)) as u16),
-            Constraint::Length(3),
-        ])
-        .flex(Flex::End)
-        .areas(area);
+        let area = buf.area.toast(&pg);
         buf.clear(area);
         pg.render(area, buf);
     }

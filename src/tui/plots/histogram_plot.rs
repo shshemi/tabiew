@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::{
-    layout::{Alignment, Direction, Margin},
+    layout::{Alignment, Direction},
     text::Line,
     widgets::{Bar, BarChart, BarGroup, Block, Widget},
 };
@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme},
+    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -50,7 +50,7 @@ impl Component for HistogramPlot {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        let area = buf.area.inner(Margin::new(7, 3));
+        let area = buf.area.plot();
         buf.clear(area);
         let area = {
             let blk = Block::app_default()

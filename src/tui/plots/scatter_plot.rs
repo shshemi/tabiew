@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use ratatui::{
-    layout::{Alignment, Constraint, Margin},
+    layout::{Alignment, Constraint},
     symbols::Marker,
     text::Span,
     widgets::{Axis, Block, Chart, Dataset, GraphType, LegendPosition, Padding, Widget},
@@ -11,7 +11,7 @@ use ratatui::{
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
+    misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec, rect_ext::RectExt},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -66,7 +66,7 @@ impl Component for ScatterPlot {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        let area = buf.area.inner(Margin::new(7, 3));
+        let area = buf.area.plot();
         buf.clear(area);
         let ds = self
             .data

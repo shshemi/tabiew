@@ -1,7 +1,7 @@
-use crate::misc::{buffer_ext::BufferExt, config::theme};
+use crate::misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt};
 use crossterm::event::KeyCode;
 use ratatui::{
-    layout::{Alignment, Constraint, Flex, Layout},
+    layout::Alignment,
     widgets::{Block, Paragraph, Widget, Wrap},
 };
 
@@ -39,13 +39,7 @@ impl Component for ErrorPopup {
                     .style(theme().error()),
             )
             .wrap(Wrap { trim: true });
-        let text_width = pg.line_width().min(64) as u16;
-        let [area] = Layout::horizontal([Constraint::Length(text_width)])
-            .flex(Flex::Center)
-            .areas(buf.area);
-        let [area] = Layout::vertical([Constraint::Length((pg.line_count(text_width)) as u16)])
-            .flex(Flex::Center)
-            .areas(area);
+        let area = buf.area.popup(&pg);
         buf.clear(area);
         pg.render(area, buf);
     }
