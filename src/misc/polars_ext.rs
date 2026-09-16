@@ -25,13 +25,10 @@ use crate::{
     misc::{config::config, ragged_vec::RaggedVec},
 };
 
-use super::type_ext::HasSubsequence;
-
 pub trait AnyValueExt<'a> {
     fn to_single_line(&'a self) -> Cow<'a, str>;
-    fn width(self, num_buffer: &mut NumBuffer) -> usize;
     fn to_multi_line(&'a self) -> Cow<'a, str>;
-    fn fuzzy_cmp(self, other: &str) -> bool;
+    fn width(self, num_buffer: &mut NumBuffer) -> usize;
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
     fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
     fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
@@ -116,15 +113,6 @@ impl<'a> AnyValueExt<'a> for AnyValue<'a> {
             AnyValue::Binary(buf) => Cow::Owned(bytes_to_string(buf)),
             AnyValue::BinaryOwned(buf) => Cow::Owned(bytes_to_string(buf)),
             _ => Cow::Owned(self.to_string()),
-        }
-    }
-
-    fn fuzzy_cmp(self, other: &str) -> bool {
-        match self {
-            AnyValue::Null => false,
-            AnyValue::StringOwned(pl_small_str) => pl_small_str.has_subsequence(other),
-            AnyValue::String(val) => val.has_subsequence(other),
-            _ => self.to_multi_line().has_subsequence(other),
         }
     }
 
