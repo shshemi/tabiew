@@ -6,7 +6,7 @@ use polars::{
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
-use crate::tui::misc::any_value_converter::AnyValueConverter;
+use crate::{misc::config::config, tui::misc::any_value_converter::format_any_value};
 
 #[derive(Default)]
 pub struct DataFrameWidthsCalculator {
@@ -59,9 +59,19 @@ impl Default for SeriesWidthCalculator {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct AnyValueWidthCalculator {
-    conv: AnyValueConverter,
+    buf: String,
+    fp_prec: Option<usize>,
+}
+
+impl Default for AnyValueWidthCalculator {
+    fn default() -> Self {
+        Self {
+            buf: Default::default(),
+            fp_prec: config().fp_precision(),
+        }
+    }
 }
 
 impl AnyValueWidthCalculator {
@@ -88,11 +98,11 @@ impl AnyValueWidthCalculator {
             | AnyValue::Float32(_)
             | AnyValue::Float64(_)
             | AnyValue::Duration(_, _)
-            | AnyValue::Decimal(_, _, _) => self.str_width(value),
-            AnyValue::Categorical(cat, map) => self.cat_map_width(cat, map),
-            AnyValue::CategoricalOwned(cat, map) => self.cat_map_width(cat, map),
-            AnyValue::Enum(cat, map) => self.cat_map_width(cat, map),
-            AnyValue::EnumOwned(cat, map) => self.cat_map_width(cat, map),
+            | AnyValue::Decimal(_, _, _)
+            | AnyValue::Categorical(_, _)
+            | AnyValue::CategoricalOwned(_, _)
+            | AnyValue::Enum(_, _)
+            | AnyValue::EnumOwned(_, _) => self.str_width(value),
             AnyValue::List(series) => Self::uint_width(series.len() as u128) + 8, // [123 items]
             AnyValue::Array(_, n) => Self::uint_width(n as u128) + 8,             // [123 items]
             AnyValue::Struct(_, _, fields) => Self::uint_width(fields.len() as u128) + 9, // {5 fields}
@@ -123,16 +133,8 @@ impl AnyValueWidthCalculator {
     }
 
     #[inline]
-    fn cat_map_width(&mut self, cat: u32, map: impl AsRef<CategoricalMapping>) -> u16 {
-        map.as_ref()
-            .cat_to_str(cat)
-            .map(UnicodeWidthStr::width)
-            .unwrap_or_default() as u16
-    }
-
-    #[inline]
     fn str_width(&mut self, value: AnyValue) -> u16 {
-        self.conv.to_str(value).width() as u16
+        format_any_value(&mut self.buf, &self.fp_prec, value).width() as u16
     }
 }
 
@@ -143,14 +145,15 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     use super::{AnyValueWidthCalculator, DataFrameWidthsCalculator, SeriesWidthCalculator};
-    use crate::tui::misc::any_value_converter::AnyValueConverter;
+    use crate::{misc::config::config, tui::misc::any_value_converter::format_any_value};
 
     fn width(value: AnyValue) -> u16 {
         AnyValueWidthCalculator::default().calculate(value)
     }
 
     fn rendered_width(value: AnyValue) -> u16 {
-        AnyValueConverter::default().to_str(value).width() as u16
+        let mut buf = String::new();
+        format_any_value(&mut buf, &config().fp_precision(), value).width() as u16
     }
 
     fn series_calculator(chunks: usize) -> SeriesWidthCalculator {

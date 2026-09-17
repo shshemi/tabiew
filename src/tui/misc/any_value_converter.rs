@@ -4,144 +4,127 @@ use std::fmt::Write;
 use chrono::{DateTime, Datelike, Timelike};
 use polars::datatypes::{AnyValue, TimeUnit};
 
-use crate::misc::config::config;
-
-#[derive(Clone)]
-pub struct AnyValueConverter {
-    buf: String,
-    fp_prec: Option<usize>,
+pub fn format_any_value<'a, 'b, 'c>(
+    buf: &'a mut String,
+    fp_prec: &Option<usize>,
+    value: AnyValue<'b>,
+) -> &'c str
+where
+    'a: 'c,
+    'b: 'c,
+{
+    match value {
+        AnyValue::Null => "",
+        AnyValue::Boolean(b) => bool(b),
+        AnyValue::String(s) => s.lines().next().unwrap_or_default(),
+        AnyValue::StringOwned(s) => display(buf, s.lines().next().unwrap_or_default()),
+        AnyValue::UInt8(u) => display(buf, u),
+        AnyValue::UInt16(u) => display(buf, u),
+        AnyValue::UInt32(u) => display(buf, u),
+        AnyValue::UInt64(u) => display(buf, u),
+        AnyValue::UInt128(u) => display(buf, u),
+        AnyValue::Int8(i) => display(buf, i),
+        AnyValue::Int16(i) => display(buf, i),
+        AnyValue::Int32(i) => display(buf, i),
+        AnyValue::Int64(i) => display(buf, i),
+        AnyValue::Int128(i) => display(buf, i),
+        AnyValue::Float16(f) => display_with_precision(buf, *fp_prec, f),
+        AnyValue::Float32(f) => display_with_precision(buf, *fp_prec, f),
+        AnyValue::Float64(f) => display_with_precision(buf, *fp_prec, f),
+        AnyValue::Date(d) => date(buf, d),
+        AnyValue::Datetime(t, unit, _) | AnyValue::DatetimeOwned(t, unit, _) => {
+            datetime(buf, t, unit)
+        }
+        AnyValue::Duration(_, _) => display(buf, value),
+        AnyValue::Time(t) => time(buf, t),
+        AnyValue::Categorical(cat, map) | AnyValue::Enum(cat, map) => {
+            map.cat_to_str(cat).unwrap_or_default()
+        }
+        AnyValue::CategoricalOwned(cat, map) | AnyValue::EnumOwned(cat, map) => {
+            display(buf, map.cat_to_str(cat).unwrap_or_default())
+        }
+        AnyValue::List(series) => display(buf, format_args!("[{} items]", series.len())),
+        AnyValue::Array(_, n) => display(buf, format_args!("[{n} items]")),
+        AnyValue::Struct(_, _, fields) => display(buf, format_args!("{{{} fields}}", fields.len())),
+        AnyValue::StructOwned(st) => display(buf, format_args!("{{{} fields}}", st.0.len())),
+        AnyValue::Binary(items) => display(buf, format_args!("[{} bytes]", items.len())),
+        AnyValue::BinaryOwned(items) => display(buf, format_args!("[{} bytes]", items.len())),
+        AnyValue::Decimal(_, _, _) => display(buf, value),
+    }
 }
 
-impl Default for AnyValueConverter {
-    fn default() -> Self {
-        Self {
-            buf: Default::default(),
-            fp_prec: config().fp_precision(),
-        }
+#[inline]
+fn display(buf: &mut String, value: impl Display) -> &str {
+    buf.clear();
+    let _ = write!(buf, "{value}");
+    buf
+}
+
+#[inline]
+fn display_with_precision(buf: &mut String, fp_prec: Option<usize>, value: impl Display) -> &str {
+    if let Some(precision) = fp_prec {
+        buf.clear();
+        let _ = write!(buf, "{value:.precision$}");
+        buf
+    } else {
+        display(buf, value)
     }
 }
 
-impl AnyValueConverter {
-    pub fn to_str<'a, 'b, 'c>(&'a mut self, value: AnyValue<'b>) -> &'c str
-    where
-        'a: 'c,
-        'b: 'c,
-    {
-        match value {
-            AnyValue::Null => "",
-            AnyValue::Boolean(b) => Self::bool(b),
-            AnyValue::String(s) => s.lines().next().unwrap_or_default(),
-            AnyValue::StringOwned(s) => self.display(s.lines().next().unwrap_or_default()),
-            AnyValue::UInt8(u) => self.display(u),
-            AnyValue::UInt16(u) => self.display(u),
-            AnyValue::UInt32(u) => self.display(u),
-            AnyValue::UInt64(u) => self.display(u),
-            AnyValue::UInt128(u) => self.display(u),
-            AnyValue::Int8(i) => self.display(i),
-            AnyValue::Int16(i) => self.display(i),
-            AnyValue::Int32(i) => self.display(i),
-            AnyValue::Int64(i) => self.display(i),
-            AnyValue::Int128(i) => self.display(i),
-            AnyValue::Float16(f) => self.display_with_precision(f),
-            AnyValue::Float32(f) => self.display_with_precision(f),
-            AnyValue::Float64(f) => self.display_with_precision(f),
-            AnyValue::Date(d) => self.date(d),
-            AnyValue::Datetime(t, unit, _) | AnyValue::DatetimeOwned(t, unit, _) => {
-                self.datetime(t, unit)
-            }
-            AnyValue::Duration(_, _) => self.display(value),
-            AnyValue::Time(t) => self.time(t),
-            AnyValue::Categorical(cat, map) | AnyValue::Enum(cat, map) => {
-                map.cat_to_str(cat).unwrap_or_default()
-            }
-            AnyValue::CategoricalOwned(cat, map) | AnyValue::EnumOwned(cat, map) => {
-                self.display(map.cat_to_str(cat).unwrap_or_default())
-            }
-            AnyValue::List(series) => self.display(format_args!("[{} items]", series.len())),
-            AnyValue::Array(_, n) => self.display(format_args!("[{n} items]")),
-            AnyValue::Struct(_, _, fields) => {
-                self.display(format_args!("{{{} fields}}", fields.len()))
-            }
-            AnyValue::StructOwned(st) => self.display(format_args!("{{{} fields}}", st.0.len())),
-            AnyValue::Binary(items) => self.display(format_args!("[{} bytes]", items.len())),
-            AnyValue::BinaryOwned(items) => self.display(format_args!("[{} bytes]", items.len())),
-            AnyValue::Decimal(_, _, _) => self.display(value),
-        }
-    }
+#[inline]
+fn bool(b: bool) -> &'static str {
+    if b { "true" } else { "false" }
+}
 
-    #[inline]
-    fn display(&mut self, value: impl Display) -> &str {
-        self.buf.clear();
-        let _ = write!(&mut self.buf, "{value}");
-        &self.buf
-    }
+#[inline]
+fn date(buf: &mut String, days: i32) -> &str {
+    let date = DateTime::from_timestamp(i64::from(days) * 86_400, 0)
+        .unwrap_or_default()
+        .date_naive();
+    buf.clear();
+    let _ = write!(
+        buf,
+        "{:04}-{:02}-{:02}",
+        date.year(),
+        date.month(),
+        date.day()
+    );
+    buf
+}
 
-    #[inline]
-    fn display_with_precision(&mut self, value: impl Display) -> &str {
-        if let Some(precision) = self.fp_prec {
-            self.buf.clear();
-            let _ = write!(self.buf, "{value:.precision$}");
-            &self.buf
-        } else {
-            self.display(value)
-        }
-    }
+#[inline]
+fn time(buf: &mut String, nanos: i64) -> &str {
+    let seconds = nanos / 1_000_000_000;
+    buf.clear();
+    let _ = write!(
+        buf,
+        "{:02}:{:02}:{:02}",
+        seconds / 3_600,
+        seconds / 60 % 60,
+        seconds % 60
+    );
+    buf
+}
 
-    #[inline]
-    fn bool(b: bool) -> &'static str {
-        if b { "true" } else { "false" }
-    }
-
-    #[inline]
-    fn date(&mut self, days: i32) -> &str {
-        let date = DateTime::from_timestamp(i64::from(days) * 86_400, 0)
-            .unwrap_or_default()
-            .date_naive();
-        self.buf.clear();
-        let _ = write!(
-            self.buf,
-            "{:04}-{:02}-{:02}",
-            date.year(),
-            date.month(),
-            date.day()
-        );
-        &self.buf
-    }
-
-    #[inline]
-    fn time(&mut self, nanos: i64) -> &str {
-        let seconds = nanos / 1_000_000_000;
-        self.buf.clear();
-        let _ = write!(
-            self.buf,
-            "{:02}:{:02}:{:02}",
-            seconds / 3_600,
-            seconds / 60 % 60,
-            seconds % 60
-        );
-        &self.buf
-    }
-
-    #[inline]
-    fn datetime(&mut self, value: i64, unit: TimeUnit) -> &str {
-        let datetime = match unit {
-            TimeUnit::Nanoseconds => DateTime::from_timestamp_nanos(value),
-            TimeUnit::Microseconds => DateTime::from_timestamp_micros(value).unwrap_or_default(),
-            TimeUnit::Milliseconds => DateTime::from_timestamp_millis(value).unwrap_or_default(),
-        };
-        self.buf.clear();
-        let _ = write!(
-            self.buf,
-            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-            datetime.year(),
-            datetime.month(),
-            datetime.day(),
-            datetime.hour(),
-            datetime.minute(),
-            datetime.second()
-        );
-        &self.buf
-    }
+#[inline]
+fn datetime(buf: &mut String, value: i64, unit: TimeUnit) -> &str {
+    let datetime = match unit {
+        TimeUnit::Nanoseconds => DateTime::from_timestamp_nanos(value),
+        TimeUnit::Microseconds => DateTime::from_timestamp_micros(value).unwrap_or_default(),
+        TimeUnit::Milliseconds => DateTime::from_timestamp_millis(value).unwrap_or_default(),
+    };
+    buf.clear();
+    let _ = write!(
+        buf,
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+        datetime.year(),
+        datetime.month(),
+        datetime.day(),
+        datetime.hour(),
+        datetime.minute(),
+        datetime.second()
+    );
+    buf
 }
 
 #[cfg(test)]
@@ -151,13 +134,11 @@ mod tests {
     use polars::prelude::*;
     use rstest::rstest;
 
-    use super::AnyValueConverter;
+    use super::format_any_value;
 
-    fn converter(fp_prec: Option<usize>) -> AnyValueConverter {
-        AnyValueConverter {
-            buf: String::new(),
-            fp_prec,
-        }
+    fn conv(fp_prec: Option<usize>, value: AnyValue) -> String {
+        let mut buf = String::new();
+        format_any_value(&mut buf, &fp_prec, value).to_owned()
     }
 
     fn categorical_series() -> Series {
@@ -191,14 +172,14 @@ mod tests {
 
     #[test]
     fn null_is_empty() {
-        assert_eq!(converter(None).to_str(AnyValue::Null), "");
+        assert_eq!(conv(None, AnyValue::Null), "");
     }
 
     #[rstest]
     #[case::yes(true, "true")]
     #[case::no(false, "false")]
     fn boolean(#[case] value: bool, #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(AnyValue::Boolean(value)), expected);
+        assert_eq!(conv(None, AnyValue::Boolean(value)), expected);
     }
 
     #[rstest]
@@ -211,18 +192,15 @@ mod tests {
     #[case::tab_preserved("a\tb", "a\tb")]
     #[case::unicode("日本語 café", "日本語 café")]
     fn string_first_line(#[case] value: &str, #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(AnyValue::String(value)), expected);
-        assert_eq!(
-            converter(None).to_str(AnyValue::StringOwned(value.into())),
-            expected
-        );
+        assert_eq!(conv(None, AnyValue::String(value)), expected);
+        assert_eq!(conv(None, AnyValue::StringOwned(value.into())), expected);
     }
 
     #[test]
     fn borrowed_string_is_returned_without_copying() {
         let text = String::from("borrowed");
-        let mut conv = converter(None);
-        let out = conv.to_str(AnyValue::String(&text));
+        let mut buf = String::new();
+        let out = format_any_value(&mut buf, &None, AnyValue::String(&text));
         assert_eq!(out.as_ptr(), text.as_ptr());
     }
 
@@ -248,8 +226,8 @@ mod tests {
         "-170141183460469231731687303715884105728"
     )]
     fn integers(#[case] value: AnyValue<'static>, #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(value.clone()), expected);
-        assert_eq!(converter(Some(3)).to_str(value), expected);
+        assert_eq!(conv(None, value.clone()), expected);
+        assert_eq!(conv(Some(3), value), expected);
     }
 
     #[rstest]
@@ -263,7 +241,7 @@ mod tests {
     #[case::infinity(f64::INFINITY, "inf")]
     #[case::negative_infinity(f64::NEG_INFINITY, "-inf")]
     fn float64_without_precision(#[case] value: f64, #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(AnyValue::Float64(value)), expected);
+        assert_eq!(conv(None, AnyValue::Float64(value)), expected);
     }
 
     #[rstest]
@@ -280,20 +258,14 @@ mod tests {
         #[case] precision: usize,
         #[case] expected: &str,
     ) {
-        assert_eq!(
-            converter(Some(precision)).to_str(AnyValue::Float64(value)),
-            expected
-        );
+        assert_eq!(conv(Some(precision), AnyValue::Float64(value)), expected);
     }
 
     #[rstest]
     #[case::no_precision(None, "1.5")]
     #[case::with_precision(Some(3), "1.500")]
     fn float32(#[case] precision: Option<usize>, #[case] expected: &str) {
-        assert_eq!(
-            converter(precision).to_str(AnyValue::Float32(1.5)),
-            expected
-        );
+        assert_eq!(conv(precision, AnyValue::Float32(1.5)), expected);
     }
 
     #[rstest]
@@ -301,10 +273,7 @@ mod tests {
     #[case::with_precision(Some(3), "1.500")]
     fn float16(#[case] precision: Option<usize>, #[case] expected: &str) {
         let half = pf16::from(1.5f32);
-        assert_eq!(
-            converter(precision).to_str(AnyValue::Float16(half)),
-            expected
-        );
+        assert_eq!(conv(precision, AnyValue::Float16(half)), expected);
     }
 
     #[rstest]
@@ -316,15 +285,15 @@ mod tests {
     #[case::year_one(-719162, "0001-01-01")]
     #[case::year_9999(2932896, "9999-12-31")]
     fn date(#[case] days: i32, #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(AnyValue::Date(days)), expected);
+        assert_eq!(conv(None, AnyValue::Date(days)), expected);
     }
 
     #[test]
     fn date_matches_polars_for_many_days() {
-        let mut conv = converter(None);
+        let mut buf = String::new();
         for days in (-719_162..2_932_896).step_by(997) {
             assert_eq!(
-                conv.to_str(AnyValue::Date(days)),
+                format_any_value(&mut buf, &None, AnyValue::Date(days)),
                 AnyValue::Date(days).to_string(),
                 "day {days}"
             );
@@ -338,8 +307,8 @@ mod tests {
     #[case::last_nanosecond(86_399_999_999_999, "23:59:59")]
     #[case::single_digits(3_661_000_000_000, "01:01:01")]
     fn time(#[case] nanos: i64, #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(AnyValue::Time(nanos)), expected);
-        assert_eq!(converter(Some(3)).to_str(AnyValue::Time(nanos)), expected);
+        assert_eq!(conv(None, AnyValue::Time(nanos)), expected);
+        assert_eq!(conv(Some(3), AnyValue::Time(nanos)), expected);
     }
 
     #[rstest]
@@ -367,16 +336,13 @@ mod tests {
     #[case::far_past(-2_208_988_800_000, TimeUnit::Milliseconds, "1900-01-01 00:00:00")]
     #[case::far_future(4_102_444_800_000, TimeUnit::Milliseconds, "2100-01-01 00:00:00")]
     fn datetime(#[case] value: i64, #[case] unit: TimeUnit, #[case] expected: &str) {
+        assert_eq!(conv(None, AnyValue::Datetime(value, unit, None)), expected);
         assert_eq!(
-            converter(None).to_str(AnyValue::Datetime(value, unit, None)),
+            conv(Some(6), AnyValue::Datetime(value, unit, None)),
             expected
         );
         assert_eq!(
-            converter(Some(6)).to_str(AnyValue::Datetime(value, unit, None)),
-            expected
-        );
-        assert_eq!(
-            converter(None).to_str(AnyValue::DatetimeOwned(value, unit, None)),
+            conv(None, AnyValue::DatetimeOwned(value, unit, None)),
             expected
         );
     }
@@ -385,15 +351,15 @@ mod tests {
     fn datetime_ignores_time_zone() {
         let tz = TimeZone::opt_try_new(Some("Europe/London")).unwrap();
         let value = AnyValue::Datetime(1_561_880_945_000, TimeUnit::Milliseconds, tz.as_ref());
-        assert_eq!(converter(None).to_str(value), "2019-06-30 07:49:05");
+        assert_eq!(conv(None, value), "2019-06-30 07:49:05");
         let owned =
             AnyValue::DatetimeOwned(1_561_880_945_000, TimeUnit::Milliseconds, tz.map(Arc::new));
-        assert_eq!(converter(None).to_str(owned), "2019-06-30 07:49:05");
+        assert_eq!(conv(None, owned), "2019-06-30 07:49:05");
     }
 
     #[test]
     fn datetime_matches_polars_on_whole_seconds() {
-        let mut conv = converter(None);
+        let mut buf = String::new();
         for secs in (-4_000_000_000i64..4_000_000_000).step_by(7_654_321) {
             for (unit, scale) in [
                 (TimeUnit::Milliseconds, 1_000),
@@ -402,7 +368,7 @@ mod tests {
             ] {
                 let value = AnyValue::Datetime(secs * scale, unit, None);
                 assert_eq!(
-                    conv.to_str(value.clone()),
+                    format_any_value(&mut buf, &None, value.clone()),
                     value.to_string(),
                     "{secs}s {unit:?}"
                 );
@@ -424,41 +390,35 @@ mod tests {
         #[case] unit: TimeUnit,
         #[case] expected: &str,
     ) {
-        assert_eq!(
-            converter(None).to_str(AnyValue::Duration(value, unit)),
-            expected
-        );
+        assert_eq!(conv(None, AnyValue::Duration(value, unit)), expected);
     }
 
     #[test]
     fn categorical_returns_category_string() {
         let series = categorical_series();
-        let mut conv = converter(None);
-        assert_eq!(conv.to_str(series.get(0).unwrap()), "apple");
-        assert_eq!(conv.to_str(series.get(1).unwrap()), "kiwi");
-        assert_eq!(conv.to_str(series.get(2).unwrap()), "banana");
+        assert_eq!(conv(None, series.get(0).unwrap()), "apple");
+        assert_eq!(conv(None, series.get(1).unwrap()), "kiwi");
+        assert_eq!(conv(None, series.get(2).unwrap()), "banana");
         assert!(matches!(series.get(0).unwrap(), AnyValue::Categorical(..)));
     }
 
     #[test]
     fn categorical_owned_returns_category_string() {
         let series = categorical_series();
-        let mut conv = converter(None);
         let owned = series.get(2).unwrap().into_static();
         assert!(matches!(owned, AnyValue::CategoricalOwned(..)));
-        assert_eq!(conv.to_str(owned), "banana");
+        assert_eq!(conv(None, owned), "banana");
     }
 
     #[test]
     fn enum_returns_category_string() {
         let series = enum_series();
-        let mut conv = converter(None);
         assert!(matches!(series.get(0).unwrap(), AnyValue::Enum(..)));
-        assert_eq!(conv.to_str(series.get(0).unwrap()), "high");
-        assert_eq!(conv.to_str(series.get(1).unwrap()), "low");
+        assert_eq!(conv(None, series.get(0).unwrap()), "high");
+        assert_eq!(conv(None, series.get(1).unwrap()), "low");
         let owned = series.get(0).unwrap().into_static();
         assert!(matches!(owned, AnyValue::EnumOwned(..)));
-        assert_eq!(conv.to_str(owned), "high");
+        assert_eq!(conv(None, owned), "high");
     }
 
     #[rstest]
@@ -467,7 +427,7 @@ mod tests {
     #[case::empty(vec![], "[0 items]")]
     fn list_reports_item_count(#[case] items: Vec<i32>, #[case] expected: &str) {
         let inner = Series::new("l".into(), &items);
-        assert_eq!(converter(None).to_str(AnyValue::List(inner)), expected);
+        assert_eq!(conv(None, AnyValue::List(inner)), expected);
     }
 
     #[test]
@@ -475,19 +435,18 @@ mod tests {
         let series = array_series();
         let cell = series.get(1).unwrap();
         assert!(matches!(cell, AnyValue::Array(_, 3)));
-        assert_eq!(converter(None).to_str(cell), "[3 items]");
+        assert_eq!(conv(None, cell), "[3 items]");
     }
 
     #[test]
     fn struct_reports_field_count_not_row_count() {
         let series = struct_series();
-        let mut conv = converter(None);
         let cell = series.get(1).unwrap();
         assert!(matches!(cell, AnyValue::Struct(..)));
-        assert_eq!(conv.to_str(cell), "{2 fields}");
+        assert_eq!(conv(None, cell), "{2 fields}");
         let owned = series.get(1).unwrap().into_static();
         assert!(matches!(owned, AnyValue::StructOwned(..)));
-        assert_eq!(conv.to_str(owned), "{2 fields}");
+        assert_eq!(conv(None, owned), "{2 fields}");
     }
 
     #[rstest]
@@ -495,11 +454,8 @@ mod tests {
     #[case::empty(&[], "[0 bytes]")]
     #[case::many(&[0u8; 1024], "[1024 bytes]")]
     fn binary_reports_byte_count(#[case] bytes: &'static [u8], #[case] expected: &str) {
-        assert_eq!(converter(None).to_str(AnyValue::Binary(bytes)), expected);
-        assert_eq!(
-            converter(None).to_str(AnyValue::BinaryOwned(bytes.to_vec())),
-            expected
-        );
+        assert_eq!(conv(None, AnyValue::Binary(bytes)), expected);
+        assert_eq!(conv(None, AnyValue::BinaryOwned(bytes.to_vec())), expected);
     }
 
     #[rstest]
@@ -513,38 +469,58 @@ mod tests {
     #[case::scale_equals_digits(-999, 3, "-0.999")]
     #[case::huge(99_999_999_999_999_999_999, 6, "99999999999999.999999")]
     fn decimal(#[case] value: i128, #[case] scale: usize, #[case] expected: &str) {
-        assert_eq!(
-            converter(None).to_str(AnyValue::Decimal(value, 38, scale)),
-            expected
-        );
-        assert_eq!(
-            converter(Some(1)).to_str(AnyValue::Decimal(value, 38, scale)),
-            expected
-        );
+        assert_eq!(conv(None, AnyValue::Decimal(value, 38, scale)), expected);
+        assert_eq!(conv(Some(1), AnyValue::Decimal(value, 38, scale)), expected);
     }
 
     #[test]
     fn buffer_is_cleared_between_calls() {
-        let mut conv = converter(Some(2));
-        assert_eq!(conv.to_str(AnyValue::Int64(1234567890)), "1234567890");
-        assert_eq!(conv.to_str(AnyValue::Int64(7)), "7");
-        assert_eq!(conv.to_str(AnyValue::Float64(0.5)), "0.50");
-        assert_eq!(conv.to_str(AnyValue::String("static")), "static");
-        assert_eq!(conv.to_str(AnyValue::Null), "");
-        assert_eq!(conv.to_str(AnyValue::Date(0)), "1970-01-01");
-        assert_eq!(conv.to_str(AnyValue::Time(0)), "00:00:00");
-        assert_eq!(conv.to_str(AnyValue::UInt8(9)), "9");
+        let mut buf = String::new();
+        let prec = Some(2);
+        assert_eq!(
+            format_any_value(&mut buf, &prec, AnyValue::Int64(1234567890)),
+            "1234567890"
+        );
+        assert_eq!(format_any_value(&mut buf, &prec, AnyValue::Int64(7)), "7");
+        assert_eq!(
+            format_any_value(&mut buf, &prec, AnyValue::Float64(0.5)),
+            "0.50"
+        );
+        assert_eq!(
+            format_any_value(&mut buf, &prec, AnyValue::String("static")),
+            "static"
+        );
+        assert_eq!(format_any_value(&mut buf, &prec, AnyValue::Null), "");
+        assert_eq!(
+            format_any_value(&mut buf, &prec, AnyValue::Date(0)),
+            "1970-01-01"
+        );
+        assert_eq!(
+            format_any_value(&mut buf, &prec, AnyValue::Time(0)),
+            "00:00:00"
+        );
+        assert_eq!(format_any_value(&mut buf, &prec, AnyValue::UInt8(9)), "9");
     }
 
     #[test]
     fn same_value_is_stable_across_repeated_calls() {
-        let mut conv = converter(None);
+        let mut buf = String::new();
         let series = struct_series();
         for _ in 0..3 {
-            assert_eq!(conv.to_str(series.get(0).unwrap()), "{2 fields}");
-            assert_eq!(conv.to_str(AnyValue::Decimal(-50, 10, 3)), "-0.050");
             assert_eq!(
-                conv.to_str(AnyValue::Datetime(0, TimeUnit::Milliseconds, None)),
+                format_any_value(&mut buf, &None, series.get(0).unwrap()),
+                "{2 fields}"
+            );
+            assert_eq!(
+                format_any_value(&mut buf, &None, AnyValue::Decimal(-50, 10, 3)),
+                "-0.050"
+            );
+            assert_eq!(
+                format_any_value(
+                    &mut buf,
+                    &None,
+                    AnyValue::Datetime(0, TimeUnit::Milliseconds, None)
+                ),
                 "1970-01-01 00:00:00"
             );
         }
