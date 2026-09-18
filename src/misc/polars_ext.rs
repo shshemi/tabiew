@@ -17,16 +17,15 @@ use polars::{
     prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, PlSmallStr, SeriesMethods, TimeUnit},
     series::{ChunkCompareEq, Series},
 };
-use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     AppResult,
     misc::{config::config, ragged_vec::RaggedVec},
+    tui::misc::any_value_formatter::AnyValueFormatter,
 };
 
 pub trait AnyValueExt<'a> {
-    fn to_single_line(&'a self) -> Cow<'a, str>;
     fn to_multi_line(&'a self) -> Cow<'a, str>;
     fn width(self, num_buffer: &mut NumBuffer) -> usize;
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
@@ -35,33 +34,6 @@ pub trait AnyValueExt<'a> {
 }
 
 impl<'a> AnyValueExt<'a> for AnyValue<'a> {
-    fn to_single_line(&'a self) -> Cow<'a, str> {
-        match self {
-            AnyValue::Null => Cow::Borrowed(""),
-            AnyValue::StringOwned(v) if v.contains('\t') => Cow::Owned(v.replace("\t", " ")),
-            AnyValue::StringOwned(v) => Cow::Borrowed(v),
-            AnyValue::String(v) if v.contains('\t') => Cow::Owned(v.replace("\t", " ")),
-            AnyValue::String(v) => Cow::Borrowed(v),
-            AnyValue::Categorical(idx, rev_map) => {
-                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
-            }
-            AnyValue::CategoricalOwned(idx, rev_map) => {
-                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
-            }
-            AnyValue::Binary(buf) => Cow::Owned(format!("Blob (Length: {})", buf.len())),
-            AnyValue::BinaryOwned(buf) => Cow::Owned(format!("Blob (Length: {})", buf.len())),
-            AnyValue::Float32(v) => match config().fp_precision() {
-                Some(precision) => Cow::Owned(format!("{v:.precision$}")),
-                None => Cow::Owned(self.to_string()),
-            },
-            AnyValue::Float64(v) => match config().fp_precision() {
-                Some(precision) => Cow::Owned(format!("{v:.precision$}")),
-                None => Cow::Owned(self.to_string()),
-            },
-            _ => Cow::Owned(self.to_string()),
-        }
-    }
-
     fn width(self, num_buffer: &mut NumBuffer) -> usize {
         match self {
             AnyValue::Null => 0,
@@ -287,7 +259,6 @@ impl SeriesExt for Series {
 }
 
 pub trait DataFrameExt {
-    fn widths(&self) -> Vec<usize>;
     fn get_sheet_values(&self, pos: usize) -> IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>;
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>>;
     #[allow(clippy::type_complexity)]
@@ -332,13 +303,6 @@ fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
 }
 
 impl DataFrameExt for DataFrame {
-    fn widths(&self) -> Vec<usize> {
-        self.columns()
-            .iter()
-            .map(|col| series_width(col.as_materialized_series()))
-            .collect()
-    }
-
     fn get_sheet_values(&self, pos: usize) -> IndexMap<PlSmallStr, (AnyValue<'static>, DataType)> {
         izip!(
             self.get_column_names_owned(),
@@ -374,6 +338,7 @@ impl DataFrameExt for DataFrame {
         y_label: &str,
         group_by: &str,
     ) -> AppResult<(RaggedVec<(f64, f64)>, Vec<String>)> {
+        let fp_prec = config().fp_precision();
         let mut groups = Vec::new();
         let mut data = RaggedVec::new();
         for (name, df) in self
@@ -383,7 +348,11 @@ impl DataFrameExt for DataFrame {
                 let name = df
                     .column(group_by)
                     .and_then(|column| column.get(0))
-                    .map(|val| val.to_single_line().into_owned())
+                    .map(|val| {
+                        AnyValueFormatter::new(fp_prec)
+                            .into_single_line(val)
+                            .into_owned()
+                    })
                     .unwrap_or("null".to_owned());
                 (name, df)
             })
@@ -421,21 +390,6 @@ impl DataFrameExt for DataFrame {
             _ => Err(anyhow!("Unsupported column type"))?,
         }
     }
-}
-
-fn series_width(series: &Series) -> usize {
-    let num_cpus = num_cpus::get();
-    let slen = series.len().div_ceil(num_cpus);
-    series.name().width().max(
-        (0..num_cpus)
-            .map(|i| (i * slen) as i64)
-            .map(|start| (NumBuffer::default(), series.slice(start, slen)))
-            .par_bridge()
-            .map(|(mut buf, series)| series.iter().map(|val| val.width(&mut buf)).max())
-            .flatten()
-            .max()
-            .unwrap_or_default(),
-    )
 }
 
 impl TryMapAll for Series {
@@ -476,11 +430,16 @@ impl TryMapAll for Series {
 }
 
 fn discrete_histogram(mut counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
+    let fp_precision = config().fp_precision();
     counts.rechunk_mut();
     Ok(counts[0]
         .as_materialized_series()
         .iter()
-        .map(|val| val.to_single_line().into_owned())
+        .map(|val| {
+            AnyValueFormatter::new(fp_precision)
+                .into_single_line(val)
+                .into_owned()
+        })
         .zip(counts[1].as_materialized_series().u32()?.iter())
         .map(|(v, c)| (v, c.unwrap_or_default() as u64))
         .collect_vec())

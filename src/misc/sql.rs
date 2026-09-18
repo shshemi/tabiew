@@ -15,9 +15,12 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
+use crate::{
+    io::DataSource,
+    misc::{config::config, table_name_generator::TableNameGeneratorExt},
+    tui::misc::any_value_formatter::AnyValueFormatter,
+};
 
-use super::polars_ext::AnyValueExt;
 use super::type_ext::UnwrapOrGracefulShutdown;
 
 const DEFAULT_TABLE_NAME: &str = "_";
@@ -285,8 +288,13 @@ pub fn sql() -> impl DerefMut<Target = SqlBackend> {
 fn min_max(series: &Series) -> (String, String) {
     let min = series.min_reduce().unwrap_or_default();
     let max = series.max_reduce().unwrap_or_default();
+    let fp_precision = config().fp_precision();
     (
-        min.into_value().to_single_line().into_owned(),
-        max.into_value().to_single_line().into_owned(),
+        AnyValueFormatter::new(fp_precision)
+            .into_single_line(min.into_value())
+            .into_owned(),
+        AnyValueFormatter::new(fp_precision)
+            .into_single_line(max.into_value())
+            .into_owned(),
     )
 }

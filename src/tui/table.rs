@@ -13,11 +13,15 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 use crate::{
     misc::{
         config::{config, theme},
-        polars_ext::{AnyValueExt, DataFrameExt},
         type_ext::ConstraintExt,
         zip_iters::ZipItersExt,
     },
-    tui::component::Component,
+    tui::{
+        component::Component,
+        misc::{
+            any_value_formatter::AnyValueFormatter, width_calculator::DataFrameWidthsCalculator,
+        },
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -40,10 +44,10 @@ pub struct Table {
 impl Table {
     pub fn new(df: DataFrame) -> Self {
         let col_space = 1;
-        let col_widths = df
-            .widths()
+        let col_widths = DataFrameWidthsCalculator::default()
+            .calculate(&df)
             .into_iter()
-            .map(|u| Constraint::Length(u as u16))
+            .map(Constraint::Length)
             .collect_vec();
         let col_offsets = col_offsets(&col_widths, col_space);
         let gutter_width = df.height().to_string().len() as u16;
@@ -65,10 +69,10 @@ impl Table {
     }
 
     pub fn clone_with_data_frame(&self, df: DataFrame) -> Self {
-        let col_widths = df
-            .widths()
+        let col_widths = DataFrameWidthsCalculator::default()
+            .calculate(&df)
             .into_iter()
-            .map(|u| Constraint::Length(u as u16))
+            .map(Constraint::Length)
             .collect_vec();
         let col_offsets = col_offsets(&col_widths, self.col_space);
         let gutter_width = df.height().to_string().len() as u16;
@@ -327,11 +331,10 @@ impl Table {
     /// whenever it changes.
     fn refresh_col_widths(&mut self) {
         self.fp_precision = config().fp_precision();
-        self.col_widths = self
-            .df
-            .widths()
+        self.col_widths = DataFrameWidthsCalculator::default()
+            .calculate(&self.df)
             .into_iter()
-            .map(|u| Constraint::Length(u as u16))
+            .map(Constraint::Length)
             .collect_vec();
         self.col_offsets = col_offsets(&self.col_widths, self.col_space);
     }
@@ -411,6 +414,7 @@ impl Component for Table {
                     self.striped,
                     self.offset,
                     0,
+                    self.fp_precision,
                 );
                 table.render(
                     table_area,
@@ -448,6 +452,7 @@ impl Component for Table {
                     self.striped,
                     self.offset,
                     col_start,
+                    self.fp_precision,
                 );
                 let width = (self.col_offsets[col_end + 1] - self.col_offsets[col_start])
                     .max(table_area.width as usize);
@@ -614,15 +619,21 @@ fn next_column_offset(col_offsets: &[usize], offset: &usize) -> usize {
         .unwrap_or_default()
 }
 
-fn cell(value: AnyValue<'_>) -> Cell<'static> {
-    let text = Text::raw(value.to_single_line().into_owned());
-    if value.is_primitive_numeric() || matches!(value, AnyValue::Decimal(..)) {
+fn cell(value: AnyValue<'_>, fp_precision: Option<usize>) -> Cell<'static> {
+    let is_numeric = value.is_primitive_numeric() || matches!(value, AnyValue::Decimal(..));
+    let text = Text::raw(
+        AnyValueFormatter::new(fp_precision)
+            .into_single_line(value)
+            .into_owned(),
+    );
+    if is_numeric {
         Cell::new(text.right_aligned())
     } else {
         Cell::new(text)
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_table<'a>(
     df: &'a DataFrame,
     col_widths: &[Constraint],
@@ -631,6 +642,7 @@ fn build_table<'a>(
     striped: bool,
     offset_row: usize,
     offset_col: usize,
+    fp_precision: Option<usize>,
 ) -> ratatui::widgets::Table<'a> {
     let theme = theme();
     let mut table = ratatui::widgets::Table::default()
@@ -645,7 +657,7 @@ fn build_table<'a>(
                 .zip_iters()
                 .enumerate()
                 .map(|(idx, vals)| {
-                    let cells = vals.into_iter().map(cell);
+                    let cells = vals.into_iter().map(|value| cell(value, fp_precision));
                     Row::new(cells).style(if striped {
                         theme.row(offset_row + idx)
                     } else {
