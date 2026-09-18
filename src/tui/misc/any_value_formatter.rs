@@ -24,16 +24,15 @@ impl AnyValueFormatter {
         }
     }
 
-    pub fn into_single_line<'a>(mut self, value: AnyValue<'a>) -> Cow<'a, str> {
+    pub fn into_single_line(mut self, value: AnyValue) -> Cow<'static, str> {
         match self.to_single_line(value) {
             Formatted::Static(s) => Cow::Borrowed(s),
-            Formatted::AnyValue(s) => Cow::Borrowed(s),
             Formatted::Owned(s) => Cow::Owned(s),
             Formatted::Buffer(_) => Cow::Owned(self.buf),
         }
     }
 
-    pub fn to_single_line<'a, 'b>(&'a mut self, value: AnyValue<'b>) -> Formatted<'a, 'b> {
+    pub fn to_single_line<'a>(&'a mut self, value: AnyValue) -> Formatted<'a> {
         let fp_prec = self.fp_prec;
         match value {
             AnyValue::Null => Formatted::Static(""),
@@ -116,25 +115,23 @@ impl Default for AnyValueFormatter {
     }
 }
 
-pub enum Formatted<'a, 'b> {
+pub enum Formatted<'a> {
     Static(&'static str),
     Owned(String),
     Buffer(&'a str),
-    AnyValue(&'b str),
 }
 
-impl<'a, 'b> Formatted<'a, 'b> {
+impl<'a> Formatted<'a> {
     pub fn into_string(self) -> String {
         match self {
             Formatted::Static(s) => s.to_owned(),
             Formatted::Owned(s) => s,
             Formatted::Buffer(s) => s.to_owned(),
-            Formatted::AnyValue(s) => s.to_owned(),
         }
     }
 }
 
-impl Deref for Formatted<'_, '_> {
+impl Deref for Formatted<'_> {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -142,7 +139,6 @@ impl Deref for Formatted<'_, '_> {
             Formatted::Static(s) => s,
             Formatted::Owned(s) => s,
             Formatted::Buffer(s) => s,
-            Formatted::AnyValue(s) => s,
         }
     }
 }
