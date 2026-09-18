@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::fmt::Write;
+use std::iter::Peekable;
 use std::ops::Deref;
+use std::str::Chars;
 
 use chrono::{DateTime, Datelike, Timelike};
 use polars::datatypes::{AnyValue, TimeUnit};
@@ -36,31 +38,8 @@ impl AnyValueFormatter {
         match value {
             AnyValue::Null => Formatted::Static(""),
             AnyValue::Boolean(b) => Formatted::Static(bool(b)),
-            AnyValue::String(s) => {
-                if let Some(s) = s.lines().next() {
-                    if s.contains('\t') {
-                        Formatted::Buffer(untabbed(&mut self.buf, s))
-                    } else {
-                        Formatted::AnyValue(s)
-                    }
-                } else {
-                    Formatted::Static("")
-                }
-            }
-            AnyValue::StringOwned(s) => {
-                let mut s = s.into_string();
-                if let Some(n) = s.find('\n') {
-                    s.truncate(n);
-                    if s.ends_with('\r') {
-                        s.pop();
-                    }
-                }
-                if s.contains('\t') {
-                    Formatted::Buffer(untabbed(&mut self.buf, &s))
-                } else {
-                    Formatted::Owned(s)
-                }
-            }
+            AnyValue::String(s) => Formatted::Buffer(untabbed(&mut self.buf, s)),
+            AnyValue::StringOwned(s) => Formatted::Buffer(untabbed(&mut self.buf, &s)),
             AnyValue::UInt8(u) => Formatted::Buffer(display(&mut self.buf, u)),
             AnyValue::UInt16(u) => Formatted::Buffer(display(&mut self.buf, u)),
             AnyValue::UInt32(u) => Formatted::Buffer(display(&mut self.buf, u)),
@@ -88,11 +67,7 @@ impl AnyValueFormatter {
             AnyValue::Time(t) => Formatted::Buffer(time(&mut self.buf, t)),
             AnyValue::Categorical(cat, map) | AnyValue::Enum(cat, map) => {
                 if let Some(s) = map.cat_to_str(cat) {
-                    if s.contains('\t') {
-                        Formatted::Buffer(untabbed(&mut self.buf, s))
-                    } else {
-                        Formatted::AnyValue(s)
-                    }
+                    Formatted::Buffer(untabbed(&mut self.buf, s))
                 } else {
                     Formatted::Static("")
                 }
@@ -172,6 +147,43 @@ impl Deref for Formatted<'_, '_> {
     }
 }
 
+struct FirstLineUntabbed<'a> {
+    chars: Peekable<Chars<'a>>,
+    done: bool,
+}
+
+impl<'a> FirstLineUntabbed<'a> {
+    fn new(s: &'a str) -> Self {
+        FirstLineUntabbed {
+            chars: s.chars().peekable(),
+            done: false,
+        }
+    }
+}
+
+impl<'a> Iterator for FirstLineUntabbed<'a> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        let c = self.chars.next()?;
+        match c {
+            '\t' => Some(' '),
+            '\n' => {
+                self.done = true;
+                None
+            }
+            '\r' if self.chars.peek() == Some(&'\n') => {
+                self.done = true;
+                None
+            }
+            c => Some(c),
+        }
+    }
+}
+
 #[inline]
 fn display(buf: &mut String, value: impl Display) -> &str {
     buf.clear();
@@ -246,11 +258,9 @@ fn datetime(buf: &mut String, value: i64, unit: TimeUnit) -> &str {
     buf
 }
 
+#[inline]
 fn untabbed<'a>(buf: &'a mut String, s: &str) -> &'a str {
     buf.clear();
-    buf.extend(s.chars().map(|c| match c {
-        '\t' => ' ',
-        c => c,
-    }));
+    buf.extend(FirstLineUntabbed::new(s));
     buf
 }
