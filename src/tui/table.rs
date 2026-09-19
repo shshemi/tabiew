@@ -19,7 +19,7 @@ use crate::{
     tui::{
         component::Component,
         misc::{
-            any_value_formatter::AnyValueFormatter, width_calculator::DataFrameWidthsCalculator,
+            any_value_formatter::AnyValueFormatter, width_calculators::DataFrameWidthsCalculator,
         },
     },
 };
