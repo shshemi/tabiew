@@ -1,6 +1,5 @@
 use std::{
     borrow::Cow,
-    fmt::{Display, Write},
     ops::{Add, Div},
     sync::{
         Arc,
@@ -17,7 +16,6 @@ use polars::{
     prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, PlSmallStr, SeriesMethods, TimeUnit},
     series::{ChunkCompareEq, Series},
 };
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     AppResult,
@@ -27,48 +25,12 @@ use crate::{
 
 pub trait AnyValueExt<'a> {
     fn to_multi_line(&'a self) -> Cow<'a, str>;
-    fn width(self, num_buffer: &mut NumBuffer) -> usize;
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
     fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
     fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
 }
 
 impl<'a> AnyValueExt<'a> for AnyValue<'a> {
-    fn width(self, num_buffer: &mut NumBuffer) -> usize {
-        match self {
-            AnyValue::Null => 0,
-            AnyValue::Boolean(v) => {
-                if v {
-                    4 // true
-                } else {
-                    5 // false
-                }
-            }
-            AnyValue::String(s) => s.lines().next().unwrap_or_default().width(),
-            AnyValue::UInt8(u) => num_buffer.itoa.format(u).len(),
-            AnyValue::UInt16(u) => num_buffer.itoa.format(u).len(),
-            AnyValue::UInt32(u) => num_buffer.itoa.format(u).len(),
-            AnyValue::UInt64(u) => num_buffer.itoa.format(u).len(),
-            AnyValue::UInt128(u) => num_buffer.itoa.format(u).len(),
-            AnyValue::Int8(i) => num_buffer.itoa.format(i).len(),
-            AnyValue::Int16(i) => num_buffer.itoa.format(i).len(),
-            AnyValue::Int32(i) => num_buffer.itoa.format(i).len(),
-            AnyValue::Int64(i) => num_buffer.itoa.format(i).len(),
-            AnyValue::Int128(i) => num_buffer.itoa.format(i).len(),
-            AnyValue::Float32(f) => match config().fp_precision() {
-                Some(precision) => num_buffer.precise_float_width(f, precision),
-                None => num_buffer.ryu.format(f).len(),
-            },
-            AnyValue::Float64(f) => match config().fp_precision() {
-                Some(precision) => num_buffer.precise_float_width(f, precision),
-                None => num_buffer.ryu.format(f).len(),
-            },
-            AnyValue::Date(_) => 10, // 1970-10-10
-            AnyValue::Datetime(_, _, _) | AnyValue::DatetimeOwned(_, _, _) => 19, // 2019-06-30 07:49:05
-            _ => self.to_string().width(),
-        }
-    }
-
     fn to_multi_line(&'a self) -> Cow<'a, str> {
         match self {
             AnyValue::Null => Cow::Borrowed(""),
@@ -118,21 +80,6 @@ impl<'a> AnyValueExt<'a> for AnyValue<'a> {
                 )
             })
             .ok()
-    }
-}
-
-#[derive(Default, Clone)]
-pub struct NumBuffer {
-    ryu: ryu::Buffer,
-    itoa: itoa::Buffer,
-    fmt: String,
-}
-
-impl NumBuffer {
-    fn precise_float_width(&mut self, float: impl Display, precision: usize) -> usize {
-        self.fmt.clear();
-        let _ = write!(self.fmt, "{float:.precision$}");
-        self.fmt.len()
     }
 }
 
