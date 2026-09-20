@@ -4,10 +4,11 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
 
 use crate::{
-    misc::{buffer_ext::BufferExt, rect_ext::RectExt},
+    misc::buffer_ext::BufferExt,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        layouts::palette::PaletteLayout,
     },
 };
 
@@ -81,7 +82,7 @@ impl<T> Component for ListPicker<T> {
         _focus_state: crate::tui::component::FocusState,
     ) {
         let height = self.strings.len().saturating_add(2).min(25) as u16;
-        let area = buf.area.palette(height);
+        let area = PaletteLayout::new(height).area(buf.area);
         buf.clear(area);
 
         let mut block = Block::app_default();

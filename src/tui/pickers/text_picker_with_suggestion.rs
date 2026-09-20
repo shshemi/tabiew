@@ -9,10 +9,11 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{buffer_ext::BufferExt, rect_ext::RectExt},
+    misc::buffer_ext::BufferExt,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        layouts::palette::PaletteLayout,
         widgets::input::Input,
     },
 };
@@ -109,7 +110,7 @@ where
             );
 
         let height = list.len().saturating_add(4).min(25) as u16;
-        let area = buf.area.palette(height);
+        let area = PaletteLayout::new(height).area(buf.area);
 
         buf.clear(area);
         let [input_area, list_area] =

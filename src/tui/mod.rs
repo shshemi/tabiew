@@ -2,6 +2,7 @@ pub mod app_default;
 pub mod component;
 pub mod error_popup;
 pub mod icons;
+pub mod layouts;
 pub mod misc;
 pub mod pane;
 pub mod pickers;

@@ -15,10 +15,11 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, config::theme},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        layouts::palette::PaletteLayout,
         widgets::{highlighted_line::HighlightedLine, input::Input},
     },
 };
@@ -161,7 +162,7 @@ impl<T> Component for SearchPicker<T> {
             }));
 
         let height = list.len().saturating_add(4).min(25) as u16;
-        let area = buf.area.palette(height);
+        let area = PaletteLayout::new(height).area(buf.area);
 
         buf.clear(area);
         let [input_area, list_area] =
