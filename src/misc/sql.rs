@@ -7,6 +7,7 @@ use std::{
 
 use indexmap::IndexMap;
 use polars::{
+    datatypes::AnyValue,
     error::PolarsResult,
     frame::DataFrame,
     prelude::{DataType, IntoLazy, LazyFrame},
@@ -15,11 +16,7 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{
-    io::DataSource,
-    misc::{config::config, table_name_generator::TableNameGeneratorExt},
-    tui::misc::any_value_formatter::AnyValueFormatter,
-};
+use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
 
 use super::type_ext::UnwrapOrGracefulShutdown;
 
@@ -243,19 +240,19 @@ pub struct FieldInfo {
     dtype: DataType,
     est_size: usize,
     null_count: usize,
-    min: String,
-    max: String,
+    min: AnyValue<'static>,
+    max: AnyValue<'static>,
 }
 
 impl FieldInfo {
     pub fn new(series: &Series) -> Self {
-        let (min, max) = min_max(series);
+        // let (min, max) = min_max(series);
         Self {
             dtype: series.dtype().to_owned(),
             est_size: series.estimated_size(),
             null_count: series.null_count(),
-            min,
-            max,
+            min: series.min_reduce().unwrap_or_default().into_value(),
+            max: series.max_reduce().unwrap_or_default().into_value(),
         }
     }
     pub fn dtype(&self) -> &DataType {
@@ -270,11 +267,11 @@ impl FieldInfo {
         self.null_count
     }
 
-    pub fn min(&self) -> &str {
+    pub fn min(&self) -> &AnyValue<'static> {
         &self.min
     }
 
-    pub fn max(&self) -> &str {
+    pub fn max(&self) -> &AnyValue<'static> {
         &self.max
     }
 }
@@ -285,16 +282,16 @@ pub fn sql() -> impl DerefMut<Target = SqlBackend> {
     SQL_BACKEND.lock().unwrap_or_graceful_shutdown()
 }
 
-fn min_max(series: &Series) -> (String, String) {
-    let min = series.min_reduce().unwrap_or_default();
-    let max = series.max_reduce().unwrap_or_default();
-    let fp_precision = config().fp_precision();
-    (
-        AnyValueFormatter::new(fp_precision)
-            .into_single_line(min.into_value())
-            .into_owned(),
-        AnyValueFormatter::new(fp_precision)
-            .into_single_line(max.into_value())
-            .into_owned(),
-    )
-}
+// fn min_max(series: &Series) -> (String, String) {
+//     let min = series.min_reduce().unwrap_or_default();
+//     let max = series.max_reduce().unwrap_or_default();
+//     let fp_precision = config().fp_precision();
+//     (
+//         AnyValueFormatter::new(fp_precision)
+//             .into_single_line(min.into_value())
+//             .into_owned(),
+//         AnyValueFormatter::new(fp_precision)
+//             .into_single_line(max.into_value())
+//             .into_owned(),
+//     )
+// }

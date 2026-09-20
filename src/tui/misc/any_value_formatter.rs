@@ -1,9 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::fmt::Write;
-use std::iter::Peekable;
 use std::ops::Deref;
-use std::str::Chars;
 
 use chrono::{DateTime, Datelike, Timelike};
 use polars::datatypes::{AnyValue, TimeUnit};
@@ -37,8 +35,12 @@ impl AnyValueFormatter {
         match value {
             AnyValue::Null => Formatted::Static(""),
             AnyValue::Boolean(b) => Formatted::Static(bool(b)),
-            AnyValue::String(s) => Formatted::Buffer(untabbed(&mut self.buf, s)),
-            AnyValue::StringOwned(s) => Formatted::Buffer(untabbed(&mut self.buf, &s)),
+            AnyValue::String(s) => {
+                Formatted::Buffer(copy_chars(&mut self.buf, untabbed(first_line(s.chars()))))
+            }
+            AnyValue::StringOwned(s) => {
+                Formatted::Buffer(copy_chars(&mut self.buf, untabbed(first_line(s.chars()))))
+            }
             AnyValue::UInt8(u) => Formatted::Buffer(display(&mut self.buf, u)),
             AnyValue::UInt16(u) => Formatted::Buffer(display(&mut self.buf, u)),
             AnyValue::UInt32(u) => Formatted::Buffer(display(&mut self.buf, u)),
@@ -66,14 +68,14 @@ impl AnyValueFormatter {
             AnyValue::Time(t) => Formatted::Buffer(time(&mut self.buf, t)),
             AnyValue::Categorical(cat, map) | AnyValue::Enum(cat, map) => {
                 if let Some(s) = map.cat_to_str(cat) {
-                    Formatted::Buffer(untabbed(&mut self.buf, s))
+                    Formatted::Buffer(copy_chars(&mut self.buf, untabbed(first_line(s.chars()))))
                 } else {
                     Formatted::Static("")
                 }
             }
             AnyValue::CategoricalOwned(cat, map) | AnyValue::EnumOwned(cat, map) => {
                 if let Some(s) = map.cat_to_str(cat) {
-                    Formatted::Buffer(untabbed(&mut self.buf, s))
+                    Formatted::Buffer(copy_chars(&mut self.buf, untabbed(first_line(s.chars()))))
                 } else {
                     Formatted::Static("")
                 }
@@ -104,6 +106,21 @@ impl AnyValueFormatter {
             AnyValue::Decimal(_, _, _) => Formatted::Buffer(display(&mut self.buf, value)),
         }
     }
+
+    // fn to_multi_line<'a>(&'a self, value: AnyValue) -> Formatted {
+    //     match value {
+    //         AnyValue::Null => Formatted::Static(""),
+    //         AnyValue::String(s) => {
+    //             Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
+    //         }
+    //         AnyValue::StringOwned(s) => {
+    //             Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
+    //         }
+    //         AnyValue::Binary(buf) => Cow::Owned(bytes_to_string(buf)),
+    //         AnyValue::BinaryOwned(buf) => Cow::Owned(bytes_to_string(buf)),
+    //         v => self.into_single_line(v),
+    //     }
+    // }
 }
 
 impl Default for AnyValueFormatter {
@@ -143,43 +160,6 @@ impl Deref for Formatted<'_> {
     }
 }
 
-struct FirstLineUntabbed<'a> {
-    chars: Peekable<Chars<'a>>,
-    done: bool,
-}
-
-impl<'a> FirstLineUntabbed<'a> {
-    fn new(s: &'a str) -> Self {
-        FirstLineUntabbed {
-            chars: s.chars().peekable(),
-            done: false,
-        }
-    }
-}
-
-impl<'a> Iterator for FirstLineUntabbed<'a> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-        let c = self.chars.next()?;
-        match c {
-            '\t' => Some(' '),
-            '\n' => {
-                self.done = true;
-                None
-            }
-            '\r' if self.chars.peek() == Some(&'\n') => {
-                self.done = true;
-                None
-            }
-            c => Some(c),
-        }
-    }
-}
-
 #[inline]
 fn display(buf: &mut String, value: impl Display) -> &str {
     buf.clear();
@@ -196,6 +176,13 @@ fn display_with_precision(buf: &mut String, fp_prec: Option<usize>, value: impl 
     } else {
         display(buf, value)
     }
+}
+
+#[inline]
+fn copy_chars(buf: &mut String, chars: impl Iterator<Item = char>) -> &str {
+    buf.clear();
+    buf.extend(chars);
+    buf
 }
 
 #[inline]
@@ -254,9 +241,31 @@ fn datetime(buf: &mut String, value: i64, unit: TimeUnit) -> &str {
     buf
 }
 
-#[inline]
-fn untabbed<'a>(buf: &'a mut String, s: &str) -> &'a str {
-    buf.clear();
-    buf.extend(FirstLineUntabbed::new(s));
-    buf
+fn first_line(chars: impl Iterator<Item = char>) -> impl Iterator<Item = char> {
+    let mut chars = chars.peekable();
+    let mut done = false;
+    std::iter::from_fn(move || {
+        if done {
+            return None;
+        }
+        let c = chars.next()?;
+        match c {
+            '\n' => {
+                done = true;
+                None
+            }
+            '\r' if chars.peek() == Some(&'\n') => {
+                done = true;
+                None
+            }
+            c => Some(c),
+        }
+    })
+}
+
+fn untabbed(chars: impl Iterator<Item = char>) -> impl Iterator<Item = char> {
+    chars.map(|c| match c {
+        '\t' => ' ',
+        c => c,
+    })
 }

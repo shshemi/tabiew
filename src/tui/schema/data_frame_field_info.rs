@@ -11,6 +11,7 @@ use crate::{
         app_default::AppDefault,
         component::Component,
         icons,
+        misc::any_value_formatter::AnyValueFormatter,
         tag_line::{Tag, TagLine},
     },
 };
@@ -80,8 +81,12 @@ impl Component for DataFrameFieldInfo {
                                 format!("{}", info.dtype()),
                                 human_readable_size(info.estimated_size() as u64),
                                 format!("{}", info.null_count()),
-                                info.min().to_string(),
-                                info.max().to_string(),
+                                AnyValueFormatter::default()
+                                    .into_single_line(info.min().clone())
+                                    .into_owned(),
+                                AnyValueFormatter::default()
+                                    .into_single_line(info.max().clone())
+                                    .into_owned(),
                             ])
                             .style(theme().row(idx))
                         }),
