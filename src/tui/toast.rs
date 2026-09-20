@@ -3,8 +3,8 @@ use std::time::{Duration, Instant};
 use ratatui::widgets::{Block, Paragraph, Widget, Wrap};
 
 use crate::{
-    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
-    tui::{app_default::AppDefault, component::Component},
+    misc::{buffer_ext::BufferExt, config::theme},
+    tui::{app_default::AppDefault, component::Component, layouts::toast::ToastLayout},
 };
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl Component for Toast {
             .left_aligned()
             .block(Block::app_default().style(theme().block()))
             .wrap(Wrap { trim: true });
-        let area = buf.area.toast(&pg);
+        let area = ToastLayout::new(&pg).area(buf.area);
         buf.clear(area);
         pg.render(area, buf);
     }

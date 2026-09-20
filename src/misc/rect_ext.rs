@@ -6,28 +6,12 @@ use ratatui::{
 const MAX_WIDTH: u16 = 64;
 
 pub trait RectExt {
-    fn toast(self, paragraph: &Paragraph) -> Self;
     fn popup(self, paragraph: &Paragraph) -> Self;
     fn goto_line(self, width: u16, height: u16) -> Self;
     fn plot(self) -> Self;
 }
 
 impl RectExt for Rect {
-    fn toast(self, paragraph: &Paragraph) -> Self {
-        const MARGIN_BOTTOM: u16 = 3;
-        let (width, height) = paragraph_size(paragraph);
-        let [area] = Layout::horizontal([Constraint::Length(width)])
-            .flex(Flex::Center)
-            .areas(self);
-        let [area, _] = Layout::vertical([
-            Constraint::Length(height),
-            Constraint::Length(MARGIN_BOTTOM),
-        ])
-        .flex(Flex::End)
-        .areas(area);
-        area
-    }
-
     fn popup(self, paragraph: &Paragraph) -> Self {
         let (width, height) = paragraph_size(paragraph);
         self.centered(Constraint::Length(width), Constraint::Length(height))
