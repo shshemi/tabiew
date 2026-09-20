@@ -1,4 +1,4 @@
-use crate::misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt};
+use crate::misc::{buffer_ext::BufferExt, config::theme};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::Alignment,
@@ -7,7 +7,7 @@ use ratatui::{
 
 use crate::{
     handler::message::Message,
-    tui::{app_default::AppDefault, component::Component},
+    tui::{app_default::AppDefault, component::Component, layouts::popup::PopupLayout},
 };
 
 #[derive(Debug, Default)]
@@ -39,7 +39,7 @@ impl Component for ErrorPopup {
                     .style(theme().error()),
             )
             .wrap(Wrap { trim: true });
-        let area = buf.area.popup(&pg);
+        let area = PopupLayout::new(&pg).area(buf.area);
         buf.clear(area);
         pg.render(area, buf);
     }

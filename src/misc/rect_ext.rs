@@ -1,22 +1,11 @@
-use ratatui::{
-    layout::{Constraint, Flex, Layout, Margin, Rect},
-    widgets::Paragraph,
-};
-
-const MAX_WIDTH: u16 = 64;
+use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 
 pub trait RectExt {
-    fn popup(self, paragraph: &Paragraph) -> Self;
     fn goto_line(self, width: u16, height: u16) -> Self;
     fn plot(self) -> Self;
 }
 
 impl RectExt for Rect {
-    fn popup(self, paragraph: &Paragraph) -> Self {
-        let (width, height) = paragraph_size(paragraph);
-        self.centered(Constraint::Length(width), Constraint::Length(height))
-    }
-
     fn goto_line(self, width: u16, height: u16) -> Self {
         const MARGIN: u16 = 1;
         let [area, _] = Layout::horizontal([Constraint::Length(width), Constraint::Length(MARGIN)])
@@ -32,10 +21,4 @@ impl RectExt for Rect {
         const MARGIN_VERTICAL: u16 = 3;
         self.inner(Margin::new(MARGIN_HORIZONTAL, MARGIN_VERTICAL))
     }
-}
-
-fn paragraph_size(paragraph: &Paragraph) -> (u16, u16) {
-    let width = paragraph.line_width().min(MAX_WIDTH as usize) as u16;
-    let height = paragraph.line_count(width) as u16;
-    (width, height)
 }
