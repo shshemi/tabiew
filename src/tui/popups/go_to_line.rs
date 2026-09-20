@@ -3,10 +3,11 @@ use ratatui::widgets::{Block, Widget};
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, rect_ext::RectExt},
+    misc::buffer_ext::BufferExt,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        layouts::go_to_line::GoToLineLayout,
         widgets::input::{Input, InputType},
     },
 };
@@ -50,7 +51,7 @@ impl Component for GoToLine {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        let area = area.goto_line(WIDTH, HEIGHT);
+        let area = GoToLineLayout::new(WIDTH, HEIGHT).area(area);
         buf.clear(area);
         let area = {
             let block = Block::app_default().app_title("Line");
