@@ -10,7 +10,6 @@ pub mod osc52;
 pub mod paths;
 pub mod polars_ext;
 pub mod ragged_vec;
-pub mod rect_ext;
 pub mod remote_load;
 pub mod round_robin;
 pub mod search;

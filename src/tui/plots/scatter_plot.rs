@@ -11,10 +11,11 @@ use ratatui::{
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
+        layouts::plot::PlotLayout,
     },
 };
 
@@ -66,7 +67,7 @@ impl Component for ScatterPlot {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        let area = buf.area.plot();
+        let area = PlotLayout::default().area(buf.area);
         buf.clear(area);
         let ds = self
             .data

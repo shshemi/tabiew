@@ -9,11 +9,12 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme, rect_ext::RectExt},
+    misc::{buffer_ext::BufferExt, config::theme},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
         icons,
+        layouts::plot::PlotLayout,
         tag_line::{Tag, TagLine},
     },
 };
@@ -50,7 +51,7 @@ impl Component for HistogramPlot {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        let area = buf.area.plot();
+        let area = PlotLayout::default().area(buf.area);
         buf.clear(area);
         let area = {
             let blk = Block::app_default()
