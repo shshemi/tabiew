@@ -6,9 +6,14 @@ use crate::{
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
-        popups::{file_picker::FilePicker, wizard::WizardStep},
+        popups::{
+            file_picker::FilePicker,
+            wizard::{Wizard, WizardStep},
+        },
     },
 };
+
+pub type AvroExporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {

@@ -1,115 +1,63 @@
 use std::fmt::Display;
 
-use polars::frame::DataFrame;
+use crossterm::event::{KeyCode, KeyModifiers};
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::{
-    component::Component,
-    icons,
-    pickers::search_picker::SearchPicker,
-    popups::{
-        exporters::{arrow, avro, csv, json, jsonl, markdown, parquet, tsv},
-        wizard::{Wizard, WizardStep},
-    },
+use crate::{
+    handler::message::Message,
+    tui::{component::Component, icons, pickers::search_picker::SearchPicker},
 };
 
-pub type Exporter = Wizard<State>;
-
 #[derive(Debug)]
-pub enum State {
-    PickFormat {
-        df: DataFrame,
-        picker: SearchPicker<Format>,
-    },
-    Arrow {
-        state: arrow::State,
-    },
-    Avro {
-        state: avro::State,
-    },
-    Csv {
-        state: csv::State,
-    },
-    Json {
-        state: json::State,
-    },
-    JsonL {
-        state: jsonl::State,
-    },
-    Markdown {
-        state: markdown::State,
-    },
-    Parquet {
-        state: parquet::State,
-    },
-    Tsv {
-        state: tsv::State,
-    },
+pub struct Exporter {
+    picker: SearchPicker<Format>,
 }
 
-impl From<DataFrame> for State {
-    fn from(value: DataFrame) -> Self {
-        State::PickFormat {
-            df: value,
+impl Component for Exporter {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        focus_state: crate::tui::component::FocusState,
+    ) {
+        self.picker.render(area, buf, focus_state);
+    }
+
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.picker.handle(event)
+            || match (event.code, event.modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    if let Some(format) = self.picker.selected_item() {
+                        match format {
+                            Format::Arrow => Message::PaneShowArrowExporter.enqueue(),
+                            Format::Avro => Message::PaneShowAvroExporter.enqueue(),
+                            Format::Csv => Message::PaneShowCsvExporter.enqueue(),
+                            Format::Json => Message::PaneShowJsonExporter.enqueue(),
+                            Format::JsonL => Message::PaneShowJsonlExporter.enqueue(),
+                            Format::Markdown => Message::PaneShowMarkdownExporter.enqueue(),
+                            Format::Parquet => Message::PaneShowParquetExporter.enqueue(),
+                            Format::Tsv => Message::PaneShowTsvExporter.enqueue(),
+                        }
+                    }
+                    true
+                }
+                _ => false,
+            }
+    }
+}
+
+impl Default for Exporter {
+    fn default() -> Self {
+        Self {
             picker: SearchPicker::new(Format::iter().collect())
                 .with_title(icons::FORMAT.title("Format")),
-        }
-    }
-}
-
-impl WizardStep for State {
-    fn next(self) -> Self {
-        match self {
-            State::PickFormat { df, picker } => match picker.selected_item() {
-                Some(Format::Arrow) => State::Arrow { state: df.into() },
-                Some(Format::Avro) => State::Avro { state: df.into() },
-                Some(Format::Csv) => State::Csv { state: df.into() },
-                Some(Format::Json) => State::Json { state: df.into() },
-                Some(Format::JsonL) => State::JsonL { state: df.into() },
-                Some(Format::Markdown) => State::Markdown { state: df.into() },
-                Some(Format::Parquet) => State::Parquet { state: df.into() },
-                Some(Format::Tsv) => State::Tsv { state: df.into() },
-                None => State::PickFormat { df, picker },
-            },
-            State::Arrow { state } => State::Arrow {
-                state: state.next(),
-            },
-            State::Avro { state } => State::Avro {
-                state: state.next(),
-            },
-            State::Csv { state } => State::Csv {
-                state: state.next(),
-            },
-            State::Json { state } => State::Json {
-                state: state.next(),
-            },
-            State::JsonL { state } => State::JsonL {
-                state: state.next(),
-            },
-            State::Markdown { state } => State::Markdown {
-                state: state.next(),
-            },
-            State::Parquet { state } => State::Parquet {
-                state: state.next(),
-            },
-            State::Tsv { state } => State::Tsv {
-                state: state.next(),
-            },
-        }
-    }
-
-    fn responder(&mut self) -> &mut dyn Component {
-        match self {
-            State::PickFormat { df: _, picker } => picker,
-            State::Arrow { state } => state.responder(),
-            State::Avro { state } => state.responder(),
-            State::Csv { state } => state.responder(),
-            State::Json { state } => state.responder(),
-            State::JsonL { state } => state.responder(),
-            State::Markdown { state } => state.responder(),
-            State::Parquet { state } => state.responder(),
-            State::Tsv { state } => state.responder(),
         }
     }
 }

@@ -9,10 +9,12 @@ use crate::{
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
             file_picker::FilePicker,
-            wizard::WizardStep,
+            wizard::{Wizard, WizardStep},
         },
     },
 };
+
+pub type TsvExporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {

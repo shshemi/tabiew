@@ -29,6 +29,11 @@ use crate::{
             column_caster::ColumnCaster,
             data_frame_info::DataFrameInfo,
             exporter::Exporter,
+            exporters::{
+                arrow::ArrowExporter, avro::AvroExporter, csv::CsvExporter, json::JsonExporter,
+                jsonl::JsonlExporter, markdown::MarkdownExporter, parquet::ParquetExporter,
+                tsv::TsvExporter,
+            },
             go_to_line::GoToLine,
             histogram_builder::{self, HistogramBuilder},
             inline_query_picker::{InlineQueryPicker, QueryType},
@@ -194,7 +199,53 @@ impl Pane {
     }
 
     fn show_exporter(&mut self) {
-        self.modal = Some(Modal::Exporter(Exporter::new(
+        self.modal = Some(Modal::Exporter(Exporter::default()))
+    }
+
+    fn show_arrow_exporter(&mut self) {
+        self.modal = Some(Modal::ExportArrow(ArrowExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_avro_exporter(&mut self) {
+        self.modal = Some(Modal::ExportAvro(AvroExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_csv_exporter(&mut self) {
+        self.modal = Some(Modal::ExportCsv(CsvExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_json_exporter(&mut self) {
+        self.modal = Some(Modal::ExportJson(JsonExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_jsonl_exporter(&mut self) {
+        self.modal = Some(Modal::ExportJsonl(JsonlExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_markdown_exporter(&mut self) {
+        self.modal = Some(Modal::ExportMarkdown(MarkdownExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_parquet_exporter(&mut self) {
+        self.modal = Some(Modal::ExportParquet(ParquetExporter::new(
+            self.tstack.last().data_frame().clone().into(),
+        )))
+    }
+
+    fn show_tsv_exporter(&mut self) {
+        self.modal = Some(Modal::ExportTsv(TsvExporter::new(
             self.tstack.last().data_frame().clone().into(),
         )))
     }
@@ -369,6 +420,54 @@ impl Component for Pane {
                     .render(table_area, buf, FocusState::NotFocused);
                 exporter.render(table_area, buf, focus_state);
             }
+            Some(Modal::ExportArrow(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportAvro(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportCsv(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportJson(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportJsonl(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportMarkdown(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportParquet(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
+            Some(Modal::ExportTsv(exporter)) => {
+                self.tstack
+                    .last_mut()
+                    .render(table_area, buf, FocusState::NotFocused);
+                exporter.render(table_area, buf, focus_state);
+            }
             Some(Modal::HistogramBuilder(histogram_builder)) => {
                 self.tstack
                     .last_mut()
@@ -406,6 +505,14 @@ impl Component for Pane {
                 Modal::GoToLine(go_to_line) => go_to_line.handle(event),
                 Modal::DataFrameInfo(data_frame_info) => data_frame_info.handle(event),
                 Modal::Exporter(exporter) => exporter.handle(event),
+                Modal::ExportArrow(exporter) => exporter.handle(event),
+                Modal::ExportAvro(exporter) => exporter.handle(event),
+                Modal::ExportCsv(exporter) => exporter.handle(event),
+                Modal::ExportJson(exporter) => exporter.handle(event),
+                Modal::ExportJsonl(exporter) => exporter.handle(event),
+                Modal::ExportMarkdown(exporter) => exporter.handle(event),
+                Modal::ExportParquet(exporter) => exporter.handle(event),
+                Modal::ExportTsv(exporter) => exporter.handle(event),
                 Modal::HistogramPlot(histogram_plot) => histogram_plot.handle(event),
                 Modal::HistogramBuilder(histogram_builder) => histogram_builder.handle(event),
                 Modal::InlineQueryPicker(query_picker) => query_picker.handle(event),
@@ -509,6 +616,14 @@ impl Component for Pane {
             Message::PaneShowInlineFilter => self.show_inline_query_picker(QueryType::Filter),
             Message::PaneShowInlineOrder => self.show_inline_query_picker(QueryType::Order),
             Message::PaneShowExporter => self.show_exporter(),
+            Message::PaneShowArrowExporter => self.show_arrow_exporter(),
+            Message::PaneShowAvroExporter => self.show_avro_exporter(),
+            Message::PaneShowCsvExporter => self.show_csv_exporter(),
+            Message::PaneShowJsonExporter => self.show_json_exporter(),
+            Message::PaneShowJsonlExporter => self.show_jsonl_exporter(),
+            Message::PaneShowMarkdownExporter => self.show_markdown_exporter(),
+            Message::PaneShowParquetExporter => self.show_parquet_exporter(),
+            Message::PaneShowTsvExporter => self.show_tsv_exporter(),
             Message::PaneShowScatterPlotBuilder => self.show_scatter_plot_builder(),
             Message::PaneShowHistogramBuilder => self.show_histogram_builder(),
             Message::PaneShowHistogram(col, buckets) => {
@@ -567,6 +682,14 @@ impl Component for Pane {
             Some(Modal::InlineQueryPicker(_)) => (),
             Some(Modal::GoToLine(_)) => (),
             Some(Modal::Exporter(_)) => (),
+            Some(Modal::ExportArrow(_)) => (),
+            Some(Modal::ExportAvro(_)) => (),
+            Some(Modal::ExportCsv(_)) => (),
+            Some(Modal::ExportJson(_)) => (),
+            Some(Modal::ExportJsonl(_)) => (),
+            Some(Modal::ExportMarkdown(_)) => (),
+            Some(Modal::ExportParquet(_)) => (),
+            Some(Modal::ExportTsv(_)) => (),
             Some(Modal::HistogramBuilder(_)) => (),
             Some(Modal::ScatterPlotBuilder(_)) => (),
             Some(Modal::TableRegisterer(_)) => (),
@@ -607,6 +730,14 @@ pub enum Modal {
     InlineQueryPicker(InlineQueryPicker),
     GoToLine(GoToLine),
     Exporter(Exporter),
+    ExportArrow(ArrowExporter),
+    ExportAvro(AvroExporter),
+    ExportCsv(CsvExporter),
+    ExportJson(JsonExporter),
+    ExportJsonl(JsonlExporter),
+    ExportMarkdown(MarkdownExporter),
+    ExportParquet(ParquetExporter),
+    ExportTsv(TsvExporter),
     HistogramBuilder(HistogramBuilder),
     ScatterPlotBuilder(ScatterPlotBuilder),
     TableRegisterer(TableRegisterer),
@@ -623,6 +754,14 @@ impl Modal {
             Modal::InlineQueryPicker(query_picker) => query_picker,
             Modal::GoToLine(go_to_line) => go_to_line,
             Modal::Exporter(exporter) => exporter,
+            Modal::ExportArrow(exporter) => exporter,
+            Modal::ExportAvro(exporter) => exporter,
+            Modal::ExportCsv(exporter) => exporter,
+            Modal::ExportJson(exporter) => exporter,
+            Modal::ExportJsonl(exporter) => exporter,
+            Modal::ExportMarkdown(exporter) => exporter,
+            Modal::ExportParquet(exporter) => exporter,
+            Modal::ExportTsv(exporter) => exporter,
             Modal::HistogramBuilder(histogram_builder) => histogram_builder,
             Modal::ScatterPlotBuilder(scatter_plot_builder) => scatter_plot_builder,
             Modal::TableRegisterer(table_registerer) => table_registerer,
