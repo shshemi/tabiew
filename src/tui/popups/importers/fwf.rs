@@ -6,10 +6,8 @@ use crate::{
         pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
-            importers::{
-                dismiss_overlay_and_load_data_frame,
-                import_source_picker::{ImportSource, ImportSourcePicker},
-            },
+            import_source_picker::{ImportSource, ImportSourcePicker},
+            importers::dismiss_overlay_and_load_data_frame,
             url_picker::UrlPicker,
             wizard::WizardStep,
             yes_no_picker::YesNoPicker,

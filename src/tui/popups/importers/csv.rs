@@ -1,7 +1,4 @@
-use super::{
-    dismiss_overlay_and_load_data_frame,
-    import_source_picker::{ImportSource, ImportSourcePicker},
-};
+use super::dismiss_overlay_and_load_data_frame;
 use crate::{
     handler::message::Message,
     io::{DataSource, reader::CsvToDataFrame},
@@ -9,7 +6,10 @@ use crate::{
         icons,
         pickers::text_picker::TextPicker,
         popups::{
-            file_picker::FilePicker, url_picker::UrlPicker, wizard::WizardStep,
+            file_picker::FilePicker,
+            import_source_picker::{ImportSource, ImportSourcePicker},
+            url_picker::UrlPicker,
+            wizard::WizardStep,
             yes_no_picker::YesNoPicker,
         },
     },

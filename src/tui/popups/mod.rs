@@ -10,6 +10,7 @@ pub mod file_picker;
 pub mod fp_precision_picker;
 pub mod go_to_line;
 pub mod histogram_builder;
+pub mod import_source_picker;
 pub mod importer;
 pub mod importers;
 pub mod inline_query_picker;
