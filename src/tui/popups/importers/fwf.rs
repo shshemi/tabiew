@@ -9,12 +9,14 @@ use crate::{
             import_source_picker::{ImportSource, ImportSourcePicker},
             importers::dismiss_overlay_and_load_data_frame,
             url_picker::UrlPicker,
-            wizard::WizardStep,
+            wizard::{Wizard, WizardStep},
             yes_no_picker::YesNoPicker,
         },
         widgets::input::InputType,
     },
 };
+
+pub type FwfImporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {

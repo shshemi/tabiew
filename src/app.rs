@@ -13,8 +13,17 @@ use crate::{
     tui::{
         component::{Component, FocusState},
         popups::{
-            about::About, command_palette::CommandPalette, fp_precision_picker::FpPrecisionPicker,
-            importer::Importer, theme_selector::ThemeSelector,
+            about::About,
+            command_palette::CommandPalette,
+            fp_precision_picker::FpPrecisionPicker,
+            importer::Importer,
+            importers::{
+                arrow::ArrowImporter, avro::AvroImporter, csv::CsvImporter, excel::ExcelImporter,
+                fwf::FwfImporter, html::HtmlImporter, json::JsonImporter, jsonl::JsonlImporter,
+                logfmt::LogfmtImporter, markdown::MarkdownImporter, parquet::ParquetImporter,
+                sqlite::SqliteImporter, tsv::TsvImporter,
+            },
+            theme_selector::ThemeSelector,
         },
         schema::schema::Schema,
     },
@@ -75,6 +84,58 @@ impl App {
 
     fn show_importer(&mut self) {
         self.overlay = Some(Overlay::Import(Importer::default()))
+    }
+
+    fn show_arrow_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportArrow(ArrowImporter::default()))
+    }
+
+    fn show_avro_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportAvro(AvroImporter::default()))
+    }
+
+    fn show_csv_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportCsv(CsvImporter::default()))
+    }
+
+    fn show_excel_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportExcel(ExcelImporter::default()))
+    }
+
+    fn show_fwf_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportFwf(FwfImporter::default()))
+    }
+
+    fn show_html_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportHtml(HtmlImporter::default()))
+    }
+
+    fn show_json_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportJson(JsonImporter::default()))
+    }
+
+    fn show_jsonl_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportJsonl(JsonlImporter::default()))
+    }
+
+    fn show_logfmt_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportLogfmt(LogfmtImporter::default()))
+    }
+
+    fn show_markdown_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportMarkdown(MarkdownImporter::default()))
+    }
+
+    fn show_parquet_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportParquet(ParquetImporter::default()))
+    }
+
+    fn show_sqlite_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportSqlite(SqliteImporter::default()))
+    }
+
+    fn show_tsv_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportTsv(TsvImporter::default()))
     }
 
     fn show_sql_query_picker(&mut self) {
@@ -194,6 +255,19 @@ impl Component for App {
             Message::AppShowFpPrecisionPicker => self.show_fp_precision_picker(),
             Message::AppShowSchema => self.show_schema(),
             Message::AppShowImporter => self.show_importer(),
+            Message::AppShowArrowImporter => self.show_arrow_importer(),
+            Message::AppShowAvroImporter => self.show_avro_importer(),
+            Message::AppShowCsvImporter => self.show_csv_importer(),
+            Message::AppShowExcelImporter => self.show_excel_importer(),
+            Message::AppShowFwfImporter => self.show_fwf_importer(),
+            Message::AppShowHtmlImporter => self.show_html_importer(),
+            Message::AppShowJsonImporter => self.show_json_importer(),
+            Message::AppShowJsonlImporter => self.show_jsonl_importer(),
+            Message::AppShowLogfmtImporter => self.show_logfmt_importer(),
+            Message::AppShowMarkdownImporter => self.show_markdown_importer(),
+            Message::AppShowParquetImporter => self.show_parquet_importer(),
+            Message::AppShowSqliteImporter => self.show_sqlite_importer(),
+            Message::AppShowTsvImporter => self.show_tsv_importer(),
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
@@ -249,6 +323,19 @@ pub enum Overlay {
     FpPrecisionPicker(FpPrecisionPicker),
     SqlQueryPicker(SqlQueryPicker),
     Import(Importer),
+    ImportArrow(ArrowImporter),
+    ImportAvro(AvroImporter),
+    ImportCsv(CsvImporter),
+    ImportExcel(ExcelImporter),
+    ImportFwf(FwfImporter),
+    ImportHtml(HtmlImporter),
+    ImportJson(JsonImporter),
+    ImportJsonl(JsonlImporter),
+    ImportLogfmt(LogfmtImporter),
+    ImportMarkdown(MarkdownImporter),
+    ImportParquet(ParquetImporter),
+    ImportSqlite(SqliteImporter),
+    ImportTsv(TsvImporter),
 }
 
 impl Overlay {
@@ -261,6 +348,19 @@ impl Overlay {
             Overlay::FpPrecisionPicker(fp_precision_picker) => fp_precision_picker,
             Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,
+            Overlay::ImportArrow(importer) => importer,
+            Overlay::ImportAvro(importer) => importer,
+            Overlay::ImportCsv(importer) => importer,
+            Overlay::ImportExcel(importer) => importer,
+            Overlay::ImportFwf(importer) => importer,
+            Overlay::ImportHtml(importer) => importer,
+            Overlay::ImportJson(importer) => importer,
+            Overlay::ImportJsonl(importer) => importer,
+            Overlay::ImportLogfmt(importer) => importer,
+            Overlay::ImportMarkdown(importer) => importer,
+            Overlay::ImportParquet(importer) => importer,
+            Overlay::ImportSqlite(importer) => importer,
+            Overlay::ImportTsv(importer) => importer,
         }
     }
 }

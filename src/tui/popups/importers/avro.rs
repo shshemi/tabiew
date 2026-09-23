@@ -6,9 +6,11 @@ use crate::{
         import_source_picker::{ImportSource, ImportSourcePicker},
         importers::dismiss_overlay_and_load_data_frame,
         url_picker::UrlPicker,
-        wizard::WizardStep,
+        wizard::{Wizard, WizardStep},
     },
 };
+
+pub type AvroImporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {

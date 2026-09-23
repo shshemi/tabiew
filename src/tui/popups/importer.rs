@@ -1,137 +1,66 @@
 use std::fmt::Display;
 
+use crossterm::event::{KeyCode, KeyModifiers};
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::{
-    icons,
-    pickers::search_picker::SearchPicker,
-    popups::{
-        importers::{
-            arrow, avro, csv, excel, fwf, html, json, jsonl, logfmt, markdown, parquet, sqlite, tsv,
-        },
-        wizard::{Wizard, WizardStep},
-    },
+use crate::{
+    handler::message::Message,
+    tui::{component::Component, icons, pickers::search_picker::SearchPicker},
 };
 
-pub type Importer = Wizard<State>;
-
 #[derive(Debug)]
-pub enum State {
-    PickFormat { picker: SearchPicker<Format> },
-    Arrow { arrow: arrow::State },
-    Avro { avro: avro::State },
-    Csv { csv: csv::State },
-    Excel { excel: excel::State },
-    Fwf { fwf: fwf::State },
-    Json { json: json::State },
-    JsonL { jsonl: jsonl::State },
-    Parquet { parquet: parquet::State },
-    Sqlite { sqlite: sqlite::State },
-    Tsv { tsv: tsv::State },
-    Logfmt { logfmt: logfmt::State },
-    Html { html: html::State },
-    Markdown { markdown: markdown::State },
+pub struct Importer {
+    picker: SearchPicker<Format>,
 }
 
-impl WizardStep for State {
-    fn next(self) -> Self {
-        match self {
-            State::PickFormat { picker } => match picker.selected_item() {
-                Some(Format::Arrow) => State::Arrow {
-                    arrow: Default::default(),
-                },
-                Some(Format::Avro) => State::Avro {
-                    avro: Default::default(),
-                },
-                Some(Format::Csv) => Self::Csv {
-                    csv: Default::default(),
-                },
-                Some(Format::Excel) => Self::Excel {
-                    excel: Default::default(),
-                },
-                Some(Format::Fwf) => Self::Fwf {
-                    fwf: Default::default(),
-                },
-                Some(Format::Json) => Self::Json {
-                    json: Default::default(),
-                },
-                Some(Format::Jsonl) => Self::JsonL {
-                    jsonl: Default::default(),
-                },
-                Some(Format::Parquet) => Self::Parquet {
-                    parquet: Default::default(),
-                },
-                Some(Format::Sqlite) => Self::Sqlite {
-                    sqlite: Default::default(),
-                },
-                Some(Format::Tsv) => Self::Tsv {
-                    tsv: Default::default(),
-                },
-                Some(Format::Logfmt) => Self::Logfmt {
-                    logfmt: Default::default(),
-                },
-                Some(Format::Html) => Self::Html {
-                    html: Default::default(),
-                },
-                Some(Format::Markdown) => Self::Markdown {
-                    markdown: Default::default(),
-                },
-                None => State::PickFormat { picker },
-            },
-            State::Arrow { arrow } => State::Arrow {
-                arrow: arrow.next(),
-            },
-            State::Avro { avro } => State::Avro { avro: avro.next() },
-            State::Csv { csv } => State::Csv { csv: csv.next() },
-            State::Excel { excel } => State::Excel {
-                excel: excel.next(),
-            },
-            State::Fwf { fwf } => State::Fwf { fwf: fwf.next() },
-            State::Json { json } => State::Json { json: json.next() },
-            State::JsonL { jsonl } => State::JsonL {
-                jsonl: jsonl.next(),
-            },
-            State::Parquet { parquet } => State::Parquet {
-                parquet: parquet.next(),
-            },
-            State::Sqlite { sqlite } => State::Sqlite {
-                sqlite: sqlite.next(),
-            },
-            State::Tsv { tsv } => State::Tsv { tsv: tsv.next() },
-            State::Logfmt { logfmt } => State::Logfmt {
-                logfmt: logfmt.next(),
-            },
-            State::Html { html } => State::Html { html: html.next() },
-            State::Markdown { markdown } => State::Markdown {
-                markdown: markdown.next(),
-            },
-        }
+impl Component for Importer {
+    fn render(
+        &mut self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        focus_state: crate::tui::component::FocusState,
+    ) {
+        self.picker.render(area, buf, focus_state);
     }
 
-    fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
-        match self {
-            State::PickFormat { picker } => picker,
-            State::Arrow { arrow } => arrow.responder(),
-            State::Avro { avro } => avro.responder(),
-            State::Csv { csv } => csv.responder(),
-            State::Excel { excel } => excel.responder(),
-            State::Fwf { fwf } => fwf.responder(),
-            State::Json { json } => json.responder(),
-            State::JsonL { jsonl } => jsonl.responder(),
-            State::Parquet { parquet } => parquet.responder(),
-            State::Sqlite { sqlite } => sqlite.responder(),
-            State::Tsv { tsv } => tsv.responder(),
-            State::Logfmt { logfmt } => logfmt.responder(),
-            State::Html { html } => html.responder(),
-            State::Markdown { markdown } => markdown.responder(),
-        }
+    fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
+        self.picker.handle(event)
+            || match (event.code, event.modifiers) {
+                (KeyCode::Esc, KeyModifiers::NONE) => {
+                    Message::PaneDismissModal.enqueue();
+                    Message::AppDismissOverlay.enqueue();
+                    true
+                }
+                (KeyCode::Enter, KeyModifiers::NONE) => {
+                    Message::AppDismissOverlay.enqueue();
+                    if let Some(format) = self.picker.selected_item() {
+                        match format {
+                            Format::Arrow => Message::AppShowArrowImporter.enqueue(),
+                            Format::Avro => Message::AppShowAvroImporter.enqueue(),
+                            Format::Csv => Message::AppShowCsvImporter.enqueue(),
+                            Format::Excel => Message::AppShowExcelImporter.enqueue(),
+                            Format::Fwf => Message::AppShowFwfImporter.enqueue(),
+                            Format::Html => Message::AppShowHtmlImporter.enqueue(),
+                            Format::Json => Message::AppShowJsonImporter.enqueue(),
+                            Format::Jsonl => Message::AppShowJsonlImporter.enqueue(),
+                            Format::Logfmt => Message::AppShowLogfmtImporter.enqueue(),
+                            Format::Markdown => Message::AppShowMarkdownImporter.enqueue(),
+                            Format::Parquet => Message::AppShowParquetImporter.enqueue(),
+                            Format::Sqlite => Message::AppShowSqliteImporter.enqueue(),
+                            Format::Tsv => Message::AppShowTsvImporter.enqueue(),
+                        }
+                    }
+                    true
+                }
+                _ => false,
+            }
     }
 }
 
-impl Default for State {
+impl Default for Importer {
     fn default() -> Self {
-        Self::PickFormat {
+        Self {
             picker: SearchPicker::new(Format::iter().collect())
                 .with_title(icons::FORMAT.title("Format")),
         }

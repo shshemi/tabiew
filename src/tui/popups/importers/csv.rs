@@ -9,11 +9,13 @@ use crate::{
             file_picker::FilePicker,
             import_source_picker::{ImportSource, ImportSourcePicker},
             url_picker::UrlPicker,
-            wizard::WizardStep,
+            wizard::{Wizard, WizardStep},
             yes_no_picker::YesNoPicker,
         },
     },
 };
+
+pub type CsvImporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
