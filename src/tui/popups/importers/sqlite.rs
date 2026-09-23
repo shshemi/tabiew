@@ -11,7 +11,7 @@ use crate::{
                 import_source_picker::{ImportSource, ImportSourcePicker},
             },
             url_picker::UrlPicker,
-            wizard::OverlayStep,
+            wizard::WizardStep,
         },
     },
 };
