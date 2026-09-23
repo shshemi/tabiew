@@ -7,8 +7,8 @@ use crate::{
             dismiss_overlay_and_load_data_frame,
             import_source_picker::{ImportSource, ImportSourcePicker},
         },
-        multi_step_overlay::OverlayStep,
         url_picker::UrlPicker,
+        wizard::WizardStep,
     },
 };
 
@@ -19,7 +19,7 @@ pub enum State {
     PickUrl { picker: UrlPicker },
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {

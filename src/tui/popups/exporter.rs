@@ -10,11 +10,11 @@ use crate::tui::{
     pickers::search_picker::SearchPicker,
     popups::{
         exporters::{arrow, avro, csv, json, jsonl, markdown, parquet, tsv},
-        multi_step_overlay::{MultiStepOverlay, OverlayStep},
+        wizard::{Wizard, WizardStep},
     },
 };
 
-pub type Exporter = MultiStepOverlay<State>;
+pub type Exporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -58,7 +58,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { df, picker } => match picker.selected_item() {

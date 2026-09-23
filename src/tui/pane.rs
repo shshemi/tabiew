@@ -32,9 +32,9 @@ use crate::{
             go_to_line::GoToLine,
             histogram_builder::{self, HistogramBuilder},
             inline_query_picker::{InlineQueryPicker, QueryType},
-            multi_step_overlay::MultiStepOverlay,
             scatter_plot_builder::{self, ScatterPlotBuilder},
             table_registerer::TableRegisterer,
+            wizard::Wizard,
         },
         search_bar::SearchType,
         table::Table,
@@ -216,7 +216,7 @@ impl Pane {
     }
 
     fn show_scatter_plot_builder(&mut self) {
-        self.modal = Some(Modal::ScatterPlotBuilder(MultiStepOverlay::new(
+        self.modal = Some(Modal::ScatterPlotBuilder(Wizard::new(
             scatter_plot_builder::State::new(self.tstack.last().data_frame().clone()),
         )))
     }

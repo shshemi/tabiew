@@ -2,28 +2,28 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::{handler::message::Message, tui::component::Component};
 
-pub trait OverlayStep {
+pub trait WizardStep {
     fn next(self) -> Self;
     fn responder(&mut self) -> &mut dyn Component;
 }
 
 #[derive(Debug)]
-pub struct MultiStepOverlay<W: OverlayStep> {
+pub struct Wizard<W: WizardStep> {
     state: Option<W>,
 }
 
-impl<W> MultiStepOverlay<W>
+impl<W> Wizard<W>
 where
-    W: OverlayStep,
+    W: WizardStep,
 {
     pub fn new(state: W) -> Self {
         Self { state: Some(state) }
     }
 }
 
-impl<W> Component for MultiStepOverlay<W>
+impl<W> Component for Wizard<W>
 where
-    W: OverlayStep,
+    W: WizardStep,
 {
     fn render(
         &mut self,
@@ -56,9 +56,9 @@ where
     }
 }
 
-impl<State> Default for MultiStepOverlay<State>
+impl<State> Default for Wizard<State>
 where
-    State: Default + OverlayStep,
+    State: Default + WizardStep,
 {
     fn default() -> Self {
         Self::new(Default::default())

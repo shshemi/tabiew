@@ -13,11 +13,11 @@ use crate::{
         icons,
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
+        popups::wizard::{Wizard, WizardStep},
     },
 };
 
-pub type ColumnCaster = MultiStepOverlay<State>;
+pub type ColumnCaster = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -32,7 +32,7 @@ pub enum State {
     },
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { df, picker } => {

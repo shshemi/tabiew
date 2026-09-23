@@ -12,7 +12,7 @@ use crate::{
         popups::{
             export_target_picker::{ExportTargetPicker, Target},
             file_picker::FilePicker,
-            multi_step_overlay::OverlayStep,
+            wizard::WizardStep,
         },
     },
 };
@@ -38,7 +38,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickOutputTarget { mut df, picker } => match picker.selected() {

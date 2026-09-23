@@ -10,11 +10,11 @@ use crate::tui::{
         importers::{
             arrow, avro, csv, excel, fwf, html, json, jsonl, logfmt, markdown, parquet, sqlite, tsv,
         },
-        multi_step_overlay::{MultiStepOverlay, OverlayStep},
+        wizard::{Wizard, WizardStep},
     },
 };
 
-pub type Importer = MultiStepOverlay<State>;
+pub type Importer = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -34,7 +34,7 @@ pub enum State {
     Markdown { markdown: markdown::State },
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickFormat { picker } => match picker.selected_item() {

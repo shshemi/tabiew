@@ -6,7 +6,7 @@ use crate::{
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
-        popups::{file_picker::FilePicker, multi_step_overlay::OverlayStep},
+        popups::{file_picker::FilePicker, wizard::WizardStep},
     },
 };
 
@@ -24,7 +24,7 @@ impl From<DataFrame> for State {
     }
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickOutputPath { mut df, picker } => {

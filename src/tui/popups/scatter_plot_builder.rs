@@ -5,11 +5,11 @@ use crate::{
     tui::{
         icons,
         pickers::search_picker::SearchPicker,
-        popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
+        popups::wizard::{Wizard, WizardStep},
     },
 };
 
-pub type ScatterPlotBuilder = MultiStepOverlay<State>;
+pub type ScatterPlotBuilder = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -44,7 +44,7 @@ impl State {
     }
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickX { df, picker } => {

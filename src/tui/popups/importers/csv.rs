@@ -9,7 +9,7 @@ use crate::{
         icons,
         pickers::text_picker::TextPicker,
         popups::{
-            file_picker::FilePicker, multi_step_overlay::OverlayStep, url_picker::UrlPicker,
+            file_picker::FilePicker, rl_picker::UrlPicker,, wizard::OverlayStep
             yes_no_picker::YesNoPicker,
         },
     },
@@ -43,7 +43,7 @@ pub enum State {
     },
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {

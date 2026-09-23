@@ -7,14 +7,14 @@ use crate::{
     tui::{
         icons,
         pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::multi_step_overlay::{MultiStepOverlay, OverlayStep},
+        popups::wizard::{WizardStep, Wizard},
         widgets::input::InputType,
     },
 };
 
 const DEFAULT_BUCKET_COUNT: &str = "24";
 
-pub type HistogramBuilder = MultiStepOverlay<State>;
+pub type HistogramBuilder = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
@@ -45,7 +45,7 @@ impl State {
     }
 }
 
-impl OverlayStep for State {
+impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickColumn { picker } => {
