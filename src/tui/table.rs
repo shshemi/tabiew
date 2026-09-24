@@ -532,11 +532,15 @@ impl Component for Table {
                 self.half_page_down();
                 true
             }
-            (KeyCode::Right, KeyModifiers::ALT) | (KeyCode::Char('w'), KeyModifiers::NONE) => {
+            (KeyCode::Right, KeyModifiers::ALT)
+            | (KeyCode::Char('f'), KeyModifiers::ALT)
+            | (KeyCode::Char('w'), KeyModifiers::NONE) => {
                 self.scroll_to_right_column();
                 true
             }
-            (KeyCode::Left, KeyModifiers::ALT) | (KeyCode::Char('b'), KeyModifiers::NONE) => {
+            (KeyCode::Left, KeyModifiers::ALT)
+            | (KeyCode::Char('b'), KeyModifiers::ALT)
+            | (KeyCode::Char('b'), KeyModifiers::NONE) => {
                 self.scroll_to_left_column();
                 true
             }
