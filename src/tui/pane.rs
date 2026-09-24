@@ -22,6 +22,7 @@ use crate::{
         app_default::AppDefault,
         component::{Component, FocusState},
         icons,
+        layouts::status_bar::StatusBarLayout,
         plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
             column_caster::ColumnCaster,
@@ -96,6 +97,12 @@ impl Pane {
         }
     }
 
+    pub fn invalidate_sheet(&mut self) {
+        if let Some(sheet) = self.sheet.as_mut() {
+            sheet.invalidate();
+        }
+    }
+
     fn dismiss_sheet(&mut self) {
         self.sheet.take();
     }
@@ -103,15 +110,6 @@ impl Pane {
     fn sync_sheet(&mut self) {
         if let Some(sheet) = self.sheet.as_mut()
             && sheet.row() != self.tstack.last().selected()
-            && let Some(row) = self.tstack.last().selected()
-        {
-            let sections = self.tstack.last().data_frame().get_sheet_values(row);
-            sheet.set(row, sections);
-        }
-    }
-
-    fn force_sync_sheet(&mut self) {
-        if let Some(sheet) = self.sheet.as_mut()
             && let Some(row) = self.tstack.last().selected()
         {
             let sections = self.tstack.last().data_frame().get_sheet_values(row);
@@ -291,6 +289,7 @@ impl Pane {
     fn pop_data_frame(&mut self) {
         self.tstack.pop();
         self.dstack.pop();
+        self.invalidate_sheet();
     }
 
     fn select(&mut self, idx: usize) {
@@ -305,12 +304,36 @@ impl Pane {
         }
     }
 
-    fn cancel_modal(&mut self) {
+    fn dismiss_modal(&mut self) {
         self.modal.take();
     }
 
     pub fn title(&self) -> &str {
         self.dstack.base().description()
+    }
+
+    fn render_table(&mut self, buf: &mut ratatui::prelude::Buffer, area: Rect) {
+        // render table borders
+        let block = Block::app_default().borders(Borders::all());
+        let table_area = block.inner(area);
+        let status_bar_area = StatusBarLayout::new().area(area);
+        let focus_state = if matches!(
+            self.modal,
+            Some(Modal::SearchBar(_)) | Some(Modal::GoToLine(_)) | None
+        ) {
+            FocusState::Focused
+        } else {
+            FocusState::NotFocused
+        };
+        block.render(area, buf);
+        self.tstack.last_mut().render(table_area, buf, focus_state);
+        StatusBar::new(self).render(status_bar_area, buf);
+    }
+
+    fn render_sheet(&mut self, buf: &mut ratatui::prelude::Buffer, area: Rect) {
+        if let Some(sheet) = self.sheet.as_mut() {
+            sheet.render(area, buf, FocusState::Focused);
+        }
     }
 }
 
@@ -321,147 +344,29 @@ impl Component for Pane {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: super::component::FocusState,
     ) {
-        let bordered = config().show_table_borders();
-        let [mut table_area, status_bar_area, sheet_area] =
-            table_status_bar_areas(area, bordered, self.sheet.is_some());
-
         // settings
         self.sync_sheet();
         self.tstack
             .last_mut()
             .set_gutter_visibility(config().show_table_row_numbers());
 
-        // render table borders
-        if bordered {
-            let block = Block::app_default().borders(Borders::all());
-            let inner = block.inner(table_area);
-            block.render(table_area, buf);
-            table_area = inner;
-        }
+        let areas = Areas::new(self, area);
+
+        // render table
+        self.render_table(buf, areas.table);
 
         // render sheet
-        if let Some(sheet) = self.sheet.as_mut() {
-            sheet.render(sheet_area, buf, focus_state);
-        }
+        self.render_sheet(buf, areas.sheet);
 
-        // render status bar
-        StatusBar::new(self).render(status_bar_area, buf);
-
+        // render modal
         match &mut self.modal {
             Some(Modal::SearchBar(search_bar_state)) => {
-                let [search_area, table_area] =
-                    Layout::vertical([Constraint::Length(3), Constraint::Fill(1)])
-                        .areas(table_area);
-                self.tstack.last_mut().render(table_area, buf, focus_state);
-                search_bar_state.render(search_area, buf, focus_state);
+                search_bar_state.render(areas.search_bar, buf, focus_state);
             }
-            Some(Modal::GoToLine(go_to_line)) => {
-                self.tstack.last_mut().render(table_area, buf, focus_state);
-                go_to_line.render(table_area, buf, focus_state);
+            Some(modal) => {
+                modal.responder().render(areas.table, buf, focus_state);
             }
-            Some(Modal::DataFrameInfo(data_frame_info)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                data_frame_info.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ScatterPlot(scatter_plot)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                scatter_plot.render(table_area, buf, focus_state);
-            }
-            Some(Modal::HistogramPlot(histogram_plot)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                histogram_plot.render(table_area, buf, focus_state);
-            }
-            Some(Modal::InlineQueryPicker(inline_query_picker)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                inline_query_picker.render(table_area, buf, focus_state);
-            }
-            Some(Modal::Exporter(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportArrow(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportAvro(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportCsv(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportJson(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportJsonl(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportMarkdown(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportParquet(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ExportTsv(exporter)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                exporter.render(table_area, buf, focus_state);
-            }
-            Some(Modal::HistogramBuilder(histogram_builder)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                histogram_builder.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ScatterPlotBuilder(scatter_plot_builder)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                scatter_plot_builder.render(table_area, buf, focus_state);
-            }
-            Some(Modal::TableRegisterer(table_registerer)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                table_registerer.render(table_area, buf, focus_state);
-            }
-            Some(Modal::ColumnCaster(column_caster)) => {
-                self.tstack
-                    .last_mut()
-                    .render(table_area, buf, FocusState::NotFocused);
-                column_caster.render(table_area, buf, focus_state);
-            }
-            None => self.tstack.last_mut().render(table_area, buf, focus_state),
+            None => (),
         }
     }
 
@@ -603,7 +508,7 @@ impl Component for Pane {
                     .unwrap_or_enqueue_error();
             }
             Message::PaneShowTableRegisterer => self.show_table_registerer(),
-            Message::PaneDismissModal => self.cancel_modal(),
+            Message::PaneDismissModal => self.dismiss_modal(),
             Message::PaneDismissSheet => self.dismiss_sheet(),
             Message::PanePushDataFrame(df, desc) => self.push_data_frame(df.clone(), desc.clone()),
             Message::PanePopDataFrame => self.pop_data_frame(),
@@ -642,7 +547,7 @@ impl Component for Pane {
                             TableDescription::Search(search_bar.value().to_owned())
                         }
                     };
-                    self.force_sync_sheet();
+                    self.invalidate_sheet();
                 }
             }
             Some(Modal::DataFrameInfo(_)) => (),
@@ -668,26 +573,32 @@ impl Component for Pane {
     }
 }
 
-fn table_status_bar_areas(area: Rect, bordered: bool, sheet: bool) -> [Rect; 3] {
-    let [table_area, sheet_area] = if sheet {
-        Layout::horizontal([Constraint::Percentage(70), Constraint::Min(48)]).areas(area)
-    } else {
-        [area, area]
-    };
-    let [table_area, status_bar_area] = if bordered {
-        [
-            table_area,
-            Rect {
-                x: table_area.x + 1,
-                y: table_area.y + table_area.height.saturating_sub(1),
-                width: table_area.width.saturating_sub(2),
-                height: 1,
-            },
-        ]
-    } else {
-        Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(table_area)
-    };
-    [table_area, status_bar_area, sheet_area]
+pub struct Areas {
+    table: Rect,
+    sheet: Rect,
+    search_bar: Rect,
+}
+
+impl Areas {
+    fn new(pane: &Pane, area: Rect) -> Self {
+        let [left, sheet] = if pane.sheet.is_some() {
+            Layout::horizontal([Constraint::Percentage(70), Constraint::Min(48)]).areas(area)
+        } else {
+            [area, Default::default()]
+        };
+
+        let [search_bar, table] = if matches!(pane.modal, Some(Modal::SearchBar(_))) {
+            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(left)
+        } else {
+            [Default::default(), left]
+        };
+
+        Areas {
+            table,
+            sheet,
+            search_bar,
+        }
+    }
 }
 
 #[derive(Debug)]

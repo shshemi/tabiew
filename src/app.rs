@@ -367,11 +367,7 @@ impl Overlay {
 
 fn right_notif_bar(area: Rect) -> Rect {
     Rect {
-        x: area.width.saturating_sub(if config().show_table_borders() {
-            41
-        } else {
-            40
-        }),
+        x: area.width.saturating_sub(41),
         y: 1,
         width: 40,
         height: area.height.saturating_sub(2),

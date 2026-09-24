@@ -87,6 +87,10 @@ impl Sheet {
         self.row = row.into();
         self.values = values;
     }
+
+    pub fn invalidate(&mut self) {
+        self.row = None;
+    }
 }
 
 impl Component for Sheet {
