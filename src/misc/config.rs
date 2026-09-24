@@ -22,7 +22,6 @@ use super::type_ext::UnwrapOrGracefulShutdown;
 pub struct Config {
     theme: RwLock<LoadedTheme>,
     http: RwLock<HttpConfig>,
-    show_table_borders: AtomicBool,
     show_table_row_numbers: AtomicBool,
     use_nerd_font: AtomicBool,
     fp_precision: AtomicI8,
@@ -35,15 +34,12 @@ impl Config {
         let Config {
             theme,
             http,
-            show_table_borders: table_borders,
             show_table_row_numbers: table_row_numbers,
             use_nerd_font: nerd_font,
             fp_precision,
         } = toml::from_str(&contents)?;
         self.set_theme(theme.into_inner()?);
         self.set_http_config(http.into_inner()?);
-        self.show_table_borders
-            .swap(table_borders.into_inner(), Ordering::Relaxed);
         self.show_table_row_numbers
             .swap(table_row_numbers.into_inner(), Ordering::Relaxed);
         self.use_nerd_font
@@ -76,14 +72,6 @@ impl Config {
 
     pub fn set_http_config(&self, http_config: impl Into<HttpConfig>) {
         *self.http.write().unwrap_or_graceful_shutdown() = http_config.into();
-    }
-
-    pub fn show_table_borders(&self) -> bool {
-        self.show_table_borders.load(Ordering::Relaxed)
-    }
-
-    pub fn toggle_show_table_borders(&self) {
-        self.show_table_borders.fetch_xor(true, Ordering::Relaxed);
     }
 
     pub fn fp_precision(&self) -> Option<usize> {
@@ -119,7 +107,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             theme: RwLock::new(LoadedTheme::default()),
-            show_table_borders: AtomicBool::new(true),
             show_table_row_numbers: AtomicBool::new(true),
             use_nerd_font: AtomicBool::new(false),
             http: RwLock::new(HttpConfig::default()),
