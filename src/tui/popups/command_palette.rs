@@ -77,10 +77,6 @@ impl Component for CommandPalette {
                             Command::Select => Message::PaneShowInlineSelect.enqueue(),
                             Command::Sort => Message::PaneShowInlineOrder.enqueue(),
                             Command::ThemeSelector => Message::AppShowThemeSelector.enqueue(),
-                            Command::ToggleBorders => {
-                                config().toggle_show_table_borders();
-                                config().store().unwrap_or_enqueue_error();
-                            }
                             Command::ToggleRowNumbers => {
                                 config().toggle_show_table_row_numbers();
                                 config().store().unwrap_or_enqueue_error();
@@ -133,7 +129,6 @@ enum Command {
     Select,
     Sort,
     ThemeSelector,
-    ToggleBorders,
     ToggleNerdFont,
     ToggleRowNumbers,
 }
@@ -167,7 +162,6 @@ impl Command {
             Command::Search => icons::SEARCH,
             Command::Select => icons::COLUMN,
             Command::ThemeSelector => icons::PALETTE,
-            Command::ToggleBorders => icons::BORDERS,
             Command::ToggleNerdFont => icons::FONT,
             Command::ToggleRowNumbers => icons::ROW_NUMBERS,
         }
