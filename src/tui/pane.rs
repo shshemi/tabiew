@@ -312,7 +312,12 @@ impl Pane {
         self.dstack.base().description()
     }
 
-    fn render_table(&mut self, buf: &mut ratatui::prelude::Buffer, area: Rect) {
+    fn render_table(
+        &mut self,
+        buf: &mut ratatui::prelude::Buffer,
+        area: Rect,
+        focus_status: FocusState,
+    ) {
         // render table borders
         let block = Block::app_default().borders(Borders::all());
         let table_area = block.inner(area);
@@ -321,7 +326,7 @@ impl Pane {
             self.modal,
             Some(Modal::SearchBar(_)) | Some(Modal::GoToLine(_)) | None
         ) {
-            FocusState::Focused
+            focus_status
         } else {
             FocusState::NotFocused
         };
@@ -353,7 +358,7 @@ impl Component for Pane {
         let areas = Areas::new(self, area);
 
         // render table
-        self.render_table(buf, areas.table);
+        self.render_table(buf, areas.table, focus_state);
 
         // render sheet
         self.render_sheet(buf, areas.sheet);
