@@ -12,7 +12,8 @@ use ratatui::{
 };
 
 use crate::{
-    handler::message::Message,
+    AppResult,
+    handler::message::Message::{self, AppShowError},
     misc::{buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52},
     tui::{
         app_default::{AppDefault, AppTitle},
@@ -144,13 +145,17 @@ impl Component for Sheet {
                 true
             }
             (KeyCode::Char('c'), KeyModifiers::NONE) => {
-                if let Some(row) = self.row
-                    && let Some(value) = get_row(&self.df, row)
-                    && let Ok(text) = serde_json::to_string_pretty(&value)
-                {
-                    text.copy_to_clipboard_via_osc52();
-                    Message::AppShowToast(format!("Row #{} copied to clipboard", row + 1))
-                        .enqueue();
+                let Some(row) = self.row else { return true };
+                let Some(value) = get_row(&self.df, row) else {
+                    return true;
+                };
+                match self.format.pretty_string(&value) {
+                    Ok(text) => {
+                        text.copy_to_clipboard_via_osc52();
+                        Message::AppShowToast(format!("Row #{} copied to clipboard", row + 1))
+                            .enqueue();
+                    }
+                    Err(e) => AppShowError(e.to_string()).enqueue(),
                 }
                 true
             }
@@ -176,6 +181,13 @@ impl Format {
         match self {
             Format::Yaml => Format::Json,
             Format::Json => Format::Yaml,
+        }
+    }
+
+    fn pretty_string(&self, value: &Value) -> AppResult<String> {
+        match self {
+            Format::Json => Ok(serde_json::to_string_pretty(&value)?),
+            Format::Yaml => todo!(),
         }
     }
 }
