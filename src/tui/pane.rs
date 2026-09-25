@@ -89,17 +89,11 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if self.sheet.is_none()
-            && let Some(row) = self.tstack.last().selected()
-        {
-            let values = self.tstack.last().data_frame().get_sheet_values(row);
-            self.sheet = Some(Sheet::new(row, values));
-        }
-    }
-
-    pub fn invalidate_sheet(&mut self) {
-        if let Some(sheet) = self.sheet.as_mut() {
-            sheet.invalidate();
+        if self.sheet.is_none() {
+            self.sheet = Some(Sheet::new(
+                self.table().data_frame().clone(),
+                self.table().selected(),
+            ));
         }
     }
 
@@ -108,12 +102,9 @@ impl Pane {
     }
 
     fn sync_sheet(&mut self) {
-        if let Some(sheet) = self.sheet.as_mut()
-            && sheet.row() != self.tstack.last().selected()
-            && let Some(row) = self.tstack.last().selected()
-        {
-            let sections = self.tstack.last().data_frame().get_sheet_values(row);
-            sheet.set(row, sections);
+        if let Some(sheet) = self.sheet.as_mut() {
+            sheet.set_data_frame(self.tstack.last().data_frame().clone());
+            sheet.set_row(self.tstack.last().selected());
         }
     }
 
@@ -289,7 +280,7 @@ impl Pane {
     fn pop_data_frame(&mut self) {
         self.tstack.pop();
         self.dstack.pop();
-        self.invalidate_sheet();
+        self.sync_sheet();
     }
 
     fn select(&mut self, idx: usize) {
@@ -552,7 +543,7 @@ impl Component for Pane {
                             TableDescription::Search(search_bar.value().to_owned())
                         }
                     };
-                    self.invalidate_sheet();
+                    self.sync_sheet();
                 }
             }
             Some(Modal::DataFrameInfo(_)) => (),
@@ -587,7 +578,7 @@ pub struct Areas {
 impl Areas {
     fn new(pane: &Pane, area: Rect) -> Self {
         let [left, sheet] = if pane.sheet.is_some() {
-            Layout::horizontal([Constraint::Percentage(70), Constraint::Min(48)]).areas(area)
+            Layout::horizontal([Constraint::Percentage(70), Constraint::Min(58)]).areas(area)
         } else {
             [area, Default::default()]
         };

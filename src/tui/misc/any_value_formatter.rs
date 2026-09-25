@@ -25,7 +25,6 @@ impl AnyValueFormatter {
     pub fn into_single_line(mut self, value: AnyValue) -> Cow<'static, str> {
         match self.to_single_line(value) {
             Formatted::Static(s) => Cow::Borrowed(s),
-            Formatted::Owned(s) => Cow::Owned(s),
             Formatted::Buffer(_) => Cow::Owned(self.buf),
         }
     }
@@ -107,20 +106,75 @@ impl AnyValueFormatter {
         }
     }
 
-    // fn to_multi_line<'a>(&'a self, value: AnyValue) -> Formatted {
-    //     match value {
-    //         AnyValue::Null => Formatted::Static(""),
-    //         AnyValue::String(s) => {
-    //             Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
-    //         }
-    //         AnyValue::StringOwned(s) => {
-    //             Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
-    //         }
-    //         AnyValue::Binary(buf) => Cow::Owned(bytes_to_string(buf)),
-    //         AnyValue::BinaryOwned(buf) => Cow::Owned(bytes_to_string(buf)),
-    //         v => self.into_single_line(v),
-    //     }
-    // }
+    pub fn into_multi_line(mut self, value: AnyValue) -> Cow<'static, str> {
+        match self.to_multi_line(value) {
+            Formatted::Static(s) => Cow::Borrowed(s),
+            Formatted::Buffer(_) => Cow::Owned(self.buf),
+        }
+    }
+
+    pub fn to_multi_line<'a>(&'a mut self, value: AnyValue) -> Formatted<'a> {
+        let fp_prec = self.fp_prec;
+        match value {
+            AnyValue::Null => Formatted::Static(""),
+            AnyValue::Boolean(b) => Formatted::Static(bool(b)),
+            AnyValue::String(s) => {
+                Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
+            }
+            AnyValue::StringOwned(s) => {
+                Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
+            }
+            AnyValue::UInt8(u) => Formatted::Buffer(display(&mut self.buf, u)),
+            AnyValue::UInt16(u) => Formatted::Buffer(display(&mut self.buf, u)),
+            AnyValue::UInt32(u) => Formatted::Buffer(display(&mut self.buf, u)),
+            AnyValue::UInt64(u) => Formatted::Buffer(display(&mut self.buf, u)),
+            AnyValue::UInt128(u) => Formatted::Buffer(display(&mut self.buf, u)),
+            AnyValue::Int8(i) => Formatted::Buffer(display(&mut self.buf, i)),
+            AnyValue::Int16(i) => Formatted::Buffer(display(&mut self.buf, i)),
+            AnyValue::Int32(i) => Formatted::Buffer(display(&mut self.buf, i)),
+            AnyValue::Int64(i) => Formatted::Buffer(display(&mut self.buf, i)),
+            AnyValue::Int128(i) => Formatted::Buffer(display(&mut self.buf, i)),
+            AnyValue::Float16(f) => {
+                Formatted::Buffer(display_with_precision(&mut self.buf, fp_prec, f))
+            }
+            AnyValue::Float32(f) => {
+                Formatted::Buffer(display_with_precision(&mut self.buf, fp_prec, f))
+            }
+            AnyValue::Float64(f) => {
+                Formatted::Buffer(display_with_precision(&mut self.buf, fp_prec, f))
+            }
+            AnyValue::Date(d) => Formatted::Buffer(date(&mut self.buf, d)),
+            AnyValue::Datetime(t, unit, _) | AnyValue::DatetimeOwned(t, unit, _) => {
+                Formatted::Buffer(datetime(&mut self.buf, t, unit))
+            }
+            AnyValue::Duration(_, _) => Formatted::Buffer(display(&mut self.buf, value)),
+            AnyValue::Time(t) => Formatted::Buffer(time(&mut self.buf, t)),
+            AnyValue::Categorical(cat, map) | AnyValue::Enum(cat, map) => {
+                if let Some(s) = map.cat_to_str(cat) {
+                    Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
+                } else {
+                    Formatted::Static("")
+                }
+            }
+            AnyValue::CategoricalOwned(cat, map) | AnyValue::EnumOwned(cat, map) => {
+                if let Some(s) = map.cat_to_str(cat) {
+                    Formatted::Buffer(copy_chars(&mut self.buf, untabbed(s.chars())))
+                } else {
+                    Formatted::Static("")
+                }
+            }
+            AnyValue::Binary(items) => Formatted::Buffer(display(
+                &mut self.buf,
+                format_args!("[{} bytes]", items.len()),
+            )),
+            AnyValue::BinaryOwned(items) => Formatted::Buffer(display(
+                &mut self.buf,
+                format_args!("[{} bytes]", items.len()),
+            )),
+            AnyValue::Decimal(_, _, _) => Formatted::Buffer(display(&mut self.buf, value)),
+            av => Formatted::Buffer(display(&mut self.buf, av)),
+        }
+    }
 }
 
 impl Default for AnyValueFormatter {
@@ -134,7 +188,6 @@ impl Default for AnyValueFormatter {
 
 pub enum Formatted<'a> {
     Static(&'static str),
-    Owned(String),
     Buffer(&'a str),
 }
 
@@ -142,7 +195,6 @@ impl<'a> Formatted<'a> {
     pub fn into_string(self) -> String {
         match self {
             Formatted::Static(s) => s.to_owned(),
-            Formatted::Owned(s) => s,
             Formatted::Buffer(s) => s.to_owned(),
         }
     }
@@ -154,7 +206,6 @@ impl Deref for Formatted<'_> {
     fn deref(&self) -> &Self::Target {
         match self {
             Formatted::Static(s) => s,
-            Formatted::Owned(s) => s,
             Formatted::Buffer(s) => s,
         }
     }
