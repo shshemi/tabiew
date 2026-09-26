@@ -163,14 +163,8 @@ impl AnyValueFormatter {
                     Formatted::Static("")
                 }
             }
-            AnyValue::Binary(items) => Formatted::Buffer(display(
-                &mut self.buf,
-                format_args!("[{} bytes]", items.len()),
-            )),
-            AnyValue::BinaryOwned(items) => Formatted::Buffer(display(
-                &mut self.buf,
-                format_args!("[{} bytes]", items.len()),
-            )),
+            AnyValue::Binary(b) => Formatted::Buffer(bytes(&mut self.buf, b)),
+            AnyValue::BinaryOwned(b) => Formatted::Buffer(bytes(&mut self.buf, &b)),
             AnyValue::Decimal(_, _, _) => Formatted::Buffer(display(&mut self.buf, value)),
             av => Formatted::Buffer(display(&mut self.buf, av)),
         }
@@ -289,6 +283,21 @@ fn datetime(buf: &mut String, value: i64, unit: TimeUnit) -> &str {
         datetime.minute(),
         datetime.second()
     );
+    buf
+}
+
+#[inline]
+fn bytes<'a>(buf: &'a mut String, b: &[u8]) -> &'a str {
+    if let Some(b) = b.first() {
+        let _ = write!(buf, "{b:02x}");
+    }
+    if b.len() > 1 {
+        for chunk in b[1..].chunks(8) {
+            for b in chunk {
+                let _ = write!(buf, " {b:02x}");
+            }
+        }
+    }
     buf
 }
 

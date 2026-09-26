@@ -15,7 +15,9 @@ use polars::{frame::DataFrame, prelude::IdxCa};
 
 use rayon::prelude::*;
 
-use crate::misc::{polars_ext::AnyValueExt, type_ext::UnwrapOrGracefulShutdown};
+use crate::{
+    misc::type_ext::UnwrapOrGracefulShutdown, tui::misc::any_value_formatter::AnyValueFormatter,
+};
 
 type RowIndex = u32;
 type SimScore = i64;
@@ -214,7 +216,7 @@ fn spawn_search_thread<S>(
             .par_bridge()
             .take_any_while(|_| alive.load(Ordering::Relaxed))
             .filter_map(|(idx, value)| {
-                let value = value.to_multi_line();
+                let value = AnyValueFormatter::new(None).into_multi_line(value);
                 if value == pat {
                     Some((idx, i64::MAX))
                 } else {

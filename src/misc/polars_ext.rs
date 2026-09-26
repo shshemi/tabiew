@@ -1,6 +1,5 @@
 use std::{
-    borrow::Cow,
-    ops::{Add, Div},
+    ops::Add,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -24,32 +23,12 @@ use crate::{
 };
 
 pub trait AnyValueExt<'a> {
-    fn to_multi_line(&'a self) -> Cow<'a, str>;
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
     fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
     fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
 }
 
 impl<'a> AnyValueExt<'a> for AnyValue<'a> {
-    fn to_multi_line(&'a self) -> Cow<'a, str> {
-        match self {
-            AnyValue::Null => Cow::Borrowed(""),
-            AnyValue::StringOwned(v) if v.contains("\t") => Cow::Owned(v.replace("\t", " ")),
-            AnyValue::StringOwned(v) => Cow::Borrowed(v),
-            AnyValue::String(v) if v.contains("\t") => Cow::Owned(v.replace("\t", " ")),
-            AnyValue::String(v) => Cow::Borrowed(v),
-            AnyValue::Categorical(idx, rev_map) => {
-                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
-            }
-            AnyValue::CategoricalOwned(idx, rev_map) => {
-                Cow::Owned(rev_map.cat_to_str(*idx).unwrap_or_default().to_owned())
-            }
-            AnyValue::Binary(buf) => Cow::Owned(bytes_to_string(buf)),
-            AnyValue::BinaryOwned(buf) => Cow::Owned(bytes_to_string(buf)),
-            _ => Cow::Owned(self.to_string()),
-        }
-    }
-
     fn parse_bool(slice: &str) -> Option<AnyValue<'static>> {
         match slice {
             "true" => Some(AnyValue::Boolean(true)),
@@ -223,30 +202,6 @@ pub trait TryMapAll {
         &self,
         f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
     ) -> Option<Series>;
-}
-
-fn bytes_to_string(buf: impl AsRef<[u8]>) -> String {
-    let buf = buf.as_ref();
-    let index_width = buf.len().div(16).to_string().len();
-    let index_width = if index_width % 2 == 0 {
-        index_width
-    } else {
-        index_width + 1
-    };
-    format!(
-        "Blob (Length: {})\n{}",
-        buf.len(),
-        buf.iter()
-            .map(|b| format!("{b:02X}"))
-            .chunks(8)
-            .into_iter()
-            .map(|mut chunk| chunk.join(" "))
-            .chunks(2)
-            .into_iter()
-            .enumerate()
-            .map(|(idx, mut chunk)| format!("{:0index_width$}:  {}", idx, chunk.join("   ")))
-            .join("\n")
-    )
 }
 
 impl DataFrameExt for DataFrame {
