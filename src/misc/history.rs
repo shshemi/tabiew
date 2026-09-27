@@ -1,11 +1,9 @@
 use std::sync::{Arc, LazyLock, Mutex};
 
-type Amv<T> = Arc<Mutex<Vec<T>>>;
-
 #[derive(Debug)]
 pub struct History<T> {
     len: usize,
-    vec: LazyLock<Amv<T>>,
+    vec: LazyLock<Arc<Mutex<Vec<T>>>>,
 }
 
 impl<T> History<T>
