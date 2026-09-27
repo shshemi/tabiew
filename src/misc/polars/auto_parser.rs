@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::anyhow;
 use polars::series::Series;
 
 use crate::{
@@ -12,83 +12,99 @@ use crate::{
     },
 };
 
+#[derive(Default)]
 pub struct AutoParser<'a> {
-    bool_parser: BoolParser,
-    date_parser: DateParser,
-    datetime_parser: DatetimeParser<'a>,
-    float_parser: GeneralParser,
-    int_parser: GeneralParser,
+    bool_parser: Option<BoolParser>,
+    date_parser: Option<DateParser>,
+    datetime_parser: Option<DatetimeParser<'a>>,
+    float_parser: Option<GeneralParser>,
+    int_parser: Option<GeneralParser>,
 }
 
 impl<'a> AutoParser<'a> {
-    pub fn parse_strict(&mut self, series: &Series) -> AppResult<Series> {
-        if let Ok(s) = self.parse_int(series) {
-            return Ok(s);
+    pub fn with_bool(self, enabled: bool) -> Self {
+        Self {
+            bool_parser: enabled.then(BoolParser::default),
+            ..self
         }
-        if let Ok(s) = self.parse_float(series) {
-            return Ok(s);
-        }
-        if let Ok(s) = self.parse_bool(series) {
-            return Ok(s);
-        }
-        if let Ok(s) = self.parse_date(series) {
-            return Ok(s);
-        }
-        if let Ok(s) = self.parse_datetime(series) {
-            return Ok(s);
-        }
-        bail!("Series '{}' could not be parsed", series.name())
     }
 
-    fn parse_datetime(&mut self, series: &Series) -> AppResult<Series> {
-        self.datetime_parser.set_format(None);
-        if let Ok(s) = self.datetime_parser.parse_strict(series) {
-            return Ok(s);
+    pub fn with_date(self, enabled: bool) -> Self {
+        Self {
+            date_parser: enabled.then(DateParser::default),
+            ..self
+        }
+    }
+
+    pub fn with_datetime(self, enabled: bool) -> Self {
+        Self {
+            datetime_parser: enabled.then(DatetimeParser::default),
+            ..self
+        }
+    }
+
+    pub fn with_float(self, enabled: bool) -> Self {
+        Self {
+            float_parser: enabled.then(GeneralParser::float),
+            ..self
+        }
+    }
+
+    pub fn with_int(self, enabled: bool) -> Self {
+        Self {
+            int_parser: enabled.then(GeneralParser::int),
+            ..self
+        }
+    }
+
+    pub fn parse_strict(&mut self, series: &Series) -> AppResult<Series> {
+        self.parse_int(series)
+            .or_else(|| self.parse_float(series))
+            .or_else(|| self.parse_bool(series))
+            .or_else(|| self.parse_date(series))
+            .or_else(|| self.parse_datetime(series))
+            .ok_or_else(|| anyhow!("Series '{}' could not be parsed", series.name()))
+    }
+
+    fn parse_datetime(&mut self, series: &Series) -> Option<Series> {
+        let parser = self.datetime_parser.as_mut()?;
+        parser.set_format(None);
+        if let Ok(s) = parser.parse_strict(series) {
+            return Some(s);
         }
         for fmt in misc::polars::datetime_parser::PREDEFINED_FORMATS {
-            self.datetime_parser.set_format(fmt);
-            if let Ok(s) = self.datetime_parser.parse_strict(series) {
-                return Ok(s);
+            parser.set_format(fmt);
+            if let Ok(s) = parser.parse_strict(series) {
+                return Some(s);
             }
         }
-        bail!("No matching format found")
+        None
     }
 
-    fn parse_date(&mut self, series: &Series) -> AppResult<Series> {
-        self.date_parser.set_format(None);
-        if let Ok(s) = self.date_parser.parse_strict(series) {
-            return Ok(s);
+    fn parse_date(&mut self, series: &Series) -> Option<Series> {
+        let parser = self.date_parser.as_mut()?;
+        parser.set_format(None);
+        if let Ok(s) = parser.parse_strict(series) {
+            return Some(s);
         }
         for fmt in misc::polars::date_parser::PREDEFINED_FORMATS {
-            self.date_parser.set_format(fmt);
-            if let Ok(s) = self.date_parser.parse_strict(series) {
-                return Ok(s);
+            parser.set_format(fmt);
+            if let Ok(s) = parser.parse_strict(series) {
+                return Some(s);
             }
         }
-        bail!("No matching format found")
+        None
     }
 
-    fn parse_bool(&self, series: &Series) -> AppResult<Series> {
-        self.bool_parser.parse_strict(series)
+    fn parse_bool(&self, series: &Series) -> Option<Series> {
+        self.bool_parser.as_ref()?.parse_strict(series).ok()
     }
 
-    fn parse_float(&self, series: &Series) -> AppResult<Series> {
-        self.float_parser.parse_strict(series)
+    fn parse_float(&self, series: &Series) -> Option<Series> {
+        self.float_parser.as_ref()?.parse_strict(series).ok()
     }
 
-    fn parse_int(&self, series: &Series) -> AppResult<Series> {
-        self.int_parser.parse_strict(series)
-    }
-}
-
-impl Default for AutoParser<'_> {
-    fn default() -> Self {
-        Self {
-            bool_parser: BoolParser::default(),
-            date_parser: DateParser::default(),
-            datetime_parser: DatetimeParser::default(),
-            float_parser: GeneralParser::float(),
-            int_parser: GeneralParser::int(),
-        }
+    fn parse_int(&self, series: &Series) -> Option<Series> {
+        self.int_parser.as_ref()?.parse_strict(series).ok()
     }
 }
