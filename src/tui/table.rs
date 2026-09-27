@@ -11,10 +11,10 @@ use ratatui::{
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
+    iters::zip_iters::ZipItersExt,
     misc::{
         config::{config, theme},
         type_ext::ConstraintExt,
-        zip_iters::ZipItersExt,
     },
     tui::{
         component::Component,

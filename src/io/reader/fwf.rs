@@ -13,7 +13,8 @@ use crate::{
     AppResult,
     args::Args,
     io::reader::ReaderSource,
-    misc::{stdin::stdin, table_name_generator::TableNameGeneratorExt, zip_iters::ZipItersExt},
+    iters::zip_iters::ZipItersExt,
+    misc::{stdin::stdin, table_name_generator::TableNameGeneratorExt},
 };
 
 use super::{DataFrameReader, NamedFrames};
