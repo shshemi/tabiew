@@ -19,4 +19,6 @@ pub mod app;
 /// IO
 pub mod io;
 
+pub mod parsers;
+
 pub type AppResult<T> = anyhow::Result<T>;

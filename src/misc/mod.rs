@@ -8,7 +8,6 @@ pub mod http;
 pub mod non_empty_stack;
 pub mod osc52;
 pub mod paths;
-pub mod polars;
 pub mod polars_ext;
 pub mod ragged_vec;
 pub mod remote_load;

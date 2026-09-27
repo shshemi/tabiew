@@ -3,12 +3,9 @@ use polars::series::Series;
 
 use crate::{
     AppResult,
-    misc::{
-        self,
-        polars::{
-            bool_parser::BoolParser, date_parser::DateParser, datetime_parser::DatetimeParser,
-            general_parser::GeneralParser,
-        },
+    parsers::{
+        bool_parser::BoolParser, date_parser::DateParser, datetime_parser::DatetimeParser,
+        general_parser::GeneralParser,
     },
 };
 
@@ -72,7 +69,7 @@ impl<'a> AutoParser<'a> {
         if let Ok(s) = parser.parse_strict(series) {
             return Some(s);
         }
-        for fmt in misc::polars::datetime_parser::PREDEFINED_FORMATS {
+        for fmt in crate::parsers::datetime_parser::PREDEFINED_FORMATS {
             parser.set_format(fmt);
             if let Ok(s) = parser.parse_strict(series) {
                 return Some(s);
@@ -87,7 +84,7 @@ impl<'a> AutoParser<'a> {
         if let Ok(s) = parser.parse_strict(series) {
             return Some(s);
         }
-        for fmt in misc::polars::date_parser::PREDEFINED_FORMATS {
+        for fmt in crate::parsers::date_parser::PREDEFINED_FORMATS {
             parser.set_format(fmt);
             if let Ok(s) = parser.parse_strict(series) {
                 return Some(s);
