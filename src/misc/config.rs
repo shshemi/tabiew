@@ -10,9 +10,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppResult,
-    misc::{http::HttpConfig, paths::config_path},
-    tui::themes::theme::LoadedTheme,
+    AppResult, misc::paths::config_path, net::http::HttpConfig, tui::themes::theme::LoadedTheme,
 };
 
 use super::type_ext::UnwrapOrGracefulShutdown;

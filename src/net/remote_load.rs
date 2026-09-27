@@ -15,7 +15,7 @@ use url::Url;
 use crate::{
     AppResult,
     io::reader::{DataFrameReader, NamedFrames, ReaderSource},
-    misc::{download::download_size, http},
+    net::{download::download_size, http},
 };
 
 pub trait Reader: DataFrameReader + Debug + Send + Sync + 'static {}

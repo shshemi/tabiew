@@ -3,10 +3,8 @@ use std::sync::Arc;
 use crate::{
     handler::message::Message,
     io::{DataSource, reader::ReaderSource},
-    misc::{
-        remote_load,
-        sql::{TableSource, sql},
-    },
+    misc::sql::{TableSource, sql},
+    net::remote_load,
 };
 
 pub mod arrow;

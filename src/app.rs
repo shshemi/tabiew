@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::misc::config::config;
-use crate::misc::remote_load::{self, RemoteLoad};
+use crate::net::remote_load::{self, RemoteLoad};
 use crate::tui::Pane;
 use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::sql_query_picker::SqlQueryPicker;

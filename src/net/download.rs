@@ -3,7 +3,7 @@ use std::{io::Read, path::Path};
 use tempfile::NamedTempFile;
 use url::Url;
 
-use crate::{AppResult, misc::http};
+use crate::{AppResult, net::http};
 
 const CHUNK_SIZE: usize = 16_384;
 

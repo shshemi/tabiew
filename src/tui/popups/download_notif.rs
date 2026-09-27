@@ -1,7 +1,8 @@
 use ratatui::widgets::{Block, Gauge, Paragraph, Widget};
 
 use crate::{
-    misc::{config::theme, remote_load::RemoteLoad},
+    misc::config::theme,
+    net::remote_load::RemoteLoad,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,

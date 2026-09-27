@@ -6,7 +6,7 @@ use std::sync::{
 use polars::frame::DataFrame;
 use url::Url;
 
-use crate::{misc::remote_load::Reader, tui::pane::TableDescription};
+use crate::{net::remote_load::Reader, tui::pane::TableDescription};
 
 #[derive(Debug)]
 pub enum Message {

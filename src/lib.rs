@@ -23,4 +23,6 @@ pub mod parsers;
 
 pub mod iters;
 
+pub mod net;
+
 pub type AppResult<T> = anyhow::Result<T>;
