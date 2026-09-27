@@ -31,7 +31,7 @@ pub const PREDEFINED_FORMATS: [&str; 17] = [
     "%Y%m%dT%H%M%S",
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DatetimeParser<'a> {
     fmt: Option<&'static str>,
     tu: TimeUnit,

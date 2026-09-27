@@ -9,7 +9,7 @@ use crate::{
     },
 };
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct AutoParser<'a> {
     bool_parser: Option<BoolParser>,
     date_parser: Option<DateParser>,

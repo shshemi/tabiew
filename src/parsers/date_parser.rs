@@ -12,7 +12,7 @@ pub const PREDEFINED_FORMATS: [&str; 18] = [
     "%B-%d-%Y", "%Y-%j",
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct DateParser {
     fmt: Option<&'static str>,
     use_cache: bool,

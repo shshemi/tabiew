@@ -3,7 +3,7 @@ use polars::{datatypes::DataType, prelude::ChunkCast, series::Series};
 
 use crate::AppResult;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NumberParser {
     dtype: DataType,
 }

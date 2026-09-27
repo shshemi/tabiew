@@ -6,7 +6,7 @@ use polars::{
 
 use crate::AppResult;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct BoolParser {
     true_value: &'static str,
     false_value: &'static str,
