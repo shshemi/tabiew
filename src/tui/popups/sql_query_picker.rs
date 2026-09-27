@@ -2,8 +2,9 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use polars::frame::DataFrame;
 
 use crate::{
+    collections::capped_vec::CappedVec,
     handler::message::Message,
-    misc::{capped_vec::CappedVec, sql::sql},
+    misc::sql::sql,
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,

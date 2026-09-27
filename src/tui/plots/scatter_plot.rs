@@ -10,8 +10,9 @@ use ratatui::{
 
 use crate::{
     AppResult,
+    collections::ragged_vec::RaggedVec,
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme, ragged_vec::RaggedVec},
+    misc::{buffer_ext::BufferExt, config::theme},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,

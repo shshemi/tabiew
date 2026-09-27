@@ -9,11 +9,11 @@ use ratatui::{
 use super::{search_bar::SearchBar, sheet::Sheet};
 use crate::{
     AppResult,
+    collections::non_empty_stack::NonEmptyStack,
     handler::message::Message,
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
-        non_empty_stack::NonEmptyStack,
         polars_ext::DataFrameExt,
         sql::{TableSource, sql},
         type_ext::UnwrapOrEnqueueError,

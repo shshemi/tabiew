@@ -17,8 +17,7 @@ use polars::{
 };
 
 use crate::{
-    AppResult,
-    misc::{config::config, ragged_vec::RaggedVec},
+    AppResult, collections::ragged_vec::RaggedVec, misc::config::config,
     tui::misc::any_value_formatter::AnyValueFormatter,
 };
 
