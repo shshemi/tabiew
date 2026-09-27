@@ -3,7 +3,7 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    misc::{history::History, sql::sql},
+    misc::{capped_vec::CappedVec, sql::sql},
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-static HISTORY: History<HistoryOrSqlSuggestion> = History::<HistoryOrSqlSuggestion>::new(24);
+static HISTORY: CappedVec<HistoryOrSqlSuggestion> = CappedVec::<HistoryOrSqlSuggestion>::new(24);
 
 #[derive(Debug)]
 pub struct SqlQueryPicker {

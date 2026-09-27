@@ -1,8 +1,8 @@
 pub mod background;
 pub mod buffer_ext;
+pub mod capped_vec;
 pub mod config;
 pub mod external_editor;
-pub mod history;
 pub mod non_empty_stack;
 pub mod osc52;
 pub mod paths;
