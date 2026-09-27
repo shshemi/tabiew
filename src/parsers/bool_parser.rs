@@ -14,6 +14,9 @@ pub struct BoolParser {
 
 impl BoolParser {
     pub fn parse(&self, series: &Series) -> AppResult<Series> {
+        if series.dtype() == &DataType::Boolean {
+            return Ok(series.clone());
+        }
         let ca = series.str()?;
         let is_true = ca.equal(self.true_value);
         let is_false = ca.equal(self.false_value);
@@ -25,6 +28,9 @@ impl BoolParser {
     }
 
     pub fn parse_strict(&self, series: &Series) -> AppResult<Series> {
+        if series.dtype() == &DataType::Boolean {
+            return Ok(series.clone());
+        }
         let ca = series.str()?;
         let is_true = ca.equal(self.true_value);
         if (&is_true | &ca.equal(self.false_value)).all() {

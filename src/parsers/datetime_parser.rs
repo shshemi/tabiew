@@ -1,6 +1,6 @@
 use anyhow::bail;
 use polars::{
-    datatypes::{StringChunked, TimeUnit, TimeZone},
+    datatypes::{DataType, StringChunked, TimeUnit, TimeZone},
     series::{IntoSeries, Series},
     time::chunkedarray::StringMethods,
 };
@@ -47,6 +47,9 @@ impl DatetimeParser<'_> {
     }
 
     pub fn parse(&self, series: &Series) -> AppResult<Series> {
+        if series.dtype() == &self.dtype() {
+            return Ok(series.clone());
+        }
         Ok(series
             .str()?
             .as_datetime(
@@ -71,6 +74,15 @@ impl DatetimeParser<'_> {
                 self.fmt.unwrap_or("None")
             )
         }
+    }
+
+    fn dtype(&self) -> DataType {
+        let tz = if self.tz_aware {
+            Some(self.tz.cloned().unwrap_or(TimeZone::UTC))
+        } else {
+            self.tz.cloned()
+        };
+        DataType::Datetime(self.tu, tz)
     }
 }
 

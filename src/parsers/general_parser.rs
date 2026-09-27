@@ -26,6 +26,9 @@ impl GeneralParser {
     }
 
     pub fn parse(&self, series: &Series) -> AppResult<Series> {
+        if series.dtype() == &self.dtype {
+            return Ok(series.clone());
+        }
         Ok(series.str()?.cast(&self.dtype)?)
     }
 
