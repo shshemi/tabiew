@@ -1,5 +1,4 @@
 pub mod bool_parser;
 pub mod date_parser;
 pub mod datetime_parser;
-pub mod float_parser;
-pub mod int_parser;
+pub mod general_parser;

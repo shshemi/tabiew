@@ -4,11 +4,27 @@ use polars::{datatypes::DataType, prelude::ChunkCast, series::Series};
 use crate::AppResult;
 
 #[derive(Debug)]
-pub struct FloatParser {
+pub struct GeneralParser {
     dtype: DataType,
 }
 
-impl FloatParser {
+impl GeneralParser {
+    pub fn new(dtype: DataType) -> Self {
+        Self { dtype }
+    }
+
+    pub fn int() -> Self {
+        Self {
+            dtype: DataType::Int64,
+        }
+    }
+
+    pub fn float() -> Self {
+        Self {
+            dtype: DataType::Float64,
+        }
+    }
+
     pub fn parse(&self, series: &Series) -> AppResult<Series> {
         Ok(series.str()?.cast(&self.dtype)?)
     }
@@ -23,14 +39,6 @@ impl FloatParser {
                 series.name(),
                 self.dtype
             )
-        }
-    }
-}
-
-impl Default for FloatParser {
-    fn default() -> Self {
-        Self {
-            dtype: DataType::Float64,
         }
     }
 }
