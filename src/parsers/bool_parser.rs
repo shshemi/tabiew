@@ -1,7 +1,8 @@
 use anyhow::bail;
 use polars::{
+    frame::column::{Column, IntoColumn},
     prelude::{ChunkSet, DataType},
-    series::{ChunkCompareEq, IntoSeries, Series},
+    series::ChunkCompareEq,
 };
 
 use crate::AppResult;
@@ -13,26 +14,26 @@ pub struct BoolParser {
 }
 
 impl BoolParser {
-    pub fn parse(&self, series: &Series) -> AppResult<Series> {
-        let ca = series.str()?;
+    pub fn parse(&self, column: &Column) -> AppResult<Column> {
+        let ca = column.str()?;
         let is_true = ca.equal(self.true_value);
         let is_false = ca.equal(self.false_value);
         let invalid = !(&is_true | &is_false);
         Ok(is_true
             .set(&invalid, None)?
-            .with_name(series.name().clone())
-            .into_series())
+            .with_name(column.name().clone())
+            .into_column())
     }
 
-    pub fn parse_strict(&self, series: &Series) -> AppResult<Series> {
-        let ca = series.str()?;
+    pub fn parse_strict(&self, column: &Column) -> AppResult<Column> {
+        let ca = column.str()?;
         let is_true = ca.equal(self.true_value);
         if (&is_true | &ca.equal(self.false_value)).all() {
-            Ok(is_true.with_name(series.name().clone()).into_series())
+            Ok(is_true.with_name(column.name().clone()).into_column())
         } else {
             bail!(
-                "Series '{}' could not be parsed as {}",
-                series.name(),
+                "Column '{}' could not be parsed as {}",
+                column.name(),
                 DataType::Boolean
             )
         }

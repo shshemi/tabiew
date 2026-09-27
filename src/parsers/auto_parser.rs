@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use polars::series::Series;
+use polars::frame::column::Column;
 
 use crate::{
     AppResult,
@@ -54,54 +54,54 @@ impl<'a> AutoParser<'a> {
         }
     }
 
-    pub fn parse_strict(&mut self, series: &Series) -> AppResult<Series> {
-        self.parse_int(series)
-            .or_else(|| self.parse_float(series))
-            .or_else(|| self.parse_bool(series))
-            .or_else(|| self.parse_date(series))
-            .or_else(|| self.parse_datetime(series))
-            .ok_or_else(|| anyhow!("Series '{}' could not be parsed", series.name()))
+    pub fn parse_strict(&mut self, column: &Column) -> AppResult<Column> {
+        self.parse_int(column)
+            .or_else(|| self.parse_float(column))
+            .or_else(|| self.parse_bool(column))
+            .or_else(|| self.parse_date(column))
+            .or_else(|| self.parse_datetime(column))
+            .ok_or_else(|| anyhow!("Column '{}' could not be parsed", column.name()))
     }
 
-    fn parse_datetime(&mut self, series: &Series) -> Option<Series> {
+    fn parse_datetime(&mut self, column: &Column) -> Option<Column> {
         let parser = self.datetime_parser.as_mut()?;
         parser.set_format(None);
-        if let Ok(s) = parser.parse_strict(series) {
+        if let Ok(s) = parser.parse_strict(column) {
             return Some(s);
         }
         for fmt in crate::parsers::datetime_parser::PREDEFINED_FORMATS {
             parser.set_format(fmt);
-            if let Ok(s) = parser.parse_strict(series) {
+            if let Ok(s) = parser.parse_strict(column) {
                 return Some(s);
             }
         }
         None
     }
 
-    fn parse_date(&mut self, series: &Series) -> Option<Series> {
+    fn parse_date(&mut self, column: &Column) -> Option<Column> {
         let parser = self.date_parser.as_mut()?;
         parser.set_format(None);
-        if let Ok(s) = parser.parse_strict(series) {
+        if let Ok(s) = parser.parse_strict(column) {
             return Some(s);
         }
         for fmt in crate::parsers::date_parser::PREDEFINED_FORMATS {
             parser.set_format(fmt);
-            if let Ok(s) = parser.parse_strict(series) {
+            if let Ok(s) = parser.parse_strict(column) {
                 return Some(s);
             }
         }
         None
     }
 
-    fn parse_bool(&self, series: &Series) -> Option<Series> {
-        self.bool_parser.as_ref()?.parse_strict(series).ok()
+    fn parse_bool(&self, column: &Column) -> Option<Column> {
+        self.bool_parser.as_ref()?.parse_strict(column).ok()
     }
 
-    fn parse_float(&self, series: &Series) -> Option<Series> {
-        self.float_parser.as_ref()?.parse_strict(series).ok()
+    fn parse_float(&self, column: &Column) -> Option<Column> {
+        self.float_parser.as_ref()?.parse_strict(column).ok()
     }
 
-    fn parse_int(&self, series: &Series) -> Option<Series> {
-        self.int_parser.as_ref()?.parse_strict(series).ok()
+    fn parse_int(&self, column: &Column) -> Option<Column> {
+        self.int_parser.as_ref()?.parse_strict(column).ok()
     }
 }

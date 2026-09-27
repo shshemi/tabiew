@@ -1,4 +1,4 @@
-use polars::frame::{DataFrame, column::IntoColumn};
+use polars::frame::DataFrame;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::parsers::auto_parser::AutoParser;
@@ -12,16 +12,11 @@ impl<'a> DataFrameParser<'a> {
         df.columns()
             .par_iter()
             .filter(|c| c.dtype().is_string())
-            .filter_map(move |column| {
-                self.auto_parser
-                    .clone()
-                    .parse_strict(column.as_materialized_series())
-                    .ok()
-            })
+            .filter_map(move |column| self.auto_parser.clone().parse_strict(column).ok())
             .collect::<Vec<_>>()
             .into_iter()
-            .for_each(|series| {
-                let _ = df.with_column(series.into_column());
+            .for_each(|column| {
+                let _ = df.with_column(column);
             });
     }
 }

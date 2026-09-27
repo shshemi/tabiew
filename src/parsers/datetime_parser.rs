@@ -1,7 +1,7 @@
 use anyhow::bail;
 use polars::{
     datatypes::{StringChunked, TimeUnit, TimeZone},
-    series::{IntoSeries, Series},
+    frame::column::{Column, IntoColumn},
     time::chunkedarray::StringMethods,
 };
 
@@ -46,8 +46,8 @@ impl DatetimeParser<'_> {
         self.fmt = fmt.into()
     }
 
-    pub fn parse(&self, series: &Series) -> AppResult<Series> {
-        Ok(series
+    pub fn parse(&self, column: &Column) -> AppResult<Column> {
+        Ok(column
             .str()?
             .as_datetime(
                 self.fmt,
@@ -57,17 +57,17 @@ impl DatetimeParser<'_> {
                 self.tz,
                 &self.ambiguous,
             )?
-            .into_series())
+            .into_column())
     }
 
-    pub fn parse_strict(&self, series: &Series) -> AppResult<Series> {
-        let parsed = self.parse(series)?;
-        if parsed.null_count() == series.null_count() {
+    pub fn parse_strict(&self, column: &Column) -> AppResult<Column> {
+        let parsed = self.parse(column)?;
+        if parsed.null_count() == column.null_count() {
             Ok(parsed)
         } else {
             bail!(
-                "Series '{}' could not be parsed as datetime with format '{}'",
-                series.name(),
+                "Column '{}' could not be parsed as datetime with format '{}'",
+                column.name(),
                 self.fmt.unwrap_or("None")
             )
         }
