@@ -5,7 +5,7 @@ use crate::{
     AppResult,
     parsers::{
         bool_parser::BoolParser, date_parser::DateParser, datetime_parser::DatetimeParser,
-        general_parser::GeneralParser,
+        number_parser::NumberParser,
     },
 };
 
@@ -14,8 +14,8 @@ pub struct AutoParser<'a> {
     bool_parser: Option<BoolParser>,
     date_parser: Option<DateParser>,
     datetime_parser: Option<DatetimeParser<'a>>,
-    float_parser: Option<GeneralParser>,
-    int_parser: Option<GeneralParser>,
+    float_parser: Option<NumberParser>,
+    int_parser: Option<NumberParser>,
 }
 
 impl<'a> AutoParser<'a> {
@@ -42,14 +42,14 @@ impl<'a> AutoParser<'a> {
 
     pub fn with_float(self, enabled: bool) -> Self {
         Self {
-            float_parser: enabled.then(GeneralParser::float),
+            float_parser: enabled.then(NumberParser::float),
             ..self
         }
     }
 
     pub fn with_int(self, enabled: bool) -> Self {
         Self {
-            int_parser: enabled.then(GeneralParser::int),
+            int_parser: enabled.then(NumberParser::int),
             ..self
         }
     }

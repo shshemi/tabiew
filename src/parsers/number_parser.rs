@@ -4,15 +4,11 @@ use polars::{datatypes::DataType, prelude::ChunkCast, series::Series};
 use crate::AppResult;
 
 #[derive(Debug)]
-pub struct GeneralParser {
+pub struct NumberParser {
     dtype: DataType,
 }
 
-impl GeneralParser {
-    pub fn new(dtype: DataType) -> Self {
-        Self { dtype }
-    }
-
+impl NumberParser {
     pub fn int() -> Self {
         Self {
             dtype: DataType::Int64,
@@ -26,9 +22,6 @@ impl GeneralParser {
     }
 
     pub fn parse(&self, series: &Series) -> AppResult<Series> {
-        if series.dtype() == &self.dtype {
-            return Ok(series.clone());
-        }
         Ok(series.str()?.cast(&self.dtype)?)
     }
 

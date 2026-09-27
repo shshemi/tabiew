@@ -1,6 +1,5 @@
 use anyhow::bail;
 use polars::{
-    datatypes::DataType,
     series::{IntoSeries, Series},
     time::chunkedarray::StringMethods,
 };
@@ -25,9 +24,6 @@ impl DateParser {
     }
 
     pub fn parse(&self, series: &Series) -> AppResult<Series> {
-        if series.dtype() == &DataType::Date {
-            return Ok(series.clone());
-        }
         Ok(series
             .str()?
             .as_date(self.fmt, self.use_cache)?
