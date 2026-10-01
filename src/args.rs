@@ -1,5 +1,4 @@
 use clap::{Parser, ValueEnum};
-use std::num::NonZero;
 
 use crate::io::DataSource;
 
@@ -38,22 +37,6 @@ pub struct Args {
         default_value_t = false
     )]
     pub ignore_errors: bool,
-
-    #[arg(
-        long,
-        help = "Specifies the method to infer the schema.",
-        required = false,
-        value_enum,
-        default_value_t = InferSchema::Safe,
-    )]
-    pub infer_schema: InferSchema,
-
-    #[arg(
-        long,
-        help = "Performs additional processing to parse date and datetime columns",
-        default_value_t = false
-    )]
-    pub infer_datetimes: bool,
 
     #[arg(
         long,
@@ -207,31 +190,6 @@ impl std::str::FromStr for Type {
             "date" => Ok(Type::Date),
             "datetime" => Ok(Type::Datetime),
             _ => Err(format!("Unknown type: {s}")),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum InferSchema {
-    No,
-    Fast,
-    Safe,
-}
-
-impl InferSchema {
-    pub fn to_csv_infer_schema_length(&self) -> Option<usize> {
-        match self {
-            InferSchema::No => Some(0),
-            InferSchema::Fast => Some(128),
-            InferSchema::Safe => Some(0),
-        }
-    }
-
-    pub fn to_json_infer_schema_length(&self) -> Option<NonZero<usize>> {
-        match self {
-            InferSchema::No => None,
-            InferSchema::Fast => Some(NonZero::new(128).unwrap()),
-            InferSchema::Safe => None,
         }
     }
 }

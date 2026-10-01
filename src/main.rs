@@ -15,8 +15,8 @@ use tabiew::misc::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::type_ext::UnwrapOrGracefulShutdown;
-use tabiew::misc::type_inferer::TypeInferer;
 use tabiew::net::download::download_to_temp;
+use tabiew::parsers::data_frame_parser::DataFrameParser;
 use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
@@ -38,7 +38,7 @@ fn main() {
 
     config::init().unwrap_or_graceful_shutdown();
 
-    let type_infer = TypeInferer::from_args(&args);
+    let parser = DataFrameParser::from_env_args();
 
     // Dataframe loading
     let mut name_dfs = Vec::new();
@@ -57,7 +57,7 @@ fn main() {
     }
     for (_, (name, mut df)) in multiparts {
         df.rechunk_mut_par();
-        type_infer.update(&mut df);
+        parser.parse_and_update(&mut df);
         let name = sql().register(&name, df.clone(), TableSource::File(name.clone().into()));
         name_dfs.push((name, df));
     }
@@ -65,7 +65,7 @@ fn main() {
     // Load files to data frames
     for resource in args.resources.iter() {
         for (name, mut df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
-            type_infer.update(&mut df);
+            parser.parse_and_update(&mut df);
             let name = sql().register(&name, df.clone(), resource.clone());
             name_dfs.push((name, df))
         }
@@ -78,7 +78,7 @@ fn main() {
             .read_to_data_frames(ReaderSource::Stdin)
             .unwrap_or_graceful_shutdown()
         {
-            type_infer.update(&mut df);
+            parser.parse_and_update(&mut df);
             let name = sql().register(&name, df.clone(), TableSource::Stdin);
             name_dfs.push((name, df))
         }

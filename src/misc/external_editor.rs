@@ -7,11 +7,10 @@ use crate::{
     AppResult,
     handler::event::{disable_event_read, enable_event_read},
     io::{
-        reader::ReaderSource,
-        reader::{CsvToDataFrame, DataFrameReader},
+        reader::{CsvToDataFrame, DataFrameReader, ReaderSource},
         writer::{Destination, WriteToCsv, WriteToFile},
     },
-    misc::type_inferer::TypeInferer,
+    parsers::data_frame_parser::DataFrameParser,
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
 };
 
@@ -45,8 +44,8 @@ pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
             .next()
             .map(|(_, df)| df)
             .ok_or(anyhow!("Failed to load data frame back from the editor"))?;
-        let ti = TypeInferer::default().boolean().int().float();
-        ti.update(&mut df);
+        let parser = DataFrameParser::from_env_args();
+        parser.parse_and_update(&mut df);
         Ok(df)
     } else {
         Err(anyhow!("Editor failed"))

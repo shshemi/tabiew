@@ -10,4 +10,3 @@ pub mod sql;
 pub mod stdin;
 pub mod table_name_generator;
 pub mod type_ext;
-pub mod type_inferer;

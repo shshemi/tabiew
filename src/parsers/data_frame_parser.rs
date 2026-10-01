@@ -1,7 +1,11 @@
+use clap::Parser;
 use polars::frame::DataFrame;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::parsers::auto_parser::AutoParser;
+use crate::{
+    args::{Args, Type},
+    parsers::auto_parser::AutoParser,
+};
 
 #[derive(Default, Clone)]
 pub struct DataFrameParser<'a> {
@@ -49,5 +53,29 @@ impl<'a> DataFrameParser<'a> {
             .for_each(|column| {
                 let _ = df.with_column(column);
             });
+    }
+
+    pub fn from_env_args() -> Self {
+        let args = Args::parse_from(std::env::args_os());
+        if args.no_type_inference {
+            DataFrameParser::default()
+        } else {
+            args.infer_types
+                .inner()
+                .iter()
+                .fold(DataFrameParser::default(), |p, t| match t {
+                    Type::All => p
+                        .with_int(true)
+                        .with_float(true)
+                        .with_bool(true)
+                        .with_date(true)
+                        .with_datetime(true),
+                    Type::Int => p.with_int(true),
+                    Type::Float => p.with_float(true),
+                    Type::Boolean => p.with_bool(true),
+                    Type::Date => p.with_date(true),
+                    Type::Datetime => p.with_datetime(true),
+                })
+        }
     }
 }

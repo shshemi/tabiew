@@ -9,14 +9,13 @@ use polars::{
 
 use crate::{
     AppResult,
-    args::{Args, InferSchema},
+    args::Args,
     io::reader::{DataFrameReader, NamedFrames, ReaderSource},
     misc::{stdin::stdin, type_ext::ToAscii},
 };
 
 #[derive(Debug)]
 pub struct CsvToDataFrame {
-    infer_schema: InferSchema,
     quote_char: char,
     separator_char: char,
     no_header: bool,
@@ -28,7 +27,6 @@ pub struct CsvToDataFrame {
 impl CsvToDataFrame {
     pub fn from_args(args: &Args) -> Self {
         Self {
-            infer_schema: args.infer_schema,
             quote_char: args.quote_char,
             separator_char: args.separator,
             no_header: args.no_header,
@@ -56,7 +54,7 @@ impl CsvToDataFrame {
     fn try_into_frame(&self, reader: impl MmapBytesReader) -> AppResult<DataFrame> {
         let df = CsvReadOptions::default()
             .with_ignore_errors(self.ignore_errors)
-            .with_infer_schema_length(self.infer_schema.to_csv_infer_schema_length())
+            .with_infer_schema_length(0.into())
             .with_has_header(!self.no_header)
             .with_n_rows(self.max_rows)
             .with_parse_options(
@@ -79,7 +77,6 @@ impl CsvToDataFrame {
 impl Default for CsvToDataFrame {
     fn default() -> Self {
         Self {
-            infer_schema: InferSchema::Safe,
             quote_char: '"',
             separator_char: ',',
             no_header: false,
