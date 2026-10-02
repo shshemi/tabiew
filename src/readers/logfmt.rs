@@ -10,11 +10,8 @@ use polars::{
 use crate::{
     AppResult,
     args::Args,
-    io::{
-        reader::ReaderSource,
-        reader::{DataFrameReader, NamedFrames},
-    },
     misc::stdin::stdin,
+    readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
 #[derive(Debug, Default)]

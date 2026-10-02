@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    io::reader::ReaderSource,
+    readers::ReaderSource,
     tui::{component::Component, icons, pickers::list_picker::ListPicker},
 };
 

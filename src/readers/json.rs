@@ -1,27 +1,21 @@
 use std::fs::File;
 
-use polars::{
-    io::SerReader,
-    prelude::{JsonFormat, JsonReader},
-};
+use polars::{io::SerReader, prelude::JsonReader};
 
 use crate::{
     AppResult,
     args::Args,
-    io::{
-        reader::ReaderSource,
-        reader::{DataFrameReader, NamedFrames},
-    },
     misc::stdin::stdin,
+    readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
 #[derive(Debug)]
-pub struct JsonLineToDataFrame {
+pub struct JsonToDataFrame {
     ignore_errors: bool,
     max_rows: Option<usize>,
 }
 
-impl JsonLineToDataFrame {
+impl JsonToDataFrame {
     pub fn from_args(args: &Args) -> Self {
         Self {
             ignore_errors: args.ignore_errors,
@@ -30,7 +24,7 @@ impl JsonLineToDataFrame {
     }
 }
 
-impl Default for JsonLineToDataFrame {
+impl Default for JsonToDataFrame {
     fn default() -> Self {
         Self {
             ignore_errors: true,
@@ -39,20 +33,18 @@ impl Default for JsonLineToDataFrame {
     }
 }
 
-impl DataFrameReader for JsonLineToDataFrame {
+impl DataFrameReader for JsonToDataFrame {
     fn read_to_data_frames(&self, input: ReaderSource) -> AppResult<NamedFrames> {
         let mut df = match &input {
             ReaderSource::File(path) => JsonReader::new(File::open(path)?)
-                .with_json_format(JsonFormat::JsonLines)
+                .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
-                .set_rechunk(true)
                 .finish()?,
             ReaderSource::Stdin => JsonReader::new(stdin())
-                .with_json_format(JsonFormat::JsonLines)
+                .set_rechunk(true)
                 .infer_schema_len(None)
                 .with_ignore_errors(self.ignore_errors)
-                .set_rechunk(true)
                 .finish()?,
         };
         // JsonReader has no native row limit, so cap the frame after reading.

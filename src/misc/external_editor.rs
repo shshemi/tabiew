@@ -6,11 +6,9 @@ use polars::frame::DataFrame;
 use crate::{
     AppResult,
     handler::event::{disable_event_read, enable_event_read},
-    io::{
-        reader::{CsvToDataFrame, DataFrameReader, ReaderSource},
-        writer::{Destination, WriteToCsv, WriteToFile},
-    },
+    io::writer::{Destination, WriteToCsv, WriteToFile},
     parsers::data_frame_parser::DataFrameParser,
+    readers::{CsvToDataFrame, DataFrameReader, ReaderSource},
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
 };
 

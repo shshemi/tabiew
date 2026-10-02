@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    io::reader::{AvroToDataFrame, DataSource},
+    readers::{AvroToDataFrame, DataSource},
     tui::popups::{
         file_picker::FilePicker,
         import_source_picker::{ImportSource, ImportSourcePicker},

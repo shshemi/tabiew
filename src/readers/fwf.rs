@@ -12,9 +12,9 @@ use polars::{frame::DataFrame, prelude::Column};
 use crate::{
     AppResult,
     args::Args,
-    io::reader::ReaderSource,
     iters::{enumerate_names, zip_iters::ZipItersExt},
     misc::stdin::stdin,
+    readers::ReaderSource,
 };
 
 use super::{DataFrameReader, NamedFrames};

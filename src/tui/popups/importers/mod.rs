@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use crate::{
     handler::message::Message,
-    io::reader::{DataSource, ReaderSource},
     misc::sql::{TableSource, sql},
     net::remote_load,
+    readers::{DataSource, ReaderSource},
 };
 
 pub mod arrow;

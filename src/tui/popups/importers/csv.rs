@@ -1,7 +1,7 @@
 use super::dismiss_overlay_and_load_data_frame;
 use crate::{
     handler::message::Message,
-    io::reader::{CsvToDataFrame, DataSource},
+    readers::{CsvToDataFrame, DataSource},
     tui::{
         icons,
         pickers::text_picker::TextPicker,

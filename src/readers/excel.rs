@@ -7,7 +7,7 @@ use polars::{
     prelude::{AnyValue, Column},
 };
 
-use crate::{AppResult, args::Args, io::reader::ReaderSource, misc::stdin::stdin};
+use crate::{AppResult, args::Args, misc::stdin::stdin, readers::ReaderSource};
 
 use super::{DataFrameReader, NamedFrames};
 

@@ -9,8 +9,8 @@ use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use crate::{
     AppResult,
     args::Args,
-    io::reader::{DataFrameReader, NamedFrames, ReaderSource},
     misc::stdin::stdin,
+    readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
 #[derive(Debug, Default)]

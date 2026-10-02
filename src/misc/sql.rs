@@ -16,7 +16,7 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{io::reader::DataSource, iters::enumerate_names};
+use crate::{iters::enumerate_names, readers::DataSource};
 
 use super::type_ext::UnwrapOrGracefulShutdown;
 

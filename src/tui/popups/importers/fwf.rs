@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    io::reader::{DataSource, FwfToDataFrame},
+    readers::{DataSource, FwfToDataFrame},
     tui::{
         icons,
         pickers::text_picker::TextPicker,

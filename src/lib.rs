@@ -27,4 +27,6 @@ pub mod net;
 
 pub mod collections;
 
+pub mod readers;
+
 pub type AppResult<T> = anyhow::Result<T>;
