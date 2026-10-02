@@ -12,7 +12,6 @@ use crate::{
     misc::{
         config::theme,
         sql::{self, TableInfo},
-        type_ext::human_readable_size,
     },
     tui::{
         app_default::{AppDefault, AppTitle},
@@ -58,10 +57,7 @@ impl Component for DataFrameMetaInfo {
                 ]),
                 Row::new([
                     Span::styled("Total Estimated Memory", theme().header(2)),
-                    Span::styled(
-                        human_readable_size(self.info.total_est_size() as u64),
-                        theme().text(),
-                    ),
+                    Span::styled(format!("{}", self.info.total_est_size()), theme().text()),
                 ]),
                 Row::new([
                     Span::styled("Total Null Count", theme().header(3)),

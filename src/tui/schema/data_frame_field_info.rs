@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    misc::{config::theme, sql::TableSchema, type_ext::human_readable_size},
+    misc::{config::theme, sql::TableSchema},
     tui::{
         app_default::AppDefault,
         component::Component,
@@ -79,7 +79,7 @@ impl Component for DataFrameFieldInfo {
                             Row::new([
                                 name.to_owned(),
                                 format!("{}", info.dtype()),
-                                human_readable_size(info.estimated_size() as u64),
+                                format!("{}", info.estimated_size()),
                                 format!("{}", info.null_count()),
                                 AnyValueFormatter::default()
                                     .into_single_line(info.min().clone())

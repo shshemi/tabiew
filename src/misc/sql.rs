@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    fmt::Display,
     ops::DerefMut,
     path::PathBuf,
     sync::{LazyLock, Mutex},
@@ -128,7 +129,7 @@ pub struct TableInfo {
     height: usize,
     width: usize,
     total_null: usize,
-    total_est_size: usize,
+    total_est_size: Size,
     schema: TableSchema,
 }
 
@@ -161,7 +162,7 @@ impl TableInfo {
         self.total_null
     }
 
-    pub fn total_est_size(&self) -> usize {
+    pub fn total_est_size(&self) -> Size {
         self.total_est_size
     }
 
@@ -182,7 +183,6 @@ impl TableSource {
     pub fn display_path<'a>(&'a self) -> Cow<'a, str> {
         match self {
             TableSource::User => "User".into(),
-            // TableSource::Resource(resource) => resource.display_path(),
             TableSource::File(path_buf) => path_buf.to_string_lossy(),
             TableSource::Stdin => "Stdin".into(),
             TableSource::Url(url) => url.as_str().into(),
@@ -237,7 +237,7 @@ impl TableSchema {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FieldInfo {
     dtype: DataType,
-    est_size: usize,
+    est_size: Size,
     null_count: usize,
     min: AnyValue<'static>,
     max: AnyValue<'static>,
@@ -248,7 +248,7 @@ impl FieldInfo {
         // let (min, max) = min_max(series);
         Self {
             dtype: series.dtype().to_owned(),
-            est_size: series.estimated_size(),
+            est_size: series.estimated_size().into(),
             null_count: series.null_count(),
             min: series.min_reduce().unwrap_or_default().into_value(),
             max: series.max_reduce().unwrap_or_default().into_value(),
@@ -258,7 +258,7 @@ impl FieldInfo {
         &self.dtype
     }
 
-    pub fn estimated_size(&self) -> usize {
+    pub fn estimated_size(&self) -> Size {
         self.est_size
     }
 
@@ -275,22 +275,49 @@ impl FieldInfo {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct Size(usize);
+
+impl std::iter::Sum for Size {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.map(|s| s.0).sum::<usize>().into()
+    }
+}
+
+impl From<usize> for Size {
+    fn from(value: usize) -> Self {
+        Size(value)
+    }
+}
+
+impl Display for Size {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0 < 1024 {
+            write!(f, "{} B", self.0)
+        } else if self.0 < 1024 * 1024 {
+            write!(f, "{:.2} KB", self.0 as f64 / 1024.0)
+        } else if self.0 < 1024 * 1024 * 1024 {
+            write!(f, "{:.2} MB", self.0 as f64 / (1024.0 * 1024.0))
+        } else if self.0 < 1024 * 1024 * 1024 * 1024 {
+            write!(f, "{:.2} GB", self.0 as f64 / (1024.0 * 1024.0 * 1024.0))
+        } else if self.0 < 1024 * 1024 * 1024 * 1024 * 1024 {
+            write!(
+                f,
+                "{:.2} TB",
+                self.0 as f64 / (1024.0 * 1024.0 * 1024.0 * 1024.0)
+            )
+        } else {
+            write!(
+                f,
+                "{:.2} PB",
+                self.0 as f64 / (1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0)
+            )
+        }
+    }
+}
+
 pub fn sql() -> impl DerefMut<Target = SqlBackend> {
     static SQL_BACKEND: LazyLock<Mutex<SqlBackend>> =
         LazyLock::new(|| Mutex::new(SqlBackend::default()));
     SQL_BACKEND.lock().unwrap_or_graceful_shutdown()
 }
-
-// fn min_max(series: &Series) -> (String, String) {
-//     let min = series.min_reduce().unwrap_or_default();
-//     let max = series.max_reduce().unwrap_or_default();
-//     let fp_precision = config().fp_precision();
-//     (
-//         AnyValueFormatter::new(fp_precision)
-//             .into_single_line(min.into_value())
-//             .into_owned(),
-//         AnyValueFormatter::new(fp_precision)
-//             .into_single_line(max.into_value())
-//             .into_owned(),
-//     )
-// }
