@@ -10,7 +10,7 @@ use polars::{
 use crate::{
     AppResult,
     args::Args,
-    misc::{stdin::stdin, type_ext::ToAscii},
+    misc::stdin::stdin,
     readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
@@ -60,10 +60,9 @@ impl CsvToDataFrame {
             .with_parse_options(
                 CsvParseOptions::default()
                     .with_truncate_ragged_lines(self.truncate_ragged_lines)
-                    .with_quote_char(self.quote_char.to_ascii())
+                    .with_quote_char(to_ascii(self.quote_char))
                     .with_separator(
-                        self.separator_char
-                            .to_ascii()
+                        to_ascii(self.separator_char)
                             .ok_or(anyhow!("non-ASCII separator character"))?,
                     ),
             )
@@ -95,6 +94,11 @@ impl DataFrameReader for CsvToDataFrame {
         }?;
         Ok([(input.table_name(), df)].into())
     }
+}
+
+#[inline]
+fn to_ascii(c: char) -> Option<u8> {
+    c.is_ascii().then_some(c as u8)
 }
 
 #[cfg(test)]

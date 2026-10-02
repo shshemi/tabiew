@@ -4,38 +4,6 @@ use ratatui::layout::Constraint;
 
 use crate::{AppResult, handler::message::Message, tui::terminal::forece_stop_tui};
 
-pub trait ToAscii {
-    fn to_ascii(self) -> Option<u8>;
-}
-
-impl ToAscii for char {
-    #[inline]
-    fn to_ascii(self) -> Option<u8> {
-        self.is_ascii().then_some(self as u8)
-    }
-}
-
-pub trait HasSubsequence {
-    fn has_subsequence(&self, other: &Self) -> bool;
-}
-
-impl HasSubsequence for str {
-    fn has_subsequence(&self, other: &Self) -> bool {
-        let mut oitr = other.chars();
-        let mut current = oitr.next();
-        for chr in self.chars() {
-            if let Some(cur) = current {
-                if chr == cur {
-                    current = oitr.next();
-                }
-            } else {
-                break;
-            }
-        }
-        current.is_none()
-    }
-}
-
 pub trait UnwrapOrGracefulShutdown<T> {
     fn unwrap_or_graceful_shutdown(self) -> T;
 }
