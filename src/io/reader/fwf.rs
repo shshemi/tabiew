@@ -13,8 +13,8 @@ use crate::{
     AppResult,
     args::Args,
     io::reader::ReaderSource,
-    iters::zip_iters::ZipItersExt,
-    misc::{stdin::stdin, table_name_generator::TableNameGeneratorExt},
+    iters::{enumerate_names, zip_iters::ZipItersExt},
+    misc::stdin::stdin,
 };
 
 use super::{DataFrameReader, NamedFrames};
@@ -114,8 +114,7 @@ impl DataFrameReader for FwfToDataFrame {
                 rec.iter()
                     .map(str::trim)
                     .fold(Vec::new(), |mut vec, slice| {
-                        if let Some(name) =
-                            slice.snake_case_names().find(|name| !vec.contains(name))
+                        if let Some(name) = enumerate_names(slice).find(|name| !vec.contains(name))
                         {
                             vec.push(name);
                         } else {

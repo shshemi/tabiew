@@ -16,7 +16,7 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{io::DataSource, misc::table_name_generator::TableNameGeneratorExt};
+use crate::{io::DataSource, iters::enumerate_names};
 
 use super::type_ext::UnwrapOrGracefulShutdown;
 
@@ -96,8 +96,7 @@ impl BackendSchema {
     }
 
     pub fn available_name(&self, preferred: &str) -> String {
-        preferred
-            .snake_case_names()
+        enumerate_names(preferred)
             .find(|name| !self.schema.contains_key(name) && name != DEFAULT_TABLE_NAME)
             .expect("Unable to find a name")
     }
