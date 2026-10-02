@@ -12,10 +12,7 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
     iters::zip_iters::ZipItersExt,
-    misc::{
-        config::{config, theme},
-        type_ext::ConstraintExt,
-    },
+    misc::config::{config, theme},
     tui::{
         component::Component,
         misc::{
@@ -586,9 +583,9 @@ fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<usize> {
                 .enumerate()
                 .map(|(i, c)| {
                     if i != col_widths.len().saturating_sub(1) {
-                        c.value() + col_space
+                        contraint_value(c) + col_space
                     } else {
-                        c.value()
+                        contraint_value(c)
                     }
                 })
                 .scan(0, |s, u| {
@@ -683,4 +680,14 @@ fn build_table<'a>(
         )
     }
     table
+}
+
+fn contraint_value(constraint: &Constraint) -> u16 {
+    match constraint {
+        Constraint::Min(val)
+        | Constraint::Max(val)
+        | Constraint::Length(val)
+        | Constraint::Fill(val) => *val,
+        Constraint::Percentage(_) | Constraint::Ratio(_, _) => 0,
+    }
 }

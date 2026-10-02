@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use ratatui::layout::Constraint;
-
 use crate::tui::terminal::forece_stop_tui;
 
 pub trait UnwrapOrGracefulShutdown<T> {
@@ -20,22 +18,6 @@ where
                 eprintln!("Error: {err}");
                 std::process::exit(1);
             }
-        }
-    }
-}
-
-pub trait ConstraintExt {
-    fn value(&self) -> u16;
-}
-
-impl ConstraintExt for Constraint {
-    fn value(&self) -> u16 {
-        match self {
-            Constraint::Min(val)
-            | Constraint::Max(val)
-            | Constraint::Length(val)
-            | Constraint::Fill(val) => *val,
-            Constraint::Percentage(_) | Constraint::Ratio(_, _) => 0,
         }
     }
 }
