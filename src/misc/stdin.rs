@@ -3,7 +3,7 @@ use std::{
     sync::LazyLock,
 };
 
-use super::type_ext::UnwrapOrGracefulShutdown;
+use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 
 pub fn stdin() -> Cursor<&'static [u8]> {
     static STDIN_CONTENT: LazyLock<Vec<u8>> = LazyLock::new(|| {

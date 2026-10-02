@@ -1,7 +1,7 @@
 use crate::AppResult;
 use crate::app::App;
 use crate::misc::config::theme;
-use crate::misc::type_ext::UnwrapOrGracefulShutdown;
+use crate::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 use crate::tui::component::Component;
 use crate::tui::component::FocusState;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};

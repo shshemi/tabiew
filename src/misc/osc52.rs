@@ -5,7 +5,7 @@ use std::{
 
 use base64::Engine;
 
-use super::type_ext::UnwrapOrGracefulShutdown;
+use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 
 static OSC52_BUFFER: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::default()));
 

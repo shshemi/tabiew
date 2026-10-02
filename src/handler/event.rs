@@ -1,5 +1,5 @@
 use crate::AppResult;
-use crate::misc::type_ext::UnwrapOrGracefulShutdown;
+use crate::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock, mpsc};

@@ -13,7 +13,7 @@ use crate::{
     AppResult, misc::paths::config_path, net::http::HttpConfig, tui::themes::theme::LoadedTheme,
 };
 
-use super::type_ext::UnwrapOrGracefulShutdown;
+use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]

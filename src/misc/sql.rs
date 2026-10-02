@@ -19,7 +19,7 @@ use url::Url;
 
 use crate::{iters::enumerate_names, readers::DataSource};
 
-use super::type_ext::UnwrapOrGracefulShutdown;
+use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 
 const DEFAULT_TABLE_NAME: &str = "_";
 

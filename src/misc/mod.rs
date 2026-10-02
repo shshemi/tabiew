@@ -7,4 +7,4 @@ pub mod polars_ext;
 pub mod search;
 pub mod sql;
 pub mod stdin;
-pub mod type_ext;
+pub mod unwrap_or_graceful_shutdown;

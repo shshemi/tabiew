@@ -16,7 +16,8 @@ use polars::{frame::DataFrame, prelude::IdxCa};
 use rayon::prelude::*;
 
 use crate::{
-    misc::type_ext::UnwrapOrGracefulShutdown, tui::misc::any_value_formatter::AnyValueFormatter,
+    misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown,
+    tui::misc::any_value_formatter::AnyValueFormatter,
 };
 
 type RowIndex = u32;
