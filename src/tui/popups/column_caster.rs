@@ -1,6 +1,7 @@
+use anyhow::bail;
 use polars::{
     frame::DataFrame,
-    prelude::{Column, DataType, TimeUnit},
+    prelude::{DataType, TimeUnit},
 };
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
@@ -8,7 +9,7 @@ use strum_macros::{Display, EnumIter, IntoStaticStr};
 use crate::{
     AppResult,
     handler::message::Message,
-    misc::polars_ext::SeriesExt,
+    parsers::auto_parser::AutoParser,
     tui::{
         icons,
         pane::TableDescription,
@@ -131,15 +132,31 @@ impl From<TargetType> for DataType {
 }
 
 fn cast_column(df: &mut DataFrame, name: &str, target_type: TargetType) -> AppResult<()> {
-    let series = df.column(name)?.as_materialized_series();
-    let casted = Column::from(match target_type {
-        TargetType::Boolean => series.refine_to_bool(),
-        TargetType::Date => series.refine_to_date(),
-        TargetType::Datetime => series.refine_to_datetime(),
-        TargetType::Float => series.refine_to_float(),
-        TargetType::Int => series.refine_to_int(),
-        TargetType::String => series.refine_to_string(),
-    }?);
+    let column = df.column(name)?;
+    if column.dtype() == &DataType::from(target_type) {
+        bail!("Column '{}' is already {}", name, target_type)
+    }
+    let casted = if column.dtype().is_string() {
+        match target_type {
+            TargetType::Boolean => AutoParser::default().with_bool(true).parse_strict(column)?,
+            TargetType::Date => AutoParser::default().with_date(true).parse_strict(column)?,
+            TargetType::Datetime => AutoParser::default()
+                .with_datetime(true)
+                .parse_strict(column)?,
+            TargetType::Float => AutoParser::default()
+                .with_float(true)
+                .parse_strict(column)?,
+            TargetType::Int => AutoParser::default().with_int(true).parse_strict(column)?,
+            TargetType::String => unreachable!(),
+        }
+    } else {
+        let casted = column.cast(&target_type.into())?;
+        if casted.null_count() == column.null_count() {
+            casted
+        } else {
+            bail!("Column '{}' cannot be refined to {}", name, target_type)
+        }
+    };
     df.replace(name, casted)?;
     Ok(())
 }

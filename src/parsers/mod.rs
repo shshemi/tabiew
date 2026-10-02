@@ -1,6 +1,6 @@
 pub mod auto_parser;
-pub mod bool_parser;
+mod bool_parser;
 pub mod data_frame_parser;
-pub mod date_parser;
-pub mod datetime_parser;
-pub mod number_parser;
+mod date_parser;
+mod datetime_parser;
+mod number_parser;

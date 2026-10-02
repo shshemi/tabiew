@@ -1,19 +1,10 @@
-use std::{
-    ops::Add,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-};
+use std::ops::Add;
 
 use anyhow::anyhow;
-use chrono::{NaiveDate, NaiveDateTime};
-use indexmap::IndexMap;
-use itertools::{Itertools, izip};
+use itertools::Itertools;
 use polars::{
     frame::DataFrame,
-    prelude::{AnyValue, ChunkAgg, DataType, NamedFrom, PlSmallStr, SeriesMethods, TimeUnit},
-    series::{ChunkCompareEq, Series},
+    prelude::{ChunkAgg, DataType, SeriesMethods},
 };
 
 use crate::{
@@ -21,170 +12,7 @@ use crate::{
     tui::misc::any_value_formatter::AnyValueFormatter,
 };
 
-pub trait AnyValueExt<'a> {
-    fn parse_bool(slice: &str) -> Option<AnyValue<'static>>;
-    fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
-    fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>>;
-}
-
-impl<'a> AnyValueExt<'a> for AnyValue<'a> {
-    fn parse_bool(slice: &str) -> Option<AnyValue<'static>> {
-        match slice {
-            "true" => Some(AnyValue::Boolean(true)),
-            "false" => Some(AnyValue::Boolean(false)),
-            _ => None,
-        }
-    }
-
-    fn parse_date(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-        NaiveDate::parse_from_str(slice, fmt)
-            .map(|date| {
-                const UNIX_EPOCH: NaiveDate = match NaiveDate::from_ymd_opt(1970, 1, 1) {
-                    Some(date) => date,
-                    None => unreachable!(),
-                };
-                AnyValue::Date(date.signed_duration_since(UNIX_EPOCH).num_days() as i32)
-            })
-            .ok()
-    }
-
-    fn parse_datetime(slice: &str, fmt: &str) -> Option<AnyValue<'static>> {
-        NaiveDateTime::parse_from_str(slice, fmt)
-            .map(|date| {
-                AnyValue::DatetimeOwned(
-                    date.and_utc().timestamp_millis(),
-                    TimeUnit::Milliseconds,
-                    None,
-                )
-            })
-            .ok()
-    }
-}
-
-pub trait SeriesExt {
-    fn refine_to_string(&self) -> AppResult<Series>;
-    fn refine_to_int(&self) -> AppResult<Series>;
-    fn refine_to_float(&self) -> AppResult<Series>;
-    fn refine_to_bool(&self) -> AppResult<Series>;
-    fn refine_to_date(&self) -> AppResult<Series>;
-    fn refine_to_datetime(&self) -> AppResult<Series>;
-}
-
-impl SeriesExt for Series {
-    fn refine_to_string(&self) -> AppResult<Series> {
-        let casted = self.cast(&DataType::String)?;
-        if casted.is_null().equal(&self.is_null()).all() {
-            Ok(casted)
-        } else {
-            Err(anyhow!(
-                "Column '{}' cannot be refined to {}",
-                self.name(),
-                DataType::String
-            ))
-        }
-    }
-
-    fn refine_to_int(&self) -> AppResult<Series> {
-        let casted = self.cast(&DataType::Int64)?;
-        if casted.is_null().equal(&self.is_null()).all() {
-            Ok(casted)
-        } else {
-            Err(anyhow!(
-                "Column '{}' cannot be refined to {}",
-                self.name(),
-                DataType::Int64
-            ))
-        }
-    }
-
-    fn refine_to_float(&self) -> AppResult<Series> {
-        let casted = self.cast(&DataType::Float64)?;
-        if casted.is_null().equal(&self.is_null()).all() {
-            Ok(casted)
-        } else {
-            Err(anyhow!(
-                "Column '{}' cannot be refined to {}",
-                self.name(),
-                DataType::Float64
-            ))
-        }
-    }
-
-    fn refine_to_bool(&self) -> AppResult<Series> {
-        self.try_map_all(|val| match val {
-            AnyValue::String(s) => AnyValue::parse_bool(s),
-            AnyValue::StringOwned(s) => AnyValue::parse_bool(s.as_str()),
-            AnyValue::Null => Some(AnyValue::Null),
-            _ => None,
-        })
-        .ok_or(anyhow!(
-            "Column '{}' cannot be refined to {}",
-            self.name(),
-            DataType::Boolean
-        ))
-    }
-
-    fn refine_to_date(&self) -> AppResult<Series> {
-        [
-            "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y %m %d", "%Y%m%d", "%d-%m-%Y", "%d/%m/%Y",
-            "%d.%m.%Y", "%d %m %Y", "%d%m%Y", "%m-%d-%Y", "%m/%d/%Y", "%m.%d.%Y", "%m %d %Y",
-            "%m%d%Y", "%B %d %Y", "%B-%d-%Y", "%Y-%j",
-        ]
-        .into_iter()
-        .find_map(|fmt| {
-            self.try_map_all(|val| match val {
-                AnyValue::String(s) => AnyValue::parse_date(s, fmt),
-                AnyValue::StringOwned(s) => AnyValue::parse_date(s.as_str(), fmt),
-                AnyValue::Null => Some(AnyValue::Null),
-                _ => None,
-            })
-        })
-        .ok_or(anyhow!(
-            "Column '{}' cannot be refined to {}",
-            self.name(),
-            DataType::Date
-        ))
-    }
-
-    fn refine_to_datetime(&self) -> AppResult<Series> {
-        [
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S%.f",
-            "%Y/%m/%d %H:%M:%S",
-            "%Y %m %d %H:%M:%S",
-            "%Y.%m.%d %H:%M:%S",
-            "%d-%m-%Y %H:%M:%S",
-            "%d/%m/%Y %H:%M:%S",
-            "%d %m %Y %H:%M:%S",
-            "%d.%m.%Y %H:%M:%S",
-            "%m-%d-%Y %H:%M:%S",
-            "%m/%d/%Y %H:%M:%S",
-            "%m %d %Y %H:%M:%S",
-            "%m.%d.%Y %H:%M:%S",
-            "%B %d %Y %H:%M:%S",
-            "%B-%d-%Y %H:%M:%S",
-            "%Y%m%dT%H%M%S",
-        ]
-        .into_iter()
-        .find_map(|fmt| {
-            self.try_map_all(|val| match val {
-                AnyValue::String(s) => AnyValue::parse_datetime(s, fmt),
-                AnyValue::StringOwned(s) => AnyValue::parse_datetime(s.as_str(), fmt),
-                AnyValue::Null => Some(AnyValue::Null),
-                _ => None,
-            })
-        })
-        .ok_or(anyhow!(
-            "Column '{}' cannot be refined to {}",
-            self.name(),
-            DataType::Datetime(TimeUnit::Milliseconds, None)
-        ))
-    }
-}
-
 pub trait DataFrameExt {
-    fn get_sheet_values(&self, pos: usize) -> IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>;
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>>;
     #[allow(clippy::type_complexity)]
     fn scatter_plot_data_grouped(
@@ -196,27 +24,7 @@ pub trait DataFrameExt {
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
-pub trait TryMapAll {
-    fn try_map_all(
-        &self,
-        f: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
-    ) -> Option<Series>;
-}
-
 impl DataFrameExt for DataFrame {
-    fn get_sheet_values(&self, pos: usize) -> IndexMap<PlSmallStr, (AnyValue<'static>, DataType)> {
-        izip!(
-            self.get_column_names_owned(),
-            self.get(pos)
-                .unwrap_or_default()
-                .into_iter()
-                .map(AnyValue::into_static),
-            self.dtypes(),
-        )
-        .map(|(name, value, dtype)| (name, (value, dtype)))
-        .collect()
-    }
-
     fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>> {
         Ok(self
             .column(x_label)?
@@ -290,43 +98,6 @@ impl DataFrameExt for DataFrame {
             ),
             _ => Err(anyhow!("Unsupported column type"))?,
         }
-    }
-}
-
-impl TryMapAll for Series {
-    fn try_map_all(
-        &self,
-        cast: impl Fn(AnyValue) -> Option<AnyValue<'static>> + Sync + Send + 'static,
-    ) -> Option<Series> {
-        let break_out = Arc::new(AtomicBool::new(false));
-        let mut new = vec![AnyValue::Null; self.len()];
-        std::thread::scope(|scope| {
-            let piece_len = if self.len() > num_cpus::get() {
-                self.len() / num_cpus::get()
-            } else {
-                1
-            };
-            for (idx, new_chunk) in new.chunks_mut(piece_len).enumerate() {
-                let offset = (idx * piece_len) as i64;
-                let break_out = break_out.clone();
-                let cast = &cast;
-                scope.spawn(move || {
-                    let series = self.slice(offset, piece_len);
-                    for (new_val, val) in new_chunk.iter_mut().zip(series.iter()) {
-                        if let Some(parsed) = cast(val) {
-                            *new_val = parsed;
-                        } else {
-                            break_out.store(true, Ordering::Relaxed);
-                            break;
-                        }
-                        if break_out.load(Ordering::Relaxed) {
-                            break;
-                        }
-                    }
-                });
-            }
-        });
-        (!break_out.load(Ordering::Relaxed)).then_some(Series::new(self.name().to_owned(), new))
     }
 }
 

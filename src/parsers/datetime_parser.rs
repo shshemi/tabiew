@@ -8,9 +8,6 @@ use polars::{
 use crate::AppResult;
 
 pub const AMBIGUOUS_EARLIEST: &str = "earliest";
-pub const AMBIGUOUS_RAISE: &str = "raise";
-pub const AMBIGUOUS_LATEST: &str = "latest";
-pub const AMBIGUOUS_NULL: &str = "null";
 pub const PREDEFINED_FORMATS: [&str; 17] = [
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%dT%H:%M:%S",

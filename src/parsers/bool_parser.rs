@@ -1,7 +1,7 @@
 use anyhow::bail;
 use polars::{
     frame::column::{Column, IntoColumn},
-    prelude::{ChunkSet, DataType},
+    prelude::DataType,
     series::ChunkCompareEq,
 };
 
@@ -14,17 +14,6 @@ pub struct BoolParser {
 }
 
 impl BoolParser {
-    pub fn parse(&self, column: &Column) -> AppResult<Column> {
-        let ca = column.str()?;
-        let is_true = ca.equal(self.true_value);
-        let is_false = ca.equal(self.false_value);
-        let invalid = !(&is_true | &is_false);
-        Ok(is_true
-            .set(&invalid, None)?
-            .with_name(column.name().clone())
-            .into_column())
-    }
-
     pub fn parse_strict(&self, column: &Column) -> AppResult<Column> {
         let ca = column.str()?;
         let is_true = ca.equal(self.true_value);
