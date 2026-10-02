@@ -14,7 +14,10 @@ use crate::{
         icons,
         pane::TableDescription,
         pickers::search_picker::SearchPicker,
-        popups::wizard::{Wizard, WizardStep},
+        popups::{
+            export_target_picker::Target,
+            wizard::{Wizard, WizardStep},
+        },
     },
 };
 
@@ -108,7 +111,7 @@ impl From<DataFrame> for State {
     }
 }
 
-#[derive(Debug, Clone, Copy, IntoStaticStr, EnumIter, Display)]
+#[derive(Debug, Clone, PartialEq, Copy, IntoStaticStr, EnumIter, Display)]
 pub enum TargetType {
     Boolean,
     Date,
@@ -131,9 +134,34 @@ impl From<TargetType> for DataType {
     }
 }
 
+impl TryFrom<&DataType> for TargetType {
+    type Error = ();
+
+    fn try_from(dtype: &DataType) -> Result<Self, Self::Error> {
+        match dtype {
+            DataType::Boolean => Ok(TargetType::Boolean),
+            DataType::UInt8
+            | DataType::UInt16
+            | DataType::UInt32
+            | DataType::UInt64
+            | DataType::UInt128
+            | DataType::Int8
+            | DataType::Int16
+            | DataType::Int32
+            | DataType::Int64
+            | DataType::Int128 => Ok(TargetType::Int),
+            DataType::Float16 | DataType::Float32 | DataType::Float64 => Ok(TargetType::Float),
+            DataType::String => Ok(TargetType::String),
+            DataType::Date => Ok(TargetType::Date),
+            DataType::Datetime(_, _) => Ok(TargetType::Datetime),
+            _ => Err(()),
+        }
+    }
+}
+
 fn cast_column(df: &mut DataFrame, name: &str, target_type: TargetType) -> AppResult<()> {
     let column = df.column(name)?;
-    if column.dtype() == &DataType::from(target_type) {
+    if TargetType::try_from(column.dtype()) == Ok(target_type) {
         bail!("Column '{}' is already {}", name, target_type)
     }
     let casted = if column.dtype().is_string() {
