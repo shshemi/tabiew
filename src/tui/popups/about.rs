@@ -2,13 +2,13 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
     text::{Line, Span},
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Block, Clear, Paragraph, Widget},
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme},
+    misc::config::theme,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -78,7 +78,7 @@ impl Component for About {
             width,
             height,
         };
-        buf.clear(area);
+        Clear.render(area, buf);
         let block = Block::app_default().app_title(icons::INFO.title("About"));
         let inner = block.inner(area);
         block.render(area, buf);

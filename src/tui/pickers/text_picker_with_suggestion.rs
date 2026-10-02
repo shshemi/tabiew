@@ -5,17 +5,14 @@ use ratatui::{
         border::{ROUNDED, Set},
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
-    widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget, Widget},
+    widgets::{Block, Borders, Clear, List, ListItem, ListState, StatefulWidget, Widget},
 };
 
-use crate::{
-    misc::buffer_ext::BufferExt,
-    tui::{
-        app_default::{AppDefault, AppTitle},
-        component::Component,
-        layouts::palette::PaletteLayout,
-        widgets::input::Input,
-    },
+use crate::tui::{
+    app_default::{AppDefault, AppTitle},
+    component::Component,
+    layouts::palette::PaletteLayout,
+    widgets::input::Input,
 };
 
 #[derive(Debug, Default)]
@@ -112,7 +109,7 @@ where
         let height = list.len().saturating_add(4).min(25) as u16;
         let area = PaletteLayout::new(height).area(buf.area);
 
-        buf.clear(area);
+        Clear.render(area, buf);
         let [input_area, list_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(area);
 

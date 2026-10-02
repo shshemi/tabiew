@@ -8,13 +8,13 @@ use ratatui::{
     layout::Alignment,
     style::Modifier,
     text::Span,
-    widgets::{Block, Paragraph, Widget, Wrap},
+    widgets::{Block, Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     AppResult,
     handler::message::Message::{self, AppShowError},
-    misc::{buffer_ext::BufferExt, config::theme, osc52::CopyToClipboardOsc52},
+    misc::{config::theme, osc52::CopyToClipboardOsc52},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -85,7 +85,7 @@ impl Component for Sheet {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        buf.clear(area);
+        Clear.render(area, buf);
 
         if let Some(row) = self.row
             && let Some(value) = get_row(&self.df, row)

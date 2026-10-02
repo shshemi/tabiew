@@ -1,15 +1,12 @@
 use std::fmt::Display;
 
 use crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::widgets::{Block, List, ListItem, ListState, StatefulWidget};
+use ratatui::widgets::{Block, Clear, List, ListItem, ListState, StatefulWidget, Widget};
 
-use crate::{
-    misc::buffer_ext::BufferExt,
-    tui::{
-        app_default::{AppDefault, AppTitle},
-        component::Component,
-        layouts::palette::PaletteLayout,
-    },
+use crate::tui::{
+    app_default::{AppDefault, AppTitle},
+    component::Component,
+    layouts::palette::PaletteLayout,
 };
 
 #[derive(Debug)]
@@ -83,7 +80,7 @@ impl<T> Component for ListPicker<T> {
     ) {
         let height = self.strings.len().saturating_add(2).min(25) as u16;
         let area = PaletteLayout::new(height).area(buf.area);
-        buf.clear(area);
+        Clear.render(area, buf);
 
         let mut block = Block::app_default();
         if let Some(title) = &self.title {

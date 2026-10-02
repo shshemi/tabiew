@@ -5,12 +5,11 @@ use ratatui::{
         line::{VERTICAL_LEFT, VERTICAL_RIGHT},
     },
     text::Span,
-    widgets::{Block, Row, Table, Widget},
+    widgets::{Block, Clear, Row, Table, Widget},
 };
 
 use crate::{
     misc::{
-        buffer_ext::BufferExt,
         config::theme,
         sql::{self, TableInfo},
         type_ext::human_readable_size,
@@ -43,7 +42,7 @@ impl Component for DataFrameMetaInfo {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: crate::tui::component::FocusState,
     ) {
-        buf.clear(area);
+        Clear.render(area, buf);
         Table::default()
             .rows([
                 Row::new([

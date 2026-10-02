@@ -2,12 +2,12 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Rect},
     text::{Line, Span},
-    widgets::{Block, List, ListItem, ListState, StatefulWidget},
+    widgets::{Block, Clear, List, ListItem, ListState, StatefulWidget, Widget},
 };
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme},
+    misc::config::theme,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -71,7 +71,7 @@ impl Component for TabSwitcher {
         buf: &mut ratatui::prelude::Buffer,
         _focus_state: super::component::FocusState,
     ) {
-        buf.clear(area);
+        Clear.render(area, buf);
         let num_width = self.tabs.len().to_string().len();
         StatefulWidget::render(
             List::app_default()

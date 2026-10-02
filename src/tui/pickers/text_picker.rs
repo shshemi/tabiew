@@ -1,13 +1,10 @@
-use ratatui::widgets::{Block, Widget};
+use ratatui::widgets::{Block, Clear, Widget};
 
-use crate::{
-    misc::buffer_ext::BufferExt,
-    tui::{
-        app_default::{AppDefault, AppTitle},
-        component::Component,
-        layouts::palette::PaletteLayout,
-        widgets::input::{Input, InputType},
-    },
+use crate::tui::{
+    app_default::{AppDefault, AppTitle},
+    component::Component,
+    layouts::palette::PaletteLayout,
+    widgets::input::{Input, InputType},
 };
 
 #[derive(Debug, Default)]
@@ -74,7 +71,7 @@ impl Component for TextPicker {
     ) {
         const HEIGHT: u16 = 1 + 2; // 1 line for text + upper and lower borders
         let area = PaletteLayout::new(HEIGHT).area(buf.area);
-        buf.clear(area);
+        Clear.render(area, buf);
 
         let area = {
             let mut block = Block::app_default();

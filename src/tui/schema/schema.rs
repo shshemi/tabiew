@@ -3,12 +3,12 @@ use std::ops::Div;
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Block, Paragraph, Widget, Wrap},
+    widgets::{Block, Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
     handler::message::Message,
-    misc::{buffer_ext::BufferExt, config::theme, sql::sql},
+    misc::{config::theme, sql::sql},
     tui::{
         app_default::AppDefault,
         component::Component,
@@ -45,7 +45,7 @@ impl Component for Schema {
         //   3: Fields info
 
         buf.set_style(area, theme().text());
-        buf.clear(area);
+        Clear.render(area, buf);
 
         if let Some(selected) = self.names.selected()
             && let Some((_, new_info)) = sql().schema().get_by_index(selected)

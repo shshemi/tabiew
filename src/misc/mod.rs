@@ -1,5 +1,4 @@
 pub mod background;
-pub mod buffer_ext;
 pub mod config;
 pub mod external_editor;
 pub mod osc52;

@@ -1,8 +1,8 @@
-use crate::misc::{buffer_ext::BufferExt, config::theme};
+use crate::misc::config::theme;
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::Alignment,
-    widgets::{Block, Paragraph, Widget, Wrap},
+    widgets::{Block, Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
@@ -40,7 +40,7 @@ impl Component for ErrorPopup {
             )
             .wrap(Wrap { trim: true });
         let area = PopupLayout::new(&pg).area(buf.area);
-        buf.clear(area);
+        Clear.render(area, buf);
         pg.render(area, buf);
     }
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {

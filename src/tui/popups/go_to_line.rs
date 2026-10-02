@@ -1,9 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::widgets::{Block, Widget};
+use ratatui::widgets::{Block, Clear, Widget};
 
 use crate::{
     handler::message::Message,
-    misc::buffer_ext::BufferExt,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -52,7 +51,7 @@ impl Component for GoToLine {
         focus_state: crate::tui::component::FocusState,
     ) {
         let area = GoToLineLayout::new(WIDTH, HEIGHT).area(area);
-        buf.clear(area);
+        Clear.render(area, buf);
         let area = {
             let block = Block::app_default().app_title("Line");
             let inner = block.inner(area);
