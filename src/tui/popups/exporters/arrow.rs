@@ -2,7 +2,6 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    io::writer::{Destination, WriteToArrow, WriteToFile},
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
@@ -11,6 +10,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
+    writers::{Destination, WriteToArrow, WriteToFile},
 };
 
 pub type ArrowExporter = Wizard<State>;

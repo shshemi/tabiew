@@ -1,12 +1,11 @@
 use crate::{
-    io::writer::{Destination, WriteToFile},
     misc::type_ext::UnwrapOrEnqueueError,
+    writers::{Destination, WriteToFile},
 };
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    io::writer::{JsonFormat, WriteToJson},
     tui::{
         component::Component,
         popups::{
@@ -15,6 +14,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
+    writers::{JsonFormat, WriteToJson},
 };
 
 pub type JsonlExporter = Wizard<State>;

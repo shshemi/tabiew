@@ -1,6 +1,6 @@
 use crate::{
-    io::writer::{Destination, WriteToFile, WriteToMarkdown},
     misc::type_ext::UnwrapOrEnqueueError,
+    writers::{Destination, WriteToFile, WriteToMarkdown},
 };
 use polars::frame::DataFrame;
 

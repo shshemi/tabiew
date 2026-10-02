@@ -6,10 +6,10 @@ use polars::frame::DataFrame;
 use crate::{
     AppResult,
     handler::event::{disable_event_read, enable_event_read},
-    io::writer::{Destination, WriteToCsv, WriteToFile},
     parsers::data_frame_parser::DataFrameParser,
     readers::{CsvToDataFrame, DataFrameReader, ReaderSource},
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
+    writers::{Destination, WriteToCsv, WriteToFile},
 };
 
 pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {

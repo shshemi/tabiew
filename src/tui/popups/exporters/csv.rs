@@ -1,12 +1,11 @@
 use crate::{
-    io::writer::{Destination, WriteToFile},
     misc::type_ext::UnwrapOrEnqueueError,
+    writers::{Destination, WriteToFile},
 };
 use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    io::writer::WriteToCsv,
     tui::{
         component::Component,
         icons,
@@ -17,6 +16,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
+    writers::WriteToCsv,
 };
 
 pub type CsvExporter = Wizard<State>;

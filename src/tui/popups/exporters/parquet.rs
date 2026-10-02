@@ -2,7 +2,6 @@ use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    io::writer::{Destination, WriteToFile, WriteToParquet},
     misc::type_ext::UnwrapOrEnqueueError,
     tui::{
         component::Component,
@@ -11,6 +10,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
+    writers::{Destination, WriteToFile, WriteToParquet},
 };
 
 pub type ParquetExporter = Wizard<State>;

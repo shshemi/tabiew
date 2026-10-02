@@ -16,9 +16,6 @@ pub mod handler;
 /// App
 pub mod app;
 
-/// IO
-pub mod io;
-
 pub mod parsers;
 
 pub mod iters;
@@ -28,5 +25,7 @@ pub mod net;
 pub mod collections;
 
 pub mod readers;
+
+pub mod writers;
 
 pub type AppResult<T> = anyhow::Result<T>;
