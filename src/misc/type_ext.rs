@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use ratatui::layout::Constraint;
 
-use crate::{AppResult, handler::message::Message, tui::terminal::forece_stop_tui};
+use crate::tui::terminal::forece_stop_tui;
 
 pub trait UnwrapOrGracefulShutdown<T> {
     fn unwrap_or_graceful_shutdown(self) -> T;
@@ -19,22 +19,6 @@ where
                 forece_stop_tui();
                 eprintln!("Error: {err}");
                 std::process::exit(1);
-            }
-        }
-    }
-}
-
-pub trait UnwrapOrEnqueueError {
-    fn unwrap_or_enqueue_error(&self) -> bool;
-}
-
-impl UnwrapOrEnqueueError for AppResult<()> {
-    fn unwrap_or_enqueue_error(&self) -> bool {
-        match self {
-            Ok(_) => true,
-            Err(err) => {
-                Message::AppShowError(err.to_string()).enqueue();
-                false
             }
         }
     }

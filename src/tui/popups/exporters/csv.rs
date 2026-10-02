@@ -1,11 +1,8 @@
-use crate::{
-    misc::type_ext::UnwrapOrEnqueueError,
-    writers::{Destination, WriteToFile},
-};
+use crate::writers::{Destination, WriteToFile};
 use polars::frame::DataFrame;
 
 use crate::{
-    handler::message::Message,
+    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         icons,

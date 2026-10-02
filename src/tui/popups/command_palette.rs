@@ -5,8 +5,8 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    handler::message::Message,
-    misc::{config::config, type_ext::UnwrapOrEnqueueError},
+    handler::message::{Message, UnwrapOrEnqueueError},
+    misc::config::config,
     tui::{component::Component, icons, pickers::search_picker::SearchPicker},
 };
 

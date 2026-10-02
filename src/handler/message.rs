@@ -6,7 +6,13 @@ use std::sync::{
 use polars::frame::DataFrame;
 use url::Url;
 
-use crate::{net::remote_load::Reader, tui::pane::TableDescription};
+use crate::{AppResult, net::remote_load::Reader, tui::pane::TableDescription};
+
+static SHARED_CHANNEL: LazyLock<(Sender<Message>, Mutex<Receiver<Message>>)> =
+    LazyLock::new(|| {
+        let (send, recv) = channel();
+        (send, Mutex::new(recv))
+    });
 
 #[derive(Debug)]
 pub enum Message {
@@ -80,8 +86,18 @@ impl Message {
     }
 }
 
-static SHARED_CHANNEL: LazyLock<(Sender<Message>, Mutex<Receiver<Message>>)> =
-    LazyLock::new(|| {
-        let (send, recv) = channel();
-        (send, Mutex::new(recv))
-    });
+pub trait UnwrapOrEnqueueError {
+    fn unwrap_or_enqueue_error(&self) -> bool;
+}
+
+impl UnwrapOrEnqueueError for AppResult<()> {
+    fn unwrap_or_enqueue_error(&self) -> bool {
+        match self {
+            Ok(_) => true,
+            Err(err) => {
+                Message::AppShowError(err.to_string()).enqueue();
+                false
+            }
+        }
+    }
+}

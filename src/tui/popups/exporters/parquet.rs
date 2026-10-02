@@ -1,8 +1,7 @@
 use polars::frame::DataFrame;
 
 use crate::{
-    handler::message::Message,
-    misc::type_ext::UnwrapOrEnqueueError,
+    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         popups::{

@@ -4,11 +4,8 @@ use crossterm::event::KeyCode;
 use strum::IntoEnumIterator;
 
 use crate::{
-    handler::message::Message,
-    misc::{
-        config::{config, theme},
-        type_ext::UnwrapOrEnqueueError,
-    },
+    handler::message::{Message, UnwrapOrEnqueueError},
+    misc::config::{config, theme},
     tui::{
         component::Component,
         pickers::search_picker::SearchPicker,

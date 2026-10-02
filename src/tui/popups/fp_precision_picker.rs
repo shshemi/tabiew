@@ -3,8 +3,8 @@ use std::fmt::Display;
 use crossterm::event::KeyCode;
 
 use crate::{
-    handler::message::Message,
-    misc::{config::config, type_ext::UnwrapOrEnqueueError},
+    handler::message::{Message, UnwrapOrEnqueueError},
+    misc::config::config,
     tui::{component::Component, icons, pickers::list_picker::ListPicker},
 };
 
