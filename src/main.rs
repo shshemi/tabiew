@@ -3,12 +3,13 @@ use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use std::io::IsTerminal;
+use std::str::FromStr;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::Args;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::io::DataSource;
+use tabiew::io::reader::DataSource;
 use tabiew::io::reader::ReaderSource;
 use tabiew::io::reader::{BuildReader, NamedFrames};
 use tabiew::misc::config;
@@ -46,7 +47,8 @@ fn main() {
     // Load multiparts to data frames
     let mut multiparts = IndexMap::<Arc<Schema>, (String, DataFrame)>::new();
     for resource in args.multiparts.iter() {
-        for (name, new_df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
+        let resource = DataSource::from_str(resource).unwrap_or_graceful_shutdown();
+        for (name, new_df) in try_read_path(&args, &resource).unwrap_or_graceful_shutdown() {
             let schema = new_df.schema().clone();
             if let Some((_, df)) = multiparts.get_mut(&schema) {
                 df.vstack_mut_owned(new_df).unwrap_or_graceful_shutdown();
@@ -63,8 +65,9 @@ fn main() {
     }
 
     // Load files to data frames
-    for resource in args.resources.iter() {
-        for (name, mut df) in try_read_path(&args, resource).unwrap_or_graceful_shutdown() {
+    for resource in args.sources.iter() {
+        let resource = DataSource::from_str(resource).unwrap_or_graceful_shutdown();
+        for (name, mut df) in try_read_path(&args, &resource).unwrap_or_graceful_shutdown() {
             parser.parse_and_update(&mut df);
             let name = sql().register(&name, df.clone(), resource.clone());
             name_dfs.push((name, df))
@@ -137,8 +140,8 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
     Ok(())
 }
 
-fn try_read_path(args: &Args, resource: &DataSource) -> AppResult<NamedFrames> {
-    match resource {
+fn try_read_path(args: &Args, source: &DataSource) -> AppResult<NamedFrames> {
+    match source {
         DataSource::Stdin => args
             .build_reader("")?
             .read_to_data_frames(ReaderSource::Stdin),

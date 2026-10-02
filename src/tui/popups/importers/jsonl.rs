@@ -1,6 +1,6 @@
 use crate::{
     handler::message::Message,
-    io::{DataSource, reader::JsonLineToDataFrame},
+    io::reader::{DataSource, JsonLineToDataFrame},
     tui::popups::{
         file_picker::FilePicker,
         import_source_picker::{ImportSource, ImportSourcePicker},

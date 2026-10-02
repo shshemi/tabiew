@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     handler::message::Message,
-    io::{DataSource, reader::ReaderSource},
+    io::reader::{DataSource, ReaderSource},
     misc::sql::{TableSource, sql},
     net::remote_load,
 };
