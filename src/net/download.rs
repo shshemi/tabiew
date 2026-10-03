@@ -7,7 +7,7 @@ use crate::{AppResult, net::http};
 
 const CHUNK_SIZE: usize = 16_384;
 
-pub struct Download {
+pub struct Downloader {
     reader: Box<dyn Read + Send>,
     buffer: Box<[u8]>,
     downloaded: u64,
@@ -15,7 +15,7 @@ pub struct Download {
     done: bool,
 }
 
-impl Download {
+impl Downloader {
     pub fn new(url: &Url) -> AppResult<Self> {
         let total = download_size(url).ok().filter(|&n| n > 0);
         let reader = http::get(url).call()?.into_body().into_reader();
@@ -62,7 +62,7 @@ impl Download {
     }
 }
 
-impl std::fmt::Debug for Download {
+impl std::fmt::Debug for Downloader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Downloader")
             .field("downloaded", &self.downloaded)
