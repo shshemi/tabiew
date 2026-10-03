@@ -8,7 +8,7 @@ use crate::{
     tui::{
         component::Component,
         pane::TableDescription,
-        popups::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
+        popups::pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
     },
 };
 

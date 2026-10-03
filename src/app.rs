@@ -4,7 +4,7 @@ use crate::misc::config::config;
 use crate::net::remote_load::{self, RemoteLoad};
 use crate::tui::Pane;
 use crate::tui::popups::download_notif::DownloadNotification;
-use crate::tui::popups::sql_query_picker::SqlQueryPicker;
+use crate::tui::popups::pickers::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
@@ -15,7 +15,6 @@ use crate::{
         popups::{
             about::About,
             command_palette::CommandPalette,
-            fp_precision_picker::FpPrecisionPicker,
             importer::Importer,
             importers::{
                 arrow::ArrowImporter, avro::AvroImporter, csv::CsvImporter, excel::ExcelImporter,
@@ -23,6 +22,7 @@ use crate::{
                 logfmt::LogfmtImporter, markdown::MarkdownImporter, parquet::ParquetImporter,
                 sqlite::SqliteImporter, tsv::TsvImporter,
             },
+            pickers::fp_precision_picker::FpPrecisionPicker,
             theme_selector::ThemeSelector,
         },
         schema::schema::Schema,

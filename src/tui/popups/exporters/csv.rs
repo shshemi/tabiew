@@ -7,9 +7,11 @@ use crate::{
         component::Component,
         icons,
         popups::{
-            export_target_picker::{ExportTargetPicker, Target},
-            file_picker::FilePicker,
-            text_picker::TextPicker,
+            pickers::{
+                export_target_picker::{ExportTargetPicker, Target},
+                file_picker::FilePicker,
+                text_picker::TextPicker,
+            },
             wizard::{Wizard, WizardStep},
         },
     },

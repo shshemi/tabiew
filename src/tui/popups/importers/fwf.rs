@@ -4,13 +4,15 @@ use crate::{
     tui::{
         icons,
         popups::{
-            file_picker::FilePicker,
-            import_source_picker::{ImportSourcePicker, SourceType},
             importers::dismiss_overlay_and_load_data_frame,
-            text_picker::TextPicker,
-            url_picker::UrlPicker,
+            pickers::{
+                file_picker::FilePicker,
+                import_source_picker::{ImportSourcePicker, SourceType},
+                text_picker::TextPicker,
+                url_picker::UrlPicker,
+                yes_no_picker::YesNoPicker,
+            },
             wizard::{Wizard, WizardStep},
-            yes_no_picker::YesNoPicker,
         },
         widgets::input::InputType,
     },

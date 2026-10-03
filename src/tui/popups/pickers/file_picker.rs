@@ -12,7 +12,7 @@ use itertools::Itertools;
 use crate::tui::{
     component::Component,
     icons,
-    popups::text_picker_with_suggestion::{self, TextPickerWithSuggestion},
+    popups::pickers::text_picker_with_suggestion::{self, TextPickerWithSuggestion},
     widgets::input::Input,
 };
 

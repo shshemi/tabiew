@@ -2,10 +2,12 @@ use crate::{
     handler::message::Message,
     readers::{CsvToDataFrame, DataSource},
     tui::popups::{
-        file_picker::FilePicker,
-        import_source_picker::{ImportSourcePicker, SourceType},
         importers::dismiss_overlay_and_load_data_frame,
-        url_picker::UrlPicker,
+        pickers::{
+            file_picker::FilePicker,
+            import_source_picker::{ImportSourcePicker, SourceType},
+            url_picker::UrlPicker,
+        },
         wizard::{Wizard, WizardStep},
     },
 };

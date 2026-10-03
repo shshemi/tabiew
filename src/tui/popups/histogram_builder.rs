@@ -7,8 +7,7 @@ use crate::{
     tui::{
         icons,
         popups::{
-            search_picker::SearchPicker,
-            text_picker::TextPicker,
+            pickers::{search_picker::SearchPicker, text_picker::TextPicker},
             wizard::{Wizard, WizardStep},
         },
         widgets::input::InputType,

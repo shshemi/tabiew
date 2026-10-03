@@ -8,7 +8,7 @@ use crate::{
     misc::config::{config, theme},
     tui::{
         component::Component,
-        popups::search_picker::SearchPicker,
+        popups::pickers::search_picker::SearchPicker,
         themes::theme::{LoadedTheme, Theme},
     },
 };

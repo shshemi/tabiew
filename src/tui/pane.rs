@@ -36,7 +36,7 @@ use crate::{
             },
             go_to_line::GoToLine,
             histogram_builder::{self, HistogramBuilder},
-            inline_query_picker::{InlineQueryPicker, QueryType},
+            pickers::inline_query_picker::{InlineQueryPicker, QueryType},
             scatter_plot_builder::{self, ScatterPlotBuilder},
             table_registerer::TableRegisterer,
             wizard::Wizard,

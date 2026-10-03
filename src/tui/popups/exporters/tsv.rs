@@ -5,8 +5,10 @@ use crate::{
     tui::{
         component::Component,
         popups::{
-            export_target_picker::{ExportTargetPicker, Target},
-            file_picker::FilePicker,
+            pickers::{
+                export_target_picker::{ExportTargetPicker, Target},
+                file_picker::FilePicker,
+            },
             wizard::{Wizard, WizardStep},
         },
     },

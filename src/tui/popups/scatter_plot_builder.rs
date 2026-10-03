@@ -5,7 +5,7 @@ use crate::{
     tui::{
         icons,
         popups::{
-            search_picker::SearchPicker,
+            pickers::search_picker::SearchPicker,
             wizard::{Wizard, WizardStep},
         },
     },

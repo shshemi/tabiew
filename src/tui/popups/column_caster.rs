@@ -14,7 +14,7 @@ use crate::{
         icons,
         pane::TableDescription,
         popups::{
-            search_picker::SearchPicker,
+            pickers::search_picker::SearchPicker,
             wizard::{Wizard, WizardStep},
         },
     },

@@ -3,7 +3,7 @@ use std::fmt::Display;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::tui::{component::Component, icons, popups::list_picker::ListPicker};
+use crate::tui::{component::Component, icons, popups::pickers::list_picker::ListPicker};
 
 #[derive(Debug)]
 pub struct YesNoPicker {

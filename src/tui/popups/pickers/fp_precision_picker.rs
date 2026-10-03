@@ -5,7 +5,7 @@ use crossterm::event::KeyCode;
 use crate::{
     handler::message::{Message, UnwrapOrEnqueueError},
     misc::config::config,
-    tui::{component::Component, icons, popups::list_picker::ListPicker},
+    tui::{component::Component, icons, popups::pickers::list_picker::ListPicker},
 };
 
 #[derive(Debug)]
