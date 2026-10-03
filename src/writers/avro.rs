@@ -7,7 +7,7 @@ use polars::{
 
 use crate::{AppResult, misc::osc52::CopyToClipboardOsc52};
 
-use super::traits::{Destination, WriteToFile};
+use super::{Destination, WriteToFile};
 
 #[derive(Debug, Default)]
 pub struct WriteToAvro;

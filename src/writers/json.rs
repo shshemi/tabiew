@@ -4,7 +4,7 @@ use polars::{frame::DataFrame, io::SerWriter, prelude::JsonWriter};
 
 use crate::{AppResult, misc::osc52::CopyToClipboardOsc52};
 
-use super::traits::{Destination, WriteToFile};
+use super::{Destination, WriteToFile};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JsonFormat {
