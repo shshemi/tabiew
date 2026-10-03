@@ -13,7 +13,7 @@ use tabiew::misc::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
-use tabiew::net::download::download_to_temp;
+use tabiew::net::downloader::download_to_temp;
 use tabiew::parsers::data_frame_parser::DataFrameParser;
 use tabiew::readers::DataSource;
 use tabiew::readers::ReaderSource;

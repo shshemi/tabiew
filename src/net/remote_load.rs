@@ -14,7 +14,7 @@ use url::Url;
 
 use crate::{
     AppResult,
-    net::{download::download_size, http},
+    net::{downloader::download_size, http},
     readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
