@@ -3,10 +3,11 @@ use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use std::io::IsTerminal;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use tabiew::app::App;
-use tabiew::args::Args;
+use tabiew::args::{Args, Format};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config;
@@ -17,7 +18,11 @@ use tabiew::net::downloader::download_to_temp;
 use tabiew::parsers::data_frame_parser::DataFrameParser;
 use tabiew::readers::DataSource;
 use tabiew::readers::ReaderSource;
-use tabiew::readers::{BuildReader, NamedFrames};
+use tabiew::readers::{
+    ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,
+    FwfToDataFrame, HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
+    MarkdownToDataFrame, NamedFrames, ParquetToDataFrame, SqliteToDataFrames,
+};
 use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
@@ -75,8 +80,7 @@ fn main() {
     }
 
     if name_dfs.is_empty() {
-        for (name, mut df) in args
-            .build_reader("")
+        for (name, mut df) in build_reader(&args, "")
             .unwrap_or_graceful_shutdown()
             .read_to_data_frames(ReaderSource::Stdin)
             .unwrap_or_graceful_shutdown()
@@ -142,16 +146,53 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
 
 fn try_read_path(args: &Args, source: &DataSource) -> AppResult<NamedFrames> {
     match source {
-        DataSource::Stdin => args
-            .build_reader("")?
-            .read_to_data_frames(ReaderSource::Stdin),
-        DataSource::File(path_buf) => args
-            .build_reader(path_buf)?
-            .read_to_data_frames(ReaderSource::File(path_buf.clone())),
+        DataSource::Stdin => build_reader(args, "")?.read_to_data_frames(ReaderSource::Stdin),
+        DataSource::File(path_buf) => {
+            build_reader(args, path_buf)?.read_to_data_frames(ReaderSource::File(path_buf.clone()))
+        }
         DataSource::Url(url) => {
             let file = download_to_temp(url)?;
-            args.build_reader(file.path())?
+            build_reader(args, file.path())?
                 .read_to_data_frames(ReaderSource::File(file.path().to_owned()))
         }
+    }
+}
+
+fn build_reader(args: &Args, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFrameReader>> {
+    match args.format {
+        Some(Format::Dsv) | Some(Format::Csv) => Ok(Box::new(CsvToDataFrame::from_args(args))),
+        Some(Format::Tsv) => Ok(Box::new(
+            CsvToDataFrame::from_args(args).with_separator('\t'),
+        )),
+        Some(Format::Parquet) => Ok(Box::new(ParquetToDataFrame::from_args(args))),
+        Some(Format::Json) => Ok(Box::new(JsonToDataFrame::from_args(args))),
+        Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(args))),
+        Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame::from_args(args))),
+        Some(Format::Fwf) => Ok(Box::new(FwfToDataFrame::from_args(args))),
+        Some(Format::Sqlite) => Ok(Box::new(SqliteToDataFrames::from_args(args))),
+        Some(Format::Excel) => Ok(Box::new(ExcelToDataFrames::from_args(args))),
+        Some(Format::Logfmt) => Ok(Box::new(LogfmtToDataFrame::from_args(args))),
+        Some(Format::Avro) => Ok(Box::new(AvroToDataFrame::from_args(args))),
+        Some(Format::Html) => Ok(Box::new(HtmlToDataFrame::from_args(args))),
+        Some(Format::Markdown) => Ok(Box::new(MarkdownToDataFrame::from_args(args))),
+        None => match path.as_ref().extension().and_then(|ext| ext.to_str()) {
+            Some("tsv") => {
+                let reader = CsvToDataFrame::from_args(args).with_separator('\t');
+                Ok(Box::new(reader))
+            }
+            Some("parquet") | Some("pqt") => Ok(Box::new(ParquetToDataFrame::from_args(args))),
+            Some("json") => Ok(Box::new(JsonToDataFrame::from_args(args))),
+            Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(args))),
+            Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame::from_args(args))),
+            Some("avro") => Ok(Box::new(AvroToDataFrame::from_args(args))),
+            Some("fwf") => Ok(Box::new(FwfToDataFrame::from_args(args))),
+            Some("db") | Some("sqlite") => Ok(Box::new(SqliteToDataFrames::from_args(args))),
+            Some("xls") | Some("xlsx") | Some("xlsm") | Some("xlsb") => {
+                Ok(Box::new(ExcelToDataFrames::from_args(args)))
+            }
+            Some("html") | Some("htm") => Ok(Box::new(HtmlToDataFrame::from_args(args))),
+            Some("md") | Some("markdown") => Ok(Box::new(MarkdownToDataFrame::from_args(args))),
+            _ => Ok(Box::new(CsvToDataFrame::from_args(args))),
+        },
     }
 }

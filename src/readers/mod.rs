@@ -30,7 +30,7 @@ pub use markdown::MarkdownToDataFrame;
 pub use parquet::ParquetToDataFrame;
 pub use source::ReaderSource;
 pub use sqlite::SqliteToDataFrames;
-pub use traits::{BuildReader, DataFrameReader, NamedFrames};
+pub use traits::{DataFrameReader, NamedFrames};
 
 #[derive(Debug, Clone, Hash)]
 pub enum DataSource {
