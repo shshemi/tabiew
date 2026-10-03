@@ -7,7 +7,7 @@ use crate::{
         pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
-            import_source_picker::{ImportSource, ImportSourcePicker},
+            import_source_picker::{ImportSourcePicker, SourceType},
             url_picker::UrlPicker,
             wizard::{Wizard, WizardStep},
             yes_no_picker::YesNoPicker,
@@ -49,14 +49,14 @@ impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(ImportSource::Stdin) => State::PickHasHeader {
+                Some(SourceType::Stdin) => State::PickHasHeader {
                     source: DataSource::Stdin,
                     picker: YesNoPicker::default().with_title(icons::HEADER.title("Has Header")),
                 },
-                Some(ImportSource::File) => State::PickPath {
+                Some(SourceType::File) => State::PickPath {
                     picker: Default::default(),
                 },
-                Some(ImportSource::Url) => State::PickUrl {
+                Some(SourceType::Url) => State::PickUrl {
                     picker: UrlPicker::default(),
                 },
                 None => State::PickSource {

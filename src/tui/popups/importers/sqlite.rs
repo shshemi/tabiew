@@ -6,7 +6,7 @@ use crate::{
         pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
-            import_source_picker::{ImportSource, ImportSourcePicker},
+            import_source_picker::{ImportSourcePicker, SourceType},
             importers::dismiss_overlay_and_load_data_frame,
             url_picker::UrlPicker,
             wizard::{Wizard, WizardStep},
@@ -37,16 +37,16 @@ impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(ImportSource::Stdin) => State::PickPassword {
+                Some(SourceType::Stdin) => State::PickPassword {
                     source: DataSource::Stdin,
                     picker: TextPicker::default()
                         .with_title(icons::LOCK.title("Password"))
                         .with_hint("Leave empty for no password"),
                 },
-                Some(ImportSource::File) => State::PickPath {
+                Some(SourceType::File) => State::PickPath {
                     picker: FilePicker::default(),
                 },
-                Some(ImportSource::Url) => State::PickUrl {
+                Some(SourceType::Url) => State::PickUrl {
                     picker: UrlPicker::default(),
                 },
                 None => State::PickSource { picker },

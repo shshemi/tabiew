@@ -8,45 +8,13 @@ use crate::{
     tui::{component::Component, icons, pickers::list_picker::ListPicker},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr, EnumIter)]
-pub enum ImportSource {
-    File,
-    Stdin,
-    Url,
-}
-
-impl ImportSource {
-    fn icon(&self) -> icons::Icon {
-        match self {
-            ImportSource::File => icons::FILE,
-            ImportSource::Stdin => icons::TERMINAL,
-            ImportSource::Url => icons::GLOBE,
-        }
-    }
-}
-
-impl Display for ImportSource {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.icon().item(Into::<&str>::into(self)))
-    }
-}
-
-impl From<&ReaderSource> for ImportSource {
-    fn from(r: &ReaderSource) -> Self {
-        match r {
-            ReaderSource::Stdin => ImportSource::Stdin,
-            ReaderSource::File(_) => ImportSource::File,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct ImportSourcePicker {
-    list_picker: ListPicker<ImportSource>,
+    list_picker: ListPicker<SourceType>,
 }
 
 impl ImportSourcePicker {
-    pub fn value(&self) -> Option<&ImportSource> {
+    pub fn value(&self) -> Option<&SourceType> {
         self.list_picker.selected_item()
     }
 }
@@ -69,8 +37,40 @@ impl Component for ImportSourcePicker {
 impl Default for ImportSourcePicker {
     fn default() -> Self {
         Self {
-            list_picker: ListPicker::new(ImportSource::iter().collect())
+            list_picker: ListPicker::new(SourceType::iter().collect())
                 .with_title(icons::IMPORT.title("Import Source")),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr, EnumIter)]
+pub enum SourceType {
+    File,
+    Stdin,
+    Url,
+}
+
+impl SourceType {
+    fn icon(&self) -> icons::Icon {
+        match self {
+            SourceType::File => icons::FILE,
+            SourceType::Stdin => icons::TERMINAL,
+            SourceType::Url => icons::GLOBE,
+        }
+    }
+}
+
+impl Display for SourceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.icon().item(Into::<&str>::into(self)))
+    }
+}
+
+impl From<&ReaderSource> for SourceType {
+    fn from(r: &ReaderSource) -> Self {
+        match r {
+            ReaderSource::Stdin => SourceType::Stdin,
+            ReaderSource::File(_) => SourceType::File,
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::{
     readers::{DataSource, MarkdownToDataFrame},
     tui::popups::{
         file_picker::FilePicker,
-        import_source_picker::{ImportSource, ImportSourcePicker},
+        import_source_picker::{ImportSourcePicker, SourceType},
         importers::dismiss_overlay_and_load_data_frame,
         url_picker::UrlPicker,
         wizard::{Wizard, WizardStep},
@@ -23,14 +23,14 @@ impl WizardStep for State {
     fn next(self) -> Self {
         match self {
             State::PickSource { picker } => match picker.value() {
-                Some(ImportSource::Stdin) => {
+                Some(SourceType::Stdin) => {
                     dismiss_overlay_and_load_data_frame(DataSource::Stdin, MarkdownToDataFrame);
                     State::PickSource { picker }
                 }
-                Some(ImportSource::File) => State::PickPath {
+                Some(SourceType::File) => State::PickPath {
                     picker: FilePicker::default(),
                 },
-                Some(ImportSource::Url) => State::PickUrl {
+                Some(SourceType::Url) => State::PickUrl {
                     picker: UrlPicker::default(),
                 },
                 None => State::PickSource { picker },
