@@ -102,7 +102,7 @@ fn keyword_suggestions(token_lower: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tui::pickers::text_picker_with_suggestion::Suggestion;
+    use crate::tui::popups::text_picker_with_suggestion::Suggestion;
 
     fn suggestion_titles(suggestions: Vec<SqlSuggestion>) -> Vec<String> {
         suggestions

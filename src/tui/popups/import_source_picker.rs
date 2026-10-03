@@ -5,7 +5,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
     readers::ReaderSource,
-    tui::{component::Component, icons, pickers::list_picker::ListPicker},
+    tui::{component::Component, icons, popups::list_picker::ListPicker},
 };
 
 #[derive(Debug)]

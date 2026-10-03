@@ -6,8 +6,11 @@ use crate::{
     handler::message::Message,
     tui::{
         icons,
-        pickers::{search_picker::SearchPicker, text_picker::TextPicker},
-        popups::wizard::{Wizard, WizardStep},
+        popups::{
+            search_picker::SearchPicker,
+            text_picker::TextPicker,
+            wizard::{Wizard, WizardStep},
+        },
         widgets::input::InputType,
     },
 };

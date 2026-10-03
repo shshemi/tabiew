@@ -3,11 +3,11 @@ use crate::{
     readers::{DataSource, FwfToDataFrame},
     tui::{
         icons,
-        pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
             import_source_picker::{ImportSourcePicker, SourceType},
             importers::dismiss_overlay_and_load_data_frame,
+            text_picker::TextPicker,
             url_picker::UrlPicker,
             wizard::{Wizard, WizardStep},
             yes_no_picker::YesNoPicker,

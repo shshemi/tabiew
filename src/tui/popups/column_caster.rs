@@ -13,8 +13,10 @@ use crate::{
     tui::{
         icons,
         pane::TableDescription,
-        pickers::search_picker::SearchPicker,
-        popups::wizard::{Wizard, WizardStep},
+        popups::{
+            search_picker::SearchPicker,
+            wizard::{Wizard, WizardStep},
+        },
     },
 };
 

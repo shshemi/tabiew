@@ -9,7 +9,7 @@ use crate::{
     tui::{
         component::Component,
         icons,
-        pickers::text_picker_with_suggestion::{Provider, Suggestion, TextPickerWithSuggestion},
+        popups::text_picker_with_suggestion::{Provider, Suggestion, TextPickerWithSuggestion},
     },
 };
 

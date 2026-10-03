@@ -5,7 +5,6 @@ pub mod icons;
 pub mod layouts;
 pub mod misc;
 pub mod pane;
-pub mod pickers;
 pub mod plots;
 pub mod popups;
 pub mod schema;

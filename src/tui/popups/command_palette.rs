@@ -7,7 +7,7 @@ use strum_macros::{EnumIter, IntoStaticStr};
 use crate::{
     handler::message::{Message, UnwrapOrEnqueueError},
     misc::config::config,
-    tui::{component::Component, icons, pickers::search_picker::SearchPicker},
+    tui::{component::Component, icons, popups::search_picker::SearchPicker},
 };
 
 #[derive(Debug)]

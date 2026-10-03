@@ -4,7 +4,7 @@ use polars::frame::DataFrame;
 use crate::{
     handler::message::Message,
     misc::{sql::TableSource, sql::sql},
-    tui::{component::Component, icons, pickers::text_picker::TextPicker},
+    tui::{component::Component, icons, popups::text_picker::TextPicker},
 };
 
 #[derive(Debug)]

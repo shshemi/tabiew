@@ -4,10 +4,10 @@ use crate::{
     readers::{CsvToDataFrame, DataSource},
     tui::{
         icons,
-        pickers::text_picker::TextPicker,
         popups::{
             file_picker::FilePicker,
             import_source_picker::{ImportSourcePicker, SourceType},
+            text_picker::TextPicker,
             url_picker::UrlPicker,
             wizard::{Wizard, WizardStep},
             yes_no_picker::YesNoPicker,
