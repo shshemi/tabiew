@@ -3,7 +3,6 @@ pub mod config;
 pub mod external_editor;
 pub mod osc52;
 pub mod paths;
-pub mod polars_ext;
 pub mod search;
 pub mod sql;
 pub mod stdin;

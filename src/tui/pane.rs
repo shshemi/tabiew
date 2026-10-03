@@ -14,7 +14,6 @@ use crate::{
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
-        polars_ext::DataFrameExt,
         sql::{TableSource, sql},
     },
     tui::{
@@ -23,7 +22,7 @@ use crate::{
         icons,
         layouts::status_bar::StatusBarLayout,
         plots::{
-            histogram_plot::HistogramPlot,
+            histogram_plot::{self, HistogramPlot},
             scatter_plot::{self, ScatterPlot},
         },
         popups::{
@@ -240,12 +239,10 @@ impl Pane {
     }
 
     fn show_histogram(&mut self, col: &str, buckets: usize) -> AppResult<()> {
-        self.modal = Some(Modal::HistogramPlot(HistogramPlot::new(
-            self.tstack
-                .last()
-                .data_frame()
-                .histogram_plot_data(col, buckets)?,
-        )));
+        let df = self.tstack.last().data_frame();
+        self.modal = Some(Modal::HistogramPlot(
+            histogram_plot::HistogramPlotBuilder::new(df, col, buckets).build()?,
+        ));
         Ok(())
     }
 
