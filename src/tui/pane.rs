@@ -22,7 +22,10 @@ use crate::{
         component::{Component, FocusState},
         icons,
         layouts::status_bar::StatusBarLayout,
-        plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
+        plots::{
+            histogram_plot::HistogramPlot,
+            scatter_plot::{self, ScatterPlot},
+        },
         popups::{
             column_caster::ColumnCaster,
             data_frame_info::DataFrameInfo,
@@ -154,17 +157,17 @@ impl Pane {
 
     fn show_scatter_plot(
         &mut self,
-        x_label: String,
-        y_label: String,
+        x_label: &str,
+        y_label: &str,
         group_by: Option<&str>,
     ) -> AppResult<()> {
         let df = self.tstack.last().data_frame();
         let plot = if let Some(group_by) = group_by {
-            let (data, groups) = df.scatter_plot_data_grouped(&x_label, &y_label, group_by)?;
-            ScatterPlot::new(x_label, y_label, data)?.with_groups(groups)
+            scatter_plot::ScatterPlotBuilder::new(df, x_label, y_label)
+                .with_group(group_by)
+                .build()?
         } else {
-            let data = df.scatter_plot_data(&x_label, &y_label)?;
-            ScatterPlot::new(x_label, y_label, data)?
+            scatter_plot::ScatterPlotBuilder::new(df, x_label, y_label).build()?
         };
         self.modal = Some(Modal::ScatterPlot(plot));
         Ok(())
@@ -499,7 +502,7 @@ impl Component for Pane {
                 self.show_histogram(col, *buckets).unwrap_or_enqueue_error();
             }
             Message::PaneShowScatterPlot(x, y, grp) => {
-                self.show_scatter_plot(x.to_owned(), y.to_owned(), grp.as_deref())
+                self.show_scatter_plot(x, y, grp.as_deref())
                     .unwrap_or_enqueue_error();
             }
             Message::PaneShowTableRegisterer => self.show_table_registerer(),

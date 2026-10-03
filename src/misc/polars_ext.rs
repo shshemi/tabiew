@@ -7,72 +7,13 @@ use polars::{
     prelude::{ChunkAgg, DataType, SeriesMethods},
 };
 
-use crate::{
-    AppResult, collections::ragged_vec::RaggedVec, misc::config::config,
-    tui::misc::any_value_formatter::AnyValueFormatter,
-};
+use crate::{AppResult, misc::config::config, tui::misc::any_value_formatter::AnyValueFormatter};
 
 pub trait DataFrameExt {
-    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>>;
-    #[allow(clippy::type_complexity)]
-    fn scatter_plot_data_grouped(
-        &self,
-        x_label: &str,
-        y_label: &str,
-        group_by: &str,
-    ) -> AppResult<(RaggedVec<(f64, f64)>, Vec<String>)>;
     fn histogram_plot_data(&self, col: &str, buckets: usize) -> AppResult<Vec<(String, u64)>>;
 }
 
 impl DataFrameExt for DataFrame {
-    fn scatter_plot_data(&self, x_label: &str, y_label: &str) -> AppResult<RaggedVec<(f64, f64)>> {
-        Ok(self
-            .column(x_label)?
-            .cast(&DataType::Float64)?
-            .f64()?
-            .iter()
-            .zip(
-                self.column(y_label)?
-                    .cast(&DataType::Float64)?
-                    .f64()?
-                    .iter(),
-            )
-            .filter_map(|(x, y)| Some((x?, y?)))
-            .collect())
-    }
-
-    fn scatter_plot_data_grouped(
-        &self,
-        x_label: &str,
-        y_label: &str,
-        group_by: &str,
-    ) -> AppResult<(RaggedVec<(f64, f64)>, Vec<String>)> {
-        let fp_prec = config().fp_precision();
-        let mut groups = Vec::new();
-        let mut data = RaggedVec::new();
-        for (name, df) in self
-            .partition_by(vec![group_by], true)?
-            .into_iter()
-            .map(|df| {
-                let name = df
-                    .column(group_by)
-                    .and_then(|column| column.get(0))
-                    .map(|val| {
-                        AnyValueFormatter::new(fp_prec)
-                            .into_single_line(val)
-                            .into_owned()
-                    })
-                    .unwrap_or("null".to_owned());
-                (name, df)
-            })
-            .sorted_by(|(a, _), (b, _)| a.cmp(b))
-        {
-            groups.push(name);
-            data.push(df.scatter_plot_data(x_label, y_label)?);
-        }
-        Ok((data, groups))
-    }
-
     fn histogram_plot_data(&self, col_name: &str, buckets: usize) -> AppResult<Vec<(String, u64)>> {
         let col = self.column(col_name)?;
         match col.dtype() {
