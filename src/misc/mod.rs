@@ -1,6 +1,7 @@
 pub mod background;
 pub mod config;
 pub mod external_editor;
+pub mod ipc;
 pub mod osc52;
 pub mod paths;
 pub mod search;

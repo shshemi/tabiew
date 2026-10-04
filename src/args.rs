@@ -1,8 +1,11 @@
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
+    #[command(subcommand)]
+    pub sub_command: Option<SubCommand>,
+
     #[arg(help = "Path(s) to the file(s) to be opened.", required = false)]
     pub sources: Vec<String>,
 
@@ -106,6 +109,25 @@ pub struct Args {
         required = false
     )]
     pub max_rows: Option<usize>,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SubCommand {
+    #[clap(subcommand)]
+    Ctl(CtlArgs),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum CtlArgs {
+    #[command(about = "List running tabiew instances")]
+    Ps,
+    #[command(about = "Run an SQL query in another tabiew instance")]
+    Sql {
+        #[arg(long, help = "Process ID", required = true)]
+        pid: u32,
+        #[arg(long, help = "Query", required = true)]
+        query: String,
+    },
 }
 
 #[derive(Debug, Clone, ValueEnum)]
