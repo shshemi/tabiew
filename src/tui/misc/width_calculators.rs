@@ -6,7 +6,7 @@ use polars::{
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use unicode_width::UnicodeWidthStr;
 
-use crate::tui::misc::any_value_formatter::AnyValueFormatter;
+use crate::{misc::cpu, tui::misc::any_value_formatter::AnyValueFormatter};
 
 #[derive(Default)]
 pub struct DataFrameWidthsCalculator {
@@ -54,7 +54,7 @@ impl SeriesWidthCalculator {
 impl Default for SeriesWidthCalculator {
     fn default() -> Self {
         Self {
-            wc: vec![AnyValueWidthCalculator::default(); num_cpus::get()],
+            wc: vec![AnyValueWidthCalculator::default(); cpu::get_num()],
         }
     }
 }

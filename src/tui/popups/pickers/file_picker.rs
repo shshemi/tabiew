@@ -6,8 +6,8 @@ use std::{
 };
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use home::home_dir;
 use itertools::Itertools;
+use std::env::home_dir;
 
 use crate::tui::{
     component::Component,
