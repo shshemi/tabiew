@@ -6,11 +6,11 @@ use std::io::IsTerminal;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
+use tabiew::misc::ipc::ops::fetch_other_process;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
@@ -107,18 +107,7 @@ fn main() {
 fn start_ctl(args: CtlArgs) {
     match args {
         CtlArgs::Ps => {
-            //
-            ipc::send(ipc::IpcMessage::Ps);
-            let mut pids = Vec::new();
-            for _ in time_millis(2000) {
-                for msg in ipc::recv_iter() {
-                    //
-                    if let ipc::IpcMessage::PsReply { pid } = msg {
-                        pids.push(pid);
-                        //
-                    }
-                }
-            }
+            let pids = fetch_other_process();
             println!(
                 "{}",
                 serde_json::to_string_pretty(&pids).unwrap_or_default()
@@ -171,14 +160,7 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         }
         flush_osc52_buffer();
 
-        for msg in ipc::recv_iter() {
-            match msg {
-                ipc::IpcMessage::PsReply { pid: _ } => (),
-                ipc::IpcMessage::Ps => ipc::send(ipc::IpcMessage::PsReply {
-                    pid: std::process::id(),
-                }),
-            }
-        }
+        ipc::recv_iter().for_each(handle_ipc_message);
     }
 
     // Exit the user interface.
@@ -238,14 +220,11 @@ fn build_reader(args: &Args, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFr
     }
 }
 
-fn time_millis(millis: u128) -> impl Iterator<Item = ()> {
-    let start = Instant::now();
-    std::iter::from_fn(move || {
-        if start.elapsed().as_millis() < millis {
-            std::thread::sleep(Duration::from_millis((millis / 20) as u64));
-            Some(())
-        } else {
-            None
-        }
-    })
+fn handle_ipc_message(msg: ipc::Message) {
+    match msg {
+        ipc::Message::Ps => ipc::send(ipc::Message::PsReply {
+            pid: std::process::id(),
+        }),
+        ipc::Message::PsReply { pid: _ } => (),
+    }
 }

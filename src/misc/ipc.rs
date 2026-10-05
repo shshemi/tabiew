@@ -21,8 +21,8 @@ const CYCLE_TIME: Duration = Duration::from_millis(100);
 static INTER_PROC: LazyLock<Mutex<InterProc>> = LazyLock::new(|| Mutex::new(InterProc::new()));
 
 struct InterProc {
-    send: Sender<IpcMessage>,
-    recv: Receiver<IpcMessage>,
+    send: Sender<Message>,
+    recv: Receiver<Message>,
 }
 
 impl InterProc {
@@ -75,11 +75,15 @@ impl InterProc {
         Self { send, recv }
     }
 
-    fn recv(&self) -> Option<IpcMessage> {
+    fn recv(&self) -> Option<Message> {
         self.recv.try_recv().ok()
     }
 
-    fn send(&self, msg: IpcMessage) {
+    fn recv_timeout(&self, duration: Duration) -> Option<Message> {
+        self.recv.recv_timeout(duration).ok()
+    }
+
+    fn send(&self, msg: Message) {
         let _ = self.send.send(msg);
     }
 
@@ -97,9 +101,15 @@ impl Default for InterProc {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum IpcMessage {
+pub enum Message {
     Ps,
     PsReply { pid: u32 },
+}
+
+impl Message {
+    pub fn send(self) {
+        send(self);
+    }
 }
 
 const PACKET_SIZE: usize = 1024;
@@ -111,7 +121,7 @@ struct Envelope {
 }
 
 impl Envelope {
-    fn from_message(msg: IpcMessage) -> AppResult<Envelope> {
+    fn from_message(msg: Message) -> AppResult<Envelope> {
         let mut buf = [0; PACKET_SIZE];
         to_slice(&msg, &mut buf)?;
         Ok(Envelope {
@@ -124,19 +134,49 @@ impl Envelope {
         self.pid == std::process::id()
     }
 
-    pub fn to_message(&self) -> Option<IpcMessage> {
+    pub fn to_message(&self) -> Option<Message> {
         from_bytes(&self.buf).ok()
     }
 }
 
-pub fn send(msg: IpcMessage) {
+pub fn send(msg: Message) {
     INTER_PROC.lock().unwrap_or_graceful_shutdown().send(msg);
 }
 
-pub fn recv() -> Option<IpcMessage> {
+pub fn recv() -> Option<Message> {
     INTER_PROC.lock().unwrap_or_graceful_shutdown().recv()
 }
 
-pub fn recv_iter() -> impl Iterator<Item = IpcMessage> {
+pub fn recv_timeout(duration: Duration) -> Option<Message> {
+    INTER_PROC
+        .lock()
+        .unwrap_or_graceful_shutdown()
+        .recv_timeout(duration)
+}
+
+pub fn recv_iter() -> impl Iterator<Item = Message> {
     std::iter::from_fn(recv)
+}
+
+pub fn recv_iter_timeout(duration: Duration) -> impl Iterator<Item = Message> {
+    std::iter::from_fn(move || recv_timeout(duration))
+}
+
+pub mod ops {
+    use std::time::Duration;
+
+    use itertools::Itertools;
+
+    pub fn fetch_other_process() -> Vec<u32> {
+        super::send(super::Message::Ps);
+        super::recv_iter_timeout(Duration::from_millis(2000))
+            .filter_map(|msg| {
+                if let super::Message::PsReply { pid } = msg {
+                    Some(pid)
+                } else {
+                    None
+                }
+            })
+            .collect_vec()
+    }
 }
