@@ -15,7 +15,10 @@ use iceoryx2::{
 use postcard::{from_bytes, to_slice};
 use serde::{Deserialize, Serialize};
 
-use crate::{AppResult, misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown};
+use crate::{
+    AppResult,
+    misc::{sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
+};
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 static INTER_PROC: LazyLock<Mutex<InterProc>> = LazyLock::new(|| Mutex::new(InterProc::new()));
@@ -104,15 +107,11 @@ impl Default for InterProc {
 pub enum Message {
     Ps,
     PsReply { pid: u32 },
+    Schema { pid: u32 },
+    SchemaReplay { pid: u32, schema: BackendSchema },
 }
 
-impl Message {
-    pub fn send(self) {
-        send(self);
-    }
-}
-
-const PACKET_SIZE: usize = 1024;
+const PACKET_SIZE: usize = 1024 * 8;
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
 struct Envelope {
@@ -167,6 +166,10 @@ pub mod ops {
 
     use itertools::Itertools;
 
+    use crate::misc::sql::BackendSchema;
+
+    use super::Message;
+
     pub fn fetch_other_process() -> Vec<u32> {
         super::send(super::Message::Ps);
         super::recv_iter_timeout(Duration::from_millis(2000))
@@ -178,5 +181,18 @@ pub mod ops {
                 }
             })
             .collect_vec()
+    }
+
+    pub fn fetch_sql_backend(pid: u32) -> Option<BackendSchema> {
+        super::send(super::Message::Schema { pid });
+        super::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+            if let Message::SchemaReplay { pid: tpid, schema } = msg
+                && pid == tpid
+            {
+                Some(schema.clone())
+            } else {
+                None
+            }
+        })
     }
 }

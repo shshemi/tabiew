@@ -106,7 +106,7 @@ strum_macros = "0.28.0"
 logfmt-zerocopy = "0.1.3"
 indexmap = "2.14.1"
 ureq = "3.4.0"
-url = "2.5.8"
+url = { version = "2.5.8", features = ["serde"]}
 scraper = "0.27.0"
 pulldown-cmark = { version = "0.13", default-features = false }
 terminal-colorsaurus = "1.0.3"

@@ -82,10 +82,10 @@ impl Component for DataFrameFieldInfo {
                                 format!("{}", info.estimated_size()),
                                 format!("{}", info.null_count()),
                                 AnyValueFormatter::default()
-                                    .into_single_line(info.min().clone())
+                                    .into_single_line(info.min().to_owned().into_value())
                                     .into_owned(),
                                 AnyValueFormatter::default()
-                                    .into_single_line(info.max().clone())
+                                    .into_single_line(info.max().to_owned().into_value())
                                     .into_owned(),
                             ])
                             .style(theme().row(idx))

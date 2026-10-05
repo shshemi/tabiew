@@ -10,7 +10,7 @@ use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::misc::ipc::ops::fetch_other_process;
+use tabiew::misc::ipc::ops::{fetch_other_process, fetch_sql_backend};
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
@@ -114,6 +114,13 @@ fn start_ctl(args: CtlArgs) {
             )
         }
         CtlArgs::Sql { pid: _, query: _ } => todo!(),
+        CtlArgs::Schema { pid } => {
+            let schema = fetch_sql_backend(pid);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&schema).unwrap_or_default()
+            )
+        }
     }
 }
 
@@ -225,6 +232,14 @@ fn handle_ipc_message(msg: ipc::Message) {
         ipc::Message::Ps => ipc::send(ipc::Message::PsReply {
             pid: std::process::id(),
         }),
+        ipc::Message::Schema { pid } if pid == std::process::id() => {
+            ipc::send(ipc::Message::SchemaReplay {
+                pid,
+                schema: sql().schema().clone(),
+            })
+        }
+        ipc::Message::Schema { pid: _ } => (),
         ipc::Message::PsReply { pid: _ } => (),
+        ipc::Message::SchemaReplay { pid: _, schema: _ } => (),
     }
 }

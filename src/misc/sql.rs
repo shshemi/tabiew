@@ -8,13 +8,13 @@ use std::{
 
 use indexmap::IndexMap;
 use polars::{
-    datatypes::AnyValue,
     error::PolarsResult,
     frame::DataFrame,
-    prelude::{DataType, IntoLazy, LazyFrame},
+    prelude::{DataType, IntoLazy, LazyFrame, Scalar},
     series::Series,
 };
 use polars_sql::SQLContext;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{iters::enumerate_names, readers::DataSource};
@@ -82,7 +82,7 @@ impl Default for SqlBackend {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct BackendSchema {
     schema: IndexMap<String, TableInfo>,
 }
@@ -123,7 +123,7 @@ impl BackendSchema {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableInfo {
     origin: TableSource,
     height: usize,
@@ -171,7 +171,7 @@ impl TableInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TableSource {
     Url(Url),
     File(PathBuf),
@@ -200,7 +200,7 @@ impl From<DataSource> for TableSource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableSchema {
     schema: IndexMap<String, FieldInfo>,
 }
@@ -234,24 +234,26 @@ impl TableSchema {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FieldInfo {
     dtype: DataType,
     est_size: Size,
     null_count: usize,
-    min: AnyValue<'static>,
-    max: AnyValue<'static>,
+    min: Scalar,
+    max: Scalar,
 }
 
 impl FieldInfo {
     pub fn new(series: &Series) -> Self {
         // let (min, max) = min_max(series);
+        let min = series.min_reduce().unwrap_or_default().into_value();
+        let max = series.max_reduce().unwrap_or_default().into_value();
         Self {
             dtype: series.dtype().to_owned(),
             est_size: series.estimated_size().into(),
             null_count: series.null_count(),
-            min: series.min_reduce().unwrap_or_default().into_value(),
-            max: series.max_reduce().unwrap_or_default().into_value(),
+            min: Scalar::new(min.dtype(), min),
+            max: Scalar::new(max.dtype(), max),
         }
     }
     pub fn dtype(&self) -> &DataType {
@@ -266,16 +268,18 @@ impl FieldInfo {
         self.null_count
     }
 
-    pub fn min(&self) -> &AnyValue<'static> {
+    pub fn min(&self) -> &Scalar {
         &self.min
     }
 
-    pub fn max(&self) -> &AnyValue<'static> {
+    pub fn max(&self) -> &Scalar {
         &self.max
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
 pub struct Size(usize);
 
 impl std::iter::Sum for Size {

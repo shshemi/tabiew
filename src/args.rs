@@ -128,6 +128,10 @@ pub enum CtlArgs {
         #[arg(long, help = "Query", required = true)]
         query: String,
     },
+    Schema {
+        #[arg(long, help = "Process ID", required = true)]
+        pid: u32,
+    },
 }
 
 #[derive(Debug, Clone, ValueEnum)]
