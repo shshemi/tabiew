@@ -9,10 +9,10 @@ use std::{
 use iceoryx2::{
     config::Config,
     node::NodeBuilder,
-    prelude::{FileName, SemanticString, ZeroCopySend},
+    prelude::{AllocationStrategy, FileName, SemanticString, ZeroCopySend},
     service::ipc::{self},
 };
-use postcard::{from_bytes, to_slice};
+use postcard::{from_bytes, to_allocvec};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -30,8 +30,8 @@ struct InterProc {
 
 impl InterProc {
     pub fn new() -> Self {
-        let (send, trecv) = channel();
-        let (tsend, recv) = channel();
+        let (send, trecv) = channel::<Message>();
+        let (tsend, recv) = channel::<Message>();
 
         std::thread::spawn(move || -> AppResult<()> {
             let node = NodeBuilder::new()
@@ -39,34 +39,39 @@ impl InterProc {
                 .create::<ipc::Service>()?;
             let service = node
                 .service_builder(&"tabiew/broadcast/v1".try_into()?)
-                .publish_subscribe::<Envelope>()
+                .publish_subscribe::<[u8]>()
+                .user_header::<Header>()
                 .max_nodes(32)
                 .max_publishers(32)
                 .max_subscribers(32)
-                .subscriber_max_buffer_size(8)
                 .history_size(0)
                 .open_or_create()?;
 
             let subscriber = service.subscriber_builder().create()?;
-            let publisher = service.publisher_builder().create()?;
+            let publisher = service
+                .publisher_builder()
+                .initial_max_slice_len(65_536)
+                .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                .create()?;
 
             loop {
                 loop {
                     match trecv.try_recv() {
                         Ok(msg) => {
-                            if let Ok(packet) = Envelope::from_message(msg) {
-                                publisher.send_copy(packet)?;
-                            }
+                            let buf = to_allocvec(&msg)?;
+                            let mut sample = publisher.loan_slice(buf.len())?;
+                            sample.user_header_mut().pid = std::process::id();
+                            sample.payload_mut().copy_from_slice(&buf);
+                            sample.send()?;
                         }
                         Err(TryRecvError::Empty) => break,
                         Err(TryRecvError::Disconnected) => return Ok(()),
                     }
                 }
 
-                while let Some(envelope) = subscriber.receive().ok().flatten() {
-                    if !envelope.is_echo()
-                        && let Some(msg) = envelope.to_message()
-                    {
+                while let Some(sample) = subscriber.receive()? {
+                    let msg = from_bytes(sample.payload())?;
+                    if !sample.user_header().is_echo() {
                         tsend.send(msg)?;
                     }
                 }
@@ -111,30 +116,23 @@ pub enum Message {
     SchemaReplay { pid: u32, schema: BackendSchema },
 }
 
-const PACKET_SIZE: usize = 1024 * 8;
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
-struct Envelope {
+struct Header {
     pid: u32,
-    buf: [u8; PACKET_SIZE],
 }
 
-impl Envelope {
-    fn from_message(msg: Message) -> AppResult<Envelope> {
-        let mut buf = [0; PACKET_SIZE];
-        to_slice(&msg, &mut buf)?;
-        Ok(Envelope {
+impl Default for Header {
+    fn default() -> Self {
+        Self {
             pid: std::process::id(),
-            buf,
-        })
+        }
     }
+}
 
+impl Header {
     pub fn is_echo(&self) -> bool {
         self.pid == std::process::id()
-    }
-
-    pub fn to_message(&self) -> Option<Message> {
-        from_bytes(&self.buf).ok()
     }
 }
 
