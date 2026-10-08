@@ -25,15 +25,11 @@ impl<'a> Reply<'a> {
 
 fn handle(msg: Message, _app: Option<&App>) -> Option<Message> {
     match msg {
-        Message::Ps => Some(Message::PsReply {
-            pid: std::process::id(),
-        }),
-
+        Message::Ps => Some(Message::ps_reply()),
         Message::Schema { pid } if is_for_me(pid) => Some(Message::SchemaReplay {
             pid,
             schema: sql().schema().clone(),
         }),
-
         Message::Sql { pid, query } if is_for_me(pid) => match sql().execute(&query, None) {
             Ok(df) => {
                 let msg = format!("Query {} run successfully", query);

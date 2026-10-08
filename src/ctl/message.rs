@@ -22,6 +22,9 @@ pub enum Message {
 }
 
 impl Message {
+    pub fn ps_reply() -> Self {
+        Message::PsReply { pid: id() }
+    }
     pub fn sql_replay(msg: impl Into<String>) -> Self {
         Message::SqlReplay {
             pid: id(),
