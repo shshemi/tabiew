@@ -1,8 +1,5 @@
 use std::{
-    sync::{
-        LazyLock, Mutex,
-        mpsc::{Receiver, Sender, TryRecvError, channel},
-    },
+    sync::mpsc::{Receiver, Sender, TryRecvError, channel},
     time::Duration,
 };
 
@@ -10,28 +7,26 @@ use iceoryx2::{
     config::Config,
     node::NodeBuilder,
     prelude::{AllocationStrategy, FileName, SemanticString, ZeroCopySend},
-    service::ipc::{self},
+    service::ipc,
 };
-use postcard::{from_bytes, to_allocvec};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    AppResult,
-    misc::{sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
-};
+use crate::AppResult;
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
-static INTER_PROC: LazyLock<Mutex<InterProc>> = LazyLock::new(|| Mutex::new(InterProc::new()));
 
-struct InterProc {
-    send: Sender<Message>,
-    recv: Receiver<Message>,
+pub struct Channel<T> {
+    send: Sender<T>,
+    recv: Receiver<T>,
 }
 
-impl InterProc {
+impl<T> Channel<T>
+where
+    T: Sync + Send + 'static + Serialize + for<'de> Deserialize<'de>,
+{
     pub fn new() -> Self {
-        let (send, trecv) = channel::<Message>();
-        let (tsend, recv) = channel::<Message>();
+        let (send, trecv) = channel::<T>();
+        let (tsend, recv) = channel::<T>();
 
         std::thread::spawn(move || -> AppResult<()> {
             let node = NodeBuilder::new()
@@ -58,7 +53,7 @@ impl InterProc {
                 loop {
                     match trecv.try_recv() {
                         Ok(msg) => {
-                            let buf = to_allocvec(&msg)?;
+                            let buf = postcard::to_allocvec(&msg)?;
                             let mut sample = publisher.loan_slice(buf.len())?;
                             sample.user_header_mut().pid = std::process::id();
                             sample.payload_mut().copy_from_slice(&buf);
@@ -70,7 +65,7 @@ impl InterProc {
                 }
 
                 while let Some(sample) = subscriber.receive()? {
-                    let msg = from_bytes(sample.payload())?;
+                    let msg = postcard::from_bytes(sample.payload())?;
                     if !sample.user_header().is_echo() {
                         tsend.send(msg)?;
                     }
@@ -83,15 +78,15 @@ impl InterProc {
         Self { send, recv }
     }
 
-    fn recv(&self) -> Option<Message> {
+    pub fn recv(&self) -> Option<T> {
         self.recv.try_recv().ok()
     }
 
-    fn recv_timeout(&self, duration: Duration) -> Option<Message> {
+    pub fn recv_timeout(&self, duration: Duration) -> Option<T> {
         self.recv.recv_timeout(duration).ok()
     }
 
-    fn send(&self, msg: Message) {
+    pub fn send(&self, msg: T) {
         let _ = self.send.send(msg);
     }
 
@@ -102,18 +97,13 @@ impl InterProc {
     }
 }
 
-impl Default for InterProc {
+impl<T> Default for Channel<T>
+where
+    T: Sync + Send + 'static + Serialize + for<'de> Deserialize<'de>,
+{
     fn default() -> Self {
         Self::new()
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Message {
-    Ps,
-    PsReply { pid: u32 },
-    Schema { pid: u32 },
-    SchemaReplay { pid: u32, schema: BackendSchema },
 }
 
 #[derive(Debug, ZeroCopySend)]
@@ -133,64 +123,5 @@ impl Default for Header {
 impl Header {
     pub fn is_echo(&self) -> bool {
         self.pid == std::process::id()
-    }
-}
-
-pub fn send(msg: Message) {
-    INTER_PROC.lock().unwrap_or_graceful_shutdown().send(msg);
-}
-
-pub fn recv() -> Option<Message> {
-    INTER_PROC.lock().unwrap_or_graceful_shutdown().recv()
-}
-
-pub fn recv_timeout(duration: Duration) -> Option<Message> {
-    INTER_PROC
-        .lock()
-        .unwrap_or_graceful_shutdown()
-        .recv_timeout(duration)
-}
-
-pub fn recv_iter() -> impl Iterator<Item = Message> {
-    std::iter::from_fn(recv)
-}
-
-pub fn recv_iter_timeout(duration: Duration) -> impl Iterator<Item = Message> {
-    std::iter::from_fn(move || recv_timeout(duration))
-}
-
-pub mod ops {
-    use std::time::Duration;
-
-    use itertools::Itertools;
-
-    use crate::misc::sql::BackendSchema;
-
-    use super::Message;
-
-    pub fn fetch_other_process() -> Vec<u32> {
-        super::send(super::Message::Ps);
-        super::recv_iter_timeout(Duration::from_millis(2000))
-            .filter_map(|msg| {
-                if let super::Message::PsReply { pid } = msg {
-                    Some(pid)
-                } else {
-                    None
-                }
-            })
-            .collect_vec()
-    }
-
-    pub fn fetch_sql_backend(pid: u32) -> Option<BackendSchema> {
-        super::send(super::Message::Schema { pid });
-        super::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
-            if let Message::SchemaReplay { pid: tpid, schema } = msg
-                && pid == tpid
-            {
-                Some(schema.clone())
-            } else {
-                None
-            }
-        })
     }
 }
