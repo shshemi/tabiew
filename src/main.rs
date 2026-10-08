@@ -113,15 +113,17 @@ fn run_ctl(args: CtlArgs) {
             )
         }
         CtlArgs::Sql { pid, query } => {
-            let reply = ctl::ops::send_sql_query(pid, query);
-            if let Some(reply) = reply {
-                println!("{}", reply)
-            } else {
-                println!("No reply received from {pid}")
-            }
+            let Some(reply) = ctl::ops::send_sql_query(pid, query) else {
+                println!("No reply received from {pid}");
+                return;
+            };
+            println!("{}", reply);
         }
         CtlArgs::Schema { pid } => {
-            let schema = ctl::ops::fetch_sql_backend(pid);
+            let Some(schema) = ctl::ops::fetch_sql_backend(pid) else {
+                println!("No reply received from {pid}");
+                return;
+            };
             println!(
                 "{}",
                 serde_json::to_string_pretty(&schema).unwrap_or_default()
