@@ -10,11 +10,10 @@ use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::misc::ipc::ops::{fetch_other_process, fetch_sql_backend};
+use tabiew::misc::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
-use tabiew::misc::{config, ipc};
 use tabiew::net::downloader::download_to_temp;
 use tabiew::parsers::data_frame_parser::DataFrameParser;
 use tabiew::readers::DataSource;
@@ -28,8 +27,8 @@ use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
 
-use tabiew::AppResult;
 use tabiew::tui::Pane;
+use tabiew::{AppResult, ctl};
 
 fn main() {
     // Parse CLI
@@ -45,7 +44,7 @@ fn main() {
 
     if let Some(sub_cmd) = args.sub_command {
         match sub_cmd {
-            tabiew::args::SubCommand::Ctl(args) => start_ctl(args),
+            tabiew::args::SubCommand::Ctl(args) => run_ctl(args),
         }
         return;
     }
@@ -104,18 +103,25 @@ fn main() {
     let _ = stop_tui();
 }
 
-fn start_ctl(args: CtlArgs) {
+fn run_ctl(args: CtlArgs) {
     match args {
         CtlArgs::Ps => {
-            let pids = fetch_other_process();
+            let pids = ctl::ops::fetch_other_process();
             println!(
                 "{}",
                 serde_json::to_string_pretty(&pids).unwrap_or_default()
             )
         }
-        CtlArgs::Sql { pid: _, query: _ } => todo!(),
+        CtlArgs::Sql { pid, query } => {
+            let reply = ctl::ops::send_sql_query(pid, query);
+            if let Some(reply) = reply {
+                println!("{}", reply)
+            } else {
+                println!("No reply received from {pid}")
+            }
+        }
         CtlArgs::Schema { pid } => {
-            let schema = fetch_sql_backend(pid);
+            let schema = ctl::ops::fetch_sql_backend(pid);
             println!(
                 "{}",
                 serde_json::to_string_pretty(&schema).unwrap_or_default()
@@ -167,7 +173,9 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
         }
         flush_osc52_buffer();
 
-        ipc::recv_iter().for_each(handle_ipc_message);
+        for msg in ctl::Message::recv_iter() {
+            ctl::Reply::new(msg).with_app(&app).send();
+        }
     }
 
     // Exit the user interface.
@@ -224,22 +232,5 @@ fn build_reader(args: &Args, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFr
             Some("md") | Some("markdown") => Ok(Box::new(MarkdownToDataFrame::from_args(args))),
             _ => Ok(Box::new(CsvToDataFrame::from_args(args))),
         },
-    }
-}
-
-fn handle_ipc_message(msg: ipc::Message) {
-    match msg {
-        ipc::Message::Ps => ipc::send(ipc::Message::PsReply {
-            pid: std::process::id(),
-        }),
-        ipc::Message::Schema { pid } if pid == std::process::id() => {
-            ipc::send(ipc::Message::SchemaReplay {
-                pid,
-                schema: sql().schema().clone(),
-            })
-        }
-        ipc::Message::Schema { pid: _ } => (),
-        ipc::Message::PsReply { pid: _ } => (),
-        ipc::Message::SchemaReplay { pid: _, schema: _ } => (),
     }
 }
