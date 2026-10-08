@@ -121,7 +121,7 @@ pub enum SubCommand {
 pub enum CtlArgs {
     #[command(about = "List running tabiew instances")]
     Ps,
-    #[command(about = "Run an SQL query in another tabiew instance")]
+    #[command(about = "Open a new tab in another tabiew instance with a SQL query")]
     Sql {
         #[arg(long, help = "Process ID", required = true)]
         pid: u32,
