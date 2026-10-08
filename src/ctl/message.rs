@@ -22,9 +22,29 @@ pub enum Message {
 }
 
 impl Message {
+    pub fn ps() -> Self {
+        Message::Ps
+    }
+
     pub fn ps_reply() -> Self {
         Message::PsReply { pid: id() }
     }
+
+    pub fn schema(pid: u32) -> Self {
+        Message::Schema { pid }
+    }
+
+    pub fn schema_replay(schema: BackendSchema) -> Self {
+        Message::SchemaReplay { pid: id(), schema }
+    }
+
+    pub fn sql(pid: u32, query: impl Into<String>) -> Self {
+        Message::Sql {
+            pid,
+            query: query.into(),
+        }
+    }
+
     pub fn sql_replay(msg: impl Into<String>) -> Self {
         Message::SqlReplay {
             pid: id(),
