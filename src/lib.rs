@@ -28,4 +28,6 @@ pub mod readers;
 
 pub mod writers;
 
+pub mod ctl;
+
 pub type AppResult<T> = anyhow::Result<T>;
