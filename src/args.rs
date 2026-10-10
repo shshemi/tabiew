@@ -185,6 +185,29 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Select a row in the current table of another tabiew instance",
+        long_about = "Select a row in the current table of another tabiew instance.\n\n\
+            Moves the cursor of the selected tab's current table to the given row, \
+            scrolling it into view. Rows are numbered from 0, so the first row is 0 \
+            (unlike the go-to-line popup, which starts at 1). \
+            Use `tw ctl ps` to find the process ID."
+    )]
+    RowSelect {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            long,
+            help = "Index of the row to select, starting from 0",
+            required = true
+        )]
+        row_idx: usize,
+    },
+
+    #[command(
         about = "Filter the current table of another tabiew instance",
         long_about = "Filter the current table of another tabiew instance.\n\n\
             Works like the inline filter: the condition is used as the WHERE clause \

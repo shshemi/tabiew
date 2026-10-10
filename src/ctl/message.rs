@@ -59,6 +59,14 @@ pub enum Message {
         pid: u32,
         new_tab_idx: Option<usize>,
     },
+    RowSelect {
+        pid: u32,
+        row_idx: usize,
+    },
+    RowSelectReply {
+        pid: u32,
+        new_row_idx: Option<usize>,
+    },
     Filter {
         pid: u32,
         filter: String,
@@ -216,6 +224,17 @@ impl Message {
         Message::ExportReply {
             pid: id(),
             msg: msg.into(),
+        }
+    }
+
+    pub fn row_select(pid: u32, row_idx: usize) -> Self {
+        Message::RowSelect { pid, row_idx }
+    }
+
+    pub fn row_select_reply(new_row_idx: Option<usize>) -> Self {
+        Message::RowSelectReply {
+            pid: id(),
+            new_row_idx,
         }
     }
 

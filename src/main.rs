@@ -172,6 +172,11 @@ fn run_ctl(args: CtlArgs) {
             };
             println!("{}", reply)
         }
+        CtlArgs::RowSelect { pid, row_idx } => match ctl::ops::select_row(pid, row_idx) {
+            Some(Some(idx)) => println!("Selected row {idx}"),
+            Some(None) => println!("Row {row_idx} does not exist in {pid}"),
+            None => println!("No reply received from {pid}"),
+        },
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");

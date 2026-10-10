@@ -138,3 +138,19 @@ pub fn send_export(pid: u32, spec: impl Into<ExportSpec>) -> Option<String> {
         }
     })
 }
+
+pub fn select_row(pid: u32, row_idx: usize) -> Option<Option<usize>> {
+    Message::row_select(pid, row_idx).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::RowSelectReply {
+            pid: tpid,
+            new_row_idx,
+        } = msg
+            && pid == tpid
+        {
+            Some(new_row_idx)
+        } else {
+            None
+        }
+    })
+}

@@ -93,6 +93,15 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
         Message::Order { pid, order_by } if is_for_me(pid) => {
             app.map(|app| Message::order_reply(apply_order(app, order_by)))
         }
+        Message::RowSelect { pid, row_idx } if is_for_me(pid) => app.map(|app| {
+            let height = current_table(app).map(|df| df.height()).unwrap_or_default();
+            if row_idx < height {
+                handler::message::Message::PaneTableSelect(row_idx).enqueue();
+                Message::row_select_reply(Some(row_idx))
+            } else {
+                Message::row_select_reply(None)
+            }
+        }),
         Message::Export { pid, spec } if is_for_me(pid) => {
             app.map(|app| Message::export_reply(apply_export(app, spec)))
         }
