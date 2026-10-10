@@ -7,8 +7,9 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ctl::types::{ImportSpec, Schema},
+    ctl::types::{ImportSpec, Schema, Tabs},
     misc::{ipc, sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
+    tui,
 };
 
 static IPC: LazyLock<Mutex<ipc::Channel<Message>>> =
@@ -24,6 +25,8 @@ pub enum Message {
     SqlReplay { pid: u32, msg: String },
     Import { pid: u32, spec: ImportSpec },
     ImportReply { pid: u32, msg: String },
+    Tabs { pid: u32 },
+    TabsReply { pid: u32, tabs: Tabs },
 }
 
 impl Message {
@@ -71,6 +74,17 @@ impl Message {
         Message::ImportReply {
             pid: id(),
             msg: msg.into(),
+        }
+    }
+
+    pub fn tabs(pid: u32) -> Self {
+        Message::Tabs { pid }
+    }
+
+    pub fn tabs_reply(tabs: &tui::tabs::Tabs) -> Self {
+        Message::TabsReply {
+            pid: id(),
+            tabs: tabs.into(),
         }
     }
 

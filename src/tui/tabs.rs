@@ -25,6 +25,10 @@ impl Tabs {
         self.panes.get(self.idx)
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &Pane> {
+        self.panes.iter()
+    }
+
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
         self.idx = self.panes.len().saturating_sub(1);
@@ -38,7 +42,7 @@ impl Tabs {
         self.len() == 0
     }
 
-    fn idx(&self) -> usize {
+    pub fn idx(&self) -> usize {
         self.idx
     }
 

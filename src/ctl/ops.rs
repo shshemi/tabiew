@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use itertools::Itertools;
 
-use crate::ctl::types::{ImportSpec, Schema};
+use crate::ctl::types::{ImportSpec, Schema, Tabs};
 
 use super::Message;
 
@@ -52,6 +52,19 @@ pub fn send_import(pid: u32, spec: impl Into<ImportSpec>) -> Option<String> {
             && pid == tpid
         {
             Some(msg)
+        } else {
+            None
+        }
+    })
+}
+
+pub fn fetch_tabs(pid: u32) -> Option<Tabs> {
+    Message::tabs(pid).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::TabsReply { pid: tpid, tabs } = msg
+            && pid == tpid
+        {
+            Some(tabs)
         } else {
             None
         }

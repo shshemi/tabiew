@@ -89,6 +89,10 @@ impl Pane {
         self.dstack.iter()
     }
 
+    pub fn iter_tables(&self) -> impl DoubleEndedIterator<Item = &Table> {
+        self.tstack.iter()
+    }
+
     pub fn show_sheet(&mut self) {
         if self.sheet.is_none() {
             self.sheet = Some(Sheet::new(

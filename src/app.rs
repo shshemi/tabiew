@@ -43,6 +43,10 @@ pub struct App {
 }
 
 impl App {
+    pub fn tabs(&self) -> &Tabs {
+        &self.tabs
+    }
+
     pub fn new(tabs: Tabs) -> Self {
         Self {
             tabs,

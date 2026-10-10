@@ -129,6 +129,16 @@ fn run_ctl(args: CtlArgs) {
                 serde_json::to_string_pretty(&schema).unwrap_or_default()
             )
         }
+        CtlArgs::Tabs { pid } => {
+            let Some(tabs) = ctl::ops::fetch_tabs(pid) else {
+                println!("No reply received from {pid}");
+                return;
+            };
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&tabs).unwrap_or_default()
+            )
+        }
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");

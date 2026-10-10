@@ -147,6 +147,23 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Print the open tabs of another tabiew instance as JSON",
+        long_about = "Print the open tabs of another tabiew instance as JSON.\n\n\
+            For each tab, the output lists its stack of tables, from the original table \
+            to the current view. Each table includes its columns and data types, the \
+            first visible row, the number of rows on screen, and the step that produced \
+            it (e.g. a query or filter). Use `tw ctl ps` to find the process ID."
+    )]
+    Tabs {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+    },
+
+    #[command(
         about = "Load a file into another tabiew instance as a new table",
         long_about = "Load a file into another tabiew instance as a new table.\n\n\
             Choose the file format as a subcommand, then pass the target instance's \

@@ -173,7 +173,15 @@ impl Table {
         self.selected
     }
 
-    pub fn offset(&mut self, idx: impl Into<usize>) {
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    pub fn rendered_rows(&self) -> usize {
+        self.rendered_rows
+    }
+
+    pub fn set_offset(&mut self, idx: impl Into<usize>) {
         self.offset = idx.into().min(self.df.height());
     }
 
@@ -234,14 +242,14 @@ impl Table {
     fn page_up(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(self.rendered_rows));
-            self.offset(self.offset.saturating_sub(self.rendered_rows));
+            self.set_offset(self.offset.saturating_sub(self.rendered_rows));
         }
     }
 
     fn page_down(&mut self) {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_add(self.rendered_rows));
-            self.offset(self.offset.saturating_add(self.rendered_rows));
+            self.set_offset(self.offset.saturating_add(self.rendered_rows));
         }
     }
 
@@ -285,7 +293,7 @@ impl Table {
         if let Some(selected) = self.selected {
             let len = self.rendered_rows.div(2);
             self.select(selected.saturating_sub(len));
-            self.offset(self.offset.saturating_sub(len));
+            self.set_offset(self.offset.saturating_sub(len));
         }
     }
 
@@ -293,7 +301,7 @@ impl Table {
         if let Some(selected) = self.selected {
             let len = self.rendered_rows.div(2);
             self.select(selected.saturating_add(len));
-            self.offset(self.offset.saturating_add(len));
+            self.set_offset(self.offset.saturating_add(len));
         }
     }
 

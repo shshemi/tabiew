@@ -36,7 +36,7 @@ impl<'a> Reply<'a> {
     }
 }
 
-fn handle(msg: Message, _app: Option<&App>) -> Option<Message> {
+fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
     match msg {
         Message::Ps => Some(Message::ps_reply()),
         Message::Schema { pid } if is_for_me(pid) => Some(Message::schema_replay(sql().schema())),
@@ -64,6 +64,7 @@ fn handle(msg: Message, _app: Option<&App>) -> Option<Message> {
                 Err(err) => Some(Message::import_reply(format!("Failed to import: {}", err))),
             }
         }
+        Message::Tabs { pid } if is_for_me(pid) => app.map(|app| Message::tabs_reply(app.tabs())),
 
         _ => None,
     }
