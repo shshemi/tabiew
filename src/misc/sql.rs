@@ -14,7 +14,6 @@ use polars::{
     series::Series,
 };
 use polars_sql::SQLContext;
-use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{iters::enumerate_names, readers::DataSource};
@@ -82,7 +81,7 @@ impl Default for SqlBackend {
     }
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone)]
 pub struct BackendSchema {
     schema: IndexMap<String, TableInfo>,
 }
@@ -123,7 +122,7 @@ impl BackendSchema {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableInfo {
     origin: TableSource,
     height: usize,
@@ -171,7 +170,7 @@ impl TableInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TableSource {
     Url(Url),
     File(PathBuf),
@@ -200,7 +199,7 @@ impl From<DataSource> for TableSource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableSchema {
     schema: IndexMap<String, FieldInfo>,
 }
@@ -234,7 +233,7 @@ impl TableSchema {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FieldInfo {
     dtype: DataType,
     est_size: Size,
@@ -277,9 +276,7 @@ impl FieldInfo {
     }
 }
 
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Size(usize);
 
 impl std::iter::Sum for Size {
@@ -291,6 +288,12 @@ impl std::iter::Sum for Size {
 impl From<usize> for Size {
     fn from(value: usize) -> Self {
         Size(value)
+    }
+}
+
+impl From<Size> for usize {
+    fn from(value: Size) -> Self {
+        value.0
     }
 }
 
