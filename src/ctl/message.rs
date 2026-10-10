@@ -59,6 +59,14 @@ pub enum Message {
         pid: u32,
         new_tab_idx: Option<usize>,
     },
+    Filter {
+        pid: u32,
+        filter: String,
+    },
+    FilterReply {
+        pid: u32,
+        filter: String,
+    },
 }
 
 impl Message {
@@ -128,6 +136,20 @@ impl Message {
         Message::TabSwitchReply {
             pid: id(),
             new_tab_idx,
+        }
+    }
+
+    pub fn filter(pid: u32, filter: impl Into<String>) -> Self {
+        Message::Filter {
+            pid,
+            filter: filter.into(),
+        }
+    }
+
+    pub fn filter_reply(filter: impl Into<String>) -> Self {
+        Message::FilterReply {
+            pid: id(),
+            filter: filter.into(),
         }
     }
 

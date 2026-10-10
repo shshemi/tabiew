@@ -185,6 +185,30 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Filter the current table of another tabiew instance",
+        long_about = "Filter the current table of another tabiew instance.\n\n\
+            Works like the inline filter: the condition is used as the WHERE clause \
+            of `SELECT * FROM _ WHERE <FILTER>` on the selected tab's current table, \
+            and the result is added as a new view on that tab, e.g.\n\n  \
+            tw ctl filter --pid 1234 --filter \"price > 5000000 AND bedrooms >= 3\"\n\n\
+            Use `tw ctl ps` to find the process ID."
+    )]
+    Filter {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            long,
+            help = "SQL condition to filter rows by (the WHERE clause)",
+            required = true
+        )]
+        filter: String,
+    },
+
+    #[command(
         about = "Load a file into another tabiew instance as a new table",
         long_about = "Load a file into another tabiew instance as a new table.\n\n\
             Choose the file format as a subcommand, then pass the target instance's \

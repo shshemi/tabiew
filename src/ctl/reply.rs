@@ -11,6 +11,7 @@ use crate::{
         FwfToDataFrame, HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
         MarkdownToDataFrame, ParquetToDataFrame, ReaderSource, SqliteToDataFrames,
     },
+    tui::pane::TableDescription,
 };
 
 pub struct Reply<'a> {
@@ -74,7 +75,28 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
             }
         }),
 
+        Message::Filter { pid, filter } if is_for_me(pid) => {
+            app.map(|app| Message::filter_reply(apply_filter(app, filter)))
+        }
+
         _ => None,
+    }
+}
+
+fn apply_filter(app: &App, filter: String) -> String {
+    let Some(pane) = app.tabs().selected() else {
+        return "No tab is open".to_owned();
+    };
+    let df = pane.table().data_frame().clone();
+    match sql().execute(&format!("SELECT * FROM _ where {filter}"), df) {
+        Ok(df) => {
+            let msg = format!("Filter '{filter}' applied");
+            handler::message::Message::PanePushDataFrame(df, TableDescription::Filter(filter))
+                .enqueue();
+            handler::message::Message::AppShowToast(msg.clone()).enqueue();
+            msg
+        }
+        Err(err) => format!("Filter '{filter}' failed: {err}"),
     }
 }
 

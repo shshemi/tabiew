@@ -86,3 +86,16 @@ pub fn switch_tab(pid: u32, tab_idx: usize) -> Option<Option<usize>> {
         }
     })
 }
+
+pub fn send_filter(pid: u32, filter: String) -> Option<String> {
+    Message::filter(pid, filter).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::FilterReply { pid: tpid, filter } = msg
+            && pid == tpid
+        {
+            Some(filter)
+        } else {
+            None
+        }
+    })
+}

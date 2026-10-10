@@ -144,6 +144,13 @@ fn run_ctl(args: CtlArgs) {
             Some(None) => println!("Tab {tab_idx} does not exist in {pid}"),
             None => println!("No reply received from {pid}"),
         },
+        CtlArgs::Filter { pid, filter } => {
+            let Some(reply) = ctl::ops::send_filter(pid, filter) else {
+                println!("No reply received from {pid}");
+                return;
+            };
+            println!("{}", reply)
+        }
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");
