@@ -151,6 +151,13 @@ fn run_ctl(args: CtlArgs) {
             };
             println!("{}", reply)
         }
+        CtlArgs::Select { pid, columns } => {
+            let Some(reply) = ctl::ops::send_select(pid, columns) else {
+                println!("No reply received from {pid}");
+                return;
+            };
+            println!("{}", reply)
+        }
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");

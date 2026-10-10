@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+use polars::frame::DataFrame;
 use std::path::PathBuf;
 
 use crate::{
@@ -78,26 +80,47 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
         Message::Filter { pid, filter } if is_for_me(pid) => {
             app.map(|app| Message::filter_reply(apply_filter(app, filter)))
         }
+        Message::Select { pid, columns } if is_for_me(pid) => {
+            app.map(|app| Message::select_reply(apply_select(app, columns)))
+        }
 
         _ => None,
     }
 }
 
 fn apply_filter(app: &App, filter: String) -> String {
-    let Some(pane) = app.tabs().selected() else {
-        return "No tab is open".to_owned();
-    };
-    let df = pane.table().data_frame().clone();
-    match sql().execute(&format!("SELECT * FROM _ where {filter}"), df) {
+    match query_current_table(app, &format!("SELECT * FROM _ where {filter}")) {
         Ok(df) => {
             let msg = format!("Filter '{filter}' applied");
-            handler::message::Message::PanePushDataFrame(df, TableDescription::Filter(filter))
-                .enqueue();
-            handler::message::Message::AppShowToast(msg.clone()).enqueue();
+            push_view(df, TableDescription::Filter(filter), &msg);
             msg
         }
         Err(err) => format!("Filter '{filter}' failed: {err}"),
     }
+}
+
+fn apply_select(app: &App, columns: String) -> String {
+    match query_current_table(app, &format!("SELECT {columns} FROM _")) {
+        Ok(df) => {
+            let msg = format!("Column selection '{columns}' occurred");
+            push_view(df, TableDescription::Select(columns), &msg);
+            msg
+        }
+        Err(err) => format!("Column selection '{columns}' failed: {err}"),
+    }
+}
+
+fn query_current_table(app: &App, query: &str) -> AppResult<DataFrame> {
+    let pane = app
+        .tabs()
+        .selected()
+        .ok_or_else(|| anyhow!("no tab is open"))?;
+    Ok(sql().execute(query, pane.table().data_frame().clone())?)
+}
+
+fn push_view(df: DataFrame, description: TableDescription, msg: &str) {
+    handler::message::Message::PanePushDataFrame(df, description).enqueue();
+    handler::message::Message::AppShowToast(msg.to_owned()).enqueue();
 }
 
 fn is_for_me(pid: u32) -> bool {

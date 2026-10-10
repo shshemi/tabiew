@@ -208,6 +208,30 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Select columns from the current table of another tabiew instance",
+        long_about = "Select columns from the current table of another tabiew instance.\n\n\
+            Works like the inline column selection: the columns are used as the select \
+            list of `SELECT <COLUMNS> FROM _` on the selected tab's current table, and \
+            the result is added as a new view on that tab. Expressions and aliases are \
+            allowed, e.g.\n\n  \
+            tw ctl select --pid 1234 \"price, area, price / area AS price_per_area\"\n\n\
+            Use `tw ctl ps` to find the process ID."
+    )]
+    Select {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            help = "Comma-separated columns or expressions to select",
+            required = true
+        )]
+        columns: String,
+    },
+
+    #[command(
         about = "Load a file into another tabiew instance as a new table",
         long_about = "Load a file into another tabiew instance as a new table.\n\n\
             Choose the file format as a subcommand, then pass the target instance's \

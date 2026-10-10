@@ -67,6 +67,14 @@ pub enum Message {
         pid: u32,
         filter: String,
     },
+    Select {
+        pid: u32,
+        columns: String,
+    },
+    SelectReply {
+        pid: u32,
+        msg: String,
+    },
 }
 
 impl Message {
@@ -150,6 +158,20 @@ impl Message {
         Message::FilterReply {
             pid: id(),
             filter: filter.into(),
+        }
+    }
+
+    pub fn select(pid: u32, columns: impl Into<String>) -> Self {
+        Message::Select {
+            pid,
+            columns: columns.into(),
+        }
+    }
+
+    pub fn select_reply(msg: impl Into<String>) -> Self {
+        Message::SelectReply {
+            pid: id(),
+            msg: msg.into(),
         }
     }
 
