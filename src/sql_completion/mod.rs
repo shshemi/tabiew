@@ -138,4 +138,10 @@ mod tests {
 
         assert!(!suggestion_titles(suggestions).contains(&"ALTER".to_string()));
     }
+
+    #[test]
+    fn suggests_column_from_partial_quoted_identifier() {
+        let suggestions = suggestions("\"My Col", 7, "SELECT ", &["My Column".into()], None);
+        assert!(suggestion_titles(suggestions).contains(&"My Column".to_string()));
+    }
 }

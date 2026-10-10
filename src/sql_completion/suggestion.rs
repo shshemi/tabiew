@@ -1,6 +1,6 @@
 use crate::tui::{popups::pickers::text_picker_with_suggestion::Suggestion, widgets::input::Input};
 
-use super::extraction::{cursor_byte_offset, is_separator};
+use super::extraction::{cursor_byte_offset, is_separator, unclosed_identifier_quote_start};
 
 /// A SQL completion suggestion that replaces the partial token before the cursor
 /// with the completed text.
@@ -26,13 +26,15 @@ impl Suggestion for SqlSuggestion {
         let before_cursor = &value[..cursor];
         let at_cursor = value[cursor..].chars().next();
 
-        // Find the start of the current token by scanning backwards for a separator.
-        let token_start = before_cursor
-            .char_indices()
-            .rev()
-            .find(|(_, character)| is_separator(*character))
-            .map(|(index, character)| index + character.len_utf8())
-            .unwrap_or(0);
+        let quoted_token_start = unclosed_identifier_quote_start(before_cursor);
+        let token_start = quoted_token_start.unwrap_or_else(|| {
+            before_cursor
+                .char_indices()
+                .rev()
+                .find(|(_, character)| is_separator(*character))
+                .map(|(index, character)| index + character.len_utf8())
+                .unwrap_or(0)
+        });
 
         let token_character_length = before_cursor[token_start..].chars().count();
 
@@ -41,9 +43,16 @@ impl Suggestion for SqlSuggestion {
             input.delete_prev();
         }
 
-        // Insert the completed text.
-        if self.text.contains(' ') {
-            for character in format!("\"{}\"", self.text).chars() {
+        let needs_quotes = quoted_token_start.is_some()
+            || !self.text.chars().enumerate().all(|(index, character)| {
+                if index == 0 {
+                    character.is_ascii_alphabetic() || character == '_'
+                } else {
+                    character.is_ascii_alphanumeric() || character == '_'
+                }
+            });
+        if needs_quotes {
+            for character in format!("\"{}\"", self.text.replace('"', "\"\"")).chars() {
                 input.insert(character);
             }
         } else {
@@ -56,5 +65,20 @@ impl Suggestion for SqlSuggestion {
         if !at_cursor.is_some_and(|character| character.is_whitespace()) {
             input.insert(' ');
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn completes_an_open_quoted_identifier() {
+        let mut input = Input::default().with_value("sort \"My Col".to_string());
+        input.goto_end();
+
+        SqlSuggestion::new("My Column".to_string()).apply_to(&mut input);
+
+        assert_eq!(input.value(), "sort \"My Column\" ");
     }
 }
