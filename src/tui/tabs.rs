@@ -1,13 +1,20 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::{
+    layout::{Constraint, Layout, Rect},
+    text::Line,
+    widgets::{Block, Clear, Paragraph, Widget},
+};
 
 use crate::{
     handler::message::Message,
+    misc::config::theme,
     tui::{
+        app_default::AppDefault,
         component::{Component, FocusState},
         icons,
         pane::TableDescription,
+        widgets::tabiew_logo::TabiewLogo,
     },
 };
 
@@ -104,31 +111,51 @@ impl Component for Tabs {
     ) {
         self.idx = self.idx().min(self.len().saturating_sub(1));
 
-        let (tabs_area, area) = if self.switcher.is_some() {
+        let (sw_area, pane_area) = if self.switcher.is_some() {
             let [tabs_area, table_area] = tabs_table_areas(area);
-            (Some(tabs_area), table_area)
+            (tabs_area, table_area)
         } else {
-            (None, area)
+            (Default::default(), area)
         };
 
-        // render tabular
-        match (self.switcher.as_mut(), self.panes.get_mut(self.idx)) {
-            (Some(switcher), Some(pane)) => {
-                pane.render(area, buf, FocusState::NotFocused);
-                if let Some(tabs_area) = tabs_area {
-                    switcher.render(tabs_area, buf, focus_state);
-                }
-            }
-            (Some(switcher), None) => {
-                if let Some(tabs_area) = tabs_area {
-                    switcher.render(tabs_area, buf, focus_state);
-                }
-            }
-            (None, Some(pane)) => {
-                pane.render(area, buf, focus_state);
-            }
-            (None, None) => (),
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.render(sw_area, buf, focus_state);
         }
+
+        if let Some(pane) = self.panes.get_mut(self.idx) {
+            //
+            pane.render(
+                pane_area,
+                buf,
+                if self.switcher.is_some() {
+                    FocusState::NotFocused
+                } else {
+                    focus_state
+                },
+            );
+        } else {
+            //
+            render_empty(pane_area, buf);
+        }
+
+        // render tabular
+        // match (self.switcher.as_mut(), self.panes.get_mut(self.idx)) {
+        //     (Some(switcher), Some(pane)) => {
+        //         pane.render(pane_area, buf, FocusState::NotFocused);
+        //         if let Some(tabs_area) = sw_area {
+        //             switcher.render(tabs_area, buf, focus_state);
+        //         }
+        //     }
+        //     (Some(switcher), None) => {
+        //         if let Some(tabs_area) = sw_area {
+        //             switcher.render(tabs_area, buf, focus_state);
+        //         }
+        //     }
+        //     (None, Some(pane)) => {
+        //         pane.render(pane_area, buf, focus_state);
+        //     }
+        //     (None, None) => render_empty(pane_area, buf),
+        // }
     }
 
     fn handle(&mut self, event: crossterm::event::KeyEvent) -> bool {
@@ -208,6 +235,55 @@ impl Component for Tabs {
             pane.tick();
         }
     }
+}
+
+fn render_empty(area: Rect, buf: &mut ratatui::prelude::Buffer) {
+    const GAP: u16 = 1;
+    let hints = vec![
+        Line::from("Press : and choose Import to import and open a file".to_owned()),
+        Line::from(format!(
+            "or run `tw ctl import <FORMAT> --pid {} <PATH>` from another terminal",
+            std::process::id()
+        )),
+    ];
+    let hints_height = hints.len() as u16;
+
+    Clear.render(area, buf);
+    let block = Block::app_default();
+    let inner = block.inner(area);
+    block.render(area, buf);
+    let area = inner;
+
+    let logo = TabiewLogo::size(Rect {
+        height: area.height.saturating_sub(hints_height + GAP),
+        ..area
+    });
+    let (logo_width, logo_height, gap) = logo.map_or((0, 0, 0), |(w, h)| (w, h, GAP));
+    let height = (logo_height + gap + hints_height).min(area.height);
+    let top = area.y + (area.height - height) / 2;
+
+    if logo.is_some() {
+        TabiewLogo.render(
+            Rect {
+                x: area.x + (area.width - logo_width) / 2,
+                y: top,
+                width: logo_width,
+                height: logo_height,
+            },
+            buf,
+        );
+    }
+    Paragraph::new(hints)
+        .style(theme().subtext())
+        .centered()
+        .render(
+            Rect {
+                y: top + logo_height + gap,
+                height: height - logo_height - gap,
+                ..area
+            },
+            buf,
+        );
 }
 
 fn tabs_table_areas(area: Rect) -> [Rect; 2] {

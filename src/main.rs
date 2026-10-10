@@ -1,4 +1,4 @@
-use clap::{CommandFactory, Parser};
+use clap::Parser;
 use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
@@ -32,15 +32,7 @@ use tabiew::{AppResult, ctl};
 
 fn main() {
     // Parse CLI
-    let args = {
-        let args_os = std::env::args_os();
-        // Show help message if no arguments are given and stdin is not piped
-        if args_os.len() == 1 && std::io::stdin().is_terminal() {
-            return Args::command().print_help().unwrap_or_graceful_shutdown();
-        } else {
-            Args::parse_from(args_os)
-        }
-    };
+    let args = Args::parse();
 
     if let Some(sub_cmd) = args.sub_command {
         match sub_cmd {
@@ -86,7 +78,8 @@ fn main() {
         }
     }
 
-    if name_dfs.is_empty() {
+    // Read stdin only when it is piped, otherwise start with no tabs
+    if name_dfs.is_empty() && !std::io::stdin().is_terminal() {
         for (name, mut df) in build_reader(&args, "")
             .unwrap_or_graceful_shutdown()
             .read_to_data_frames(ReaderSource::Stdin)
