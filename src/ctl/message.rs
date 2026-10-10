@@ -6,7 +6,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::misc::{ipc, sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown};
+use crate::{
+    ctl::types::{ImportSpec, Schema},
+    misc::{ipc, sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
+};
 
 static IPC: LazyLock<Mutex<ipc::Channel<Message>>> =
     LazyLock::new(|| Mutex::new(Default::default()));
@@ -16,9 +19,11 @@ pub enum Message {
     Ps,
     PsReply { pid: u32 },
     Schema { pid: u32 },
-    SchemaReplay { pid: u32, schema: BackendSchema },
+    SchemaReplay { pid: u32, schema: Schema },
     Sql { pid: u32, query: String },
     SqlReplay { pid: u32, msg: String },
+    Import { pid: u32, spec: ImportSpec },
+    ImportReply { pid: u32, msg: String },
 }
 
 impl Message {
@@ -50,6 +55,20 @@ impl Message {
 
     pub fn sql_replay(msg: impl Into<String>) -> Self {
         Message::SqlReplay {
+            pid: id(),
+            msg: msg.into(),
+        }
+    }
+
+    pub fn import(pid: u32, spec: impl Into<ImportSpec>) -> Self {
+        Message::Import {
+            pid,
+            spec: spec.into(),
+        }
+    }
+
+    pub fn import_reply(msg: impl Into<String>) -> Self {
+        Message::ImportReply {
             pid: id(),
             msg: msg.into(),
         }

@@ -121,6 +121,7 @@ pub enum SubCommand {
 pub enum CtlArgs {
     #[command(about = "List running tabiew instances")]
     Ps,
+
     #[command(about = "Open a new tab in another tabiew instance with a SQL query")]
     Sql {
         #[arg(long, help = "Process ID", required = true)]
@@ -128,10 +129,176 @@ pub enum CtlArgs {
         #[arg(long, help = "Query", required = true)]
         query: String,
     },
+
+    #[command(
+        about = "Print the tables loaded in another tabiew instance as JSON",
+        long_about = "Print the tables loaded in another tabiew instance as JSON.\n\n\
+            For each table, the output includes its origin, row and column counts, \
+            null count and estimated size, and per column the data type, null count, \
+            and minimum and maximum values. Use `tw ctl ps` to find the process ID."
+    )]
     Schema {
-        #[arg(long, help = "Process ID", required = true)]
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
         pid: u32,
     },
+
+    #[command(
+        about = "Load a file into another tabiew instance as a new table",
+        long_about = "Load a file into another tabiew instance as a new table.\n\n\
+            Choose the file format as a subcommand, then pass the target instance's \
+            process ID and the file's path or URL, e.g.\n\n  \
+            tw ctl import csv --pid 1234 data.csv --separator ';'\n\n\
+            Run `tw ctl import <FORMAT> --help` to see the options for each format, \
+            and `tw ctl ps` to find the process ID."
+    )]
+    Import {
+        #[clap(subcommand)]
+        args: CtlImportArgs,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum CtlImportArgs {
+    #[command(about = "Import a CSV/DSV file into another tabiew instance")]
+    Csv {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(
+            long,
+            help = "Character used as the field separator or delimiter.",
+            default_value_t = ','
+        )]
+        separator: char,
+        #[arg(long, help = "Character used to quote fields.", default_value_t = '"')]
+        quote_char: char,
+        #[arg(long, help = "Specifies if the input does not contain a header row.")]
+        no_header: bool,
+        #[arg(long, help = "Ignores parsing errors while loading.")]
+        ignore_errors: bool,
+        #[arg(long, help = "Truncate ragged lines while reading the file.")]
+        truncate_ragged_lines: bool,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
+    #[command(about = "Import a Parquet file into another tabiew instance")]
+    Parquet {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
+    #[command(about = "Import a JSON file into another tabiew instance")]
+    Json {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Ignores parsing errors while loading.")]
+        ignore_errors: bool,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
+    #[command(about = "Import a JSON Lines file into another tabiew instance")]
+    Jsonl {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Ignores parsing errors while loading.")]
+        ignore_errors: bool,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
+    #[command(about = "Import an Arrow IPC file into another tabiew instance")]
+    Arrow {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
+    #[command(about = "Import an Avro file into another tabiew instance")]
+    Avro {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
+    #[command(about = "Import a fixed-width (FWF) file into another tabiew instance")]
+    Fwf {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(
+            long,
+            help = "A comma-separated list of widths, which specifies the column widths.",
+            default_value_t = String::default(),
+        )]
+        widths: String,
+        #[arg(
+            long,
+            help = "Specifies the separator length.",
+            default_value_t = 1_usize
+        )]
+        separator_length: usize,
+        #[arg(long, help = "Sets strict column width restrictions.")]
+        no_flexible_width: bool,
+        #[arg(long, help = "Specifies if the input does not contain a header row.")]
+        no_header: bool,
+    },
+    #[command(about = "Import a SQLite database into another tabiew instance")]
+    Sqlite {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Sets the key for sqlite (if required)")]
+        sqlite_key: Option<String>,
+    },
+    #[command(about = "Import an Excel workbook into another tabiew instance")]
+    Excel {
+        #[command(flatten)]
+        common: CtlImportCommon,
+    },
+    #[command(about = "Import a logfmt file into another tabiew instance")]
+    Logfmt {
+        #[command(flatten)]
+        common: CtlImportCommon,
+    },
+    #[command(about = "Import tables from an HTML file into another tabiew instance")]
+    Html {
+        #[command(flatten)]
+        common: CtlImportCommon,
+    },
+    #[command(about = "Import tables from a Markdown file into another tabiew instance")]
+    Markdown {
+        #[command(flatten)]
+        common: CtlImportCommon,
+    },
+}
+
+impl CtlImportArgs {
+    pub fn pid(&self) -> u32 {
+        match self {
+            CtlImportArgs::Csv { common, .. }
+            | CtlImportArgs::Parquet { common, .. }
+            | CtlImportArgs::Json { common, .. }
+            | CtlImportArgs::Jsonl { common, .. }
+            | CtlImportArgs::Arrow { common, .. }
+            | CtlImportArgs::Avro { common, .. }
+            | CtlImportArgs::Fwf { common, .. }
+            | CtlImportArgs::Sqlite { common, .. }
+            | CtlImportArgs::Excel { common }
+            | CtlImportArgs::Logfmt { common }
+            | CtlImportArgs::Html { common }
+            | CtlImportArgs::Markdown { common } => common.pid,
+        }
+    }
+}
+
+#[derive(Debug, clap::Args)]
+pub struct CtlImportCommon {
+    #[arg(long, help = "Process ID", required = true)]
+    pub pid: u32,
+
+    #[arg(help = "Path or URL of the file to be imported.", required = true)]
+    pub source: String,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

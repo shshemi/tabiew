@@ -20,6 +20,11 @@ impl AvroToDataFrame {
             max_rows: args.max_rows,
         }
     }
+
+    pub fn with_max_rows(mut self, max_rows: Option<usize>) -> Self {
+        self.max_rows = max_rows;
+        self
+    }
 }
 
 impl DataFrameReader for AvroToDataFrame {

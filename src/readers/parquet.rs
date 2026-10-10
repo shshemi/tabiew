@@ -21,6 +21,11 @@ impl ParquetToDataFrame {
         }
     }
 
+    pub fn with_max_rows(mut self, max_rows: Option<usize>) -> Self {
+        self.max_rows = max_rows;
+        self
+    }
+
     fn slice(&self) -> Option<(usize, usize)> {
         self.max_rows.map(|n| (0, n))
     }

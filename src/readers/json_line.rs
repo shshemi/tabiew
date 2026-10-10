@@ -25,6 +25,16 @@ impl JsonLineToDataFrame {
             max_rows: args.max_rows,
         }
     }
+
+    pub fn with_ignore_errors(mut self, ignore_errors: bool) -> Self {
+        self.ignore_errors = ignore_errors;
+        self
+    }
+
+    pub fn with_max_rows(mut self, max_rows: Option<usize>) -> Self {
+        self.max_rows = max_rows;
+        self
+    }
 }
 
 impl Default for JsonLineToDataFrame {
