@@ -18,15 +18,47 @@ static IPC: LazyLock<Mutex<ipc::Channel<Message>>> =
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Message {
     Ps,
-    PsReply { pid: u32 },
-    Schema { pid: u32 },
-    SchemaReplay { pid: u32, schema: Schema },
-    Sql { pid: u32, query: String },
-    SqlReplay { pid: u32, msg: String },
-    Import { pid: u32, spec: ImportSpec },
-    ImportReply { pid: u32, msg: String },
-    Tabs { pid: u32 },
-    TabsReply { pid: u32, tabs: Tabs },
+    PsReply {
+        pid: u32,
+    },
+    Schema {
+        pid: u32,
+    },
+    SchemaReplay {
+        pid: u32,
+        schema: Schema,
+    },
+    Sql {
+        pid: u32,
+        query: String,
+    },
+    SqlReplay {
+        pid: u32,
+        msg: String,
+    },
+    Import {
+        pid: u32,
+        spec: ImportSpec,
+    },
+    ImportReply {
+        pid: u32,
+        msg: String,
+    },
+    Tabs {
+        pid: u32,
+    },
+    TabsReply {
+        pid: u32,
+        tabs: Tabs,
+    },
+    TabSwitch {
+        pid: u32,
+        tab_idx: usize,
+    },
+    TabSwitchReply {
+        pid: u32,
+        new_tab_idx: Option<usize>,
+    },
 }
 
 impl Message {
@@ -85,6 +117,17 @@ impl Message {
         Message::TabsReply {
             pid: id(),
             tabs: tabs.into(),
+        }
+    }
+
+    pub fn tab_switch(pid: u32, tab_idx: usize) -> Self {
+        Message::TabSwitch { pid, tab_idx }
+    }
+
+    pub fn tab_switch_reply(new_tab_idx: Option<usize>) -> Self {
+        Message::TabSwitchReply {
+            pid: id(),
+            new_tab_idx,
         }
     }
 

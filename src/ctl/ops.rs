@@ -70,3 +70,19 @@ pub fn fetch_tabs(pid: u32) -> Option<Tabs> {
         }
     })
 }
+
+pub fn switch_tab(pid: u32, tab_idx: usize) -> Option<Option<usize>> {
+    Message::tab_switch(pid, tab_idx).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::TabSwitchReply {
+            pid: tpid,
+            new_tab_idx,
+        } = msg
+            && pid == tpid
+        {
+            Some(new_tab_idx)
+        } else {
+            None
+        }
+    })
+}

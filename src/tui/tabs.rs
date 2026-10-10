@@ -34,11 +34,11 @@ impl Tabs {
         self.idx = self.panes.len().saturating_sub(1);
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.panes.len()
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

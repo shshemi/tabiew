@@ -164,6 +164,27 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Switch the selected tab of another tabiew instance",
+        long_about = "Switch the selected tab of another tabiew instance.\n\n\
+            Tabs are numbered from 0, in the order `tw ctl tabs` lists them. \
+            Use `tw ctl ps` to find the process ID."
+    )]
+    TabSwitch {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            long,
+            help = "Index of the tab to select, starting from 0",
+            required = true
+        )]
+        tab_idx: usize,
+    },
+
+    #[command(
         about = "Load a file into another tabiew instance as a new table",
         long_about = "Load a file into another tabiew instance as a new table.\n\n\
             Choose the file format as a subcommand, then pass the target instance's \

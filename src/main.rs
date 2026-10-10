@@ -139,6 +139,11 @@ fn run_ctl(args: CtlArgs) {
                 serde_json::to_string_pretty(&tabs).unwrap_or_default()
             )
         }
+        CtlArgs::TabSwitch { pid, tab_idx } => match ctl::ops::switch_tab(pid, tab_idx) {
+            Some(Some(idx)) => println!("Switched to tab {idx}"),
+            Some(None) => println!("Tab {tab_idx} does not exist in {pid}"),
+            None => println!("No reply received from {pid}"),
+        },
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");

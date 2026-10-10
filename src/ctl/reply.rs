@@ -65,6 +65,14 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
             }
         }
         Message::Tabs { pid } if is_for_me(pid) => app.map(|app| Message::tabs_reply(app.tabs())),
+        Message::TabSwitch { pid, tab_idx } if is_for_me(pid) => app.map(|app| {
+            if tab_idx < app.tabs().len() {
+                handler::message::Message::TabsSelect(tab_idx).enqueue();
+                Message::tab_switch_reply(Some(tab_idx))
+            } else {
+                Message::tab_switch_reply(None)
+            }
+        }),
 
         _ => None,
     }
