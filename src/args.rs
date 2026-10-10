@@ -126,7 +126,7 @@ pub enum CtlArgs {
     Sql {
         #[arg(long, help = "Process ID", required = true)]
         pid: u32,
-        #[arg(long, help = "Query", required = true)]
+        #[arg(help = "Query", required = true)]
         query: String,
     },
 
@@ -190,7 +190,7 @@ pub enum CtlArgs {
             Works like the inline filter: the condition is used as the WHERE clause \
             of `SELECT * FROM _ WHERE <FILTER>` on the selected tab's current table, \
             and the result is added as a new view on that tab, e.g.\n\n  \
-            tw ctl filter --pid 1234 --filter \"price > 5000000 AND bedrooms >= 3\"\n\n\
+            tw ctl filter --pid 1234 \"price > 5000000 AND bedrooms >= 3\"\n\n\
             Use `tw ctl ps` to find the process ID."
     )]
     Filter {
@@ -201,7 +201,6 @@ pub enum CtlArgs {
         )]
         pid: u32,
         #[arg(
-            long,
             help = "SQL condition to filter rows by (the WHERE clause)",
             required = true
         )]
