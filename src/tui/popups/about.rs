@@ -136,6 +136,7 @@ fn entries() -> Vec<(String, String)> {
             icons::TAG.title("Version"),
             env!("CARGO_PKG_VERSION").to_owned(),
         ),
+        (icons::REMOTE.title("PID"), std::process::id().to_string()),
         (icons::GITHUB.title("GitHub"), REPOSITORY.to_owned()),
         (icons::BOOK.title("Wiki"), format!("{REPOSITORY}/wiki")),
     ]
