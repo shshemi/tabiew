@@ -268,6 +268,22 @@ pub enum CtlArgs {
         #[clap(subcommand)]
         args: CtlImportArgs,
     },
+
+    #[command(
+        about = "Save the current table of another tabiew instance to a file",
+        long_about = "Save the current table of another tabiew instance to a file.\n\n\
+            Writes the selected tab's current table, including any filter, ordering or \
+            column selection applied to it. Choose the file format as a subcommand, then \
+            pass the target instance's process ID and the output path, e.g.\n\n  \
+            tw ctl export csv --pid 1234 out.csv --separator ';'\n\n\
+            Relative paths are resolved against the current directory of this command, \
+            not the target instance. Run `tw ctl export <FORMAT> --help` to see the \
+            options for each format, and `tw ctl ps` to find the process ID."
+    )]
+    Export {
+        #[clap(subcommand)]
+        args: CtlExportArgs,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -408,6 +424,92 @@ pub struct CtlImportCommon {
 
     #[arg(help = "Path or URL of the file to be imported.", required = true)]
     pub source: String,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum CtlExportArgs {
+    #[command(about = "Save as a CSV/DSV file")]
+    Csv {
+        #[command(flatten)]
+        common: CtlExportCommon,
+        #[arg(
+            long,
+            help = "Character used as the field separator or delimiter.",
+            default_value_t = ','
+        )]
+        separator: char,
+        #[arg(long, help = "Character used to quote fields.", default_value_t = '"')]
+        quote_char: char,
+        #[arg(long, help = "Do not write a header row.")]
+        no_header: bool,
+    },
+    #[command(about = "Save as a TSV file")]
+    Tsv {
+        #[command(flatten)]
+        common: CtlExportCommon,
+        #[arg(long, help = "Character used to quote fields.", default_value_t = '"')]
+        quote_char: char,
+        #[arg(long, help = "Do not write a header row.")]
+        no_header: bool,
+    },
+    #[command(about = "Save as a JSON file")]
+    Json {
+        #[command(flatten)]
+        common: CtlExportCommon,
+    },
+    #[command(about = "Save as a JSON Lines file")]
+    Jsonl {
+        #[command(flatten)]
+        common: CtlExportCommon,
+    },
+    #[command(about = "Save as a Parquet file")]
+    Parquet {
+        #[command(flatten)]
+        common: CtlExportCommon,
+    },
+    #[command(about = "Save as an Arrow IPC file")]
+    Arrow {
+        #[command(flatten)]
+        common: CtlExportCommon,
+    },
+    #[command(about = "Save as an Avro file")]
+    Avro {
+        #[command(flatten)]
+        common: CtlExportCommon,
+    },
+    #[command(about = "Save as a Markdown table")]
+    Markdown {
+        #[command(flatten)]
+        common: CtlExportCommon,
+    },
+}
+
+impl CtlExportArgs {
+    pub fn pid(&self) -> u32 {
+        match self {
+            CtlExportArgs::Csv { common, .. }
+            | CtlExportArgs::Tsv { common, .. }
+            | CtlExportArgs::Json { common }
+            | CtlExportArgs::Jsonl { common }
+            | CtlExportArgs::Parquet { common }
+            | CtlExportArgs::Arrow { common }
+            | CtlExportArgs::Avro { common }
+            | CtlExportArgs::Markdown { common } => common.pid,
+        }
+    }
+}
+
+#[derive(Debug, clap::Args)]
+pub struct CtlExportCommon {
+    #[arg(
+        long,
+        help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+        required = true
+    )]
+    pub pid: u32,
+
+    #[arg(help = "Path of the file to write.", required = true)]
+    pub path: std::path::PathBuf,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

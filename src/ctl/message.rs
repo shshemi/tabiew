@@ -7,7 +7,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ctl::types::{ImportSpec, Schema, Tabs},
+    ctl::types::{ExportSpec, ImportSpec, Schema, Tabs},
     misc::{ipc, sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
     tui,
 };
@@ -80,6 +80,14 @@ pub enum Message {
         order_by: String,
     },
     OrderReply {
+        pid: u32,
+        msg: String,
+    },
+    Export {
+        pid: u32,
+        spec: ExportSpec,
+    },
+    ExportReply {
         pid: u32,
         msg: String,
     },
@@ -192,6 +200,20 @@ impl Message {
 
     pub fn order_reply(msg: impl Into<String>) -> Self {
         Message::OrderReply {
+            pid: id(),
+            msg: msg.into(),
+        }
+    }
+
+    pub fn export(pid: u32, spec: impl Into<ExportSpec>) -> Self {
+        Message::Export {
+            pid,
+            spec: spec.into(),
+        }
+    }
+
+    pub fn export_reply(msg: impl Into<String>) -> Self {
+        Message::ExportReply {
             pid: id(),
             msg: msg.into(),
         }

@@ -165,6 +165,13 @@ fn run_ctl(args: CtlArgs) {
             };
             println!("{}", reply)
         }
+        CtlArgs::Export { args } => {
+            let Some(reply) = ctl::ops::send_export(args.pid(), &args) else {
+                println!("No reply received from {}", args.pid());
+                return;
+            };
+            println!("{}", reply)
+        }
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");

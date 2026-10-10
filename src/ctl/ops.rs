@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use itertools::Itertools;
 
-use crate::ctl::types::{ImportSpec, Schema, Tabs};
+use crate::ctl::types::{ExportSpec, ImportSpec, Schema, Tabs};
 
 use super::Message;
 
@@ -117,6 +117,19 @@ pub fn send_order(pid: u32, order_by: String) -> Option<String> {
     Message::order(pid, order_by).send();
     Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
         if let Message::OrderReply { pid: tpid, msg } = msg
+            && pid == tpid
+        {
+            Some(msg)
+        } else {
+            None
+        }
+    })
+}
+
+pub fn send_export(pid: u32, spec: impl Into<ExportSpec>) -> Option<String> {
+    Message::export(pid, spec).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::ExportReply { pid: tpid, msg } = msg
             && pid == tpid
         {
             Some(msg)

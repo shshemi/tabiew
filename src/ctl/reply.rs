@@ -5,7 +5,10 @@ use std::path::PathBuf;
 use crate::{
     AppResult,
     app::App,
-    ctl::{message::Message, types::ImportSpec},
+    ctl::{
+        message::Message,
+        types::{ExportSpec, ImportSpec},
+    },
     handler,
     misc::sql::{TableSource, sql},
     readers::{
@@ -14,6 +17,10 @@ use crate::{
         MarkdownToDataFrame, ParquetToDataFrame, ReaderSource, SqliteToDataFrames,
     },
     tui::pane::TableDescription,
+    writers::{
+        Destination, JsonFormat, WriteToArrow, WriteToAvro, WriteToCsv, WriteToFile, WriteToJson,
+        WriteToMarkdown, WriteToParquet,
+    },
 };
 
 pub struct Reply<'a> {
@@ -86,6 +93,9 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
         Message::Order { pid, order_by } if is_for_me(pid) => {
             app.map(|app| Message::order_reply(apply_order(app, order_by)))
         }
+        Message::Export { pid, spec } if is_for_me(pid) => {
+            app.map(|app| Message::export_reply(apply_export(app, spec)))
+        }
 
         _ => None,
     }
@@ -124,12 +134,67 @@ fn apply_order(app: &App, order_by: String) -> String {
     }
 }
 
-fn query_current_table(app: &App, query: &str) -> AppResult<DataFrame> {
+fn apply_export(app: &App, spec: ExportSpec) -> String {
+    let path = spec.path().display().to_string();
+    match export_current_table(app, spec) {
+        Ok(()) => {
+            let msg = format!("Data frame exported to '{path}'");
+            handler::message::Message::AppShowToast(msg.clone()).enqueue();
+            msg
+        }
+        Err(err) => format!("Export to '{path}' failed: {err}"),
+    }
+}
+
+fn export_current_table(app: &App, spec: ExportSpec) -> AppResult<()> {
+    let mut df = current_table(app)?;
+    match spec {
+        ExportSpec::Csv {
+            path,
+            separator,
+            quote_char,
+            no_header,
+        } => WriteToCsv::default()
+            .with_separator_char(separator)
+            .with_quote_char(quote_char)
+            .with_header(!no_header)
+            .write_to_file(Destination::File(path), &mut df),
+        ExportSpec::Tsv {
+            path,
+            quote_char,
+            no_header,
+        } => WriteToCsv::default()
+            .with_separator_char('\t')
+            .with_quote_char(quote_char)
+            .with_header(!no_header)
+            .write_to_file(Destination::File(path), &mut df),
+        ExportSpec::Json { path } => WriteToJson::default()
+            .with_format(JsonFormat::Json)
+            .write_to_file(Destination::File(path), &mut df),
+        ExportSpec::Jsonl { path } => WriteToJson::default()
+            .with_format(JsonFormat::JsonLine)
+            .write_to_file(Destination::File(path), &mut df),
+        ExportSpec::Parquet { path } => {
+            WriteToParquet.write_to_file(Destination::File(path), &mut df)
+        }
+        ExportSpec::Arrow { path } => WriteToArrow.write_to_file(Destination::File(path), &mut df),
+        ExportSpec::Avro { path } => WriteToAvro.write_to_file(Destination::File(path), &mut df),
+        ExportSpec::Markdown { path } => {
+            WriteToMarkdown.write_to_file(Destination::File(path), &mut df)
+        }
+    }
+}
+
+fn current_table(app: &App) -> AppResult<DataFrame> {
     let pane = app
         .tabs()
         .selected()
         .ok_or_else(|| anyhow!("no tab is open"))?;
-    Ok(sql().execute(query, pane.table().data_frame().clone())?)
+    Ok(pane.table().data_frame().clone())
+}
+
+fn query_current_table(app: &App, query: &str) -> AppResult<DataFrame> {
+    Ok(sql().execute(query, current_table(app)?)?)
 }
 
 fn push_view(df: DataFrame, description: TableDescription, msg: &str) {
