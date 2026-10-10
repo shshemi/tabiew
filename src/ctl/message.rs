@@ -34,8 +34,11 @@ impl Message {
         Message::Schema { pid }
     }
 
-    pub fn schema_replay(schema: BackendSchema) -> Self {
-        Message::SchemaReplay { pid: id(), schema }
+    pub fn schema_replay(schema: &BackendSchema) -> Self {
+        Message::SchemaReplay {
+            pid: id(),
+            schema: schema.into(),
+        }
     }
 
     pub fn sql(pid: u32, query: impl Into<String>) -> Self {
