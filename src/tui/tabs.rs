@@ -61,7 +61,7 @@ impl Tabs {
     }
 
     fn close_selected(&mut self) {
-        if self.len() > 1 {
+        if !self.is_empty() {
             self.remove_selected();
         }
     }
@@ -175,9 +175,10 @@ impl Component for Tabs {
                 .unwrap_or_default()
                 || match (event.code, event.modifiers) {
                     (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                        self.remove_selected();
                         if self.is_empty() {
                             Message::Quit.enqueue();
+                        } else {
+                            self.remove_selected();
                         }
                         true
                     }
