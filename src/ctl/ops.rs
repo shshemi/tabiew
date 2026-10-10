@@ -112,3 +112,16 @@ pub fn send_select(pid: u32, columns: String) -> Option<String> {
         }
     })
 }
+
+pub fn send_order(pid: u32, order_by: String) -> Option<String> {
+    Message::order(pid, order_by).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::OrderReply { pid: tpid, msg } = msg
+            && pid == tpid
+        {
+            Some(msg)
+        } else {
+            None
+        }
+    })
+}

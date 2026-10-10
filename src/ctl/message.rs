@@ -75,6 +75,14 @@ pub enum Message {
         pid: u32,
         msg: String,
     },
+    Order {
+        pid: u32,
+        order_by: String,
+    },
+    OrderReply {
+        pid: u32,
+        msg: String,
+    },
 }
 
 impl Message {
@@ -170,6 +178,20 @@ impl Message {
 
     pub fn select_reply(msg: impl Into<String>) -> Self {
         Message::SelectReply {
+            pid: id(),
+            msg: msg.into(),
+        }
+    }
+
+    pub fn order(pid: u32, order_by: impl Into<String>) -> Self {
+        Message::Order {
+            pid,
+            order_by: order_by.into(),
+        }
+    }
+
+    pub fn order_reply(msg: impl Into<String>) -> Self {
+        Message::OrderReply {
             pid: id(),
             msg: msg.into(),
         }

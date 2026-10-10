@@ -83,6 +83,9 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
         Message::Select { pid, columns } if is_for_me(pid) => {
             app.map(|app| Message::select_reply(apply_select(app, columns)))
         }
+        Message::Order { pid, order_by } if is_for_me(pid) => {
+            app.map(|app| Message::order_reply(apply_order(app, order_by)))
+        }
 
         _ => None,
     }
@@ -107,6 +110,17 @@ fn apply_select(app: &App, columns: String) -> String {
             msg
         }
         Err(err) => format!("Column selection '{columns}' failed: {err}"),
+    }
+}
+
+fn apply_order(app: &App, order_by: String) -> String {
+    match query_current_table(app, &format!("SELECT * FROM _ ORDER BY {order_by}")) {
+        Ok(df) => {
+            let msg = format!("Data frame ordered by '{order_by}'");
+            push_view(df, TableDescription::Order(order_by), &msg);
+            msg
+        }
+        Err(err) => format!("Ordering by '{order_by}' failed: {err}"),
     }
 }
 

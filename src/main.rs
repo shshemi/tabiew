@@ -158,6 +158,13 @@ fn run_ctl(args: CtlArgs) {
             };
             println!("{}", reply)
         }
+        CtlArgs::Order { pid, order_by } => {
+            let Some(reply) = ctl::ops::send_order(pid, order_by) else {
+                println!("No reply received from {pid}");
+                return;
+            };
+            println!("{}", reply)
+        }
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");

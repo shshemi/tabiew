@@ -232,6 +232,30 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Sort the current table of another tabiew instance",
+        long_about = "Sort the current table of another tabiew instance.\n\n\
+            Works like the inline ordering: the columns are used as the ORDER BY clause \
+            of `SELECT * FROM _ ORDER BY <ORDER_BY>` on the selected tab's current table, \
+            and the result is added as a new view on that tab. Add DESC to sort a column \
+            in descending order, e.g.\n\n  \
+            tw ctl order --pid 1234 \"price DESC, area\"\n\n\
+            Use `tw ctl ps` to find the process ID."
+    )]
+    Order {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            help = "Comma-separated columns to sort by (the ORDER BY clause)",
+            required = true
+        )]
+        order_by: String,
+    },
+
+    #[command(
         about = "Load a file into another tabiew instance as a new table",
         long_about = "Load a file into another tabiew instance as a new table.\n\n\
             Choose the file format as a subcommand, then pass the target instance's \
