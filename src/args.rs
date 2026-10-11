@@ -231,6 +231,35 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Print rows of the current table of another tabiew instance as JSON",
+        long_about = "Print rows of the current table of another tabiew instance as JSON.\n\n\
+            By default, prints the rows currently on screen in the selected tab's current \
+            table (the view after any filter, selection or ordering). Use --offset and \
+            --count to read other rows. Rows are numbered from 0. The output includes \
+            `offset` (the first row returned), `total` (the number of rows in the table) \
+            and `rows` (one object per row, keyed by column name). \
+            Use `tw ctl ps` to find the process ID."
+    )]
+    Rows {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            long,
+            help = "Index of the first row to print, starting from 0 [default: first row on screen]"
+        )]
+        offset: Option<usize>,
+        #[arg(
+            long,
+            help = "Number of rows to print [default: number of rows on screen]"
+        )]
+        count: Option<usize>,
+    },
+
+    #[command(
         about = "Filter the current table of another tabiew instance",
         long_about = "Filter the current table of another tabiew instance.\n\n\
             Works like the inline filter: the condition is used as the WHERE clause \

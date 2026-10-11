@@ -5,7 +5,7 @@ use itertools::Itertools;
 
 use crate::{
     AppResult,
-    ctl::types::{ExportSpec, ImportSpec, Schema, Shape, Tabs},
+    ctl::types::{ExportSpec, ImportSpec, Rows, Schema, Shape, Tabs},
 };
 
 use super::Message;
@@ -119,6 +119,14 @@ pub fn select_row(pid: u32, row_idx: usize) -> AppResult<usize> {
         _ => None,
     })?
     .ok_or_else(|| anyhow!("Row {row_idx} does not exist in {pid}"))
+}
+
+pub fn fetch_rows(pid: u32, offset: Option<usize>, count: Option<usize>) -> AppResult<Rows> {
+    request(pid, Message::rows(pid, offset, count), |msg| match msg {
+        Message::RowsReply { pid: tpid, result } if tpid == pid => Some(result),
+        _ => None,
+    })?
+    .map_err(|err| anyhow!(err))
 }
 
 pub fn remove_tab(pid: u32, tab_idx: usize) -> AppResult<usize> {

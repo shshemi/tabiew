@@ -8,7 +8,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ctl::types::{ExportSpec, ImportSpec, Schema, Shape, Tabs},
+    ctl::types::{ExportSpec, ImportSpec, Rows, Schema, Shape, Tabs},
     misc::{ipc, sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
     tui,
 };
@@ -75,6 +75,15 @@ pub enum Message {
     RowSelectReply {
         pid: u32,
         new_row_idx: Option<usize>,
+    },
+    Rows {
+        pid: u32,
+        offset: Option<usize>,
+        count: Option<usize>,
+    },
+    RowsReply {
+        pid: u32,
+        result: Result<Rows, String>,
     },
     Filter {
         pid: u32,
@@ -227,6 +236,14 @@ impl Message {
             pid: id(),
             new_row_idx,
         }
+    }
+
+    pub fn rows(pid: u32, offset: Option<usize>, count: Option<usize>) -> Self {
+        Message::Rows { pid, offset, count }
+    }
+
+    pub fn rows_reply(result: Result<Rows, String>) -> Self {
+        Message::RowsReply { pid: id(), result }
     }
 
     pub fn rm_tab(pid: u32, tab_idx: usize) -> Self {

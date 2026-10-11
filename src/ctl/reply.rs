@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use polars::frame::DataFrame;
+use polars::{frame::DataFrame, io::SerWriter, prelude::JsonWriter};
 use std::path::PathBuf;
 
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
     app::App,
     ctl::{
         message::Message,
-        types::{ExportSpec, ImportSpec, Shape},
+        types::{ExportSpec, ImportSpec, Rows, Shape},
     },
     handler,
     misc::sql::{TableSource, sql},
@@ -98,6 +98,12 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
             } else {
                 Message::row_select_reply(None)
             }
+        }),
+        Message::Rows { pid, offset, count } if is_for_me(pid) => app.map(|app| {
+            Message::rows_reply(
+                read_rows(app, offset, count)
+                    .map_err(|err| format!("Reading rows failed: {err:#}")),
+            )
         }),
         Message::Export { pid, spec } if is_for_me(pid) => {
             app.map(|app| Message::export_reply(apply_export(app, spec)))
@@ -195,6 +201,26 @@ fn export_current_table(app: &App, spec: ExportSpec) -> AppResult<()> {
             WriteToMarkdown.write_to_file(Destination::File(path), &mut df)
         }
     }
+}
+
+fn read_rows(app: &App, offset: Option<usize>, count: Option<usize>) -> AppResult<Rows> {
+    let table = app
+        .tabs()
+        .selected()
+        .ok_or_else(|| anyhow!("no tab is open"))?
+        .table();
+    let offset = offset.unwrap_or(table.offset());
+    let count = count.unwrap_or(table.rendered_rows());
+    let mut df = table.data_frame().slice(offset as i64, count);
+    let mut buf = Vec::new();
+    JsonWriter::new(&mut buf)
+        .with_json_format(polars::io::json::JsonFormat::Json)
+        .finish(&mut df)?;
+    Ok(Rows {
+        offset,
+        total: table.data_frame().height(),
+        records: String::from_utf8(buf)?,
+    })
 }
 
 fn current_table(app: &App) -> AppResult<DataFrame> {

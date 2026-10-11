@@ -120,6 +120,9 @@ fn run_ctl(args: CtlArgs) -> AppResult<()> {
         CtlArgs::RowSelect { pid, row_idx } => {
             print_json(&json!({ "row_idx": ctl::ops::select_row(pid, row_idx)? }))?
         }
+        CtlArgs::Rows { pid, offset, count } => {
+            print_json(&ctl::ops::fetch_rows(pid, offset, count)?.to_json()?)?
+        }
         CtlArgs::RmTab { pid, tab_idx } => {
             print_json(&json!({ "removed_tab_idx": ctl::ops::remove_tab(pid, tab_idx)? }))?
         }
