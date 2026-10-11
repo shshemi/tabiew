@@ -173,18 +173,24 @@ fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
             Event::Paste(_) => {}
         }
 
-        while let Some(action) = Message::dequeue() {
-            app.update(&action);
-        }
+        apply_queued_messages(&mut app);
+
         flush_osc52_buffer();
 
         for msg in ctl::Message::recv_iter() {
+            apply_queued_messages(&mut app);
             ctl::Reply::new(msg).with_app(&app).send();
         }
     }
 
     // Exit the user interface.
     Ok(())
+}
+
+fn apply_queued_messages(app: &mut App) {
+    while let Some(action) = Message::dequeue() {
+        app.update(&action);
+    }
 }
 
 fn try_read_path(args: &Args, source: &DataSource) -> AppResult<NamedFrames> {
