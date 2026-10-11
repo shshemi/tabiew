@@ -7,7 +7,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ctl::types::{ExportSpec, ImportSpec, Schema, Tabs},
+    ctl::types::{ExportSpec, ImportSpec, Schema, Shape, Tabs},
     misc::{ipc, sql::BackendSchema, unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown},
     tui,
 };
@@ -34,7 +34,7 @@ pub enum Message {
     },
     SqlReplay {
         pid: u32,
-        msg: String,
+        result: Result<Shape, String>,
     },
     Import {
         pid: u32,
@@ -81,7 +81,7 @@ pub enum Message {
     },
     FilterReply {
         pid: u32,
-        filter: String,
+        result: Result<Shape, String>,
     },
     Select {
         pid: u32,
@@ -89,7 +89,7 @@ pub enum Message {
     },
     SelectReply {
         pid: u32,
-        msg: String,
+        result: Result<Shape, String>,
     },
     Order {
         pid: u32,
@@ -97,7 +97,7 @@ pub enum Message {
     },
     OrderReply {
         pid: u32,
-        msg: String,
+        result: Result<Shape, String>,
     },
     Export {
         pid: u32,
@@ -136,11 +136,8 @@ impl Message {
         }
     }
 
-    pub fn sql_replay(msg: impl Into<String>) -> Self {
-        Message::SqlReplay {
-            pid: id(),
-            msg: msg.into(),
-        }
+    pub fn sql_replay(result: Result<Shape, String>) -> Self {
+        Message::SqlReplay { pid: id(), result }
     }
 
     pub fn import(pid: u32, spec: impl Into<ImportSpec>) -> Self {
@@ -186,11 +183,8 @@ impl Message {
         }
     }
 
-    pub fn filter_reply(filter: impl Into<String>) -> Self {
-        Message::FilterReply {
-            pid: id(),
-            filter: filter.into(),
-        }
+    pub fn filter_reply(result: Result<Shape, String>) -> Self {
+        Message::FilterReply { pid: id(), result }
     }
 
     pub fn select(pid: u32, columns: impl Into<String>) -> Self {
@@ -200,11 +194,8 @@ impl Message {
         }
     }
 
-    pub fn select_reply(msg: impl Into<String>) -> Self {
-        Message::SelectReply {
-            pid: id(),
-            msg: msg.into(),
-        }
+    pub fn select_reply(result: Result<Shape, String>) -> Self {
+        Message::SelectReply { pid: id(), result }
     }
 
     pub fn order(pid: u32, order_by: impl Into<String>) -> Self {
@@ -214,11 +205,8 @@ impl Message {
         }
     }
 
-    pub fn order_reply(msg: impl Into<String>) -> Self {
-        Message::OrderReply {
-            pid: id(),
-            msg: msg.into(),
-        }
+    pub fn order_reply(result: Result<Shape, String>) -> Self {
+        Message::OrderReply { pid: id(), result }
     }
 
     pub fn export(pid: u32, spec: impl Into<ExportSpec>) -> Self {

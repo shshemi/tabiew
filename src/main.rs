@@ -36,7 +36,12 @@ fn main() {
 
     if let Some(sub_cmd) = args.sub_command {
         match sub_cmd {
-            tabiew::args::SubCommand::Ctl(args) => run_ctl(args),
+            tabiew::args::SubCommand::Ctl(args) => {
+                if let Err(err) = run_ctl(args) {
+                    eprintln!("Error: {err:#}");
+                    std::process::exit(1);
+                }
+            }
         }
         return;
     }
@@ -96,93 +101,33 @@ fn main() {
     let _ = stop_tui();
 }
 
-fn run_ctl(args: CtlArgs) {
+fn run_ctl(args: CtlArgs) -> AppResult<()> {
     match args {
-        CtlArgs::Ps => {
-            let pids = ctl::ops::fetch_other_process();
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&pids).unwrap_or_default()
-            )
+        CtlArgs::Ps => print_json(&ctl::ops::fetch_other_process()?)?,
+        CtlArgs::Sql { pid, query } => print_json(&ctl::ops::send_sql_query(pid, query)?)?,
+        CtlArgs::Schema { pid } => print_json(&ctl::ops::fetch_sql_backend(pid)?)?,
+        CtlArgs::Tabs { pid } => print_json(&ctl::ops::fetch_tabs(pid)?)?,
+        CtlArgs::TabSwitch { pid, tab_idx } => {
+            println!("Switched to tab {}", ctl::ops::switch_tab(pid, tab_idx)?)
         }
-        CtlArgs::Sql { pid, query } => {
-            let Some(reply) = ctl::ops::send_sql_query(pid, query) else {
-                println!("No reply received from {pid}");
-                return;
-            };
-            println!("{}", reply);
+        CtlArgs::Filter { pid, filter } => print_json(&ctl::ops::send_filter(pid, filter)?)?,
+        CtlArgs::Select { pid, columns } => print_json(&ctl::ops::send_select(pid, columns)?)?,
+        CtlArgs::Order { pid, order_by } => print_json(&ctl::ops::send_order(pid, order_by)?)?,
+        CtlArgs::Export { args } => println!("{}", ctl::ops::send_export(args.pid(), &args)?),
+        CtlArgs::RowSelect { pid, row_idx } => {
+            println!("Selected row {}", ctl::ops::select_row(pid, row_idx)?)
         }
-        CtlArgs::Schema { pid } => {
-            let Some(schema) = ctl::ops::fetch_sql_backend(pid) else {
-                println!("No reply received from {pid}");
-                return;
-            };
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&schema).unwrap_or_default()
-            )
+        CtlArgs::RmTab { pid, tab_idx } => {
+            println!("Closed tab {}", ctl::ops::remove_tab(pid, tab_idx)?)
         }
-        CtlArgs::Tabs { pid } => {
-            let Some(tabs) = ctl::ops::fetch_tabs(pid) else {
-                println!("No reply received from {pid}");
-                return;
-            };
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&tabs).unwrap_or_default()
-            )
-        }
-        CtlArgs::TabSwitch { pid, tab_idx } => match ctl::ops::switch_tab(pid, tab_idx) {
-            Some(Some(idx)) => println!("Switched to tab {idx}"),
-            Some(None) => println!("Tab {tab_idx} does not exist in {pid}"),
-            None => println!("No reply received from {pid}"),
-        },
-        CtlArgs::Filter { pid, filter } => {
-            let Some(reply) = ctl::ops::send_filter(pid, filter) else {
-                println!("No reply received from {pid}");
-                return;
-            };
-            println!("{}", reply)
-        }
-        CtlArgs::Select { pid, columns } => {
-            let Some(reply) = ctl::ops::send_select(pid, columns) else {
-                println!("No reply received from {pid}");
-                return;
-            };
-            println!("{}", reply)
-        }
-        CtlArgs::Order { pid, order_by } => {
-            let Some(reply) = ctl::ops::send_order(pid, order_by) else {
-                println!("No reply received from {pid}");
-                return;
-            };
-            println!("{}", reply)
-        }
-        CtlArgs::Export { args } => {
-            let Some(reply) = ctl::ops::send_export(args.pid(), &args) else {
-                println!("No reply received from {}", args.pid());
-                return;
-            };
-            println!("{}", reply)
-        }
-        CtlArgs::RowSelect { pid, row_idx } => match ctl::ops::select_row(pid, row_idx) {
-            Some(Some(idx)) => println!("Selected row {idx}"),
-            Some(None) => println!("Row {row_idx} does not exist in {pid}"),
-            None => println!("No reply received from {pid}"),
-        },
-        CtlArgs::RmTab { pid, tab_idx } => match ctl::ops::remove_tab(pid, tab_idx) {
-            Some(Some(idx)) => println!("Closed tab {idx}"),
-            Some(None) => println!("Tab {tab_idx} does not exist in {pid}"),
-            None => println!("No reply received from {pid}"),
-        },
-        CtlArgs::Import { args } => {
-            let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
-                println!("No reply received");
-                return;
-            };
-            println!("{}", reply)
-        }
+        CtlArgs::Import { args } => println!("{}", ctl::ops::send_import(args.pid(), &args)?),
     }
+    Ok(())
+}
+
+fn print_json(value: &impl serde::Serialize) -> AppResult<()> {
+    println!("{}", serde_json::to_string_pretty(value)?);
+    Ok(())
 }
 
 fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {

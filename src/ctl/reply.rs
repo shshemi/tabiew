@@ -7,7 +7,7 @@ use crate::{
     app::App,
     ctl::{
         message::Message,
-        types::{ExportSpec, ImportSpec},
+        types::{ExportSpec, ImportSpec, Shape},
     },
     handler,
     misc::sql::{TableSource, sql},
@@ -52,17 +52,13 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
         Message::Schema { pid } if is_for_me(pid) => Some(Message::schema_replay(sql().schema())),
         Message::Sql { pid, query } if is_for_me(pid) => match sql().execute(&query, None) {
             Ok(df) => {
-                let msg = format!("Query {} run successfully", query);
+                let shape = Shape::from(&df);
                 handler::message::Message::TabsAddQueryPane(df, query).enqueue();
-                Some(Message::sql_replay(msg))
+                Some(Message::sql_replay(Ok(shape)))
             }
-            Err(err) => {
-                //
-                Some(Message::sql_replay(format!(
-                    "Query {} failed: {}",
-                    query, err
-                )))
-            }
+            Err(err) => Some(Message::sql_replay(Err(format!(
+                "Query {query} failed: {err}"
+            )))),
         },
         Message::Import { pid, spec } if is_for_me(pid) => {
             //
@@ -118,36 +114,39 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
     }
 }
 
-fn apply_filter(app: &App, filter: String) -> String {
+fn apply_filter(app: &App, filter: String) -> Result<Shape, String> {
     match query_current_table(app, &format!("SELECT * FROM _ where {filter}")) {
         Ok(df) => {
+            let shape = Shape::from(&df);
             let msg = format!("Filter '{filter}' applied");
             push_view(df, TableDescription::Filter(filter), &msg);
-            msg
+            Ok(shape)
         }
-        Err(err) => format!("Filter '{filter}' failed: {err}"),
+        Err(err) => Err(format!("Filter '{filter}' failed: {err}")),
     }
 }
 
-fn apply_select(app: &App, columns: String) -> String {
+fn apply_select(app: &App, columns: String) -> Result<Shape, String> {
     match query_current_table(app, &format!("SELECT {columns} FROM _")) {
         Ok(df) => {
+            let shape = Shape::from(&df);
             let msg = format!("Column selection '{columns}' occurred");
             push_view(df, TableDescription::Select(columns), &msg);
-            msg
+            Ok(shape)
         }
-        Err(err) => format!("Column selection '{columns}' failed: {err}"),
+        Err(err) => Err(format!("Column selection '{columns}' failed: {err}")),
     }
 }
 
-fn apply_order(app: &App, order_by: String) -> String {
+fn apply_order(app: &App, order_by: String) -> Result<Shape, String> {
     match query_current_table(app, &format!("SELECT * FROM _ ORDER BY {order_by}")) {
         Ok(df) => {
+            let shape = Shape::from(&df);
             let msg = format!("Data frame ordered by '{order_by}'");
             push_view(df, TableDescription::Order(order_by), &msg);
-            msg
+            Ok(shape)
         }
-        Err(err) => format!("Ordering by '{order_by}' failed: {err}"),
+        Err(err) => Err(format!("Ordering by '{order_by}' failed: {err}")),
     }
 }
 
