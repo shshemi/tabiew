@@ -70,8 +70,17 @@ impl Tabs {
         if self.idx < self.panes.len() {
             self.panes.remove(self.idx);
         }
-        if self.switcher.is_some() {
-            self.show_tab_switcher();
+        self.sync_switcher();
+    }
+
+    fn remove(&mut self, idx: usize) {
+        if idx < self.panes.len() {
+            self.panes.remove(idx);
+            if idx < self.idx {
+                self.idx = self.idx().saturating_sub(1);
+            }
+            self.idx = self.idx.min(self.len().saturating_sub(1));
+            self.sync_switcher();
         }
     }
 
@@ -86,6 +95,7 @@ impl Tabs {
                 .min(self.len().saturating_sub(1)),
         );
     }
+
     fn show_tab_switcher(&mut self) {
         self.switcher = Some(TabSwitcher::new(
             icons::TAB.title("Tabs"),
@@ -95,6 +105,18 @@ impl Tabs {
                 .collect(),
             self.idx,
         ));
+    }
+
+    fn sync_switcher(&mut self) {
+        if let Some(switcher) = self.switcher.as_mut() {
+            switcher.set_tabs(
+                self.panes
+                    .iter()
+                    .map(|pane| pane.title().to_owned())
+                    .collect(),
+            );
+            switcher.set_idx(self.idx);
+        }
     }
 
     fn dismiss_tab_switcher(&mut self) {
@@ -218,6 +240,7 @@ impl Component for Tabs {
             Message::TabsSelect(idx) => self.select(*idx),
             Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
             Message::TabsCloseSelected => self.close_selected(),
+            Message::TabsRemove(idx) => self.remove(*idx),
             _ => (),
         }
         if let Some(switcher) = self.switcher.as_mut() {

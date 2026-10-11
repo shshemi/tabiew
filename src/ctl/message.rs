@@ -59,6 +59,14 @@ pub enum Message {
         pid: u32,
         new_tab_idx: Option<usize>,
     },
+    RmTab {
+        pid: u32,
+        tab_idx: usize,
+    },
+    RmTabReply {
+        pid: u32,
+        removed_tab_idx: Option<usize>,
+    },
     RowSelect {
         pid: u32,
         row_idx: usize,
@@ -235,6 +243,17 @@ impl Message {
         Message::RowSelectReply {
             pid: id(),
             new_row_idx,
+        }
+    }
+
+    pub fn rm_tab(pid: u32, tab_idx: usize) -> Self {
+        Message::RmTab { pid, tab_idx }
+    }
+
+    pub fn rm_tab_reply(removed_tab_idx: Option<usize>) -> Self {
+        Message::RmTabReply {
+            pid: id(),
+            removed_tab_idx,
         }
     }
 

@@ -185,6 +185,29 @@ pub enum CtlArgs {
     },
 
     #[command(
+        about = "Close a tab of another tabiew instance",
+        long_about = "Close a tab of another tabiew instance.\n\n\
+            Tabs are numbered from 0, in the order `tw ctl tabs` lists them. Unlike \
+            closing a tab from the instance itself, the last remaining tab can also be \
+            closed, which leaves the instance open with no tabs. \
+            Use `tw ctl ps` to find the process ID."
+    )]
+    RmTab {
+        #[arg(
+            long,
+            help = "Process ID of the target tabiew instance (see `tw ctl ps`)",
+            required = true
+        )]
+        pid: u32,
+        #[arg(
+            long,
+            help = "Index of the tab to close, starting from 0",
+            required = true
+        )]
+        tab_idx: usize,
+    },
+
+    #[command(
         about = "Select a row in the current table of another tabiew instance",
         long_about = "Select a row in the current table of another tabiew instance.\n\n\
             Moves the cursor of the selected tab's current table to the given row, \

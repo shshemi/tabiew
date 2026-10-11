@@ -34,6 +34,15 @@ impl TabSwitcher {
         }
     }
 
+    pub fn set_tabs(&mut self, tabs: Vec<String>) {
+        self.tabs = tabs;
+    }
+
+    pub fn set_idx(&mut self, idx: usize) {
+        self.list
+            .select(Some(idx.min(self.tabs.len().saturating_sub(1))));
+    }
+
     pub fn selected(&self) -> Option<usize> {
         self.list.selected()
     }

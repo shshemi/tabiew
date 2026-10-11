@@ -47,6 +47,7 @@ pub enum Message {
     TabsAddNamePane(DataFrame, String),
     TabsAddQueryPane(DataFrame, String),
     TabsCloseSelected,
+    TabsRemove(usize),
     PaneEditInExternalEditor,
     PaneShowExporter,
     PaneShowArrowExporter,

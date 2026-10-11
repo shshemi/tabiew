@@ -154,3 +154,19 @@ pub fn select_row(pid: u32, row_idx: usize) -> Option<Option<usize>> {
         }
     })
 }
+
+pub fn remove_tab(pid: u32, tab_idx: usize) -> Option<Option<usize>> {
+    Message::rm_tab(pid, tab_idx).send();
+    Message::recv_iter_timeout(Duration::from_millis(2000)).find_map(|msg| {
+        if let Message::RmTabReply {
+            pid: tpid,
+            removed_tab_idx,
+        } = msg
+            && pid == tpid
+        {
+            Some(removed_tab_idx)
+        } else {
+            None
+        }
+    })
+}

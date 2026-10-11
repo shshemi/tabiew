@@ -170,6 +170,11 @@ fn run_ctl(args: CtlArgs) {
             Some(None) => println!("Row {row_idx} does not exist in {pid}"),
             None => println!("No reply received from {pid}"),
         },
+        CtlArgs::RmTab { pid, tab_idx } => match ctl::ops::remove_tab(pid, tab_idx) {
+            Some(Some(idx)) => println!("Closed tab {idx}"),
+            Some(None) => println!("Tab {tab_idx} does not exist in {pid}"),
+            None => println!("No reply received from {pid}"),
+        },
         CtlArgs::Import { args } => {
             let Some(reply) = ctl::ops::send_import(args.pid(), &args) else {
                 println!("No reply received");
