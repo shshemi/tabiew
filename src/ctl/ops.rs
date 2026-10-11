@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use anyhow::anyhow;
 use itertools::Itertools;
@@ -52,11 +52,12 @@ pub fn send_sql_query(pid: u32, query: String) -> AppResult<Shape> {
     .map_err(|err| anyhow!(err))
 }
 
-pub fn send_import(pid: u32, spec: impl Into<ImportSpec>) -> AppResult<String> {
+pub fn send_import(pid: u32, spec: impl Into<ImportSpec>) -> AppResult<Vec<String>> {
     request(pid, Message::import(pid, spec), |msg| match msg {
-        Message::ImportReply { pid: tpid, msg } if tpid == pid => Some(msg),
+        Message::ImportReply { pid: tpid, result } if tpid == pid => Some(result),
         _ => None,
-    })
+    })?
+    .map_err(|err| anyhow!(err))
 }
 
 pub fn fetch_tabs(pid: u32) -> AppResult<Tabs> {
@@ -101,11 +102,12 @@ pub fn send_order(pid: u32, order_by: String) -> AppResult<Shape> {
     .map_err(|err| anyhow!(err))
 }
 
-pub fn send_export(pid: u32, spec: impl Into<ExportSpec>) -> AppResult<String> {
+pub fn send_export(pid: u32, spec: impl Into<ExportSpec>) -> AppResult<PathBuf> {
     request(pid, Message::export(pid, spec), |msg| match msg {
-        Message::ExportReply { pid: tpid, msg } if tpid == pid => Some(msg),
+        Message::ExportReply { pid: tpid, result } if tpid == pid => Some(result),
         _ => None,
-    })
+    })?
+    .map_err(|err| anyhow!(err))
 }
 
 pub fn select_row(pid: u32, row_idx: usize) -> AppResult<usize> {

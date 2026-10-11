@@ -2,6 +2,7 @@ use clap::Parser;
 use indexmap::IndexMap;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
+use serde_json::json;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::str::FromStr;
@@ -38,7 +39,7 @@ fn main() {
         match sub_cmd {
             tabiew::args::SubCommand::Ctl(args) => {
                 if let Err(err) = run_ctl(args) {
-                    eprintln!("Error: {err:#}");
+                    eprintln!("{}", json!({ "error": format!("{err:#}") }));
                     std::process::exit(1);
                 }
             }
@@ -108,19 +109,23 @@ fn run_ctl(args: CtlArgs) -> AppResult<()> {
         CtlArgs::Schema { pid } => print_json(&ctl::ops::fetch_sql_backend(pid)?)?,
         CtlArgs::Tabs { pid } => print_json(&ctl::ops::fetch_tabs(pid)?)?,
         CtlArgs::TabSwitch { pid, tab_idx } => {
-            println!("Switched to tab {}", ctl::ops::switch_tab(pid, tab_idx)?)
+            print_json(&json!({ "tab_idx": ctl::ops::switch_tab(pid, tab_idx)? }))?
         }
         CtlArgs::Filter { pid, filter } => print_json(&ctl::ops::send_filter(pid, filter)?)?,
         CtlArgs::Select { pid, columns } => print_json(&ctl::ops::send_select(pid, columns)?)?,
         CtlArgs::Order { pid, order_by } => print_json(&ctl::ops::send_order(pid, order_by)?)?,
-        CtlArgs::Export { args } => println!("{}", ctl::ops::send_export(args.pid(), &args)?),
+        CtlArgs::Export { args } => {
+            print_json(&json!({ "path": ctl::ops::send_export(args.pid(), &args)? }))?
+        }
         CtlArgs::RowSelect { pid, row_idx } => {
-            println!("Selected row {}", ctl::ops::select_row(pid, row_idx)?)
+            print_json(&json!({ "row_idx": ctl::ops::select_row(pid, row_idx)? }))?
         }
         CtlArgs::RmTab { pid, tab_idx } => {
-            println!("Closed tab {}", ctl::ops::remove_tab(pid, tab_idx)?)
+            print_json(&json!({ "removed_tab_idx": ctl::ops::remove_tab(pid, tab_idx)? }))?
         }
-        CtlArgs::Import { args } => println!("{}", ctl::ops::send_import(args.pid(), &args)?),
+        CtlArgs::Import { args } => {
+            print_json(&json!({ "tables": ctl::ops::send_import(args.pid(), &args)? }))?
+        }
     }
     Ok(())
 }

@@ -1,4 +1,5 @@
 use std::{
+    path::PathBuf,
     process::id,
     sync::{LazyLock, Mutex},
     time::Duration,
@@ -42,7 +43,7 @@ pub enum Message {
     },
     ImportReply {
         pid: u32,
-        msg: String,
+        result: Result<Vec<String>, String>,
     },
     Tabs {
         pid: u32,
@@ -105,7 +106,7 @@ pub enum Message {
     },
     ExportReply {
         pid: u32,
-        msg: String,
+        result: Result<PathBuf, String>,
     },
 }
 
@@ -147,11 +148,8 @@ impl Message {
         }
     }
 
-    pub fn import_reply(msg: impl Into<String>) -> Self {
-        Message::ImportReply {
-            pid: id(),
-            msg: msg.into(),
-        }
+    pub fn import_reply(result: Result<Vec<String>, String>) -> Self {
+        Message::ImportReply { pid: id(), result }
     }
 
     pub fn tabs(pid: u32) -> Self {
@@ -216,11 +214,8 @@ impl Message {
         }
     }
 
-    pub fn export_reply(msg: impl Into<String>) -> Self {
-        Message::ExportReply {
-            pid: id(),
-            msg: msg.into(),
-        }
+    pub fn export_reply(result: Result<PathBuf, String>) -> Self {
+        Message::ExportReply { pid: id(), result }
     }
 
     pub fn row_select(pid: u32, row_idx: usize) -> Self {

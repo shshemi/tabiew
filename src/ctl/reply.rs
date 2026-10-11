@@ -60,16 +60,9 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
                 "Query {query} failed: {err}"
             )))),
         },
-        Message::Import { pid, spec } if is_for_me(pid) => {
-            //
-            match import_to_backend(spec) {
-                Ok(names) => Some(Message::import_reply(format!(
-                    "Import success with name(s) {} ",
-                    names.join(", "),
-                ))),
-                Err(err) => Some(Message::import_reply(format!("Failed to import: {}", err))),
-            }
-        }
+        Message::Import { pid, spec } if is_for_me(pid) => Some(Message::import_reply(
+            import_to_backend(spec).map_err(|err| format!("Import failed: {err:#}")),
+        )),
         Message::Tabs { pid } if is_for_me(pid) => app.map(|app| Message::tabs_reply(app.tabs())),
         Message::TabSwitch { pid, tab_idx } if is_for_me(pid) => app.map(|app| {
             if tab_idx < app.tabs().len() {
@@ -150,15 +143,18 @@ fn apply_order(app: &App, order_by: String) -> Result<Shape, String> {
     }
 }
 
-fn apply_export(app: &App, spec: ExportSpec) -> String {
-    let path = spec.path().display().to_string();
+fn apply_export(app: &App, spec: ExportSpec) -> Result<PathBuf, String> {
+    let path = spec.path().to_path_buf();
     match export_current_table(app, spec) {
         Ok(()) => {
-            let msg = format!("Data frame exported to '{path}'");
-            handler::message::Message::AppShowToast(msg.clone()).enqueue();
-            msg
+            handler::message::Message::AppShowToast(format!(
+                "Data frame exported to '{}'",
+                path.display()
+            ))
+            .enqueue();
+            Ok(path)
         }
-        Err(err) => format!("Export to '{path}' failed: {err}"),
+        Err(err) => Err(format!("Export to '{}' failed: {err:#}", path.display())),
     }
 }
 
