@@ -37,14 +37,13 @@ impl InlineQueryPicker {
     fn submit(&self) {
         let value = self.picker.value();
         let result = match self.query_type {
-            QueryType::Select => {
-                sql().execute(&format!("SELECT {value} FROM _"), self.dataframe.clone())
-            }
-            QueryType::Filter => sql().execute(
+            QueryType::Select => sql()
+                .execute_with_default(&format!("SELECT {value} FROM _"), self.dataframe.clone()),
+            QueryType::Filter => sql().execute_with_default(
                 &format!("SELECT * FROM _ where {value}"),
                 self.dataframe.clone(),
             ),
-            QueryType::Order => sql().execute(
+            QueryType::Order => sql().execute_with_default(
                 &format!("SELECT * FROM _ ORDER BY {value}"),
                 self.dataframe.clone(),
             ),

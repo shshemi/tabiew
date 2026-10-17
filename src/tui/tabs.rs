@@ -28,6 +28,14 @@ pub struct Tabs {
 }
 
 impl Tabs {
+    pub fn new(panes: Vec<Pane>) -> Self {
+        Self {
+            panes,
+            idx: 0,
+            switcher: None,
+        }
+    }
+
     pub fn selected(&self) -> Option<&Pane> {
         self.panes.get(self.idx)
     }
@@ -313,14 +321,4 @@ fn render_empty(area: Rect, buf: &mut ratatui::prelude::Buffer) {
 fn tabs_table_areas(area: Rect) -> [Rect; 2] {
     const TABS_WIDTH: u16 = 34;
     Layout::horizontal([Constraint::Length(TABS_WIDTH), Constraint::Fill(1)]).areas(area)
-}
-
-impl FromIterator<Pane> for Tabs {
-    fn from_iter<T: IntoIterator<Item = Pane>>(iter: T) -> Self {
-        Self {
-            panes: iter.into_iter().collect(),
-            idx: 0,
-            switcher: None,
-        }
-    }
 }

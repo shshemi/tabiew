@@ -61,7 +61,7 @@ impl SqlBackend {
         self.sql.unregister("_");
     }
 
-    pub fn execute(
+    pub fn execute_with_default(
         &mut self,
         query: &str,
         default_table: impl Into<Option<DataFrame>>,

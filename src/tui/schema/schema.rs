@@ -107,7 +107,7 @@ impl Component for Schema {
                         })
                         .and_then(|name| {
                             sql()
-                                .execute(
+                                .execute_with_default(
                                     &format!("SELECT * FROM \"{}\"", name.replace('"', "\"\"")),
                                     None,
                                 )

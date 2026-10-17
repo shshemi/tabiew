@@ -50,16 +50,18 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
     match msg {
         Message::Ps => Some(Message::ps_reply()),
         Message::Schema { pid } if is_for_me(pid) => Some(Message::schema_replay(sql().schema())),
-        Message::Sql { pid, query } if is_for_me(pid) => match sql().execute(&query, None) {
-            Ok(df) => {
-                let shape = Shape::from(&df);
-                handler::message::Message::TabsAddQueryPane(df, query).enqueue();
-                Some(Message::sql_replay(Ok(shape)))
+        Message::Sql { pid, query } if is_for_me(pid) => {
+            match sql().execute_with_default(&query, None) {
+                Ok(df) => {
+                    let shape = Shape::from(&df);
+                    handler::message::Message::TabsAddQueryPane(df, query).enqueue();
+                    Some(Message::sql_replay(Ok(shape)))
+                }
+                Err(err) => Some(Message::sql_replay(Err(format!(
+                    "Query {query} failed: {err}"
+                )))),
             }
-            Err(err) => Some(Message::sql_replay(Err(format!(
-                "Query {query} failed: {err}"
-            )))),
-        },
+        }
         Message::Import { pid, spec } if is_for_me(pid) => Some(Message::import_reply(
             import_to_backend(spec).map_err(|err| format!("Import failed: {err:#}")),
         )),
@@ -232,7 +234,7 @@ fn current_table(app: &App) -> AppResult<DataFrame> {
 }
 
 fn query_current_table(app: &App, query: &str) -> AppResult<DataFrame> {
-    Ok(sql().execute(query, current_table(app)?)?)
+    Ok(sql().execute_with_default(query, current_table(app)?)?)
 }
 
 fn push_view(df: DataFrame, description: TableDescription, msg: &str) {

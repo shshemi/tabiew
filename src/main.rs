@@ -1,5 +1,6 @@
 use clap::Parser;
 use indexmap::IndexMap;
+use itertools::Itertools;
 use polars::frame::DataFrame;
 use polars::prelude::Schema;
 use serde_json::json;
@@ -26,6 +27,7 @@ use tabiew::readers::{
 };
 use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
+use tabiew::tui::tabs::Tabs;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
 
 use tabiew::tui::Pane;
@@ -52,7 +54,6 @@ fn main() {
     let parser = DataFrameParser::from_env_args();
 
     // Dataframe loading
-    let mut name_dfs = Vec::new();
 
     // Load multiparts to data frames
     let mut multiparts = IndexMap::<Arc<Schema>, (String, DataFrame)>::new();
@@ -70,8 +71,7 @@ fn main() {
     for (_, (name, mut df)) in multiparts {
         df.rechunk_mut_par();
         parser.parse_and_update(&mut df);
-        let name = sql().register(&name, df.clone(), TableSource::File(name.clone().into()));
-        name_dfs.push((name, df));
+        sql().register(&name, df.clone(), TableSource::File(name.clone().into()));
     }
 
     // Load files to data frames
@@ -79,26 +79,24 @@ fn main() {
         let resource = DataSource::from_str(resource).unwrap_or_graceful_shutdown();
         for (name, mut df) in try_read_path(&args, &resource).unwrap_or_graceful_shutdown() {
             parser.parse_and_update(&mut df);
-            let name = sql().register(&name, df.clone(), resource.clone());
-            name_dfs.push((name, df))
+            sql().register(&name, df.clone(), resource.clone());
         }
     }
 
     // Read stdin only when it is piped, otherwise start with no tabs
-    if name_dfs.is_empty() && !std::io::stdin().is_terminal() {
+    if sql().schema().is_empty() && !std::io::stdin().is_terminal() {
         for (name, mut df) in build_reader(&args, "")
             .unwrap_or_graceful_shutdown()
             .read_to_data_frames(ReaderSource::Stdin)
             .unwrap_or_graceful_shutdown()
         {
             parser.parse_and_update(&mut df);
-            let name = sql().register(&name, df.clone(), TableSource::Stdin);
-            name_dfs.push((name, df))
+            sql().register(&name, df.clone(), TableSource::Stdin);
         }
     }
 
     start_tui().unwrap_or_graceful_shutdown();
-    start_app(name_dfs).unwrap_or_graceful_shutdown();
+    start_app().unwrap_or_graceful_shutdown();
     let _ = stop_tui();
 }
 
@@ -138,11 +136,22 @@ fn print_json(value: &impl serde::Serialize) -> AppResult<()> {
     Ok(())
 }
 
-fn start_app(tabs: Vec<(String, DataFrame)>) -> AppResult<()> {
-    let tabs = tabs
+fn start_app() -> AppResult<()> {
+    let names = sql()
+        .schema()
+        .iter()
+        .map(|(name, _)| name.to_owned())
+        .collect_vec();
+
+    let panes = names
         .into_iter()
-        .map(|(name, df)| Pane::new(df, TableDescription::Table(name)))
-        .collect();
+        .map(|name| {
+            let df = sql().execute_with_default(&format!("SELECT * FROM {}", name), None)?;
+            Ok(Pane::new(df, TableDescription::Table(name.to_owned())))
+        })
+        .collect::<AppResult<Vec<_>>>()?;
+
+    let tabs = Tabs::new(panes);
 
     // Initialize the app
     let mut app = App::new(tabs);

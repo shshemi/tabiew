@@ -61,7 +61,7 @@ impl Component for SqlQueryPicker {
                         self.picker.apply_selected_suggestion();
                     } else {
                         let value = self.picker.value();
-                        match sql().execute(value, self.dataframe.clone()) {
+                        match sql().execute_with_default(value, self.dataframe.clone()) {
                             Ok(df) => {
                                 if df.columns().is_empty() {
                                     Message::AppShowToast(
