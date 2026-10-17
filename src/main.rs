@@ -53,8 +53,6 @@ fn main() {
 
     let parser = DataFrameParser::from_env_args();
 
-    // Dataframe loading
-
     // Load multiparts to data frames
     let mut multiparts = IndexMap::<Arc<Schema>, (String, DataFrame)>::new();
     for resource in args.multiparts.iter() {
