@@ -144,7 +144,10 @@ fn start_app() -> AppResult<()> {
     let panes = names
         .into_iter()
         .map(|name| {
-            let df = sql().execute_with_default(&format!("SELECT * FROM {}", name), None)?;
+            let df = sql().execute_with_default(
+                &format!("SELECT * FROM \"{}\"", name.replace('"', "\"\"")),
+                None,
+            )?;
             Ok(Pane::new(df, TableDescription::Table(name.to_owned())))
         })
         .collect::<AppResult<Vec<_>>>()?;
