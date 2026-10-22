@@ -30,7 +30,7 @@ impl SeriesWidthCalculator {
     pub fn calculate(&mut self, series: &Series) -> u16 {
         let chunk_count = self.wc.len();
         let chunk_len = series.len().div_ceil(chunk_count);
-        let name_width = series.name().width() as u16;
+        let name_width = saturating_u16(series.name().width());
         let value_width = match series.dtype() {
             DataType::Null => Some(0),
             DataType::Boolean => Some(5),
@@ -105,13 +105,18 @@ impl AnyValueWidthCalculator {
 
     #[inline]
     fn table_str_width(&mut self, value: AnyValue) -> u16 {
-        self.conv.to_single_line(value).width() as u16
+        saturating_u16(self.conv.to_single_line(value).width())
     }
 }
 
 #[inline]
 fn first_line_width(s: &str) -> u16 {
-    s.lines().next().unwrap_or_default().width() as u16
+    saturating_u16(s.lines().next().unwrap_or_default().width())
+}
+
+#[inline]
+fn saturating_u16(width: usize) -> u16 {
+    u16::try_from(width).unwrap_or(u16::MAX)
 }
 
 #[inline]

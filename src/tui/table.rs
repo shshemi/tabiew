@@ -345,8 +345,9 @@ impl Table {
     }
 
     fn minimum_compact_width(&self) -> u16 {
-        let col_count = self.df.width() as u16;
-        col_count + (col_count.saturating_sub(1) * self.col_space)
+        let col_count = self.df.width();
+        let width = col_count + col_count.saturating_sub(1) * self.col_space as usize;
+        u16::try_from(width).unwrap_or(u16::MAX)
     }
 }
 
@@ -591,13 +592,13 @@ fn col_offsets(col_widths: &[Constraint], col_space: u16) -> Vec<usize> {
                 .enumerate()
                 .map(|(i, c)| {
                     if i != col_widths.len().saturating_sub(1) {
-                        contraint_value(c) + col_space
+                        contraint_value(c) as usize + col_space as usize
                     } else {
-                        contraint_value(c)
+                        contraint_value(c) as usize
                     }
                 })
                 .scan(0, |s, u| {
-                    *s += u as usize;
+                    *s += u;
                     Some(*s)
                 }),
         )
