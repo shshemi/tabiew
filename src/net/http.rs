@@ -7,6 +7,7 @@ use url::Url;
 use crate::misc::config::config;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct HttpConfig {
     pub user_agent: Option<String>,
     pub connect_timeout: Option<Duration>,
