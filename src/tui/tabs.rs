@@ -3,7 +3,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     text::Line,
-    widgets::{Block, Clear, Paragraph, Widget},
+    widgets::{Block, Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::{
@@ -271,20 +271,24 @@ impl Component for Tabs {
 
 fn render_empty(area: Rect, buf: &mut ratatui::prelude::Buffer) {
     const GAP: u16 = 1;
-    let hints = vec![
-        Line::from("Press : and choose Import to import and open a file".to_owned()),
-        Line::from(format!(
-            "or run `tw ctl import <FORMAT> --pid {} <PATH>` from another terminal",
-            std::process::id()
-        )),
-    ];
-    let hints_height = hints.len() as u16;
 
     Clear.render(area, buf);
     let block = Block::app_default();
     let inner = block.inner(area);
     block.render(area, buf);
     let area = inner;
+
+    let hints = Paragraph::new(vec![
+        Line::from("Press : and choose Import to import and open a file".to_owned()),
+        Line::from(format!(
+            "or run `tw ctl import <FORMAT> --pid {} <PATH>` from another terminal",
+            std::process::id()
+        )),
+    ])
+    .style(theme().subtext())
+    .centered()
+    .wrap(Wrap { trim: true });
+    let hints_height = hints.line_count(area.width) as u16;
 
     let logo = TabiewLogo::size(Rect {
         height: area.height.saturating_sub(hints_height + GAP),
@@ -305,17 +309,14 @@ fn render_empty(area: Rect, buf: &mut ratatui::prelude::Buffer) {
             buf,
         );
     }
-    Paragraph::new(hints)
-        .style(theme().subtext())
-        .centered()
-        .render(
-            Rect {
-                y: top + logo_height + gap,
-                height: height - logo_height - gap,
-                ..area
-            },
-            buf,
-        );
+    hints.render(
+        Rect {
+            y: top + logo_height + gap,
+            height: height - logo_height - gap,
+            ..area
+        },
+        buf,
+    );
 }
 
 fn tabs_table_areas(area: Rect) -> [Rect; 2] {
