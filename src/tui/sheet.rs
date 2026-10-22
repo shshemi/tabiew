@@ -149,7 +149,7 @@ impl Component for Sheet {
                 let Some(value) = get_row(&self.df, row) else {
                     return true;
                 };
-                match self.format.pretty_string(&value) {
+                match self.format.pretty_string(value) {
                     Ok(text) => {
                         text.copy_to_clipboard_via_osc52();
                         Message::AppShowToast(format!("Row #{} copied to clipboard", row + 1))
@@ -184,10 +184,14 @@ impl Format {
         }
     }
 
-    fn pretty_string(&self, value: &Value) -> AppResult<String> {
+    fn pretty_string(&self, value: Value) -> AppResult<String> {
         match self {
             Format::Json => Ok(serde_json::to_string_pretty(&value)?),
-            Format::Yaml => todo!(),
+            Format::Yaml => {
+                let mut tb = TextBuilder::default();
+                styled_yaml(&mut tb, value, 0);
+                Ok(tb.into_text().to_string())
+            }
         }
     }
 }
