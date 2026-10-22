@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::misc::config::config;
 use crate::net::remote_load::{self, RemoteLoad};
 use crate::tui::Pane;
+use crate::tui::layouts::notification::NotificationLayout;
 use crate::tui::popups::download_notif::DownloadNotification;
 use crate::tui::popups::pickers::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
@@ -30,7 +31,7 @@ use crate::{
 };
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
-use ratatui::layout::{Constraint, Direction, Flex, Layout, Rect};
+use ratatui::layout::{Constraint, Direction, Flex, Layout};
 use url::Url;
 
 pub struct App {
@@ -211,7 +212,7 @@ impl Component for App {
             self.dls.iter().map(|_| Constraint::Length(3)),
         )
         .flex(Flex::End)
-        .split(right_notif_bar(area));
+        .split(NotificationLayout::default().area(area));
 
         for (dl, area) in self.dls.iter_mut().zip(areas.iter()) {
             dl.render(*area, buf, FocusState::NotFocused);
@@ -366,14 +367,5 @@ impl Overlay {
             Overlay::ImportSqlite(importer) => importer,
             Overlay::ImportTsv(importer) => importer,
         }
-    }
-}
-
-fn right_notif_bar(area: Rect) -> Rect {
-    Rect {
-        x: area.width.saturating_sub(41),
-        y: 1,
-        width: 40,
-        height: area.height.saturating_sub(2),
     }
 }
