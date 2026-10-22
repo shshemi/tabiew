@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use polars::{
@@ -207,6 +207,9 @@ fn discrete_histogram(mut counts: DataFrame) -> AppResult<Vec<(String, u64)>> {
 }
 
 fn continues_histogram(counts: DataFrame, buckets: usize) -> AppResult<Vec<(String, u64)>> {
+    if buckets == 0 {
+        bail!("Bucket count must be greater than zero");
+    }
     let casted = counts[0].cast(&DataType::Float64)?;
     let arr = casted.f64()?;
     let (min, max) = arr.min_max().ok_or(anyhow!("No value found"))?;
