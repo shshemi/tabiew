@@ -9,7 +9,7 @@ use crate::{
     readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct JsonToDataFrame {
     ignore_errors: bool,
     max_rows: Option<usize>,
@@ -31,15 +31,6 @@ impl JsonToDataFrame {
     pub fn with_max_rows(mut self, max_rows: Option<usize>) -> Self {
         self.max_rows = max_rows;
         self
-    }
-}
-
-impl Default for JsonToDataFrame {
-    fn default() -> Self {
-        Self {
-            ignore_errors: true,
-            max_rows: None,
-        }
     }
 }
 
