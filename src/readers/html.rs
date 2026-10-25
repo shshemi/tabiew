@@ -9,7 +9,7 @@ use scraper::{ElementRef, Html, Selector};
 use crate::{
     AppResult,
     args::Args,
-    misc::stdin::stdin,
+    misc::{available_col_name::available_col_name, stdin::stdin},
     readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
@@ -79,7 +79,11 @@ fn table_to_data_frame(table: ElementRef) -> AppResult<DataFrame> {
     };
 
     let headers: Vec<String> = if has_thead_headers {
-        header_cells
+        header_cells.into_iter().fold(Vec::new(), |mut vec, name| {
+            let name = available_col_name(&name, |name| !vec.iter().any(|n| n == name));
+            vec.push(name);
+            vec
+        })
     } else {
         (1..=column_count).map(|i| format!("column_{i}")).collect()
     };

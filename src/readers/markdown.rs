@@ -9,7 +9,7 @@ use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use crate::{
     AppResult,
     args::Args,
-    misc::stdin::stdin,
+    misc::{available_col_name::available_col_name, stdin::stdin},
     readers::{DataFrameReader, NamedFrames, ReaderSource},
 };
 
@@ -95,6 +95,11 @@ fn collect_tables(parser: Parser) -> Vec<(Vec<String>, Vec<Vec<String>>)> {
 }
 
 fn build_data_frame(headers: Vec<String>, rows: Vec<Vec<String>>) -> AppResult<DataFrame> {
+    let headers = headers.into_iter().fold(Vec::new(), |mut vec, name| {
+        let name = available_col_name(&name, |name| !vec.iter().any(|n| n == name));
+        vec.push(name);
+        vec
+    });
     let column_count = headers.len();
     let mut columns: Vec<Vec<AnyValue<'static>>> = (0..column_count).map(|_| Vec::new()).collect();
     for row in rows {
