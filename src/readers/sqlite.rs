@@ -68,33 +68,63 @@ fn path_to_name_frames(path: impl AsRef<Path>, key: Option<&str>) -> AppResult<N
 }
 
 fn get_data_frame(conn: &Connection, table_name: &str) -> AppResult<DataFrame> {
-    let schema = Schema::from_iter(
-        conn.prepare(&format!(
-            "PRAGMA table_info(\"{}\")",
-            table_name.replace('"', "\"\"")
-        ))?
-        .query_map([], |row| {
-            let name = PlSmallStr::from_string(row.get(1)?);
-            let dtype = match row.get::<_, String>(2)?.as_str() {
-                "INTEGER" => DataType::Int64,
-                "REAL" => DataType::Float64,
-                "BLOB" => DataType::Binary,
-                _ => DataType::String,
-            };
-            Ok((name, dtype))
-        })?
-        .collect::<Result<Vec<_>, _>>()?,
-    );
-    Ok(DataFrame::from_rows_and_schema(
-        &conn
-            .prepare(&format!(
-                "SELECT * FROM \"{}\"",
-                table_name.replace('"', "\"\"")
-            ))?
-            .query_map([], sqlite_to_polars_row)?
-            .collect::<Result<Vec<_>, _>>()?,
-        &schema,
-    )?)
+    let mut stmt = conn.prepare(&format!(
+        "SELECT * FROM \"{}\"",
+        table_name.replace('"', "\"\"")
+    ))?;
+    let names = stmt
+        .column_names()
+        .into_iter()
+        .map(PlSmallStr::from)
+        .collect_vec();
+    let rows = stmt
+        .query_map([], sqlite_to_polars_row)?
+        .collect::<Result<Vec<_>, _>>()?;
+    let schema = Schema::from_iter(names.into_iter().enumerate().map(|(idx, name)| {
+        let dtype = rows
+            .iter()
+            .filter_map(|row| row.0.get(idx))
+            .map(AnyValue::dtype)
+            .fold(DataType::Null, merge_dtypes);
+        match dtype {
+            DataType::Null => (name, DataType::String),
+            dtype => (name, dtype),
+        }
+    }));
+    let rows = rows
+        .into_iter()
+        .map(|row| {
+            row.0
+                .into_iter()
+                .zip(schema.iter_values())
+                .map(|(value, dtype)| match (value, dtype) {
+                    (AnyValue::Int64(n), DataType::String) => {
+                        AnyValue::StringOwned(n.to_string().into())
+                    }
+                    (AnyValue::Float64(f), DataType::String) => {
+                        AnyValue::StringOwned(f.to_string().into())
+                    }
+                    (AnyValue::BinaryOwned(buf), DataType::String) => {
+                        AnyValue::StringOwned(String::from_utf8_lossy(&buf).into_owned().into())
+                    }
+                    (value, _) => value,
+                })
+                .collect_vec()
+        })
+        .map(polars::frame::row::Row)
+        .collect_vec();
+    Ok(DataFrame::from_rows_and_schema(&rows, &schema)?)
+}
+
+fn merge_dtypes(lhs: DataType, rhs: DataType) -> DataType {
+    match (lhs, rhs) {
+        (DataType::Null, dtype) | (dtype, DataType::Null) => dtype,
+        (lhs, rhs) if lhs == rhs => lhs,
+        (DataType::Int64, DataType::Float64) | (DataType::Float64, DataType::Int64) => {
+            DataType::Float64
+        }
+        _ => DataType::String,
+    }
 }
 
 fn sqlite_to_polars_row<'a>(
