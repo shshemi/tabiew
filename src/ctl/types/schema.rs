@@ -45,7 +45,7 @@ pub struct FieldInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Size(pub usize);
+pub struct Size(pub u64);
 
 impl From<&sql::BackendSchema> for Schema {
     fn from(value: &sql::BackendSchema) -> Self {

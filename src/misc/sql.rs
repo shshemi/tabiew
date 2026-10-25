@@ -277,21 +277,21 @@ impl FieldInfo {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct Size(usize);
+pub struct Size(u64);
 
 impl std::iter::Sum for Size {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.map(|s| s.0).sum::<usize>().into()
+        Size(iter.map(|s| s.0).sum())
     }
 }
 
 impl From<usize> for Size {
     fn from(value: usize) -> Self {
-        Size(value)
+        Size(value as u64)
     }
 }
 
-impl From<Size> for usize {
+impl From<Size> for u64 {
     fn from(value: Size) -> Self {
         value.0
     }
