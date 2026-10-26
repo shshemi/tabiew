@@ -301,6 +301,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
       - name: Install Cargo Bump
         run: cargo install cargo-bump
 
