@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppResult;
 
-const CYCLE_TIME: Duration = Duration::from_millis(100);
+const CYCLE_TIME: Duration = Duration::from_millis(25);
 
 pub struct Channel<T> {
     send: Sender<T>,
