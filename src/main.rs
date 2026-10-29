@@ -10,6 +10,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
+use tabiew::ctl::shutdown_shared_ipc_channel;
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config;
@@ -40,7 +41,9 @@ fn main() {
     if let Some(sub_cmd) = args.sub_command {
         match sub_cmd {
             tabiew::args::SubCommand::Ctl(args) => {
-                if let Err(err) = run_ctl(args) {
+                let result = run_ctl(args);
+                shutdown_shared_ipc_channel();
+                if let Err(err) = result {
                     eprintln!("{}", json!({ "error": format!("{err:#}") }));
                     std::process::exit(1);
                 }
@@ -96,6 +99,7 @@ fn main() {
     start_tui().unwrap_or_graceful_shutdown();
     start_app().unwrap_or_graceful_shutdown();
     let _ = stop_tui();
+    shutdown_shared_ipc_channel();
 }
 
 fn run_ctl(args: CtlArgs) -> AppResult<()> {
@@ -190,10 +194,7 @@ fn start_app() -> AppResult<()> {
 
         flush_osc52_buffer();
 
-        for msg in ctl::Message::recv_iter() {
-            apply_queued_messages(&mut app);
-            ctl::Reply::new(msg).with_app(&app).send();
-        }
+        apply_ipc_messages(&mut app);
     }
 
     // Exit the user interface.
@@ -203,6 +204,13 @@ fn start_app() -> AppResult<()> {
 fn apply_queued_messages(app: &mut App) {
     while let Some(action) = Message::dequeue() {
         app.update(&action);
+    }
+}
+
+fn apply_ipc_messages(app: &mut App) {
+    for msg in ctl::Message::recv_iter() {
+        apply_queued_messages(app);
+        ctl::Reply::new(msg).with_app(app).send();
     }
 }
 

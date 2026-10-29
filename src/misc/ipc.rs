@@ -1,12 +1,16 @@
 use std::{
     sync::mpsc::{Receiver, Sender, TryRecvError, channel},
+    thread::JoinHandle,
     time::Duration,
 };
 
 use iceoryx2::{
     config::Config,
     node::NodeBuilder,
-    prelude::{AllocationStrategy, FileName, SemanticString, ZeroCopySend},
+    prelude::{
+        AllocationStrategy, FileName, LogLevel, SemanticString, ZeroCopySend,
+        set_log_level_from_env_or,
+    },
     service::ipc,
 };
 use serde::{Deserialize, Serialize};
@@ -18,6 +22,7 @@ const CYCLE_TIME: Duration = Duration::from_millis(100);
 pub struct Channel<T> {
     send: Sender<T>,
     recv: Receiver<T>,
+    hndl: JoinHandle<AppResult<()>>,
 }
 
 impl<T> Channel<T>
@@ -28,7 +33,10 @@ where
         let (send, trecv) = channel::<T>();
         let (tsend, recv) = channel::<T>();
 
-        std::thread::spawn(move || -> AppResult<()> {
+        // iceoryx2 logs straight to the terminal, which would draw over the TUI
+        set_log_level_from_env_or(LogLevel::Fatal);
+
+        let hndl = std::thread::spawn(move || -> AppResult<()> {
             let node = NodeBuilder::new()
                 .config(&Self::ipc_config())
                 .create::<ipc::Service>()?;
@@ -75,7 +83,7 @@ where
             }
         });
 
-        Self { send, recv }
+        Self { send, recv, hndl }
     }
 
     pub fn recv(&self) -> Option<T> {
@@ -88,6 +96,10 @@ where
 
     pub fn send(&self, msg: T) {
         let _ = self.send.send(msg);
+    }
+
+    pub fn into_handle(self) -> JoinHandle<AppResult<()>> {
+        self.hndl
     }
 
     fn ipc_config() -> Config {

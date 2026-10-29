@@ -1,9 +1,4 @@
-use std::{
-    path::PathBuf,
-    process::id,
-    sync::{LazyLock, Mutex},
-    time::Duration,
-};
+use std::{path::PathBuf, process::id, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
@@ -13,8 +8,7 @@ use crate::{
     tui,
 };
 
-static IPC: LazyLock<Mutex<ipc::Channel<Message>>> =
-    LazyLock::new(|| Mutex::new(Default::default()));
+static IPC: Mutex<Option<ipc::Channel<Message>>> = Mutex::new(None);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Message {
@@ -258,16 +252,23 @@ impl Message {
     }
 
     pub fn send(self) {
-        IPC.lock().unwrap_or_graceful_shutdown().send(self);
+        IPC.lock()
+            .unwrap_or_graceful_shutdown()
+            .get_or_insert_default()
+            .send(self);
     }
 
     pub fn recv() -> Option<Message> {
-        IPC.lock().unwrap_or_graceful_shutdown().recv()
+        IPC.lock()
+            .unwrap_or_graceful_shutdown()
+            .get_or_insert_default()
+            .recv()
     }
 
     pub fn recv_timeout(duration: Duration) -> Option<Message> {
         IPC.lock()
             .unwrap_or_graceful_shutdown()
+            .get_or_insert_default()
             .recv_timeout(duration)
     }
 
@@ -277,5 +278,11 @@ impl Message {
 
     pub fn recv_iter_timeout(duration: Duration) -> impl Iterator<Item = Message> {
         std::iter::from_fn(move || Self::recv_timeout(duration))
+    }
+}
+
+pub fn shutdown_shared_ipc_channel() {
+    if let Some(channel) = IPC.lock().unwrap_or_graceful_shutdown().take() {
+        let _ = channel.into_handle().join();
     }
 }
