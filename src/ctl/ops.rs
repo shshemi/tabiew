@@ -10,7 +10,7 @@ use crate::{
 
 use super::Message;
 
-const TIMEOUT: Duration = Duration::from_millis(2000);
+const TIMEOUT: Duration = Duration::from_millis(1000);
 
 fn request<T>(pid: u32, msg: Message, reply: impl FnMut(Message) -> Option<T>) -> AppResult<T> {
     msg.send();
