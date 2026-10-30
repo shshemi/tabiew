@@ -9,6 +9,30 @@ pub fn is_separator(character: char) -> bool {
         )
 }
 
+pub(super) fn unclosed_identifier_quote_start(value: &str) -> Option<usize> {
+    let mut start = None;
+    let mut in_string = false;
+    let mut chars = value.char_indices().peekable();
+    while let Some((index, character)) = chars.next() {
+        if character == '\'' && start.is_none() {
+            if in_string && chars.peek().is_some_and(|(_, next)| *next == '\'') {
+                chars.next();
+            } else {
+                in_string = !in_string;
+            }
+        } else if character == '"' && !in_string {
+            if start.is_some() && chars.peek().is_some_and(|(_, next)| *next == '"') {
+                chars.next();
+            } else if start.is_some() {
+                start = None;
+            } else {
+                start = Some(index);
+            }
+        }
+    }
+    start
+}
+
 /// Convert a codepoint index (as returned by `Input::cursor()`) into a byte
 /// offset into `value`, clamped to the end of the string.
 pub fn cursor_byte_offset(value: &str, char_cursor: usize) -> usize {
@@ -34,15 +58,21 @@ pub fn extract_token_and_context(
     let cursor = cursor_byte_offset(value, cursor);
     let before_cursor = &value[..cursor];
 
-    // Find the start of the current partial word.
-    let token_start = before_cursor
-        .char_indices()
-        .rev()
-        .find(|(_, character)| is_separator(*character))
-        .map(|(index, character)| index + character.len_utf8())
-        .unwrap_or(0);
+    let quoted_token_start = unclosed_identifier_quote_start(before_cursor);
+    let token_start = quoted_token_start.unwrap_or_else(|| {
+        before_cursor
+            .char_indices()
+            .rev()
+            .find(|(_, character)| is_separator(*character))
+            .map(|(index, character)| index + character.len_utf8())
+            .unwrap_or(0)
+    });
 
-    let token = before_cursor[token_start..].to_string();
+    let token = if quoted_token_start.is_some() {
+        before_cursor[token_start + 1..].replace("\"\"", "\"")
+    } else {
+        before_cursor[token_start..].to_string()
+    };
     let before_token = &before_cursor[..token_start];
 
     // Build the full SQL text that the tokenizer will analyse.  The prefix
