@@ -23,7 +23,7 @@ pub fn cache_path() -> AppResult<PathBuf> {
         PathBuf::from(local_path).join("tabiew")
     } else {
         let home_path = std::env::home_dir().ok_or_else(|| anyhow!("Home dir not found"))?;
-        PathBuf::from(home_path).join(".cache").join("tabiew")
+        home_path.join(".cache").join("tabiew")
     };
     Ok(path)
 }

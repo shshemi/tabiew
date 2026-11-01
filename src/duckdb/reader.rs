@@ -1,0 +1,3 @@
+trait DuckDBReader {
+    fn build();
+}
