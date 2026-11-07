@@ -1,19 +1,76 @@
-use crate::AppResult;
+use crate::{AppResult, duckdb::file_db::FileDB};
 use anyhow::anyhow;
 use bytesize::ByteSize;
 use lru::LruCache;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
-    fs::File,
     num::NonZeroUsize,
     path::{Path, PathBuf},
     time::SystemTime,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CacheStatus {
+    Complete,
+    Incomplete,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CacheMetadata {
+    pub file_path: PathBuf,
+    pub file_name: String,
+    pub status: CacheStatus,
+}
+
+impl CacheMetadata {
+    pub fn new(file_path: &Path) -> Self {
+        Self {
+            file_path: file_path.to_path_buf(),
+            file_name: file_path
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+            status: CacheStatus::Incomplete,
+        }
+    }
+
+    pub fn path(db_path: &Path) -> PathBuf {
+        db_path.with_extension("duckdb.meta.json")
+    }
+
+    /// `Ok(None)` when the db has no metadata file, which counts as incomplete.
+    pub fn read(db_path: &Path) -> AppResult<Option<Self>> {
+        let path = Self::path(db_path);
+        match std::fs::read(&path) {
+            Ok(bytes) => Ok(Some(serde_json::from_slice(&bytes).map_err(|e| {
+                anyhow!("Failed to parse cache metadata {:?}: {}", path, e)
+            })?)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(anyhow!("Failed to read cache metadata {:?}: {}", path, e)),
+        }
+    }
+
+    // temp file + rename, so a crash mid-write never leaves a half-written json behind
+    pub fn write(&self, db_path: &Path) -> AppResult<()> {
+        let path = Self::path(db_path);
+        let tmp_path = path.with_extension("json.tmp");
+        std::fs::write(&tmp_path, serde_json::to_vec_pretty(self)?)
+            .map_err(|e| anyhow!("Failed to write cache metadata {:?}: {}", tmp_path, e))?;
+        std::fs::rename(&tmp_path, &path)
+            .map_err(|e| anyhow!("Failed to write cache metadata {:?}: {}", path, e))
+    }
+
+    pub fn is_complete(db_path: &Path) -> bool {
+        matches!(Self::read(db_path), Ok(Some(meta)) if meta.status == CacheStatus::Complete)
+    }
+}
+
 pub struct CacheManager {
     cache_dir: PathBuf,
     cache_size: Option<ByteSize>,
-    lru_file_cache: LruCache<PathBuf, Option<File>>,
+    lru_file_cache: LruCache<PathBuf, ()>,
 }
 
 impl CacheManager {
@@ -22,7 +79,7 @@ impl CacheManager {
         cache_size: Option<ByteSize>,
         lru_capacity: usize,
     ) -> AppResult<Self> {
-        let mut lru_cache: LruCache<PathBuf, Option<File>>;
+        let mut lru_cache: LruCache<PathBuf, ()>;
         if lru_capacity == 0 {
             lru_cache = LruCache::unbounded();
         } else {
@@ -40,36 +97,24 @@ impl CacheManager {
             self.lru_cache_eviction(file_path)?;
         }
         let duckdb_file_name = hash_file_path(&self.cache_dir, file_path)?;
-        let lock = lock_db(&duckdb_file_name)?;
-        self.track(&duckdb_file_name, lock);
+        CacheMetadata::new(file_path).write(&duckdb_file_name)?;
+        self.track(&duckdb_file_name);
         Ok(duckdb_file_name)
     }
     pub fn check_existing_cache_db(&mut self, file_path: &Path) -> AppResult<Option<PathBuf>> {
         let hashed_file = hash_file_path(&self.cache_dir, file_path)?;
-        if self
-            .lru_file_cache
-            .peek(&hashed_file)
-            .is_some_and(Option::is_some)
+        if !std::fs::exists(&hashed_file).map_err(|e| anyhow!(e))?
+            || !CacheMetadata::is_complete(&hashed_file)
         {
-            self.lru_file_cache.promote(&hashed_file);
-            return Ok(Some(hashed_file));
-        }
-        let lock = lock_db(&hashed_file)?;
-        if !std::fs::exists(&hashed_file).map_err(|e| anyhow!(e))? {
             return Ok(None);
         }
-        self.track(&hashed_file, lock);
+        self.track(&hashed_file);
         Ok(Some(hashed_file))
     }
-    pub fn delete_db(&mut self, file_path: &Path) -> AppResult<()> {
+    pub fn delete_cache(&mut self, file_path: &Path) -> AppResult<()> {
         let hashed_file = hash_file_path(&self.cache_dir, file_path)?;
         self.lru_file_cache.pop(&hashed_file);
         delete_file(&hashed_file)
-    }
-    pub fn release_db(&mut self, file_path: &Path) {
-        if let Some(lock) = self.lru_file_cache.peek_mut(file_path) {
-            *lock = None;
-        }
     }
     fn lru_cache_eviction(&mut self, file_path: &Path) -> AppResult<()> {
         let file_size = ByteSize(
@@ -91,19 +136,18 @@ impl CacheManager {
                 if free_space >= file_size.as_u64() {
                     break Ok(());
                 }
-                let Some((evicted, lock)) = self.lru_file_cache.pop_lru() else {
+                let Some((evicted, ())) = self.lru_file_cache.pop_lru() else {
                     break Err(anyhow!(
                         "Can't allocate {} in the cache, the remaining cached files are in use",
                         file_size
                     ));
                 };
-                drop(lock);
                 if delete_file(&evicted).is_err() {
                     in_use.push(evicted);
                 }
             };
             for path in in_use.into_iter().rev() {
-                self.lru_file_cache.push(path.clone(), None);
+                self.lru_file_cache.push(path.clone(), ());
                 self.lru_file_cache.demote(&path);
             }
             return result;
@@ -123,37 +167,30 @@ impl CacheManager {
         }
         Ok(ByteSize(total))
     }
-    fn track(&mut self, file_path: &Path, lock: File) {
-        if let Some((evicted, evicted_lock)) = self
-            .lru_file_cache
-            .push(file_path.to_path_buf(), Some(lock))
+    fn track(&mut self, file_path: &Path) {
+        if let Some((evicted, ())) = self.lru_file_cache.push(file_path.to_path_buf(), ())
             && evicted != file_path
         {
-            drop(evicted_lock);
             let _ = delete_file(&evicted);
         }
     }
 }
 
-fn lock_db(file_path: &Path) -> AppResult<File> {
-    let lock = File::create(file_path.with_extension("duckdb.lock"))?;
-    lock.lock_shared()?;
-    Ok(lock)
-}
-
 fn delete_file(file_path: &Path) -> AppResult<()> {
-    let file_lock = std::fs::File::create(&file_path.with_extension("duckdb.lock"))?;
-    if let Err(std::fs::TryLockError::WouldBlock) = file_lock.try_lock() {
+    let Some(_lock) = FileDB::try_exclusive_lock(file_path)? else {
         return Err(anyhow!("File {:?} is in use", file_path));
-    }
+    };
     std::fs::remove_file(file_path)
         .map_err(|e| anyhow!("Failed to delete file {:?}: {}", file_path, e))?;
-    match std::fs::remove_file(file_path.with_extension("duckdb.wal")) {
-        Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(anyhow!(
-            "Failed to delete file {:?}: {}",
-            file_path.with_extension("duckdb.wal"),
-            e
-        )),
+    remove_if_exists(&file_path.with_extension("duckdb.wal"))?;
+    remove_if_exists(&CacheMetadata::path(file_path))
+}
+
+fn remove_if_exists(path: &Path) -> AppResult<()> {
+    match std::fs::remove_file(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            Err(anyhow!("Failed to delete file {:?}: {}", path, e))
+        }
         _ => Ok(()),
     }
 }
@@ -182,7 +219,7 @@ struct CacheEntry {
 }
 
 fn build_db_lru(
-    cache: &mut LruCache<PathBuf, Option<File>>,
+    cache: &mut LruCache<PathBuf, ()>,
     cache_dir: &Path,
     cache_size: Option<ByteSize>,
 ) -> AppResult<()> {
@@ -202,6 +239,11 @@ fn build_db_lru(
             .metadata()
             .map_err(|e| anyhow!("Failed to get the metadata of entry: {}", e))?;
         if !metadata.is_file() {
+            continue;
+        }
+        // delete_file skips dbs another instance still has locked, i.e. imports in progress
+        if !CacheMetadata::is_complete(&path) {
+            let _ = delete_file(&path);
             continue;
         }
         let accessed_time = metadata
@@ -229,7 +271,7 @@ fn build_db_lru(
         delete_index += 1;
     }
     for entry in sorted_entries[..delete_index].iter().rev() {
-        cache.push(entry.path.clone(), None);
+        cache.push(entry.path.clone(), ());
     }
     delete_files(&sorted_entries[delete_index..]);
     Ok(())
@@ -244,9 +286,9 @@ fn delete_files(files: &[CacheEntry]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::duckdb::DuckDBConfig;
+    use crate::duckdb::{CacheStatus, DuckDBConfig};
     use std::{
-        fs::{self, FileTimes},
+        fs::{self, File, FileTimes},
         time::Duration,
     };
     use tempfile::TempDir;
@@ -279,8 +321,14 @@ mod tests {
         path
     }
 
-    fn fill_db(db_path: &Path, size: usize) {
+    // stands in for duckdb writing the file and the ingester marking it complete
+    fn finish_import(db_path: &Path, size: usize) {
         fs::write(db_path, vec![0u8; size]).unwrap();
+        let mut meta = CacheMetadata::read(db_path)
+            .unwrap()
+            .unwrap_or_else(|| CacheMetadata::new(Path::new("/data/source.csv")));
+        meta.status = CacheStatus::Complete;
+        meta.write(db_path).unwrap();
     }
 
     fn set_accessed_age(path: &Path, age_secs: u64) {
@@ -315,7 +363,7 @@ mod tests {
         let name = db.file_name().unwrap().to_str().unwrap();
         assert_eq!(name.len(), 64 + ".duckdb".len());
         assert!(name[..64].chars().all(|c| c.is_ascii_hexdigit()));
-        fill_db(&db, 10);
+        finish_import(&db, 10);
         assert_eq!(cm.check_existing_cache_db(&src).unwrap(), Some(db));
     }
 
@@ -324,7 +372,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let mut cm = manager(&config(&dir, None, None));
         let src = source(&dir, "data.csv", 10);
-        fill_db(&cm.create_new_db(&src).unwrap(), 10);
+        finish_import(&cm.create_new_db(&src).unwrap(), 10);
         File::options()
             .write(true)
             .open(&src)
@@ -335,17 +383,18 @@ mod tests {
     }
 
     #[test]
-    fn delete_db_removes_db_and_wal() {
+    fn delete_cache_removes_db_wal_and_metadata() {
         let dir = TempDir::new().unwrap();
         let mut cm = manager(&config(&dir, None, None));
         let src = source(&dir, "data.csv", 10);
         let db = cm.create_new_db(&src).unwrap();
-        fill_db(&db, 10);
+        finish_import(&db, 10);
         let wal = db.with_extension("duckdb.wal");
         fs::write(&wal, "wal").unwrap();
-        cm.delete_db(&src).unwrap();
+        cm.delete_cache(&src).unwrap();
         assert!(!db.exists());
         assert!(!wal.exists());
+        assert!(!CacheMetadata::path(&db).exists());
         assert_eq!(cm.check_existing_cache_db(&src).unwrap(), None);
     }
 
@@ -358,7 +407,7 @@ mod tests {
         let mid = config.cache_dir.join("mid.duckdb");
         let new = config.cache_dir.join("new.duckdb");
         for (path, age) in [(&old, 300), (&mid, 200), (&new, 100)] {
-            fill_db(path, 10);
+            finish_import(path, 10);
             set_accessed_age(path, age);
         }
         let notes = config.cache_dir.join("notes.txt");
@@ -380,7 +429,7 @@ mod tests {
         let mid = config.cache_dir.join("mid.duckdb");
         let new = config.cache_dir.join("new.duckdb");
         for (path, age) in [(&old, 300), (&mid, 200), (&new, 100)] {
-            fill_db(path, 10);
+            finish_import(path, 10);
             set_accessed_age(path, age);
         }
         manager(&config);
@@ -395,10 +444,11 @@ mod tests {
         let mut other = manager(&config);
         let src = source(&dir, "data.csv", 10);
         let in_use = other.create_new_db(&src).unwrap();
-        fill_db(&in_use, 10);
+        finish_import(&in_use, 10);
+        let _held = FileDB::new(&in_use).unwrap();
         set_accessed_age(&in_use, 300);
         let newer = config.cache_dir.join("newer.duckdb");
-        fill_db(&newer, 10);
+        finish_import(&newer, 10);
         set_accessed_age(&newer, 100);
         manager(&config);
         assert!(in_use.exists());
@@ -415,11 +465,11 @@ mod tests {
             source(&dir, "c.csv", 10),
         );
         let db_a = cm.create_new_db(&a).unwrap();
-        fill_db(&db_a, 10);
+        finish_import(&db_a, 10);
         let db_b = cm.create_new_db(&b).unwrap();
-        fill_db(&db_b, 10);
+        finish_import(&db_b, 10);
         assert_eq!(cm.check_existing_cache_db(&a).unwrap(), Some(db_a.clone()));
-        fill_db(&cm.create_new_db(&c).unwrap(), 10);
+        finish_import(&cm.create_new_db(&c).unwrap(), 10);
         assert!(db_a.exists());
         assert!(!db_b.exists());
     }
@@ -434,11 +484,9 @@ mod tests {
             source(&dir, "c.csv", 40),
         );
         let db_a = cm.create_new_db(&a).unwrap();
-        fill_db(&db_a, 40);
-        cm.release_db(&db_a);
+        finish_import(&db_a, 40);
         let db_b = cm.create_new_db(&b).unwrap();
-        fill_db(&db_b, 40);
-        cm.release_db(&db_b);
+        finish_import(&db_b, 40);
         cm.create_new_db(&c).unwrap();
         assert!(!db_a.exists());
         assert!(db_b.exists());
@@ -463,13 +511,10 @@ mod tests {
             source(&dir, "c.csv", 40),
         );
         let db_a = cm.create_new_db(&a).unwrap();
-        fill_db(&db_a, 40);
-        cm.release_db(&db_a);
+        finish_import(&db_a, 40);
         let db_b = cm.create_new_db(&b).unwrap();
-        fill_db(&db_b, 40);
-        cm.release_db(&db_b);
-        let mut other = manager(&config);
-        assert!(other.check_existing_cache_db(&a).unwrap().is_some());
+        finish_import(&db_b, 40);
+        let _held = FileDB::new(&db_a).unwrap();
         cm.create_new_db(&c).unwrap();
         assert!(db_a.exists());
         assert!(!db_b.exists());
@@ -486,21 +531,104 @@ mod tests {
             source(&dir, "c.csv", 40),
         );
         let db_a = cm.create_new_db(&a).unwrap();
-        fill_db(&db_a, 40);
-        cm.release_db(&db_a);
+        finish_import(&db_a, 40);
         let db_b = cm.create_new_db(&b).unwrap();
-        fill_db(&db_b, 40);
-        cm.release_db(&db_b);
-        let mut other = manager(&config);
-        other.check_existing_cache_db(&a).unwrap();
-        other.check_existing_cache_db(&b).unwrap();
+        finish_import(&db_b, 40);
+        let held_a = FileDB::new(&db_a).unwrap();
+        let held_b = FileDB::new(&db_b).unwrap();
         let err = cm.create_new_db(&c).unwrap_err();
         assert!(err.to_string().contains("Can't allocate"), "{err}");
         assert!(db_a.exists() && db_b.exists());
-        other.release_db(&db_a);
-        other.release_db(&db_b);
+        drop((held_a, held_b));
         cm.create_new_db(&c).unwrap();
         assert!(!db_a.exists());
         assert!(db_b.exists());
+    }
+
+    #[test]
+    fn metadata_round_trips_through_json() {
+        let dir = TempDir::new().unwrap();
+        let db = dir.path().join("abc.duckdb");
+        assert_eq!(CacheMetadata::read(&db).unwrap(), None);
+
+        let meta = CacheMetadata::new(Path::new("/data/sales.csv"));
+        meta.write(&db).unwrap();
+        assert_eq!(
+            CacheMetadata::path(&db),
+            dir.path().join("abc.duckdb.meta.json")
+        );
+        let json = fs::read_to_string(CacheMetadata::path(&db)).unwrap();
+        assert!(json.contains("\"status\": \"incomplete\""), "{json}");
+        assert_eq!(CacheMetadata::read(&db).unwrap(), Some(meta));
+        assert!(!CacheMetadata::is_complete(&db));
+    }
+
+    #[test]
+    fn create_new_db_writes_incomplete_metadata() {
+        let dir = TempDir::new().unwrap();
+        let mut cm = manager(&config(&dir, None, None));
+        let src = source(&dir, "data.csv", 10);
+        let db = cm.create_new_db(&src).unwrap();
+        let meta = CacheMetadata::read(&db).unwrap().unwrap();
+        assert_eq!(meta.file_path, src);
+        assert_eq!(meta.file_name, "data.csv");
+        assert_eq!(meta.status, CacheStatus::Incomplete);
+    }
+
+    #[test]
+    fn incomplete_db_is_not_a_cache_hit_until_marked_complete() {
+        let dir = TempDir::new().unwrap();
+        let config = config(&dir, None, None);
+        let mut cm = manager(&config);
+        let src = source(&dir, "data.csv", 10);
+        let db = cm.create_new_db(&src).unwrap();
+        fs::write(&db, vec![0u8; 10]).unwrap();
+        let _held = FileDB::new(&db).unwrap();
+
+        assert_eq!(cm.check_existing_cache_db(&src).unwrap(), None);
+        assert_eq!(
+            manager(&config).check_existing_cache_db(&src).unwrap(),
+            None
+        );
+
+        let mut meta = CacheMetadata::read(&db).unwrap().unwrap();
+        meta.status = CacheStatus::Complete;
+        meta.write(&db).unwrap();
+        assert_eq!(cm.check_existing_cache_db(&src).unwrap(), Some(db.clone()));
+        assert_eq!(
+            manager(&config).check_existing_cache_db(&src).unwrap(),
+            Some(db)
+        );
+    }
+
+    #[test]
+    fn new_deletes_incomplete_dbs_unless_locked() {
+        let dir = TempDir::new().unwrap();
+        let config = config(&dir, None, None);
+        let mut importing_instance = manager(&config);
+        let src = source(&dir, "data.csv", 10);
+        let importing = importing_instance.create_new_db(&src).unwrap();
+        fs::write(&importing, vec![0u8; 10]).unwrap();
+        let _held = FileDB::new(&importing).unwrap();
+
+        let done = config.cache_dir.join("done.duckdb");
+        finish_import(&done, 10);
+        let half = config.cache_dir.join("half.duckdb");
+        fs::write(&half, vec![0u8; 10]).unwrap();
+        CacheMetadata::new(Path::new("/data/half.csv"))
+            .write(&half)
+            .unwrap();
+        let no_meta = config.cache_dir.join("no_meta.duckdb");
+        fs::write(&no_meta, vec![0u8; 10]).unwrap();
+        let broken = config.cache_dir.join("broken.duckdb");
+        fs::write(&broken, vec![0u8; 10]).unwrap();
+        fs::write(CacheMetadata::path(&broken), "not json").unwrap();
+
+        manager(&config);
+        assert!(done.exists());
+        assert!(importing.exists() && CacheMetadata::path(&importing).exists());
+        assert!(!half.exists() && !CacheMetadata::path(&half).exists());
+        assert!(!no_meta.exists());
+        assert!(!broken.exists() && !CacheMetadata::path(&broken).exists());
     }
 }
