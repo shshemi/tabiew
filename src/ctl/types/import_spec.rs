@@ -17,6 +17,10 @@ pub enum ImportSpec {
         source: String,
         max_rows: Option<usize>,
     },
+    Vortex {
+        source: String,
+        max_rows: Option<usize>,
+    },
     Json {
         source: String,
         ignore_errors: bool,
@@ -81,6 +85,10 @@ impl From<&CtlImportArgs> for ImportSpec {
                 max_rows: *max_rows,
             },
             CtlImportArgs::Parquet { common, max_rows } => ImportSpec::Parquet {
+                source: common.source.clone(),
+                max_rows: *max_rows,
+            },
+            CtlImportArgs::Vortex { common, max_rows } => ImportSpec::Vortex {
                 source: common.source.clone(),
                 max_rows: *max_rows,
             },

@@ -89,7 +89,7 @@ pub fn extension(ext: Option<&str>) -> Icon {
     match ext {
         Some("csv" | "tsv") => TABLE,
         Some("json" | "jsonl") => JSON,
-        Some("parquet" | "pqt" | "arrow" | "avro" | "db" | "sqlite") => DATABASE,
+        Some("parquet" | "pqt" | "vortex" | "vtx" | "arrow" | "avro" | "db" | "sqlite") => DATABASE,
         Some("xls" | "xlsx" | "xlsm" | "xlsb") => EXCEL,
         Some("html" | "htm") => HTML,
         Some("md" | "markdown") => MARKDOWN,

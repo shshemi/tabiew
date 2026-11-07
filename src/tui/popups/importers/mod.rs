@@ -20,6 +20,7 @@ pub mod markdown;
 pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
+pub mod vortex;
 
 fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Reader) {
     Message::AppDismissOverlay.enqueue();

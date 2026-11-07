@@ -105,7 +105,7 @@ pub struct Args {
 
     #[arg(
         long,
-        help = "Limits the number of rows read from the input. Applies to CSV/DSV/TSV, Parquet, JSON, JSON Lines, Arrow, and Avro files.",
+        help = "Limits the number of rows read from the input. Applies to CSV/DSV/TSV, Parquet, Vortex, JSON, JSON Lines, Arrow, and Avro files.",
         required = false
     )]
     pub max_rows: Option<usize>,
@@ -391,6 +391,13 @@ pub enum CtlImportArgs {
         #[arg(long, help = "Limits the number of rows read from the input.")]
         max_rows: Option<usize>,
     },
+    #[command(about = "Import a Vortex file into another tabiew instance")]
+    Vortex {
+        #[command(flatten)]
+        common: CtlImportCommon,
+        #[arg(long, help = "Limits the number of rows read from the input.")]
+        max_rows: Option<usize>,
+    },
     #[command(about = "Import a JSON file into another tabiew instance")]
     Json {
         #[command(flatten)]
@@ -478,6 +485,7 @@ impl CtlImportArgs {
         match self {
             CtlImportArgs::Csv { common, .. }
             | CtlImportArgs::Parquet { common, .. }
+            | CtlImportArgs::Vortex { common, .. }
             | CtlImportArgs::Json { common, .. }
             | CtlImportArgs::Jsonl { common, .. }
             | CtlImportArgs::Arrow { common, .. }
@@ -593,6 +601,7 @@ pub enum Format {
     Csv,
     Tsv,
     Parquet,
+    Vortex,
     Jsonl,
     Json,
     Arrow,

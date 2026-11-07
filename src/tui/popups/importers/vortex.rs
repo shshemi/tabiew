@@ -1,0 +1,81 @@
+use crate::{
+    handler::message::Message,
+    readers::{DataSource, VortexToDataFrame},
+    tui::popups::{
+        importers::dismiss_overlay_and_load_data_frame,
+        pickers::{
+            file_picker::FilePicker,
+            import_source_picker::{ImportSourcePicker, SourceType},
+            url_picker::UrlPicker,
+        },
+        wizard::{Wizard, WizardStep},
+    },
+};
+
+pub type VortexImporter = Wizard<State>;
+
+#[derive(Debug)]
+pub enum State {
+    PickSource { picker: ImportSourcePicker },
+    PickPath { picker: FilePicker },
+    PickUrl { picker: UrlPicker },
+}
+
+impl WizardStep for State {
+    fn next(self) -> Self {
+        match self {
+            State::PickSource { picker } => match picker.value() {
+                Some(SourceType::Stdin) => {
+                    dismiss_overlay_and_load_data_frame(
+                        DataSource::Stdin,
+                        VortexToDataFrame::default(),
+                    );
+                    State::PickSource { picker }
+                }
+                Some(SourceType::File) => State::PickPath {
+                    picker: Default::default(),
+                },
+                Some(SourceType::Url) => State::PickUrl {
+                    picker: UrlPicker::default(),
+                },
+                None => State::PickSource { picker },
+            },
+            State::PickPath { picker } => {
+                dismiss_overlay_and_load_data_frame(
+                    DataSource::File(picker.path()),
+                    VortexToDataFrame::default(),
+                );
+                Default::default()
+            }
+            State::PickUrl { picker } => match picker.url() {
+                Ok(url) => {
+                    dismiss_overlay_and_load_data_frame(
+                        DataSource::Url(url),
+                        VortexToDataFrame::default(),
+                    );
+                    Default::default()
+                }
+                Err(err) => {
+                    Message::AppShowToast(err.to_string()).enqueue();
+                    State::PickUrl { picker }
+                }
+            },
+        }
+    }
+
+    fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
+        match self {
+            State::PickSource { picker } => picker,
+            State::PickPath { picker } => picker,
+            State::PickUrl { picker } => picker,
+        }
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::PickSource {
+            picker: Default::default(),
+        }
+    }
+}

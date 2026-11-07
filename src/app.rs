@@ -21,7 +21,7 @@ use crate::{
                 arrow::ArrowImporter, avro::AvroImporter, csv::CsvImporter, excel::ExcelImporter,
                 fwf::FwfImporter, html::HtmlImporter, json::JsonImporter, jsonl::JsonlImporter,
                 logfmt::LogfmtImporter, markdown::MarkdownImporter, parquet::ParquetImporter,
-                sqlite::SqliteImporter, tsv::TsvImporter,
+                sqlite::SqliteImporter, tsv::TsvImporter, vortex::VortexImporter,
             },
             pickers::fp_precision_picker::FpPrecisionPicker,
             theme_selector::ThemeSelector,
@@ -129,6 +129,10 @@ impl App {
 
     fn show_markdown_importer(&mut self) {
         self.overlay = Some(Overlay::ImportMarkdown(MarkdownImporter::default()))
+    }
+
+    fn show_vortex_importer(&mut self) {
+        self.overlay = Some(Overlay::ImportVortex(VortexImporter::default()))
     }
 
     fn show_parquet_importer(&mut self) {
@@ -273,6 +277,7 @@ impl Component for App {
             Message::AppShowParquetImporter => self.show_parquet_importer(),
             Message::AppShowSqliteImporter => self.show_sqlite_importer(),
             Message::AppShowTsvImporter => self.show_tsv_importer(),
+            Message::AppShowVortexImporter => self.show_vortex_importer(),
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
@@ -341,6 +346,7 @@ pub enum Overlay {
     ImportParquet(ParquetImporter),
     ImportSqlite(SqliteImporter),
     ImportTsv(TsvImporter),
+    ImportVortex(VortexImporter),
 }
 
 impl Overlay {
@@ -366,6 +372,7 @@ impl Overlay {
             Overlay::ImportParquet(importer) => importer,
             Overlay::ImportSqlite(importer) => importer,
             Overlay::ImportTsv(importer) => importer,
+            Overlay::ImportVortex(importer) => importer,
         }
     }
 }

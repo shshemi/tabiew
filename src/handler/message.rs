@@ -38,6 +38,7 @@ pub enum Message {
     AppShowParquetImporter,
     AppShowSqliteImporter,
     AppShowTsvImporter,
+    AppShowVortexImporter,
     AppDismissSchema,
     AppShowSqlQuery,
     AppDownloadDataSource(Url, Arc<dyn Reader>),

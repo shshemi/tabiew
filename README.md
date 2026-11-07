@@ -15,7 +15,7 @@ Tabiew is a lightweight TUI application that allows users to view and query tabu
 
 - ⌨️ Vim-style keybindings
 - 🛠️ SQL support
-- 📊 Support for CSV, TSV, Parquet, JSON, JSONL, Arrow, FWF, Sqlite, Excel, Logfmt, HTML, and Markdown
+- 📊 Support for CSV, TSV, Parquet, Vortex, JSON, JSONL, Arrow, FWF, Sqlite, Excel, Logfmt, HTML, and Markdown
 - 🔍 Fuzzy search
 - 🗂️ Multi-table functionality
 - 📈 Plotting
@@ -97,6 +97,7 @@ Tabiew automatically detects the file format based on the file extension. Suppor
 - **CSV** (`.csv`) - Comma-separated values
 - **TSV** (`.tsv`) - Tab-separated values
 - **Parquet** (`.parquet`, `.pqt`)
+- **Vortex** (`.vortex`, `.vtx`)
 - **JSON** (`.json`)
 - **JSONL** (`.jsonl`) - JSON Lines
 - **Arrow** (`.arrow`)
@@ -148,7 +149,7 @@ Preview only the first rows of a large file:
 ```bash
 tw big.csv --max-rows 1000
 ```
-`--max-rows` is handy for sanity-checking the schema and a sample of the data before loading a multi-GB file. It applies to CSV/DSV/TSV, Parquet, JSON, JSON Lines, Arrow, and Avro.
+`--max-rows` is handy for sanity-checking the schema and a sample of the data before loading a multi-GB file. It applies to CSV/DSV/TSV, Parquet, Vortex, JSON, JSON Lines, Arrow, and Avro.
 
 Open a URL using curl:
 ```bash

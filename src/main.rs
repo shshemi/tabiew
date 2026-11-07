@@ -24,7 +24,7 @@ use tabiew::readers::ReaderSource;
 use tabiew::readers::{
     ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,
     FwfToDataFrame, HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
-    MarkdownToDataFrame, NamedFrames, ParquetToDataFrame, SqliteToDataFrames,
+    MarkdownToDataFrame, NamedFrames, ParquetToDataFrame, SqliteToDataFrames, VortexToDataFrame,
 };
 use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
@@ -235,6 +235,7 @@ fn build_reader(args: &Args, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFr
             CsvToDataFrame::from_args(args).with_separator('\t'),
         )),
         Some(Format::Parquet) => Ok(Box::new(ParquetToDataFrame::from_args(args))),
+        Some(Format::Vortex) => Ok(Box::new(VortexToDataFrame::from_args(args))),
         Some(Format::Json) => Ok(Box::new(JsonToDataFrame::from_args(args))),
         Some(Format::Jsonl) => Ok(Box::new(JsonLineToDataFrame::from_args(args))),
         Some(Format::Arrow) => Ok(Box::new(ArrowIpcToDataFrame::from_args(args))),
@@ -251,6 +252,7 @@ fn build_reader(args: &Args, path: impl AsRef<Path>) -> AppResult<Box<dyn DataFr
                 Ok(Box::new(reader))
             }
             Some("parquet") | Some("pqt") => Ok(Box::new(ParquetToDataFrame::from_args(args))),
+            Some("vortex") | Some("vtx") => Ok(Box::new(VortexToDataFrame::from_args(args))),
             Some("json") => Ok(Box::new(JsonToDataFrame::from_args(args))),
             Some("jsonl") => Ok(Box::new(JsonLineToDataFrame::from_args(args))),
             Some("arrow") => Ok(Box::new(ArrowIpcToDataFrame::from_args(args))),
