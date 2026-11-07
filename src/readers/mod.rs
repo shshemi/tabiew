@@ -16,6 +16,7 @@ mod parquet;
 mod source;
 mod sqlite;
 mod traits;
+mod vortex;
 
 pub use arrow::ArrowIpcToDataFrame;
 pub use avro::AvroToDataFrame;
@@ -31,6 +32,7 @@ pub use parquet::ParquetToDataFrame;
 pub use source::ReaderSource;
 pub use sqlite::SqliteToDataFrames;
 pub use traits::{DataFrameReader, NamedFrames};
+pub use vortex::VortexToDataFrame;
 
 #[derive(Debug, Clone, Hash)]
 pub enum DataSource {

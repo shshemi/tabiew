@@ -49,6 +49,7 @@ impl Component for Importer {
                             Format::Parquet => Message::AppShowParquetImporter.enqueue(),
                             Format::Sqlite => Message::AppShowSqliteImporter.enqueue(),
                             Format::Tsv => Message::AppShowTsvImporter.enqueue(),
+                            Format::Vortex => Message::AppShowVortexImporter.enqueue(),
                         }
                     }
                     true
@@ -72,6 +73,7 @@ pub enum Format {
     Csv,
     Tsv,
     Parquet,
+    Vortex,
     Jsonl,
     Json,
     Arrow,
@@ -89,7 +91,9 @@ impl Format {
         match self {
             Format::Csv | Format::Tsv => icons::TABLE,
             Format::Json | Format::Jsonl => icons::JSON,
-            Format::Parquet | Format::Arrow | Format::Avro | Format::Sqlite => icons::DATABASE,
+            Format::Parquet | Format::Vortex | Format::Arrow | Format::Avro | Format::Sqlite => {
+                icons::DATABASE
+            }
             Format::Excel => icons::EXCEL,
             Format::Html => icons::HTML,
             Format::Markdown => icons::MARKDOWN,

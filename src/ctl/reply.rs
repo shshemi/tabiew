@@ -15,6 +15,7 @@ use crate::{
         ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,
         FwfToDataFrame, HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
         MarkdownToDataFrame, ParquetToDataFrame, ReaderSource, SqliteToDataFrames,
+        VortexToDataFrame,
     },
     tui::pane::TableDescription,
     writers::{
@@ -270,6 +271,9 @@ fn import_to_backend(spec: ImportSpec) -> AppResult<Vec<String>> {
             ParquetToDataFrame::default().with_max_rows(max_rows),
             source,
         ),
+        ImportSpec::Vortex { source, max_rows } => {
+            register_file(VortexToDataFrame::default().with_max_rows(max_rows), source)
+        }
         ImportSpec::Json {
             source,
             ignore_errors,
