@@ -1,6 +1,7 @@
 use crate::AppResult;
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{
     fs::{File, TryLockError},
     path::{Path, PathBuf},
@@ -18,6 +19,8 @@ pub struct FileDBMetadata {
     pub file_path: PathBuf,
     pub file_name: String,
     pub status: FileDBStatus,
+    #[serde(default)]
+    pub options: Value,
 }
 
 impl FileDBMetadata {
@@ -29,6 +32,7 @@ impl FileDBMetadata {
                 .map(|name| name.to_string_lossy().into_owned())
                 .unwrap_or_default(),
             status: FileDBStatus::Incomplete,
+            options: Value::Null,
         }
     }
 
@@ -59,6 +63,10 @@ impl FileDBMetadata {
     pub fn is_complete(db_path: &Path) -> bool {
         matches!(Self::read(db_path), Ok(Some(meta)) if meta.status == FileDBStatus::Complete)
     }
+
+    pub fn is_complete_for(db_path: &Path, options: &Value) -> bool {
+        matches!(Self::read(db_path), Ok(Some(meta)) if meta.status == FileDBStatus::Complete && meta.options == *options)
+    }
 }
 
 #[derive(Debug)]
@@ -79,10 +87,12 @@ impl FileDB {
         })
     }
 
-    pub fn create(file_path: &Path, source_path: &Path) -> AppResult<Self> {
+    pub fn create(file_path: &Path, source_path: &Path, options: &Value) -> AppResult<Self> {
         let mut file_db = Self::new(file_path)?;
         file_db.get_write_lock()?;
-        FileDBMetadata::new(source_path).write(file_path)?;
+        let mut metadata = FileDBMetadata::new(source_path);
+        metadata.options = options.clone();
+        metadata.write(file_path)?;
         Ok(file_db)
     }
 
@@ -204,7 +214,7 @@ mod tests {
     fn create_locks_and_writes_incomplete_metadata() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("abc.duckdb");
-        let file_db = FileDB::create(&path, Path::new("/data/sales.csv")).unwrap();
+        let file_db = FileDB::create(&path, Path::new("/data/sales.csv"), &Value::Null).unwrap();
         assert!(is_locked(&path));
         let meta = FileDBMetadata::read(&path).unwrap().unwrap();
         assert_eq!(meta.file_name, "sales.csv");
@@ -217,7 +227,8 @@ mod tests {
     fn mark_complete_writes_status_and_downgrades() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("abc.duckdb");
-        let mut file_db = FileDB::create(&path, Path::new("/data/sales.csv")).unwrap();
+        let mut file_db =
+            FileDB::create(&path, Path::new("/data/sales.csv"), &Value::Null).unwrap();
         std::fs::write(&path, b"db").unwrap();
         assert!(FileDB::new(&path).is_err());
         file_db.mark_complete().unwrap();
@@ -243,7 +254,7 @@ mod tests {
     fn delete_removes_metadata_when_the_db_was_never_created() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("abc.duckdb");
-        let file_db = FileDB::create(&path, Path::new("/data/sales.csv")).unwrap();
+        let file_db = FileDB::create(&path, Path::new("/data/sales.csv"), &Value::Null).unwrap();
         file_db.delete().unwrap();
         assert!(!FileDBMetadata::path(&path).exists());
     }

@@ -6,7 +6,7 @@ mod ingester;
 pub mod reader;
 mod session;
 
-use crate::{AppResult, args::Format};
+use crate::AppResult;
 use anyhow::anyhow;
 use cache::CacheManager;
 use config::Config;
@@ -18,12 +18,13 @@ use std::path::Path;
 use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use config::Config as DuckDBConfig;
+pub use ingester::{CsvOptions, IngestOptions};
 
 pub struct DuckDB {
     cache_manager: CacheManager,
     config: Config,
     session: Session,
-    ingesting: Vec<(String, Receiver<AppResult<()>>)>,
+    ingesting: Vec<(String, Option<usize>, Receiver<AppResult<()>>)>,
     pending_queries: Vec<(String, Option<String>)>,
 }
 
@@ -52,20 +53,25 @@ impl DuckDB {
         &mut self,
         path: &Path,
         table_name: Option<&str>,
-        format: Option<Format>,
+        options: &IngestOptions,
+        max_rows: Option<usize>,
     ) -> AppResult<(String, Option<ProgressHandle>)> {
+        let path = &path
+            .canonicalize()
+            .map_err(|e| anyhow!("Failed to open {}: {}", path.display(), e))?;
+        let key = serde_json::to_value(options)?;
         let stem = path
             .file_stem()
             .map(|stem| stem.to_string_lossy().into_owned());
         let table_name = table_name.or(stem.as_deref());
-        if let Some(file_db) = self.cache_manager.check_existing_cache_db(path)? {
+        if let Some(file_db) = self.cache_manager.check_existing_cache_db(path, &key)? {
             let name = self.attach(table_name, file_db)?;
-            self.session.create_view(&name)?;
+            self.session.create_view(&name, max_rows)?;
             return Ok((name, None));
         }
-        let file_db = self.cache_manager.create_new_db(path)?;
+        let file_db = self.cache_manager.create_new_db(path, &key)?;
         let name = self.attach(table_name, file_db)?;
-        match self.ingest(&name, path, format) {
+        match self.ingest(&name, path, options, max_rows) {
             Ok(progress) => Ok((name, Some(progress))),
             Err(e) => {
                 self.session.detach(&name)?;
@@ -95,7 +101,7 @@ impl DuckDB {
         };
         let mut i = 0;
         while i < self.ingesting.len() {
-            let result = match self.ingesting[i].1.try_recv() {
+            let result = match self.ingesting[i].2.try_recv() {
                 Err(TryRecvError::Empty) => {
                     i += 1;
                     continue;
@@ -103,8 +109,8 @@ impl DuckDB {
                 Ok(result) => result,
                 Err(TryRecvError::Closed) => Err(anyhow!("Ingester stopped without a result")),
             };
-            let (name, _) = self.ingesting.swap_remove(i);
-            let result = result.and_then(|()| self.finish(&name));
+            let (name, limit, _) = self.ingesting.swap_remove(i);
+            let result = result.and_then(|()| self.finish(&name, limit));
             if result.is_err() {
                 self.session.detach(&name)?;
             }
@@ -127,15 +133,16 @@ impl DuckDB {
         &mut self,
         name: &str,
         path: &Path,
-        format: Option<Format>,
+        options: &IngestOptions,
+        max_rows: Option<usize>,
     ) -> AppResult<ProgressHandle> {
         let alias = self
             .session
             .alias(name)
             .ok_or_else(|| anyhow!("Unknown table {name}"))?;
-        let ingester = Ingester::new(self.session.session()?, alias, path.to_path_buf(), format)?;
+        let ingester = Ingester::new(self.session.session()?, alias, path.to_path_buf(), options)?;
         let (progress, result) = ingester.ingest()?;
-        self.ingesting.push((name.to_string(), result));
+        self.ingesting.push((name.to_string(), max_rows, result));
         Ok(progress)
     }
     fn query(&mut self, sql: &str, fallback: Option<String>) -> AppResult<String> {
@@ -143,12 +150,12 @@ impl DuckDB {
         let name = name.or(fallback).unwrap_or_else(random_name);
         self.session.create_query(&name, &setup, &query)
     }
-    fn finish(&mut self, name: &str) -> AppResult<()> {
+    fn finish(&mut self, name: &str, limit: Option<usize>) -> AppResult<()> {
         self.session
             .file_db_mut(name)
             .ok_or_else(|| anyhow!("Unknown table {name}"))?
             .mark_complete()?;
-        self.session.create_view(name)
+        self.session.create_view(name, limit)
     }
 }
 
@@ -174,7 +181,8 @@ mod tests {
     }
 
     fn start(db: &mut DuckDB, path: &Path) -> (String, Sender<AppResult<()>>) {
-        let file_db = db.cache_manager.create_new_db(path).unwrap();
+        let key = serde_json::to_value(IngestOptions::default()).unwrap();
+        let file_db = db.cache_manager.create_new_db(path, &key).unwrap();
         let name = db.attach(Some("sales"), file_db).unwrap();
         let alias = db.session.alias(&name).unwrap();
         db.session
@@ -186,7 +194,7 @@ mod tests {
             ))
             .unwrap();
         let (sender, receiver) = oneshot::channel();
-        db.ingesting.push((name.clone(), receiver));
+        db.ingesting.push((name.clone(), None, receiver));
         (name, sender)
     }
 
@@ -241,7 +249,9 @@ mod tests {
         db.flush().unwrap();
         db.detach(&name).unwrap();
         db.flush().unwrap();
-        let (name, progress) = db.load(&path, None, None).unwrap();
+        let (name, progress) = db
+            .load(&path, None, &IngestOptions::default(), None)
+            .unwrap();
         assert_eq!(name, "sales");
         assert!(progress.is_none());
         assert_eq!(count(&db, &name), 10);
@@ -252,9 +262,14 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = source(&dir, "sales.xyz");
         let mut db = duckdb(&dir);
-        assert!(db.load(&path, None, None).is_err());
+        assert!(
+            db.load(&path, None, &IngestOptions::default(), None)
+                .is_err()
+        );
         db.flush().unwrap();
-        let error = db.load(&path, None, None).unwrap_err();
+        let error = db
+            .load(&path, None, &IngestOptions::default(), None)
+            .unwrap_err();
         assert!(error.to_string().contains("Unsupported"));
     }
 

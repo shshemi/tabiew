@@ -10,12 +10,17 @@ mod markdown;
 mod parquet;
 mod sqlite;
 
-use crate::{AppResult, args::Format, duckdb::session::SessionConn};
+use crate::{
+    AppResult,
+    args::{Args, Format},
+    duckdb::session::SessionConn,
+};
 use anyhow::anyhow;
 use arrow::ArrowIngester;
 use avro::AvroIngester;
 use clap::ValueEnum;
 use csv::CsvIngester;
+pub use csv::CsvOptions;
 use duckdb::ProgressHandle;
 use excel::ExcelIngester;
 use fwf::FwfIngester;
@@ -24,12 +29,37 @@ use json::JsonIngester;
 use logfmt::LogfmtIngester;
 use markdown::MarkdownIngester;
 use parquet::ParquetIngester;
+use serde::{Serialize, Serializer};
 use sqlite::SqliteIngester;
 use std::path::PathBuf;
 use tokio::sync::oneshot::{self, Receiver};
 
 pub trait FileIngester: Send {
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()>;
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct IngestOptions {
+    #[serde(serialize_with = "format_name")]
+    pub format: Option<Format>,
+    pub csv: CsvOptions,
+}
+
+impl IngestOptions {
+    pub fn from_args(args: &Args) -> Self {
+        Self {
+            format: args.format.clone(),
+            csv: CsvOptions::from_args(args),
+        }
+    }
+}
+
+fn format_name<S: Serializer>(format: &Option<Format>, serializer: S) -> Result<S::Ok, S::Error> {
+    let name = format
+        .as_ref()
+        .and_then(ValueEnum::to_possible_value)
+        .map(|value| value.get_name().to_string());
+    name.serialize(serializer)
 }
 
 pub struct Ingester {
@@ -43,17 +73,17 @@ impl Ingester {
         conn: SessionConn,
         alias: String,
         source: PathBuf,
-        format: Option<Format>,
+        options: &IngestOptions,
     ) -> AppResult<Self> {
-        let file_ingester = Self::file_ingester(source, format)?;
+        let file_ingester = Self::file_ingester(source, options)?;
         Ok(Self {
             conn,
             alias,
             file_ingester,
         })
     }
-    fn file_ingester(source: PathBuf, format: Option<Format>) -> AppResult<Box<dyn FileIngester>> {
-        let format = format.or_else(|| {
+    fn file_ingester(source: PathBuf, options: &IngestOptions) -> AppResult<Box<dyn FileIngester>> {
+        let format = options.format.clone().or_else(|| {
             source
                 .extension()
                 .and_then(|ext| Format::from_str(&ext.to_string_lossy(), true).ok())
@@ -62,9 +92,14 @@ impl Ingester {
             return Err(anyhow!("Unsupported file type {}", source.display()));
         };
         Ok(match format {
-            Format::Csv => Box::new(CsvIngester::new(source, Some(','))),
-            Format::Tsv => Box::new(CsvIngester::new(source, Some('\t'))),
-            Format::Dsv => Box::new(CsvIngester::new(source, None)),
+            Format::Csv | Format::Dsv => Box::new(CsvIngester::new(source, options.csv.clone())),
+            Format::Tsv => Box::new(CsvIngester::new(
+                source,
+                CsvOptions {
+                    delimiter: '\t',
+                    ..options.csv.clone()
+                },
+            )),
             Format::Json => Box::new(JsonIngester::new(source, false)),
             Format::Jsonl => Box::new(JsonIngester::new(source, true)),
             Format::Parquet => Box::new(ParquetIngester::new(source)),
@@ -139,7 +174,7 @@ mod tests {
             .unwrap();
         result.await.unwrap().unwrap();
         assert!(!progress.is_connected());
-        session.create_view("mem").unwrap();
+        session.create_view("mem", None).unwrap();
         let count: i64 = session
             .session()
             .unwrap()
@@ -173,8 +208,13 @@ mod tests {
 
     #[test]
     fn format_overrides_the_extension() {
-        let pick =
-            |path: &str, format| Ingester::file_ingester(PathBuf::from(path), format).is_ok();
+        let pick = |path: &str, format| {
+            let options = IngestOptions {
+                format,
+                ..IngestOptions::default()
+            };
+            Ingester::file_ingester(PathBuf::from(path), &options).is_ok()
+        };
         assert!(pick("sales.csv", None));
         assert!(pick("sales.CSV", None));
         assert!(pick("sales.txt", Some(Format::Csv)));

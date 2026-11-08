@@ -119,16 +119,17 @@ impl Session {
             .find(|name| !self.name_map.contains_key(name) && name != "_")
             .expect("Unable to find a name")
     }
-    pub fn create_view(&self, name: &str) -> AppResult<()> {
+    pub fn create_view(&self, name: &str, limit: Option<usize>) -> AppResult<()> {
         // this will change once the support
         // for loading sql file starts
         let alias = self
             .alias(name)
             .ok_or_else(|| anyhow!("Unknown table {name}"))?;
         self.conn.execute_batch(&format!(
-            "CREATE VIEW {} AS SELECT * FROM {}.data",
+            "CREATE VIEW {} AS SELECT * FROM {}.data{}",
             quote(name),
-            quote(&alias)
+            quote(&alias),
+            limit.map(|n| format!(" LIMIT {n}")).unwrap_or_default()
         ))?;
         Ok(())
     }
@@ -241,7 +242,7 @@ mod tests {
                 quote(&alias)
             ))
             .unwrap();
-        session.create_view(name).unwrap();
+        session.create_view(name, None).unwrap();
         assert_eq!(count(session, name), 10);
     }
 
@@ -270,8 +271,8 @@ mod tests {
         let db = dir.path().join("abc.duckdb");
         let mut session = Session::new(None).unwrap();
         attach_file(&mut session, "one", &db);
-        assert!(session.create_view("one").is_err());
-        assert!(session.create_view("nope").is_err());
+        assert!(session.create_view("one", None).is_err());
+        assert!(session.create_view("nope", None).is_err());
     }
 
     #[test]
@@ -368,7 +369,7 @@ mod tests {
         meta.status = FileDBStatus::Complete;
         meta.write(&db).unwrap();
         attach_file(&mut session, "two", &db);
-        session.create_view("two").unwrap();
+        session.create_view("two", None).unwrap();
         assert_eq!(count(&session, "two"), 10);
     }
 

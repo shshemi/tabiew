@@ -10,8 +10,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tabiew::app::App;
-use tabiew::duckdb::DuckDB;
 use tabiew::args::{Args, CtlArgs, Format};
+use tabiew::duckdb::{DuckDB, IngestOptions};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config;
@@ -142,9 +142,10 @@ fn run_ctl(args: CtlArgs) -> AppResult<()> {
 
 fn run_duckdb(args: &Args) -> AppResult<()> {
     let mut duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
+    let options = IngestOptions::from_args(args);
     let mut ingesting = 0;
     for source in &args.sources {
-        match duckdb.load(Path::new(source), None, args.format.clone()) {
+        match duckdb.load(Path::new(source), None, &options, args.max_rows) {
             Ok((name, Some(_))) => {
                 ingesting += 1;
                 println!("{name}: ingesting {source}");

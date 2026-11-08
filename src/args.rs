@@ -594,7 +594,7 @@ pub struct CtlExportCommon {
     pub path: std::path::PathBuf,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, ValueEnum)]
 pub enum Format {
     Dsv,
     Csv,

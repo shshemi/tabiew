@@ -5,6 +5,7 @@ use crate::{
 use anyhow::anyhow;
 use bytesize::ByteSize;
 use lru::LruCache;
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
     num::NonZeroUsize,
@@ -37,20 +38,24 @@ impl CacheManager {
             lru_file_cache: lru_cache,
         })
     }
-    pub fn create_new_db(&mut self, file_path: &Path) -> AppResult<FileDB> {
+    pub fn create_new_db(&mut self, file_path: &Path, options: &Value) -> AppResult<FileDB> {
         if self.cache_size.is_some() {
             self.lru_cache_eviction(file_path)?;
         }
         let duckdb_file_name = hash_file_path(&self.cache_dir, file_path)?;
-        let file_db = FileDB::create(&duckdb_file_name, file_path)?;
+        let file_db = FileDB::create(&duckdb_file_name, file_path, options)?;
         self.track(&duckdb_file_name);
         Ok(file_db)
     }
-    pub fn check_existing_cache_db(&mut self, file_path: &Path) -> AppResult<Option<FileDB>> {
+    pub fn check_existing_cache_db(
+        &mut self,
+        file_path: &Path,
+        options: &Value,
+    ) -> AppResult<Option<FileDB>> {
         let hashed_file = hash_file_path(&self.cache_dir, file_path)?;
         let file_db = FileDB::new(&hashed_file)?;
         if !std::fs::exists(&hashed_file).map_err(|e| anyhow!(e))?
-            || !FileDBMetadata::is_complete(&hashed_file)
+            || !FileDBMetadata::is_complete_for(&hashed_file, options)
         {
             return Ok(None);
         }
@@ -251,11 +256,14 @@ mod tests {
     }
 
     fn create(cm: &mut CacheManager, src: &Path) -> PathBuf {
-        cm.create_new_db(src).unwrap().file_path().to_path_buf()
+        cm.create_new_db(src, &Value::Null)
+            .unwrap()
+            .file_path()
+            .to_path_buf()
     }
 
     fn hit(cm: &mut CacheManager, src: &Path) -> Option<PathBuf> {
-        cm.check_existing_cache_db(src)
+        cm.check_existing_cache_db(src, &Value::Null)
             .unwrap()
             .map(|file_db| file_db.file_path().to_path_buf())
     }
@@ -435,7 +443,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let mut cm = manager(&config(&dir, Some(ByteSize(10)), None));
         let src = source(&dir, "big.csv", 20);
-        assert!(cm.create_new_db(&src).is_err());
+        assert!(cm.create_new_db(&src, &Value::Null).is_err());
     }
 
     #[test]
@@ -474,7 +482,7 @@ mod tests {
         finish_import(&db_b, 40);
         let held_a = FileDB::new(&db_a).unwrap();
         let held_b = FileDB::new(&db_b).unwrap();
-        let err = cm.create_new_db(&c).unwrap_err();
+        let err = cm.create_new_db(&c, &Value::Null).unwrap_err();
         assert!(err.to_string().contains("Can't allocate"), "{err}");
         assert!(db_a.exists() && db_b.exists());
         drop((held_a, held_b));
