@@ -13,26 +13,13 @@ use indexmap::IndexMap;
 use std::{ops::Deref, sync::Arc};
 
 enum Table {
-    File(FileDB),
-    Memory(String),
+    View(String),
     Query,
 }
 
-impl Table {
-    fn alias(&self) -> Option<String> {
-        match self {
-            Table::File(file_db) => Some(
-                file_db
-                    .file_path()
-                    .file_stem()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .into_owned(),
-            ),
-            Table::Memory(alias) => Some(alias.clone()),
-            Table::Query => None,
-        }
-    }
+struct Attached {
+    file_db: Option<FileDB>,
+    pinned: bool,
 }
 
 pub struct SessionConn {
@@ -50,6 +37,7 @@ impl Deref for SessionConn {
 pub struct Session {
     conn: Connection,
     active: Arc<()>,
+    attached: IndexMap<String, Attached>,
     name_map: IndexMap<String, Table>,
     pending: Vec<String>,
 }
@@ -58,6 +46,9 @@ impl Session {
     pub fn new(memory_limit: Option<ByteSize>) -> AppResult<Self> {
         let conn = Connection::open_in_memory()
             .map_err(|e| anyhow!("Couldn't establish connection to duckdb instance: {}", e))?;
+        conn.execute_batch(
+            "SET autoinstall_known_extensions = false; SET allow_community_extensions = false;",
+        )?;
         if let Some(memory_limit) = memory_limit {
             if memory_limit == ByteSize::b(0) {
                 return Err(anyhow!("Memory limit cannot be 0"));
@@ -68,73 +59,98 @@ impl Session {
             )
             .map_err(|e| anyhow!("Failed to set memory limit. {}", e))?;
         }
-        let name_map = IndexMap::<String, Table>::new();
-        let pending = Vec::<String>::new();
         Ok(Self {
             conn,
-            name_map,
-            pending,
             active: Arc::new(()),
+            attached: IndexMap::new(),
+            name_map: IndexMap::new(),
+            pending: Vec::new(),
         })
     }
-    pub fn attach(
-        &mut self,
-        table_name: Option<&str>,
-        file_db: Option<FileDB>,
-    ) -> AppResult<Option<String>> {
-        let stem = file_db
-            .as_ref()
-            .and_then(|file_db| file_db.file_path().file_stem())
-            .map(|stem| stem.to_string_lossy().into_owned());
-        let name = self.available_name(table_name.or(stem.as_deref()).unwrap_or("table"));
-        let (table, source, read_only) = match file_db {
-            Some(file_db) => {
-                let source = file_db.file_path().to_string_lossy().into_owned();
-                let table_complete = FileDBMetadata::is_complete(file_db.file_path());
-                (Table::File(file_db), source, table_complete)
-            }
-            None => (
-                Table::Memory(format!("mem_{name}")),
-                String::from(":memory:"),
-                false,
-            ),
+    pub fn attach(&mut self, file_db: Option<FileDB>) -> AppResult<String> {
+        let alias = match &file_db {
+            Some(file_db) => file_db
+                .file_path()
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned(),
+            None => enumerate_names("mem")
+                .find(|alias| !self.attached.contains_key(alias))
+                .expect("Unable to find an alias"),
         };
-        let alias = table.alias().expect("attached tables have an alias");
-        if !self
-            .name_map
-            .values()
-            .any(|t| t.alias().as_deref() == Some(alias.as_str()))
-        {
-            let options = if read_only { " (READ_ONLY)" } else { "" };
-            self.conn.execute(
-                &format!("ATTACH IF NOT EXISTS ? AS {}{options}", quote(&alias)),
-                params![source],
-            )?;
+        if let Some(attached) = self.attached.get_mut(&alias) {
+            attached.pinned = true;
+            return Ok(alias);
         }
-        self.name_map.insert(name.clone(), table);
-        Ok(Some(name))
+        let (source, read_only) = match &file_db {
+            Some(file_db) => (
+                file_db.file_path().to_string_lossy().into_owned(),
+                FileDBMetadata::is_complete(file_db.file_path()),
+            ),
+            None => (String::from(":memory:"), false),
+        };
+        let options = if read_only { " (READ_ONLY)" } else { "" };
+        self.conn.execute(
+            &format!("ATTACH IF NOT EXISTS ? AS {}{options}", quote(&alias)),
+            params![source],
+        )?;
+        self.attached.insert(
+            alias.clone(),
+            Attached {
+                file_db,
+                pinned: true,
+            },
+        );
+        Ok(alias)
+    }
+    pub fn unpin(&mut self, alias: &str) {
+        if let Some(attached) = self.attached.get_mut(alias) {
+            attached.pinned = false;
+        }
+    }
+    pub fn tables(&self, alias: &str) -> AppResult<Vec<String>> {
+        let tables = self
+            .conn
+            .prepare(
+                "SELECT table_name FROM duckdb_tables() WHERE database_name = ? ORDER BY table_name",
+            )?
+            .query_map(params![alias], |r| r.get(0))?
+            .collect::<Result<Vec<String>, _>>()?;
+        Ok(tables)
     }
     fn available_name(&self, preferred: &str) -> String {
         enumerate_names(preferred)
             .find(|name| !self.name_map.contains_key(name) && name != "_")
             .expect("Unable to find a name")
     }
-    pub fn create_view(&self, name: &str, limit: Option<usize>) -> AppResult<()> {
-        // this will change once the support
-        // for loading sql file starts
-        let alias = self
-            .alias(name)
-            .ok_or_else(|| anyhow!("Unknown table {name}"))?;
+    pub fn create_view(
+        &mut self,
+        name: &str,
+        alias: &str,
+        table: &str,
+        limit: Option<usize>,
+    ) -> AppResult<String> {
+        if !self.attached.contains_key(alias) {
+            return Err(anyhow!("Unknown alias {alias}"));
+        }
+        let name = self.available_name(name);
         self.conn.execute_batch(&format!(
-            "CREATE VIEW {} AS SELECT * FROM {}.data{}",
-            quote(name),
-            quote(&alias),
+            "CREATE VIEW {} AS SELECT * FROM {}.{}{}",
+            quote(&name),
+            quote(alias),
+            quote(table),
             limit.map(|n| format!(" LIMIT {n}")).unwrap_or_default()
         ))?;
-        Ok(())
+        self.name_map
+            .insert(name.clone(), Table::View(alias.to_string()));
+        Ok(name)
     }
-    pub fn alias(&self, name: &str) -> Option<String> {
-        self.name_map.get(name).and_then(Table::alias)
+    pub fn alias(&self, name: &str) -> Option<&str> {
+        match self.name_map.get(name)? {
+            Table::View(alias) => Some(alias),
+            Table::Query => None,
+        }
     }
     pub fn create_query(&mut self, name: &str, setup: &[String], sql: &str) -> AppResult<String> {
         let name = self.available_name(name);
@@ -159,11 +175,8 @@ impl Session {
         Ok(())
     }
 
-    pub fn file_db_mut(&mut self, name: &str) -> Option<&mut FileDB> {
-        match self.name_map.get_mut(name)? {
-            Table::File(file_db) => Some(file_db),
-            Table::Memory(_) | Table::Query => None,
-        }
+    pub fn file_db_mut(&mut self, alias: &str) -> Option<&mut FileDB> {
+        self.attached.get_mut(alias)?.file_db.as_mut()
     }
 
     pub fn session(&self) -> AppResult<SessionConn> {
@@ -178,31 +191,32 @@ impl Session {
     }
 
     pub fn flush(&mut self) -> AppResult<Vec<String>> {
-        let mut detached = Vec::<String>::new();
         if Arc::strong_count(&self.active) > 1 {
-            return Ok(detached);
+            return Ok(Vec::new());
         }
         while let Some(name) = self.pending.last().cloned() {
             self.conn
                 .execute(&format!("DROP VIEW IF EXISTS {}", quote(&name)), [])?;
             self.pending.pop();
-            let table = self
-                .name_map
-                .shift_remove(&name)
-                .expect("pending names are in name_map");
-            if let Some(alias) = table.alias()
-                && !self
-                    .name_map
-                    .values()
-                    .any(|t| t.alias().as_deref() == Some(alias.as_str()))
-            {
-                self.conn
-                    .execute(&format!("DETACH {}", quote(&alias)), [])?;
-                detached.push(alias);
-            }
-            drop(table);
+            self.name_map.shift_remove(&name);
         }
-        Ok(detached)
+        let unused = self
+            .attached
+            .iter()
+            .filter(|(alias, attached)| {
+                !attached.pinned
+                    && !self
+                        .name_map
+                        .values()
+                        .any(|t| matches!(t, Table::View(view) if view == *alias))
+            })
+            .map(|(alias, _)| alias.clone())
+            .collect::<Vec<_>>();
+        for alias in &unused {
+            self.conn.execute(&format!("DETACH {}", quote(alias)), [])?;
+            self.attached.shift_remove(alias);
+        }
+        Ok(unused)
     }
 }
 
@@ -213,9 +227,8 @@ mod tests {
     use std::path::Path;
     use tempfile::TempDir;
 
-    fn attach_file(session: &mut Session, name: &str, db: &Path) {
-        let file_db = FileDB::new(db).unwrap();
-        session.attach(Some(name), Some(file_db)).unwrap();
+    fn attach_file(session: &mut Session, db: &Path) -> String {
+        session.attach(Some(FileDB::new(db).unwrap())).unwrap()
     }
 
     fn is_locked(db: &Path) -> bool {
@@ -232,29 +245,39 @@ mod tests {
             .unwrap()
     }
 
-    fn ingest(session: &mut Session, name: &str) {
-        let alias = session.alias(name).unwrap();
+    fn fill(session: &Session, alias: &str, table: &str) {
         session
             .session()
             .unwrap()
             .execute_batch(&format!(
-                "CREATE TABLE {}.data AS SELECT range AS id FROM range(10)",
-                quote(&alias)
+                "CREATE TABLE {}.{} AS SELECT range AS id FROM range(10)",
+                quote(alias),
+                quote(table)
             ))
             .unwrap();
-        session.create_view(name, None).unwrap();
-        assert_eq!(count(session, name), 10);
+    }
+
+    fn complete(db: &Path) {
+        let mut meta = FileDBMetadata::new(Path::new("/data/sales.csv"));
+        meta.status = FileDBStatus::Complete;
+        meta.write(db).unwrap();
     }
 
     #[test]
     fn views_over_file_and_memory_tables_join() {
         let dir = TempDir::new().unwrap();
-        let db = dir.path().join("abc.duckdb");
         let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "file", &db);
-        ingest(&mut session, "file");
-        session.attach(Some("mem"), None).unwrap();
-        ingest(&mut session, "mem");
+        let file = attach_file(&mut session, &dir.path().join("abc.duckdb"));
+        fill(&session, &file, "data");
+        session.create_view("file", &file, "data", None).unwrap();
+        let memory = session.attach(None).unwrap();
+        assert_eq!(memory, "mem");
+        assert_eq!(session.attach(None).unwrap(), "mem_2");
+        fill(&session, &memory, "data");
+        session
+            .create_view("mem", &memory, "data", Some(4))
+            .unwrap();
+        assert_eq!(count(&session, "mem"), 4);
         let joined: i64 = session
             .session()
             .unwrap()
@@ -262,81 +285,104 @@ mod tests {
                 r.get(0)
             })
             .unwrap();
-        assert_eq!(joined, 10);
+        assert_eq!(joined, 4);
     }
 
     #[test]
-    fn create_view_fails_until_the_ingester_made_the_table() {
+    fn create_view_needs_the_alias_and_the_table() {
         let dir = TempDir::new().unwrap();
-        let db = dir.path().join("abc.duckdb");
         let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "one", &db);
-        assert!(session.create_view("one", None).is_err());
-        assert!(session.create_view("nope", None).is_err());
+        let alias = attach_file(&mut session, &dir.path().join("abc.duckdb"));
+        assert!(session.create_view("one", &alias, "data", None).is_err());
+        assert!(session.create_view("one", "nope", "data", None).is_err());
+        assert!(session.alias("one").is_none());
     }
 
     #[test]
-    fn file_lock_lives_until_the_last_table_is_flushed() {
+    fn tables_are_listed_by_name() {
+        let mut session = Session::new(None).unwrap();
+        let alias = session.attach(None).unwrap();
+        fill(&session, &alias, "users");
+        fill(&session, &alias, "orders");
+        assert_eq!(session.tables(&alias).unwrap(), ["orders", "users"]);
+        assert!(session.tables("nope").unwrap().is_empty());
+    }
+
+    #[test]
+    fn view_names_get_a_free_one() {
+        let mut session = Session::new(None).unwrap();
+        let alias = session.attach(None).unwrap();
+        fill(&session, &alias, "data");
+        let view =
+            |session: &mut Session, name| session.create_view(name, &alias, "data", None).unwrap();
+        assert_eq!(view(&mut session, "sales"), "sales");
+        assert_eq!(view(&mut session, "sales"), "sales_2");
+        assert_eq!(view(&mut session, "_"), "__2");
+        assert_eq!(session.alias("sales_2"), Some(alias.as_str()));
+    }
+
+    #[test]
+    fn file_lock_lives_until_the_last_view_is_flushed() {
         let dir = TempDir::new().unwrap();
         let db = dir.path().join("abc.duckdb");
         let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "one", &db);
-        attach_file(&mut session, "two", &db);
+        let alias = attach_file(&mut session, &db);
+        fill(&session, &alias, "data");
+        let one = session.create_view("t", &alias, "data", None).unwrap();
+        let two = session.create_view("t", &alias, "data", None).unwrap();
+        session.unpin(&alias);
         assert!(is_locked(&db));
-        session.detach("one").unwrap();
-        session.flush().unwrap();
+        session.detach(&one).unwrap();
+        assert!(session.flush().unwrap().is_empty());
         assert!(is_locked(&db));
         let active = session.session().unwrap();
-        session.detach("two").unwrap();
-        assert_eq!(session.flush().unwrap(), Vec::<String>::new());
+        session.detach(&two).unwrap();
+        assert!(session.flush().unwrap().is_empty());
         assert!(is_locked(&db));
         drop(active);
+        assert_eq!(session.flush().unwrap(), ["abc"]);
+        assert!(!is_locked(&db));
+        assert!(session.file_db_mut(&alias).is_none());
+    }
+
+    #[test]
+    fn pinned_attach_without_views_survives_until_unpinned() {
+        let dir = TempDir::new().unwrap();
+        let db = dir.path().join("abc.duckdb");
+        let mut session = Session::new(None).unwrap();
+        let alias = attach_file(&mut session, &db);
+        assert!(session.flush().unwrap().is_empty());
+        assert!(is_locked(&db));
+        session.unpin(&alias);
         assert_eq!(session.flush().unwrap(), ["abc"]);
         assert!(!is_locked(&db));
     }
 
     #[test]
-    fn taken_and_missing_names_get_a_free_one() {
+    fn attaching_a_file_again_reuses_the_attach_and_its_lock() {
         let dir = TempDir::new().unwrap();
         let db = dir.path().join("abc.duckdb");
         let mut session = Session::new(None).unwrap();
-        let memory = |session: &mut Session, name| session.attach(name, None).unwrap().unwrap();
-        assert_eq!(memory(&mut session, None), "table");
-        assert_eq!(memory(&mut session, None), "table_2");
-        assert_eq!(memory(&mut session, Some("sales")), "sales");
-        assert_eq!(memory(&mut session, Some("sales")), "sales_2");
-        assert_eq!(memory(&mut session, Some("_")), "__2");
-        let attach = |session: &mut Session| {
-            let file_db = FileDB::new(&db).unwrap();
-            session.attach(None, Some(file_db)).unwrap().unwrap()
-        };
-        assert_eq!(attach(&mut session), "abc");
-        assert_eq!(attach(&mut session), "abc_2");
-        assert_eq!(session.alias("abc_2").as_deref(), Some("abc"));
-        assert!(is_locked(&db));
-    }
-
-    #[test]
-    fn second_name_on_a_file_blocks_the_write_lock_until_flushed() {
-        let dir = TempDir::new().unwrap();
-        let db = dir.path().join("abc.duckdb");
-        let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "one", &db);
-        attach_file(&mut session, "two", &db);
-        assert!(
-            session
-                .file_db_mut("one")
-                .unwrap()
-                .get_write_lock()
-                .is_err()
-        );
-        session.detach("two").unwrap();
-        session.flush().unwrap();
+        let alias = attach_file(&mut session, &db);
+        fill(&session, &alias, "data");
+        session.create_view("one", &alias, "data", None).unwrap();
+        session.unpin(&alias);
+        complete(&db);
+        assert_eq!(attach_file(&mut session, &db), alias);
+        session.create_view("two", &alias, "data", None).unwrap();
+        assert_eq!(count(&session, "two"), 10);
         session
-            .file_db_mut("one")
+            .file_db_mut(&alias)
             .unwrap()
             .get_write_lock()
             .unwrap();
+        assert!(FileDB::new(&db).is_err());
+        session
+            .file_db_mut(&alias)
+            .unwrap()
+            .get_read_lock()
+            .unwrap();
+        assert!(FileDB::new(&db).is_ok());
     }
 
     #[test]
@@ -346,48 +392,14 @@ mod tests {
         let conn = Connection::open(&db).unwrap();
         conn.execute_batch("CREATE TABLE data (id INT)").unwrap();
         drop(conn);
-        let mut meta = FileDBMetadata::new(Path::new("/data/sales.csv"));
-        meta.status = FileDBStatus::Complete;
-        meta.write(&db).unwrap();
+        complete(&db);
         let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "one", &db);
+        attach_file(&mut session, &db);
         let write = session
             .session()
             .unwrap()
             .execute_batch("DROP TABLE abc.data");
         assert!(write.is_err());
-    }
-
-    #[test]
-    fn reopening_a_file_imported_in_this_session_reuses_the_attach() {
-        let dir = TempDir::new().unwrap();
-        let db = dir.path().join("abc.duckdb");
-        let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "one", &db);
-        ingest(&mut session, "one");
-        let mut meta = FileDBMetadata::new(Path::new("/data/sales.csv"));
-        meta.status = FileDBStatus::Complete;
-        meta.write(&db).unwrap();
-        attach_file(&mut session, "two", &db);
-        session.create_view("two", None).unwrap();
-        assert_eq!(count(&session, "two"), 10);
-    }
-
-    #[test]
-    fn file_db_mut_finds_the_lock_by_table_name() {
-        let dir = TempDir::new().unwrap();
-        let db = dir.path().join("abc.duckdb");
-        let mut session = Session::new(None).unwrap();
-        attach_file(&mut session, "one", &db);
-        session
-            .file_db_mut("one")
-            .unwrap()
-            .get_write_lock()
-            .unwrap();
-        assert!(FileDB::new(&db).is_err());
-        session.file_db_mut("one").unwrap().get_read_lock().unwrap();
-        assert!(FileDB::new(&db).is_ok());
-        assert!(session.file_db_mut("nope").is_none());
     }
 
     #[test]

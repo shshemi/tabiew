@@ -154,10 +154,10 @@ mod tests {
     }
 
     fn ingester(session: &mut Session, file_ingester: Box<dyn FileIngester>) -> Ingester {
-        session.attach(Some("mem"), None).unwrap();
+        let alias = session.attach(None).unwrap();
         Ingester {
             conn: session.session().unwrap(),
-            alias: session.alias("mem").unwrap(),
+            alias,
             file_ingester,
         }
     }
@@ -170,7 +170,7 @@ mod tests {
             .unwrap();
         result.await.unwrap().unwrap();
         assert!(!progress.is_connected());
-        session.create_view("mem", None).unwrap();
+        session.create_view("mem", "mem", "data", None).unwrap();
         let count: i64 = session
             .session()
             .unwrap()
@@ -178,7 +178,8 @@ mod tests {
             .unwrap();
         assert_eq!(count, 10);
         session.detach("mem").unwrap();
-        assert_eq!(session.flush().unwrap(), ["mem_mem"]);
+        session.unpin("mem");
+        assert_eq!(session.flush().unwrap(), ["mem"]);
     }
 
     #[tokio::test]
@@ -189,8 +190,8 @@ mod tests {
             .unwrap();
         let error = result.await.unwrap().unwrap_err();
         assert!(error.to_string().contains("broken file"));
-        session.detach("mem").unwrap();
-        assert_eq!(session.flush().unwrap(), ["mem_mem"]);
+        session.unpin("mem");
+        assert_eq!(session.flush().unwrap(), ["mem"]);
     }
 
     #[tokio::test]
@@ -198,8 +199,8 @@ mod tests {
         let mut session = Session::new(None).unwrap();
         let (_, result) = ingester(&mut session, Box::new(Panics)).ingest().unwrap();
         assert!(result.await.is_err());
-        session.detach("mem").unwrap();
-        assert_eq!(session.flush().unwrap(), ["mem_mem"]);
+        session.unpin("mem");
+        assert_eq!(session.flush().unwrap(), ["mem"]);
     }
 
     #[test]

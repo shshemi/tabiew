@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
-use tabiew::duckdb::{DuckDB, IngestOptions};
+use tabiew::duckdb::{DuckDB, IngestOptions, Load};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config;
@@ -155,21 +155,23 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     let mut ingesting = 0;
     for source in &args.sources {
         match duckdb.load(Path::new(source), None, &options, args.max_rows) {
-            Ok((name, Some(_))) => {
+            Ok(Load::Ingesting(_)) => {
                 ingesting += 1;
-                println!("{name}: ingesting {source}");
+                println!("{source}: ingesting");
             }
-            Ok((name, None)) => println!("{name}: loaded {source} from the cache"),
+            Ok(Load::Ready(names)) => {
+                println!("{source}: loaded from the cache as {}", names.join(", "))
+            }
             Err(err) => eprintln!("{source}: {err:#}"),
         }
     }
     while ingesting > 0 {
         std::thread::sleep(Duration::from_millis(100));
-        for (name, result) in duckdb.flush()?.tables {
+        for (source, result) in duckdb.flush()?.tables {
             ingesting -= 1;
             match result {
-                Ok(()) => println!("{name}: ready"),
-                Err(err) => eprintln!("{name}: {err:#}"),
+                Ok(names) => println!("{}: ready as {}", source.display(), names.join(", ")),
+                Err(err) => eprintln!("{}: {err:#}", source.display()),
             }
         }
     }

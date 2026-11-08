@@ -16,7 +16,7 @@ use duckdb::ProgressHandle;
 use helper::{SplitSql, random_name, split_sql};
 use ingester::Ingester;
 use session::Session;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use config::Config as DuckDBConfig;
@@ -28,12 +28,25 @@ pub struct DuckDB {
     cache_manager: CacheManager,
     config: Config,
     session: Session,
-    ingesting: Vec<(String, Option<usize>, Receiver<AppResult<()>>)>,
+    ingesting: Vec<Ingesting>,
     pending_queries: Vec<(String, Option<String>)>,
 }
 
+struct Ingesting {
+    source: PathBuf,
+    alias: String,
+    name: Option<String>,
+    limit: Option<usize>,
+    result: Receiver<AppResult<()>>,
+}
+
+pub enum Load {
+    Ready(Vec<String>),
+    Ingesting(ProgressHandle),
+}
+
 pub struct Flushed {
-    pub tables: Vec<(String, AppResult<()>)>,
+    pub tables: Vec<(PathBuf, AppResult<Vec<String>>)>,
     pub queries: Vec<AppResult<String>>,
 }
 
@@ -59,26 +72,43 @@ impl DuckDB {
         table_name: Option<&str>,
         options: &IngestOptions,
         max_rows: Option<usize>,
-    ) -> AppResult<(String, Option<ProgressHandle>)> {
+    ) -> AppResult<Load> {
         let path = &path
             .canonicalize()
             .map_err(|e| anyhow!("Failed to open {}: {}", path.display(), e))?;
         let key = serde_json::to_value(options)?;
-        let stem = path
-            .file_stem()
-            .map(|stem| stem.to_string_lossy().into_owned());
-        let table_name = table_name.or(stem.as_deref());
+        let name = table_name.map(String::from).or_else(|| {
+            path.file_stem()
+                .map(|stem| stem.to_string_lossy().into_owned())
+        });
         if let Some(file_db) = self.cache_manager.check_existing_cache_db(path, &key)? {
-            let name = self.attach(table_name, file_db)?;
-            self.session.create_view(&name, max_rows)?;
-            return Ok((name, None));
+            let alias = self.session.attach(Some(file_db))?;
+            let names = self.views(&alias, name.as_deref(), max_rows);
+            self.session.unpin(&alias);
+            return names.map(Load::Ready);
         }
         let file_db = self.cache_manager.create_new_db(path, &key)?;
-        let name = self.attach(table_name, file_db)?;
-        match self.ingest(&name, path, options, max_rows) {
-            Ok(progress) => Ok((name, Some(progress))),
+        let alias = self.session.attach(Some(file_db))?;
+        let ingested = Ingester::new(
+            self.session.session()?,
+            alias.clone(),
+            path.clone(),
+            options,
+        )
+        .and_then(Ingester::ingest);
+        match ingested {
+            Ok((progress, result)) => {
+                self.ingesting.push(Ingesting {
+                    source: path.clone(),
+                    alias,
+                    name,
+                    limit: max_rows,
+                    result,
+                });
+                Ok(Load::Ingesting(progress))
+            }
             Err(e) => {
-                self.session.detach(&name)?;
+                self.session.unpin(&alias);
                 Err(e)
             }
         }
@@ -105,7 +135,7 @@ impl DuckDB {
         };
         let mut i = 0;
         while i < self.ingesting.len() {
-            let result = match self.ingesting[i].2.try_recv() {
+            let result = match self.ingesting[i].result.try_recv() {
                 Err(TryRecvError::Empty) => {
                     i += 1;
                     continue;
@@ -113,12 +143,10 @@ impl DuckDB {
                 Ok(result) => result,
                 Err(TryRecvError::Closed) => Err(anyhow!("Ingester stopped without a result")),
             };
-            let (name, limit, _) = self.ingesting.swap_remove(i);
-            let result = result.and_then(|()| self.finish(&name, limit));
-            if result.is_err() {
-                self.session.detach(&name)?;
-            }
-            flushed.tables.push((name, result));
+            let ingesting = self.ingesting.swap_remove(i);
+            let names = result.and_then(|()| self.finish(&ingesting));
+            self.session.unpin(&ingesting.alias);
+            flushed.tables.push((ingesting.source, names));
         }
         if self.ingesting.is_empty() {
             for (sql, fallback) in std::mem::take(&mut self.pending_queries) {
@@ -128,38 +156,36 @@ impl DuckDB {
         self.session.flush()?;
         Ok(flushed)
     }
-    fn attach(&mut self, table_name: Option<&str>, file_db: file_db::FileDB) -> AppResult<String> {
-        self.session
-            .attach(table_name, Some(file_db))?
-            .ok_or_else(|| anyhow!("Failed to attach the table"))
-    }
-    fn ingest(
+    fn views(
         &mut self,
-        name: &str,
-        path: &Path,
-        options: &IngestOptions,
-        max_rows: Option<usize>,
-    ) -> AppResult<ProgressHandle> {
-        let alias = self
-            .session
-            .alias(name)
-            .ok_or_else(|| anyhow!("Unknown table {name}"))?;
-        let ingester = Ingester::new(self.session.session()?, alias, path.to_path_buf(), options)?;
-        let (progress, result) = ingester.ingest()?;
-        self.ingesting.push((name.to_string(), max_rows, result));
-        Ok(progress)
+        alias: &str,
+        name: Option<&str>,
+        limit: Option<usize>,
+    ) -> AppResult<Vec<String>> {
+        let tables = self.session.tables(alias)?;
+        if tables.is_empty() {
+            return Err(anyhow!("No tables were loaded"));
+        }
+        let single = tables.len() == 1 && tables[0] == "data";
+        tables
+            .iter()
+            .map(|table| {
+                let view = if single { name.unwrap_or(table) } else { table };
+                self.session.create_view(view, alias, table, limit)
+            })
+            .collect()
     }
     fn query(&mut self, sql: &str, fallback: Option<String>) -> AppResult<String> {
         let SplitSql { setup, name, query } = split_sql(sql);
         let name = name.or(fallback).unwrap_or_else(random_name);
         self.session.create_query(&name, &setup, &query)
     }
-    fn finish(&mut self, name: &str, limit: Option<usize>) -> AppResult<()> {
+    fn finish(&mut self, ingesting: &Ingesting) -> AppResult<Vec<String>> {
         self.session
-            .file_db_mut(name)
-            .ok_or_else(|| anyhow!("Unknown table {name}"))?
+            .file_db_mut(&ingesting.alias)
+            .ok_or_else(|| anyhow!("Unknown alias {}", ingesting.alias))?
             .mark_complete()?;
-        self.session.create_view(name, limit)
+        self.views(&ingesting.alias, ingesting.name.as_deref(), ingesting.limit)
     }
 }
 
@@ -178,28 +204,36 @@ mod tests {
         .unwrap()
     }
 
-    fn source(dir: &TempDir, name: &str) -> std::path::PathBuf {
+    fn source(dir: &TempDir, name: &str) -> PathBuf {
         let path = dir.path().join(name);
         std::fs::write(&path, "id\n1\n").unwrap();
-        path
+        path.canonicalize().unwrap()
     }
 
-    fn start(db: &mut DuckDB, path: &Path) -> (String, Sender<AppResult<()>>) {
+    fn start(db: &mut DuckDB, path: &Path, tables: &[&str]) -> (String, Sender<AppResult<()>>) {
         let key = serde_json::to_value(IngestOptions::default()).unwrap();
         let file_db = db.cache_manager.create_new_db(path, &key).unwrap();
-        let name = db.attach(Some("sales"), file_db).unwrap();
-        let alias = db.session.alias(&name).unwrap();
-        db.session
-            .session()
-            .unwrap()
-            .execute_batch(&format!(
-                "CREATE TABLE {}.data AS SELECT range AS id FROM range(10)",
-                quote(&alias)
-            ))
-            .unwrap();
-        let (sender, receiver) = oneshot::channel();
-        db.ingesting.push((name.clone(), None, receiver));
-        (name, sender)
+        let alias = db.session.attach(Some(file_db)).unwrap();
+        for table in tables {
+            db.session
+                .session()
+                .unwrap()
+                .execute_batch(&format!(
+                    "CREATE TABLE {}.{} AS SELECT range AS id FROM range(10)",
+                    quote(&alias),
+                    quote(table)
+                ))
+                .unwrap();
+        }
+        let (sender, result) = oneshot::channel();
+        db.ingesting.push(Ingesting {
+            source: path.to_path_buf(),
+            alias: alias.clone(),
+            name: Some("sales".to_string()),
+            limit: None,
+            result,
+        });
+        (alias, sender)
     }
 
     fn count(db: &DuckDB, name: &str) -> i64 {
@@ -216,31 +250,46 @@ mod tests {
     fn finished_ingest_is_marked_complete_and_gets_a_view() {
         let dir = TempDir::new().unwrap();
         let mut db = duckdb(&dir);
-        let (name, sender) = start(&mut db, &source(&dir, "sales.csv"));
+        let path = source(&dir, "sales.csv");
+        let (alias, sender) = start(&mut db, &path, &["data"]);
         assert!(db.flush().unwrap().tables.is_empty());
         sender.send(Ok(())).unwrap();
         let flushed = db.flush().unwrap();
         assert_eq!(flushed.tables.len(), 1);
-        assert_eq!(flushed.tables[0].0, name);
-        assert!(flushed.tables[0].1.is_ok());
-        assert_eq!(count(&db, &name), 10);
-        let file_db = db.session.file_db_mut(&name).unwrap();
+        assert_eq!(flushed.tables[0].0, path);
+        assert_eq!(flushed.tables[0].1.as_ref().unwrap(), &["sales"]);
+        assert_eq!(count(&db, "sales"), 10);
+        let file_db = db.session.file_db_mut(&alias).unwrap();
         assert!(FileDBMetadata::is_complete(file_db.file_path()));
     }
 
     #[test]
-    fn failed_or_dropped_ingest_detaches_the_table() {
+    fn every_ingested_table_gets_its_own_view() {
         let dir = TempDir::new().unwrap();
         let mut db = duckdb(&dir);
-        let (failed, sender) = start(&mut db, &source(&dir, "one.csv"));
-        sender.send(Err(anyhow!("broken file"))).unwrap();
-        let (dropped, sender) = start(&mut db, &source(&dir, "two.csv"));
-        drop(sender);
+        let (_, sender) = start(&mut db, &source(&dir, "shop.sqlite"), &["users", "orders"]);
+        sender.send(Ok(())).unwrap();
         let flushed = db.flush().unwrap();
-        assert_eq!(flushed.tables.len(), 2);
+        assert_eq!(flushed.tables[0].1.as_ref().unwrap(), &["orders", "users"]);
+        assert_eq!(count(&db, "orders"), 10);
+    }
+
+    #[test]
+    fn failed_dropped_or_empty_ingest_detaches_the_db() {
+        let dir = TempDir::new().unwrap();
+        let mut db = duckdb(&dir);
+        let (failed, sender) = start(&mut db, &source(&dir, "one.csv"), &["data"]);
+        sender.send(Err(anyhow!("broken file"))).unwrap();
+        let (dropped, sender) = start(&mut db, &source(&dir, "two.csv"), &["data"]);
+        drop(sender);
+        let (empty, sender) = start(&mut db, &source(&dir, "three.csv"), &[]);
+        sender.send(Ok(())).unwrap();
+        let flushed = db.flush().unwrap();
+        assert_eq!(flushed.tables.len(), 3);
         assert!(flushed.tables.iter().all(|(_, result)| result.is_err()));
-        assert!(db.session.alias(&failed).is_none());
-        assert!(db.session.alias(&dropped).is_none());
+        for alias in [failed, dropped, empty] {
+            assert!(db.session.file_db_mut(&alias).is_none());
+        }
     }
 
     #[test]
@@ -248,17 +297,19 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = source(&dir, "sales.csv");
         let mut db = duckdb(&dir);
-        let (name, sender) = start(&mut db, &path);
+        let (_, sender) = start(&mut db, &path, &["data"]);
         sender.send(Ok(())).unwrap();
         db.flush().unwrap();
-        db.detach(&name).unwrap();
+        db.detach("sales").unwrap();
         db.flush().unwrap();
-        let (name, progress) = db
+        let Load::Ready(names) = db
             .load(&path, None, &IngestOptions::default(), None)
-            .unwrap();
-        assert_eq!(name, "sales");
-        assert!(progress.is_none());
-        assert_eq!(count(&db, &name), 10);
+            .unwrap()
+        else {
+            panic!("expected a cache hit");
+        };
+        assert_eq!(names, ["sales"]);
+        assert_eq!(count(&db, "sales"), 10);
     }
 
     #[test]
@@ -273,7 +324,8 @@ mod tests {
         db.flush().unwrap();
         let error = db
             .load(&path, None, &IngestOptions::default(), None)
-            .unwrap_err();
+            .err()
+            .unwrap();
         assert!(error.to_string().contains("Unsupported"));
     }
 
@@ -281,21 +333,15 @@ mod tests {
     fn queries_wait_for_every_ingest() {
         let dir = TempDir::new().unwrap();
         let mut db = duckdb(&dir);
-        let (name, sender) = start(&mut db, &source(&dir, "sales.csv"));
-        db.load_query(&format!("-- name: total\nSELECT count(*) AS n FROM {name}"));
+        let (_, sender) = start(&mut db, &source(&dir, "sales.csv"), &["data"]);
+        db.load_query("-- name: total\nSELECT count(*) AS n FROM sales");
         assert!(db.flush().unwrap().queries.is_empty());
         sender.send(Ok(())).unwrap();
         let flushed = db.flush().unwrap();
         assert_eq!(flushed.tables.len(), 1);
         assert_eq!(flushed.queries.len(), 1);
         assert_eq!(flushed.queries[0].as_deref().unwrap(), "total");
-        let n: i64 = db
-            .session
-            .session()
-            .unwrap()
-            .query_row("SELECT n FROM total", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(n, 10);
+        assert_eq!(count(&db, "total"), 1);
     }
 
     #[test]
