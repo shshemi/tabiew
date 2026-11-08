@@ -1,7 +1,8 @@
 use crate::{
     AppResult,
-    duckdb::{ingester::FileIngester, session::SessionConn},
+    duckdb::{helper::quote, ingester::FileIngester, session::SessionConn},
 };
+use duckdb::params;
 use std::path::PathBuf;
 
 pub struct ParquetIngester {
@@ -15,7 +16,14 @@ impl ParquetIngester {
 }
 
 impl FileIngester for ParquetIngester {
-    fn ingest(&mut self, _conn: SessionConn, _alias: &str) -> AppResult<()> {
-        todo!("parquet {:?} into alias.data", self.path)
+    fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
+        conn.execute(
+            &format!(
+                "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_parquet(?)",
+                quote(alias)
+            ),
+            params![self.path.to_string_lossy().into_owned()],
+        )?;
+        Ok(())
     }
 }

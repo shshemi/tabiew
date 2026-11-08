@@ -1,7 +1,8 @@
 use crate::{
     AppResult,
-    duckdb::{ingester::FileIngester, session::SessionConn},
+    duckdb::{helper::quote, ingester::FileIngester, session::SessionConn},
 };
+use duckdb::params;
 use std::path::PathBuf;
 
 pub struct JsonIngester {
@@ -16,11 +17,15 @@ impl JsonIngester {
 }
 
 impl FileIngester for JsonIngester {
-    fn ingest(&mut self, _conn: SessionConn, _alias: &str) -> AppResult<()> {
-        todo!(
-            "read_json {:?} lines {} into alias.data",
-            self.path,
-            self.lines
-        )
+    fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
+        let format = if self.lines { "newline_delimited" } else { "auto" };
+        conn.execute(
+            &format!(
+                "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_json(?, format = ?)",
+                quote(alias)
+            ),
+            params![self.path.to_string_lossy().into_owned(), format],
+        )?;
+        Ok(())
     }
 }
