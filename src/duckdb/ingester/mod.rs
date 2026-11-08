@@ -14,6 +14,7 @@ use crate::{
     AppResult,
     args::{Args, Format},
     duckdb::session::SessionConn,
+    misc::format::resolve_format,
 };
 use anyhow::anyhow;
 use arrow::ArrowIngester;
@@ -83,12 +84,7 @@ impl Ingester {
         })
     }
     fn file_ingester(source: PathBuf, options: &IngestOptions) -> AppResult<Box<dyn FileIngester>> {
-        let format = options.format.clone().or_else(|| {
-            source
-                .extension()
-                .and_then(|ext| Format::from_str(&ext.to_string_lossy(), true).ok())
-        });
-        let Some(format) = format else {
+        let Some(format) = resolve_format(options.format.as_ref(), &source) else {
             return Err(anyhow!("Unsupported file type {}", source.display()));
         };
         Ok(match format {

@@ -19,6 +19,8 @@ pub mod app;
 /// DuckDB
 pub mod duckdb;
 
+pub mod indexer;
+
 pub mod parsers;
 
 pub mod iters;

@@ -3,6 +3,7 @@ pub mod background;
 pub mod config;
 pub mod cpu;
 pub mod external_editor;
+pub mod format;
 pub mod ipc;
 pub mod osc52;
 pub mod paths;
