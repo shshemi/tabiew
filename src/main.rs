@@ -54,6 +54,15 @@ async fn main() {
 
     config::init().unwrap_or_graceful_shutdown();
 
+    #[cfg(debug_assertions)]
+    if let Some(path) = &args.duckdb_inspect {
+        if let Err(err) = tabiew::duckdb::inspect(path, args.inspect_rows) {
+            eprintln!("{err:#}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     if args.duckdb {
         if let Err(err) = run_duckdb(&args) {
             eprintln!("{err:#}");

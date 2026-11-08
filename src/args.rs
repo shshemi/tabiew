@@ -29,6 +29,22 @@ pub struct Args {
     )]
     pub duckdb: bool,
 
+    #[cfg(debug_assertions)]
+    #[arg(
+        long,
+        help = "Dev only: prints the metadata, tables, columns and first rows of a DuckDB cache file.",
+        required = false
+    )]
+    pub duckdb_inspect: Option<std::path::PathBuf>,
+
+    #[cfg(debug_assertions)]
+    #[arg(
+        long,
+        help = "Dev only: number of rows --duckdb-inspect prints per table.",
+        default_value_t = 5_usize
+    )]
+    pub inspect_rows: usize,
+
     #[arg(long, help = "Sets the key for sqlite (if required)", value_enum)]
     pub sqlite_key: Option<String>,
 

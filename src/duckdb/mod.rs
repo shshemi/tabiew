@@ -3,6 +3,8 @@ mod config;
 mod file_db;
 mod helper;
 mod ingester;
+#[cfg(debug_assertions)]
+mod inspect;
 pub mod reader;
 mod session;
 
@@ -19,6 +21,8 @@ use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use config::Config as DuckDBConfig;
 pub use ingester::{CsvOptions, IngestOptions};
+#[cfg(debug_assertions)]
+pub use inspect::inspect;
 
 pub struct DuckDB {
     cache_manager: CacheManager,
