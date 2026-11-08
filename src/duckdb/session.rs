@@ -15,18 +15,22 @@ use std::{ops::Deref, sync::Arc};
 enum Table {
     File(FileDB),
     Memory(String),
+    Query,
 }
 
 impl Table {
-    fn alias(&self) -> String {
+    fn alias(&self) -> Option<String> {
         match self {
-            Table::File(file_db) => file_db
-                .file_path()
-                .file_stem()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .into_owned(),
-            Table::Memory(alias) => alias.clone(),
+            Table::File(file_db) => Some(
+                file_db
+                    .file_path()
+                    .file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+            Table::Memory(alias) => Some(alias.clone()),
+            Table::Query => None,
         }
     }
 }
@@ -95,8 +99,12 @@ impl Session {
                 false,
             ),
         };
-        let alias = table.alias();
-        if !self.name_map.values().any(|t| t.alias() == alias) {
+        let alias = table.alias().expect("attached tables have an alias");
+        if !self
+            .name_map
+            .values()
+            .any(|t| t.alias().as_deref() == Some(alias.as_str()))
+        {
             let options = if read_only { " (READ_ONLY)" } else { "" };
             self.conn.execute(
                 &format!("ATTACH IF NOT EXISTS ? AS {}{options}", quote(&alias)),
@@ -112,6 +120,8 @@ impl Session {
             .expect("Unable to find a name")
     }
     pub fn create_view(&self, name: &str) -> AppResult<()> {
+        // this will change once the support
+        // for loading sql file starts
         let alias = self
             .alias(name)
             .ok_or_else(|| anyhow!("Unknown table {name}"))?;
@@ -123,7 +133,20 @@ impl Session {
         Ok(())
     }
     pub fn alias(&self, name: &str) -> Option<String> {
-        self.name_map.get(name).map(Table::alias)
+        self.name_map.get(name).and_then(Table::alias)
+    }
+    pub fn create_query(&mut self, name: &str, setup: &[String], sql: &str) -> AppResult<String> {
+        let name = self.available_name(name);
+        if !setup.is_empty() {
+            self.conn.execute_batch(&setup.join(";\n"))?;
+        }
+        self.conn.execute_batch(&format!(
+            "CREATE VIEW {} AS {}",
+            quote(&name),
+            sql.trim().trim_end_matches(';')
+        ))?;
+        self.name_map.insert(name.clone(), Table::Query);
+        Ok(name)
     }
     pub fn detach(&mut self, name: &str) -> AppResult<()> {
         if !self.name_map.contains_key(name) {
@@ -138,7 +161,7 @@ impl Session {
     pub fn file_db_mut(&mut self, name: &str) -> Option<&mut FileDB> {
         match self.name_map.get_mut(name)? {
             Table::File(file_db) => Some(file_db),
-            Table::Memory(_) => None,
+            Table::Memory(_) | Table::Query => None,
         }
     }
 
@@ -166,8 +189,12 @@ impl Session {
                 .name_map
                 .shift_remove(&name)
                 .expect("pending names are in name_map");
-            let alias = table.alias();
-            if !self.name_map.values().any(|t| t.alias() == alias) {
+            if let Some(alias) = table.alias()
+                && !self
+                    .name_map
+                    .values()
+                    .any(|t| t.alias().as_deref() == Some(alias.as_str()))
+            {
                 self.conn
                     .execute(&format!("DETACH {}", quote(&alias)), [])?;
                 detached.push(alias);
@@ -360,5 +387,28 @@ mod tests {
         session.file_db_mut("one").unwrap().get_read_lock().unwrap();
         assert!(FileDB::new(&db).is_ok());
         assert!(session.file_db_mut("nope").is_none());
+    }
+
+    #[test]
+    fn query_views_run_setup_take_free_names_and_detach_without_detach() {
+        let mut session = Session::new(None).unwrap();
+        let setup = ["CREATE TABLE t AS SELECT range AS id FROM range(3)".to_string()];
+        let name = session
+            .create_query("top", &setup, "SELECT * FROM t;")
+            .unwrap();
+        assert_eq!(name, "top");
+        assert_eq!(count(&session, "top"), 3);
+        let name = session.create_query("top", &[], "SELECT 1").unwrap();
+        assert_eq!(name, "top_2");
+        assert!(session.alias("top").is_none());
+        assert!(session.create_query("bad", &[], "SELEC 1").is_err());
+        session.detach("top").unwrap();
+        assert_eq!(session.flush().unwrap(), Vec::<String>::new());
+        let gone = session
+            .session()
+            .unwrap()
+            .execute_batch("SELECT * FROM top");
+        assert!(gone.is_err());
+        assert_eq!(count(&session, "top_2"), 1);
     }
 }
