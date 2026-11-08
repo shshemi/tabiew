@@ -13,15 +13,15 @@ mod sqlite;
 use crate::{
     AppResult,
     args::{Args, Format},
-    duckdb::session::SessionConn,
-    misc::format::resolve_format,
+    duckdb::{helper::quote, session::SessionConn},
+    misc::{available_col_name::available_col_name, format::resolve_format},
 };
 use arrow::ArrowIngester;
 use avro::AvroIngester;
 use clap::ValueEnum;
 use csv::CsvIngester;
 pub use csv::CsvOptions;
-use duckdb::ProgressHandle;
+use duckdb::{Connection, ProgressHandle, appender_params_from_iter, types::Value};
 use excel::ExcelIngester;
 use fwf::FwfIngester;
 use html::HtmlIngester;
@@ -36,6 +36,47 @@ use tokio::sync::oneshot::{self, Receiver};
 
 pub trait FileIngester: Send {
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()>;
+}
+
+fn write_text_table(
+    conn: &Connection,
+    alias: &str,
+    table: &str,
+    headers: &[String],
+    rows: &[Vec<String>],
+) -> AppResult<()> {
+    if headers.is_empty() {
+        return Ok(());
+    }
+    let columns = headers
+        .iter()
+        .fold(Vec::<String>::new(), |mut columns, header| {
+            columns.push(available_col_name(header, |name| {
+                !columns.iter().any(|column| column == name)
+            }));
+            columns
+        });
+    let definition = columns
+        .iter()
+        .map(|column| format!("{} VARCHAR", quote(column)))
+        .collect::<Vec<_>>();
+    conn.execute_batch(&format!(
+        "CREATE OR REPLACE TABLE {}.{} ({})",
+        quote(alias),
+        quote(table),
+        definition.join(", ")
+    ))?;
+    let mut appender = conn.appender_to_catalog_and_db(table, alias, "main")?;
+    for row in rows {
+        let values = (0..columns.len()).map(|i| {
+            row.get(i)
+                .map(|value| Value::Text(value.clone()))
+                .unwrap_or(Value::Null)
+        });
+        appender.append_row(appender_params_from_iter(values))?;
+    }
+    appender.flush()?;
+    Ok(())
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
@@ -125,7 +166,7 @@ impl Ingester {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::duckdb::{helper::quote, session::Session};
+    use crate::duckdb::session::Session;
     use anyhow::anyhow;
 
     struct Fake {

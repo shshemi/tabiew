@@ -1,4 +1,7 @@
-use crate::{AppResult, duckdb::file_db::FileDBMetadata};
+use crate::{
+    AppResult,
+    duckdb::{file_db::FileDBMetadata, helper::quote},
+};
 use duckdb::{AccessMode, Config, Connection};
 use std::path::Path;
 
@@ -14,7 +17,7 @@ pub fn inspect(path: &Path, rows: usize) -> AppResult<()> {
         .query_map([], |r| r.get::<_, String>(0))?
         .collect::<Result<Vec<_>, _>>()?;
     for table in tables {
-        let table = format!("\"{}\"", table.replace('"', "\"\""));
+        let table = quote(&table);
         let count: i64 =
             conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))?;
         println!("\n{table}: {count} rows");
