@@ -6,7 +6,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use crate::backend::db::Database;
+use super::db::Database;
 
 pub fn submit(req: impl FnOnce(&mut Database) + Send + 'static) {
     static INSTANCE: OnceLock<Worker> = OnceLock::new();
