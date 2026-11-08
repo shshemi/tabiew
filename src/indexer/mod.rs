@@ -85,8 +85,8 @@ impl Indexer {
     }
     fn file_indexer(source: &Path, options: &IngestOptions) -> AppResult<Arc<dyn FileIndexer>> {
         match resolve_format(options.format.as_ref(), source) {
-            Some(Format::Csv | Format::Dsv) => Ok(Arc::new(CsvIndexer::new(&options.csv)?)),
-            Some(Format::Tsv) => Ok(Arc::new(CsvIndexer::new(&CsvOptions {
+            Format::Csv | Format::Dsv => Ok(Arc::new(CsvIndexer::new(&options.csv)?)),
+            Format::Tsv => Ok(Arc::new(CsvIndexer::new(&CsvOptions {
                 delimiter: '\t',
                 ..options.csv.clone()
             })?)),

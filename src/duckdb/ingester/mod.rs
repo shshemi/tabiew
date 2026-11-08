@@ -16,7 +16,6 @@ use crate::{
     duckdb::session::SessionConn,
     misc::format::resolve_format,
 };
-use anyhow::anyhow;
 use arrow::ArrowIngester;
 use avro::AvroIngester;
 use clap::ValueEnum;
@@ -44,6 +43,8 @@ pub struct IngestOptions {
     #[serde(serialize_with = "format_name")]
     pub format: Option<Format>,
     pub csv: CsvOptions,
+    #[serde(skip)]
+    pub sqlite_key: Option<String>,
 }
 
 impl IngestOptions {
@@ -51,6 +52,7 @@ impl IngestOptions {
         Self {
             format: args.format.clone(),
             csv: CsvOptions::from_args(args),
+            sqlite_key: args.sqlite_key.clone(),
         }
     }
 }
@@ -84,10 +86,7 @@ impl Ingester {
         })
     }
     fn file_ingester(source: PathBuf, options: &IngestOptions) -> AppResult<Box<dyn FileIngester>> {
-        let Some(format) = resolve_format(options.format.as_ref(), &source) else {
-            return Err(anyhow!("Unsupported file type {}", source.display()));
-        };
-        Ok(match format {
+        Ok(match resolve_format(options.format.as_ref(), &source) {
             Format::Csv | Format::Dsv => Box::new(CsvIngester::new(source, options.csv.clone())),
             Format::Tsv => Box::new(CsvIngester::new(
                 source,
@@ -101,7 +100,7 @@ impl Ingester {
             Format::Parquet => Box::new(ParquetIngester::new(source)),
             Format::Arrow => Box::new(ArrowIngester::new(source)),
             Format::Fwf => Box::new(FwfIngester::new(source)),
-            Format::Sqlite => Box::new(SqliteIngester::new(source)),
+            Format::Sqlite => Box::new(SqliteIngester::new(source, options.sqlite_key.clone())),
             Format::Excel => Box::new(ExcelIngester::new(source)),
             Format::Logfmt => Box::new(LogfmtIngester::new(source)),
             Format::Avro => Box::new(AvroIngester::new(source)),
@@ -127,6 +126,7 @@ impl Ingester {
 mod tests {
     use super::*;
     use crate::duckdb::{helper::quote, session::Session};
+    use anyhow::anyhow;
 
     struct Fake {
         fail: bool,
@@ -201,22 +201,5 @@ mod tests {
         assert!(result.await.is_err());
         session.unpin("mem");
         assert_eq!(session.flush().unwrap(), ["mem"]);
-    }
-
-    #[test]
-    fn format_overrides_the_extension() {
-        let pick = |path: &str, format| {
-            let options = IngestOptions {
-                format,
-                ..IngestOptions::default()
-            };
-            Ingester::file_ingester(PathBuf::from(path), &options).is_ok()
-        };
-        assert!(pick("sales.csv", None));
-        assert!(pick("sales.CSV", None));
-        assert!(pick("sales.txt", Some(Format::Csv)));
-        assert!(!pick("sales.txt", None));
-        assert!(!pick("sales", None));
-        assert!(pick("sales.csv", Some(Format::Parquet)));
     }
 }

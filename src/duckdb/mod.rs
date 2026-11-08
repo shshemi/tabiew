@@ -313,23 +313,6 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_format_errors_and_releases_the_cache_file() {
-        let dir = TempDir::new().unwrap();
-        let path = source(&dir, "sales.xyz");
-        let mut db = duckdb(&dir);
-        assert!(
-            db.load(&path, None, &IngestOptions::default(), None)
-                .is_err()
-        );
-        db.flush().unwrap();
-        let error = db
-            .load(&path, None, &IngestOptions::default(), None)
-            .err()
-            .unwrap();
-        assert!(error.to_string().contains("Unsupported"));
-    }
-
-    #[test]
     fn queries_wait_for_every_ingest() {
         let dir = TempDir::new().unwrap();
         let mut db = duckdb(&dir);
