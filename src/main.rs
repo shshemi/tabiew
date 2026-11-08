@@ -33,7 +33,8 @@ use tabiew::tui::terminal::{draw, start_tui, stop_tui};
 use tabiew::tui::Pane;
 use tabiew::{AppResult, ctl};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Parse CLI
     let args = Args::parse();
 

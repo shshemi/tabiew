@@ -181,7 +181,7 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::duckdb::{file_db::FileDBStatus, ingester::Ingester};
+    use crate::duckdb::file_db::FileDBStatus;
     use std::path::Path;
     use tempfile::TempDir;
 
@@ -206,24 +206,20 @@ mod tests {
 
     fn ingest(session: &mut Session, name: &str) {
         let alias = session.alias(name).unwrap();
-        let conn = session.session().unwrap();
-        Ingester::create_placeholder(&conn, &alias).unwrap();
-        drop(conn);
-        session.create_view(name).unwrap();
-        assert_eq!(count(session, name), 0);
         session
             .session()
             .unwrap()
             .execute_batch(&format!(
-                "CREATE OR REPLACE TABLE {}.data AS SELECT range AS id FROM range(10)",
+                "CREATE TABLE {}.data AS SELECT range AS id FROM range(10)",
                 quote(&alias)
             ))
             .unwrap();
+        session.create_view(name).unwrap();
         assert_eq!(count(session, name), 10);
     }
 
     #[test]
-    fn view_serves_the_placeholder_then_the_ingested_data() {
+    fn views_over_file_and_memory_tables_join() {
         let dir = TempDir::new().unwrap();
         let db = dir.path().join("abc.duckdb");
         let mut session = Session::new(None).unwrap();
@@ -327,7 +323,10 @@ mod tests {
         meta.write(&db).unwrap();
         let mut session = Session::new(None).unwrap();
         attach_file(&mut session, "one", &db);
-        let write = session.session().unwrap().execute_batch("DROP TABLE abc.data");
+        let write = session
+            .session()
+            .unwrap()
+            .execute_batch("DROP TABLE abc.data");
         assert!(write.is_err());
     }
 

@@ -116,6 +116,7 @@ duckdb = { version = "1.20000.0", features = ["bundled"] }
 bytesize = { version = "2.7.0", features = ["serde"] }
 sha2 = "0.11.1"
 lru = "0.19.0"
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "sync"] }
 
 [dev-dependencies]
 rstest = "0.26.1"

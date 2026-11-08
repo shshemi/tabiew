@@ -215,7 +215,7 @@ fn delete_files(files: &[CacheEntry]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::duckdb::{DuckDBConfig, FileDBStatus};
+    use crate::duckdb::{DuckDBConfig, file_db::FileDBStatus};
     use std::{
         fs::{self, File, FileTimes},
         time::Duration,
@@ -504,10 +504,8 @@ mod tests {
         let db = create(&mut cm, &src);
         fs::write(&db, vec![0u8; 10]).unwrap();
         let _held = FileDB::new(&db).unwrap();
-
         assert_eq!(hit(&mut cm, &src), None);
         assert_eq!(hit(&mut manager(&config), &src), None);
-
         let mut meta = FileDBMetadata::read(&db).unwrap().unwrap();
         meta.status = FileDBStatus::Complete;
         meta.write(&db).unwrap();
@@ -524,7 +522,6 @@ mod tests {
         let importing = create(&mut importing_instance, &src);
         fs::write(&importing, vec![0u8; 10]).unwrap();
         let _held = FileDB::new(&importing).unwrap();
-
         let done = config.cache_dir.join("done.duckdb");
         finish_import(&done, 10);
         let half = config.cache_dir.join("half.duckdb");
@@ -537,7 +534,6 @@ mod tests {
         let broken = config.cache_dir.join("broken.duckdb");
         fs::write(&broken, vec![0u8; 10]).unwrap();
         fs::write(FileDBMetadata::path(&broken), "not json").unwrap();
-
         manager(&config);
         assert!(done.exists());
         assert!(importing.exists() && FileDBMetadata::path(&importing).exists());
