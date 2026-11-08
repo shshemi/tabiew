@@ -22,6 +22,13 @@ pub struct Args {
     )]
     pub format: Option<Format>,
 
+    #[arg(
+        long,
+        help = "Loads the sources into the DuckDB cache without starting the TUI (experimental).",
+        default_value_t = false
+    )]
+    pub duckdb: bool,
+
     #[arg(long, help = "Sets the key for sqlite (if required)", value_enum)]
     pub sqlite_key: Option<String>,
 
