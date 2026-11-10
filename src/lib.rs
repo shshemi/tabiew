@@ -21,6 +21,8 @@ pub mod duckdb;
 
 pub mod indexer;
 
+pub mod reader;
+
 pub mod parsers;
 
 pub mod iters;

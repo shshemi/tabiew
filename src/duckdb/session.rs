@@ -10,7 +10,7 @@ use anyhow::anyhow;
 use bytesize::ByteSize;
 use duckdb::{Connection, params, vtab::arrow::ArrowVTab};
 use indexmap::IndexMap;
-use std::{ops::Deref, sync::Arc};
+use std::{ops::Deref, path::Path, sync::Arc};
 
 enum Table {
     View(Vec<String>),
@@ -67,6 +67,12 @@ impl Session {
             name_map: IndexMap::new(),
             pending: Vec::new(),
         })
+    }
+    pub fn set_temp_dir(&self, dir: &Path) -> AppResult<()> {
+        self.conn
+            .execute("SET temp_directory = ?", params![dir.to_string_lossy()])
+            .map_err(|e| anyhow!("Failed to set the temp directory. {}", e))?;
+        Ok(())
     }
     pub fn attach(&mut self, file_db: Option<FileDB>) -> AppResult<String> {
         let alias = match &file_db {
@@ -266,7 +272,6 @@ impl Session {
 mod tests {
     use super::*;
     use crate::duckdb::cache::file_db::FileDBStatus;
-    use std::path::Path;
     use tempfile::TempDir;
 
     fn attach_file(session: &mut Session, db: &Path) -> String {

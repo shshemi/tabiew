@@ -1,0 +1,207 @@
+use crate::AppResult;
+use std::{collections::VecDeque, ops::Range};
+
+pub trait RowSource {
+    fn columns(&self) -> Vec<String>;
+    fn row_count(&self) -> usize;
+    fn complete(&self) -> bool {
+        true
+    }
+    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>>;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ReaderConfig {
+    pub segment_rows: usize,
+    pub segments: usize,
+}
+
+type Segment = (usize, Vec<Vec<String>>);
+
+pub struct Reader<S> {
+    source: S,
+    segment_rows: usize,
+    segments: usize,
+    cache: VecDeque<Segment>,
+    complete: bool,
+}
+
+impl<S: RowSource> Reader<S> {
+    pub fn new(source: S, config: ReaderConfig) -> Self {
+        Self {
+            source,
+            segment_rows: config.segment_rows.max(1),
+            segments: config.segments.max(1),
+            cache: VecDeque::new(),
+            complete: false,
+        }
+    }
+    pub fn source(&self) -> &S {
+        &self.source
+    }
+    pub fn columns(&self) -> Vec<String> {
+        self.source.columns()
+    }
+    pub fn row_count(&self) -> usize {
+        self.source.row_count()
+    }
+    pub fn rows(&mut self, range: Range<usize>) -> AppResult<impl Iterator<Item = &[String]>> {
+        if !self.complete {
+            self.cache
+                .retain(|(_, rows)| rows.len() == self.segment_rows);
+        }
+        self.complete = self.source.complete();
+        let row_count = self.source.row_count();
+        let start = range.start.min(row_count);
+        let range = start..range.end.clamp(start, row_count);
+        let first = range.start / self.segment_rows;
+        let last = range.end.div_ceil(self.segment_rows).max(first);
+        let missing = (first..last)
+            .filter(|segment| !self.cache.iter().any(|(idx, _)| idx == segment))
+            .collect::<Vec<_>>();
+        for run in missing.chunk_by(|a, b| a + 1 == *b) {
+            let mut rows = self
+                .source
+                .fetch(run[0] * self.segment_rows, run.len() * self.segment_rows)?
+                .into_iter();
+            for segment in run {
+                self.cache
+                    .push_back((*segment, rows.by_ref().take(self.segment_rows).collect()));
+            }
+        }
+        for segment in (first..last).rev() {
+            if let Some(pos) = self.cache.iter().position(|(idx, _)| *idx == segment)
+                && let Some(entry) = self.cache.remove(pos)
+            {
+                self.cache.push_back(entry);
+            }
+        }
+        while self.cache.len() > self.segments.max(last - first) {
+            self.cache.pop_front();
+        }
+        let width = self.source.columns().len();
+        let segment_rows = self.segment_rows;
+        for (_, rows) in self.cache.iter_mut().rev().take(last - first) {
+            for row in rows.iter_mut().filter(|row| row.len() < width) {
+                row.resize(width, String::new());
+            }
+        }
+        let cache = &self.cache;
+        Ok((first..last)
+            .flat_map(move |segment| {
+                cache
+                    .iter()
+                    .find(|(idx, _)| *idx == segment)
+                    .into_iter()
+                    .flat_map(|(_, rows)| rows.iter().map(Vec::as_slice))
+            })
+            .skip(range.start - first * segment_rows)
+            .take(range.len()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::Cell;
+
+    struct Numbers {
+        rows: Cell<usize>,
+        width: Cell<usize>,
+        complete: Cell<bool>,
+        fetches: Cell<usize>,
+    }
+
+    impl RowSource for &Numbers {
+        fn columns(&self) -> Vec<String> {
+            (0..self.width.get()).map(|i| format!("c{i}")).collect()
+        }
+        fn row_count(&self) -> usize {
+            self.rows.get()
+        }
+        fn complete(&self) -> bool {
+            self.complete.get()
+        }
+        fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>> {
+            self.fetches.set(self.fetches.get() + 1);
+            Ok((offset..(offset + len).min(self.rows.get()))
+                .map(|i| vec![i.to_string()])
+                .collect())
+        }
+    }
+
+    fn numbers(rows: usize, complete: bool) -> Numbers {
+        Numbers {
+            rows: Cell::new(rows),
+            width: Cell::new(1),
+            complete: Cell::new(complete),
+            fetches: Cell::new(0),
+        }
+    }
+
+    fn read<S: RowSource>(reader: &mut Reader<S>, range: Range<usize>) -> Vec<Vec<String>> {
+        reader
+            .rows(range)
+            .unwrap()
+            .map(<[String]>::to_vec)
+            .collect()
+    }
+
+    fn cached<S>(reader: &Reader<S>) -> Vec<usize> {
+        reader.cache.iter().map(|(idx, _)| *idx).collect()
+    }
+
+    const CONFIG: ReaderConfig = ReaderConfig {
+        segment_rows: 100,
+        segments: 3,
+    };
+
+    #[test]
+    fn segments_are_kept_least_recently_used_first_out() {
+        let source = numbers(10000, true);
+        let mut reader = Reader::new(&source, CONFIG);
+        assert_eq!(read(&mut reader, 0..2), [["0"], ["1"]]);
+        assert_eq!(cached(&reader), [0]);
+        let rows = read(&mut reader, 90..110);
+        assert_eq!(
+            (rows.len(), &rows[0][0], &rows[19][0]),
+            (20, &"90".into(), &"109".into())
+        );
+        assert_eq!(cached(&reader), [1, 0]);
+        read(&mut reader, 5000..5010);
+        assert_eq!(cached(&reader), [1, 0, 50]);
+        read(&mut reader, 0..10);
+        assert_eq!(cached(&reader), [1, 50, 0]);
+        read(&mut reader, 9990..20000);
+        assert_eq!(cached(&reader), [50, 0, 99]);
+        assert_eq!(read(&mut reader, 9995..9997)[1][0], "9996");
+        assert_eq!(read(&mut reader, 0..250).len(), 250);
+        assert_eq!(cached(&reader), [2, 1, 0]);
+        assert_eq!(source.fetches.get(), 5);
+        assert!(read(&mut reader, 20000..20010).is_empty());
+    }
+
+    #[test]
+    fn short_segments_are_refetched_until_the_source_is_complete() {
+        let source = numbers(150, false);
+        let mut reader = Reader::new(&source, CONFIG);
+        assert_eq!(read(&mut reader, 100..200).len(), 50);
+        source.rows.set(180);
+        assert_eq!(read(&mut reader, 100..200).len(), 80);
+        assert_eq!(source.fetches.get(), 2);
+        source.complete.set(true);
+        read(&mut reader, 100..200);
+        read(&mut reader, 100..200);
+        assert_eq!(source.fetches.get(), 3);
+    }
+
+    #[test]
+    fn rows_are_padded_when_columns_grow() {
+        let source = numbers(10, true);
+        let mut reader = Reader::new(&source, CONFIG);
+        assert_eq!(read(&mut reader, 0..1), [["0"]]);
+        source.width.set(3);
+        assert_eq!(read(&mut reader, 0..1), [["0", "", ""]]);
+        assert_eq!(source.fetches.get(), 1);
+    }
+}

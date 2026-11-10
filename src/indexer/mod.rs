@@ -9,6 +9,7 @@ use crate::{
     args::Format,
     duckdb::{CsvOptions, IngestOptions},
     misc::format::resolve_format,
+    reader::RowSource,
 };
 use anyhow::anyhow;
 use csv::CsvIndexer;
@@ -21,7 +22,7 @@ use std::{
     io::{self, BufRead, BufReader, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     sync::{
-        Arc, Mutex, RwLock,
+        Arc, Mutex, OnceLock, RwLock,
         atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::Duration,
@@ -105,6 +106,7 @@ pub struct Indexer {
     file_indexer: Arc<dyn FileIndexer>,
     index: Arc<Index>,
     keys: RwLock<IndexSet<String>>,
+    header: OnceLock<Vec<String>>,
 }
 
 impl Indexer {
@@ -140,6 +142,7 @@ impl Indexer {
             file_indexer,
             index,
             keys: RwLock::default(),
+            header: OnceLock::new(),
         })
     }
     fn file_indexer(source: &Path, options: &IngestOptions) -> AppResult<Arc<dyn FileIndexer>> {
@@ -157,7 +160,14 @@ impl Indexer {
     }
     pub fn header(&self) -> AppResult<Option<Vec<String>>> {
         if self.file_indexer.header() {
-            return Ok(self.records(0, 1)?.into_iter().next());
+            if let Some(header) = self.header.get() {
+                return Ok(Some(header.clone()));
+            }
+            let header = self.records(0, 1)?.into_iter().next();
+            if let Some(header) = &header {
+                let _ = self.header.set(header.clone());
+            }
+            return Ok(header);
         }
         if self.keys.read().unwrap().is_empty() {
             self.records(0, 100)?;
@@ -227,6 +237,21 @@ impl Indexer {
                 row
             }
         }
+    }
+}
+
+impl RowSource for Indexer {
+    fn columns(&self) -> Vec<String> {
+        self.header().ok().flatten().unwrap_or_default()
+    }
+    fn row_count(&self) -> usize {
+        self.indexed_rows()
+    }
+    fn complete(&self) -> bool {
+        self.index.done.load(Ordering::Acquire)
+    }
+    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>> {
+        self.rows(offset, len)
     }
 }
 
@@ -315,6 +340,7 @@ mod tests {
             path,
             index: Arc::new(Index::default()),
             keys: RwLock::default(),
+            header: OnceLock::new(),
         };
         assert_eq!(indexer.row_count(), None);
         assert_eq!(indexer.indexed_rows(), 0);

@@ -21,6 +21,16 @@ pub struct Config {
     /// the capacity for the lru cache
     /// if all the files can't fit in this the rest of the files will be deleted
     pub lru_capacity: Option<usize>,
+
+    /// the directory duckdb spills to when a query goes past the alloted ram.
+    /// defaults to cache_dir/tmp
+    pub temp_dir: Option<PathBuf>,
+
+    /// the rows the reader fetches per segment
+    pub segment_rows: usize,
+
+    /// the segments the reader keeps in memory
+    pub segments: usize,
 }
 
 impl Default for Config {
@@ -30,6 +40,9 @@ impl Default for Config {
             cache_dir: cache_path().unwrap_or_else(|_| std::env::temp_dir().join("tabiew")),
             max_cache_size: None,
             lru_capacity: None,
+            temp_dir: None,
+            segment_rows: 512,
+            segments: 4,
         }
     }
 }

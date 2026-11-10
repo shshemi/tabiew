@@ -10,7 +10,7 @@ mod source;
 mod spool;
 mod sql;
 
-use crate::AppResult;
+use crate::{AppResult, reader::ReaderConfig};
 use anyhow::anyhow;
 use cache::{CacheManager, config::Config};
 use parts::Group;
@@ -38,6 +38,7 @@ pub struct DuckDB {
     pending_queries: Vec<(String, Option<String>)>,
     groups: Vec<Group>,
     part_of: Option<usize>,
+    reader: ReaderConfig,
 }
 
 struct Ingesting {
@@ -74,6 +75,11 @@ impl DuckDB {
             config.lru_capacity.unwrap_or(0),
         )?;
         let session = Session::new(config.allotted_ram)?;
+        session.set_temp_dir(
+            &config
+                .temp_dir
+                .unwrap_or_else(|| config.cache_dir.join("tmp")),
+        )?;
         let spool = Spool::new(&config.cache_dir)?;
         Ok(Self {
             cache_manager,
@@ -83,6 +89,10 @@ impl DuckDB {
             pending_queries: Vec::new(),
             groups: Vec::new(),
             part_of: None,
+            reader: ReaderConfig {
+                segment_rows: config.segment_rows,
+                segments: config.segments,
+            },
         })
     }
     pub fn load_sql(&mut self, path: &Path) -> AppResult<()> {
