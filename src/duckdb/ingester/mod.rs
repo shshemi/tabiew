@@ -186,7 +186,7 @@ impl Ingester {
             Format::Arrow => Box::new(ArrowIngester::new(source)),
             Format::Fwf => Box::new(FwfIngester::new(source, options.fwf.clone())),
             Format::Sqlite => Box::new(SqliteIngester::new(source, options.sqlite_key.clone())),
-            Format::Excel => Box::new(ExcelIngester::new(source)),
+            Format::Excel => Box::new(ExcelIngester::new(source, options.csv.header)),
             Format::Logfmt => Box::new(LogfmtIngester::new(source)),
             Format::Avro => Box::new(AvroIngester::new(source)),
             Format::Html => Box::new(HtmlIngester::new(source)),

@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::anyhow;
 use bytesize::ByteSize;
-use duckdb::{Connection, params};
+use duckdb::{Connection, params, vtab::arrow::ArrowVTab};
 use indexmap::IndexMap;
 use std::{ops::Deref, sync::Arc};
 
@@ -49,6 +49,7 @@ impl Session {
         conn.execute_batch(
             "SET autoinstall_known_extensions = false; SET allow_community_extensions = false;",
         )?;
+        conn.register_table_function::<ArrowVTab>("arrow_batch")?;
         if let Some(memory_limit) = memory_limit {
             if memory_limit == ByteSize::b(0) {
                 return Err(anyhow!("Memory limit cannot be 0"));
