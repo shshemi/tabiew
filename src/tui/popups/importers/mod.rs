@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use crate::{
+    duckdb::DataSource,
     handler::message::Message,
     misc::sql::{TableSource, sql},
     net::remote_load,
-    readers::{DataSource, ReaderSource},
+    readers::ReaderSource,
 };
 
 pub mod arrow;

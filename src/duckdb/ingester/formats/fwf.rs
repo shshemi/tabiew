@@ -2,9 +2,9 @@ use crate::{
     AppResult,
     args::Args,
     duckdb::{
-        helper::quote,
         ingester::{FileIngester, IngestProgress, progress::StepProgress},
         session::SessionConn,
+        sql::quote,
     },
     misc::available_col_name::available_col_name,
 };

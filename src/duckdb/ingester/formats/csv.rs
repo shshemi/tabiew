@@ -2,9 +2,9 @@ use crate::{
     AppResult,
     args::{Args, Type},
     duckdb::{
-        helper::quote,
         ingester::{FileIngester, IngestProgress, progress::StepProgress},
         session::SessionConn,
+        sql::quote,
     },
 };
 use duckdb::params;
@@ -121,7 +121,7 @@ impl FileIngester for CsvIngester {
     }
 }
 
-pub(super) fn type_candidates(types: &[Type]) -> Option<Vec<String>> {
+pub(in crate::duckdb::ingester) fn type_candidates(types: &[Type]) -> Option<Vec<String>> {
     types
         .iter()
         .map(|t| {

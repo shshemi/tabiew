@@ -1,7 +1,9 @@
 use crate::{
     AppResult,
     duckdb::{
-        ingester::{FileIngester, IngestProgress, arrow::write_batches, progress::CountProgress},
+        ingester::{
+            FileIngester, IngestProgress, formats::arrow::write_batches, progress::CountProgress,
+        },
         session::SessionConn,
     },
 };

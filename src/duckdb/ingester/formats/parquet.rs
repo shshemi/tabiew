@@ -1,9 +1,9 @@
 use crate::{
     AppResult,
     duckdb::{
-        helper::quote,
         ingester::{FileIngester, IngestProgress, progress::StepProgress},
         session::SessionConn,
+        sql::quote,
     },
 };
 use duckdb::params;

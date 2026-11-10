@@ -1,9 +1,9 @@
 use crate::{
     AppResult,
     duckdb::{
-        helper::quote,
         ingester::{FileIngester, IngestProgress, progress::CountProgress},
         session::SessionConn,
+        sql::quote,
     },
 };
 use arrow_ipc::reader::FileReader;
@@ -33,14 +33,7 @@ impl FileIngester for ArrowIngester {
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
         let reader = FileReader::try_new_buffered(File::open(&self.path)?, None)?;
         self.progress.total(reader.num_batches() as u64);
-        write_batches(
-            &conn,
-            alias,
-            reader.map(|batch| {
-                self.progress.add(1);
-                batch
-            }),
-        )
+        write_batches(&conn, alias, reader.inspect(|_| self.progress.add(1)))
     }
 }
 

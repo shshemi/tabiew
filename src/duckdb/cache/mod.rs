@@ -1,9 +1,10 @@
-use crate::{
-    AppResult,
-    duckdb::file_db::{FileDB, FileDBMetadata},
-};
+pub(super) mod config;
+pub(super) mod file_db;
+
+use crate::AppResult;
 use anyhow::anyhow;
 use bytesize::ByteSize;
+use file_db::{FileDB, FileDBMetadata};
 use lru::LruCache;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -97,6 +98,7 @@ impl CacheManager {
         self.track(hashed_file);
         Ok(Some(file_db))
     }
+    #[cfg(test)]
     pub fn delete_cache(&mut self, file_db: FileDB) -> AppResult<()> {
         self.lru_file_cache.pop(file_db.file_path());
         file_db.delete()
@@ -261,7 +263,7 @@ fn delete_files(files: &[CacheEntry]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::duckdb::{DuckDBConfig, file_db::FileDBStatus};
+    use crate::duckdb::{DuckDBConfig, cache::file_db::FileDBStatus};
     use std::{
         fs::{self, File, FileTimes},
         time::Duration,

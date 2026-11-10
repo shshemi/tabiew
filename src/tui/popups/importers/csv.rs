@@ -1,7 +1,8 @@
 use super::dismiss_overlay_and_load_data_frame;
 use crate::{
+    duckdb::DataSource,
     handler::message::Message,
-    readers::{CsvToDataFrame, DataSource},
+    readers::CsvToDataFrame,
     tui::{
         icons,
         popups::{

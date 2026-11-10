@@ -1,6 +1,7 @@
 use crate::{
+    duckdb::DataSource,
     handler::message::Message,
-    readers::{DataSource, JsonToDataFrame},
+    readers::JsonToDataFrame,
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame,
         pickers::{

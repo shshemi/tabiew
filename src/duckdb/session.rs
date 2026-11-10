@@ -1,8 +1,8 @@
 use crate::{
     AppResult,
     duckdb::{
-        file_db::{FileDB, FileDBMetadata},
-        helper::quote,
+        cache::file_db::{FileDB, FileDBMetadata},
+        sql::quote,
     },
     iters::enumerate_names,
 };
@@ -187,6 +187,7 @@ impl Session {
             .query_map(params![alias, table], |r| Ok((r.get(0)?, r.get(1)?)))?
             .collect::<Result<Vec<_>, _>>()?)
     }
+    #[cfg(test)]
     pub fn aliases(&self, name: &str) -> Option<&[String]> {
         match self.name_map.get(name)? {
             Table::View(aliases) => Some(aliases),
@@ -264,7 +265,7 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::duckdb::file_db::FileDBStatus;
+    use crate::duckdb::cache::file_db::FileDBStatus;
     use std::path::Path;
     use tempfile::TempDir;
 

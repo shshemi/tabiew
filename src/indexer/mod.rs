@@ -38,7 +38,7 @@ struct Index {
 impl Index {
     fn push(&self, start: u64) {
         let records = self.records.load(Ordering::Relaxed);
-        if records % BLOCK == 0 {
+        if records.is_multiple_of(BLOCK) {
             self.offsets.write().unwrap().push(start);
         }
         self.records.store(records + 1, Ordering::Release);

@@ -16,7 +16,7 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{iters::enumerate_names, readers::DataSource};
+use crate::{duckdb::DataSource, iters::enumerate_names};
 
 use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 

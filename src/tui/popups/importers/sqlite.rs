@@ -1,6 +1,7 @@
 use crate::{
+    duckdb::DataSource,
     handler::message::Message,
-    readers::{DataSource, SqliteToDataFrames},
+    readers::SqliteToDataFrames,
     tui::{
         icons,
         popups::{

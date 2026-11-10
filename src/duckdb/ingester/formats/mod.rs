@@ -1,0 +1,25 @@
+mod arrow;
+mod avro;
+mod csv;
+mod excel;
+mod fwf;
+mod html;
+mod json;
+mod logfmt;
+mod markdown;
+mod parquet;
+mod sqlite;
+
+pub(super) use arrow::ArrowIngester;
+pub(super) use avro::AvroIngester;
+pub use csv::CsvOptions;
+pub(super) use csv::{CsvIngester, type_candidates};
+pub(super) use excel::ExcelIngester;
+pub(super) use fwf::FwfIngester;
+pub use fwf::FwfOptions;
+pub(super) use html::HtmlIngester;
+pub(super) use json::JsonIngester;
+pub(super) use logfmt::LogfmtIngester;
+pub(super) use markdown::MarkdownIngester;
+pub(super) use parquet::ParquetIngester;
+pub(super) use sqlite::SqliteIngester;

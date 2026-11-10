@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
-use tabiew::duckdb::{DuckDB, IngestOptions, Load};
+use tabiew::duckdb::{DataSource, DuckDB, IngestOptions, Load};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
 use tabiew::misc::config;
@@ -20,7 +20,6 @@ use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 use tabiew::net::downloader::download_to_temp;
 use tabiew::parsers::data_frame_parser::DataFrameParser;
-use tabiew::readers::DataSource;
 use tabiew::readers::ReaderSource;
 use tabiew::readers::{
     ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,

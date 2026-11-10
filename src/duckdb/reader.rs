@@ -1,3 +1,3 @@
-trait DuckDBReader {
+pub trait DuckDBReader {
     fn build();
 }

@@ -1,6 +1,6 @@
 use crate::{
     AppResult,
-    duckdb::{file_db::FileDBMetadata, helper::quote},
+    duckdb::{cache::file_db::FileDBMetadata, sql::quote},
 };
 use duckdb::{AccessMode, Config, Connection};
 use std::path::Path;
