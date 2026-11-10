@@ -22,8 +22,12 @@ pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
 
-fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Reader) {
+fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Importer) {
     Message::AppDismissOverlay.enqueue();
+    Message::AppImport(source, Arc::new(reader)).enqueue();
+}
+
+pub fn load_with_polars(source: DataSource, reader: Arc<dyn remote_load::Importer>) {
     match source {
         DataSource::Stdin => {
             let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
@@ -61,6 +65,6 @@ fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_l
             ))
             .enqueue();
         }
-        DataSource::Url(url) => Message::AppDownloadDataSource(url, Arc::new(reader)).enqueue(),
+        DataSource::Url(url) => Message::AppDownloadDataSource(url, reader).enqueue(),
     };
 }

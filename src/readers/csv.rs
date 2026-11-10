@@ -9,9 +9,10 @@ use polars::{
 
 use crate::{
     AppResult,
-    args::Args,
+    args::{Args, Format},
+    duckdb::{CsvOptions, IngestOptions},
     misc::stdin::stdin,
-    readers::{DataFrameReader, NamedFrames, ReaderSource},
+    readers::{DataFrameReader, IngestFormat, NamedFrames, ReaderSource},
 };
 
 #[derive(Debug)]
@@ -97,6 +98,23 @@ impl Default for CsvToDataFrame {
             ignore_errors: true,
             truncate_ragged_lines: false,
             max_rows: None,
+        }
+    }
+}
+
+impl IngestFormat for CsvToDataFrame {
+    fn ingest_options(&self, base: IngestOptions) -> IngestOptions {
+        IngestOptions {
+            format: Some(Format::Csv),
+            csv: CsvOptions {
+                delimiter: self.separator_char,
+                quote: self.quote_char,
+                header: !self.no_header,
+                ignore_errors: self.ignore_errors,
+                null_padding: self.truncate_ragged_lines,
+                ..base.csv
+            },
+            ..base
         }
     }
 }

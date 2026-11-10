@@ -52,7 +52,7 @@ impl Tabs {
         self.panes.push(pane);
     }
 
-    fn add(&mut self, tabular: Pane) {
+    pub fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
         self.idx = self.panes.len().saturating_sub(1);
     }

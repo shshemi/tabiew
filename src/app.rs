@@ -1,12 +1,16 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
-use crate::duckdb::DuckDB;
+use crate::AppResult;
+use crate::duckdb::{DataSource, DuckDB, IngestOptions, Load};
+use crate::indexer::Indexer;
 use crate::misc::config::config;
 use crate::net::remote_load::{self, RemoteLoad};
+use crate::reader::{Empty, Reader};
 use crate::tui::Pane;
 use crate::tui::layouts::notification::NotificationLayout;
 use crate::tui::pane::TableDescription;
 use crate::tui::popups::download_notif::{DownloadNotification, render_progress};
+use crate::tui::popups::importers::load_with_polars;
 use crate::tui::popups::pickers::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
@@ -44,6 +48,7 @@ pub struct App {
     dls: Vec<DownloadNotification>,
     running: bool,
     duckdb: Option<DuckDB>,
+    options: IngestOptions,
 }
 
 impl App {
@@ -60,13 +65,116 @@ impl App {
             running: true,
             dls: Vec::new(),
             duckdb: None,
+            options: IngestOptions::default(),
         }
     }
 
-    pub fn with_duckdb(self, duckdb: DuckDB) -> Self {
+    pub fn with_duckdb(self, duckdb: DuckDB, options: IngestOptions) -> Self {
         Self {
             duckdb: Some(duckdb),
+            options,
             ..self
+        }
+    }
+
+    pub fn load(
+        &mut self,
+        source: &DataSource,
+        options: &IngestOptions,
+        max_rows: Option<usize>,
+        select: bool,
+    ) {
+        let Some(duckdb) = self.duckdb.as_mut() else {
+            return;
+        };
+        let loaded = match source {
+            DataSource::Stdin => duckdb.load_stdin(None, options, max_rows),
+            DataSource::File(path) => duckdb.load(path, None, options, max_rows),
+            DataSource::Url(url) => duckdb.load_url(url, None, options, max_rows),
+        };
+        self.open(&label(source), loaded, options, select);
+    }
+
+    pub fn load_parts(
+        &mut self,
+        parts: &[DataSource],
+        options: &IngestOptions,
+        max_rows: Option<usize>,
+    ) {
+        let Some(duckdb) = self.duckdb.as_mut() else {
+            return;
+        };
+        let loaded = duckdb.load_parts(parts, options, max_rows);
+        let source = parts.first().map(label).unwrap_or_default();
+        self.open(&source, loaded, options, false);
+    }
+
+    fn open(
+        &mut self,
+        source: &str,
+        loaded: AppResult<Load>,
+        options: &IngestOptions,
+        select: bool,
+    ) {
+        let Some(duckdb) = self.duckdb.as_ref() else {
+            return;
+        };
+        let mut panes = Vec::new();
+        let mut errors = Vec::new();
+        match loaded {
+            Ok(Load::Ready(names)) => {
+                for name in names {
+                    match duckdb.reader(&name) {
+                        Ok(reader) => {
+                            panes.push(Pane::reader(reader, TableDescription::Table(name)))
+                        }
+                        Err(err) => errors.push(err.to_string()),
+                    }
+                }
+            }
+            Ok(Load::Ingesting(ingest)) => {
+                let (name, title) = match source {
+                    "-" => ("Stdin".to_string(), "Stdin".to_string()),
+                    _ => {
+                        let path = Path::new(source);
+                        let part = |part: Option<&std::ffi::OsStr>| {
+                            part.map(|part| part.to_string_lossy().into_owned())
+                                .unwrap_or(source.to_string())
+                        };
+                        (part(path.file_stem()), part(path.file_name()))
+                    }
+                };
+                let indexer = ingest
+                    .file
+                    .and_then(|file| Indexer::new(file, options, ingest.complete).ok());
+                let description = TableDescription::Table(name);
+                let config = duckdb.reader_config();
+                let pane = match indexer {
+                    Some(indexer) => Pane::reader(Reader::new(indexer, config), description),
+                    None => Pane::reader(Reader::new(Empty, config), description),
+                };
+                panes.push(pane.loading_from(ingest.source, title, ingest.progress));
+            }
+            Err(err) => errors.push(format!("{source}: {err:#}")),
+        }
+        if let Some(error) = errors.pop() {
+            self.show_error(error);
+        }
+        for pane in panes {
+            match select {
+                true => self.tabs.add(pane),
+                false => self.tabs.push(pane),
+            }
+        }
+    }
+
+    fn import(&mut self, source: &DataSource, reader: Arc<dyn remote_load::Importer>) {
+        match self.duckdb.is_some() {
+            true => {
+                let options = reader.ingest_options(self.options.clone());
+                self.load(source, &options, None, true);
+            }
+            false => load_with_polars(source.clone(), reader),
         }
     }
 
@@ -346,6 +454,7 @@ impl Component for App {
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
             Message::AppDownloadDataSource(url, reader) => self.add_download(url, reader.clone()),
+            Message::AppImport(source, reader) => self.import(source, reader.clone()),
             _ => (),
         };
         if let Some(overlay) = self.overlay.as_mut() {
@@ -437,5 +546,13 @@ impl Overlay {
             Overlay::ImportSqlite(importer) => importer,
             Overlay::ImportTsv(importer) => importer,
         }
+    }
+}
+
+fn label(source: &DataSource) -> String {
+    match source {
+        DataSource::Stdin => "-".to_string(),
+        DataSource::File(path) => path.to_string_lossy().into_owned(),
+        DataSource::Url(url) => url.to_string(),
     }
 }

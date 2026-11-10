@@ -11,13 +11,14 @@ use polars::{frame::DataFrame, prelude::Column};
 
 use crate::{
     AppResult,
-    args::Args,
+    args::{Args, Format},
+    duckdb::{FwfOptions, IngestOptions},
     iters::{enumerate_names, zip_iters::ZipItersExt},
     misc::stdin::stdin,
     readers::ReaderSource,
 };
 
-use super::{DataFrameReader, NamedFrames};
+use super::{DataFrameReader, IngestFormat, NamedFrames};
 
 #[derive(Debug)]
 pub struct FwfToDataFrame {
@@ -65,6 +66,21 @@ impl Default for FwfToDataFrame {
             has_header: true,
             separator_length: 0,
             flexible_width: true,
+        }
+    }
+}
+
+impl IngestFormat for FwfToDataFrame {
+    fn ingest_options(&self, base: IngestOptions) -> IngestOptions {
+        IngestOptions {
+            format: Some(Format::Fwf),
+            fwf: FwfOptions {
+                widths: (!self.widths.is_empty()).then(|| self.widths.clone()),
+                separator_length: self.separator_length,
+                flexible_width: self.flexible_width,
+                header: self.has_header,
+            },
+            ..base
         }
     }
 }

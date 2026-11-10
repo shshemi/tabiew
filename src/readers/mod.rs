@@ -26,4 +26,4 @@ pub use markdown::MarkdownToDataFrame;
 pub use parquet::ParquetToDataFrame;
 pub use source::ReaderSource;
 pub use sqlite::SqliteToDataFrames;
-pub use traits::{DataFrameReader, NamedFrames};
+pub use traits::{DataFrameReader, IngestFormat, NamedFrames};

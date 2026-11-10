@@ -6,7 +6,12 @@ use std::sync::{
 use polars::frame::DataFrame;
 use url::Url;
 
-use crate::{AppResult, net::remote_load::Reader, tui::pane::TableDescription};
+use crate::{
+    AppResult,
+    duckdb::DataSource,
+    net::remote_load::{Importer, Reader},
+    tui::pane::TableDescription,
+};
 
 static SHARED_CHANNEL: LazyLock<(Sender<Message>, Mutex<Receiver<Message>>)> =
     LazyLock::new(|| {
@@ -41,6 +46,7 @@ pub enum Message {
     AppDismissSchema,
     AppShowSqlQuery,
     AppDownloadDataSource(Url, Arc<dyn Reader>),
+    AppImport(DataSource, Arc<dyn Importer>),
     AppReloadConfig,
     TabsSelect(usize),
     TabsDismissSwitcher,

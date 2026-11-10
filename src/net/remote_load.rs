@@ -15,12 +15,16 @@ use url::Url;
 use crate::{
     AppResult,
     net::{downloader::download_size, http},
-    readers::{DataFrameReader, NamedFrames, ReaderSource},
+    readers::{DataFrameReader, IngestFormat, NamedFrames, ReaderSource},
 };
 
 pub trait Reader: DataFrameReader + Debug + Send + Sync + 'static {}
 
 impl<T> Reader for T where T: DataFrameReader + Debug + Send + Sync + 'static {}
+
+pub trait Importer: Reader + IngestFormat {}
+
+impl<T> Importer for T where T: Reader + IngestFormat {}
 
 #[derive(Debug)]
 pub struct RemoteLoad {

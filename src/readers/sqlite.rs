@@ -8,9 +8,15 @@ use polars::{
 use rusqlite::Connection;
 use tempfile::NamedTempFile;
 
-use crate::{AppResult, args::Args, misc::stdin::stdin, readers::ReaderSource};
+use crate::{
+    AppResult,
+    args::{Args, Format},
+    duckdb::IngestOptions,
+    misc::stdin::stdin,
+    readers::ReaderSource,
+};
 
-use super::{DataFrameReader, NamedFrames};
+use super::{DataFrameReader, IngestFormat, NamedFrames};
 
 #[derive(Debug, Default)]
 pub struct SqliteToDataFrames {
@@ -26,6 +32,16 @@ impl SqliteToDataFrames {
 
     pub fn key(self, key: String) -> Self {
         SqliteToDataFrames { key: Some(key) }
+    }
+}
+
+impl IngestFormat for SqliteToDataFrames {
+    fn ingest_options(&self, base: IngestOptions) -> IngestOptions {
+        IngestOptions {
+            format: Some(Format::Sqlite),
+            sqlite_key: self.key.clone(),
+            ..base
+        }
     }
 }
 

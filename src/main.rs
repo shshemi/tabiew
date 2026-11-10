@@ -10,17 +10,15 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
-use tabiew::duckdb::{DataSource, DuckDB, IngestOptions, Load};
+use tabiew::duckdb::{DataSource, DuckDB, IngestOptions};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
-use tabiew::indexer::Indexer;
 use tabiew::misc::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 use tabiew::net::downloader::download_to_temp;
 use tabiew::parsers::data_frame_parser::DataFrameParser;
-use tabiew::reader::{Empty, Reader};
 use tabiew::readers::ReaderSource;
 use tabiew::readers::{
     ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,
@@ -151,70 +149,31 @@ fn run_ctl(args: CtlArgs) -> AppResult<()> {
 }
 
 fn run_duckdb(args: &Args) -> AppResult<()> {
-    let mut duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
+    let duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
     let options = IngestOptions::from_args(args);
+    let mut app = App::new(Tabs::new(Vec::new())).with_duckdb(duckdb, options.clone());
     let mut sources = args.sources.clone();
     if sources.is_empty() && args.multiparts.is_empty() && !std::io::stdin().is_terminal() {
         sources.push("-".to_string());
     }
-    let mut loads = Vec::new();
     if !args.multiparts.is_empty() {
         let parts = args
             .multiparts
             .iter()
             .map(|part| DataSource::from_str(part))
             .collect::<AppResult<Vec<_>>>()?;
-        let loaded = duckdb.load_parts(&parts, &options, args.max_rows);
-        loads.push((args.multiparts[0].clone(), loaded));
+        app.load_parts(&parts, &options, args.max_rows);
     }
     for source in sources {
-        let loaded = match DataSource::from_str(&source)? {
-            DataSource::Stdin => duckdb.load_stdin(None, &options, args.max_rows),
-            DataSource::File(path) => duckdb.load(&path, None, &options, args.max_rows),
-            DataSource::Url(url) => duckdb.load_url(&url, None, &options, args.max_rows),
-        };
-        loads.push((source, loaded));
-    }
-    let mut panes = Vec::new();
-    for (source, loaded) in loads {
-        match loaded {
-            Ok(Load::Ready(names)) => {
-                for name in names {
-                    panes.push(Pane::reader(
-                        duckdb.reader(&name)?,
-                        TableDescription::Table(name),
-                    ));
-                }
-            }
-            Ok(Load::Ingesting(ingest)) => {
-                let (name, title) = match source.as_str() {
-                    "-" => ("Stdin".to_string(), "Stdin".to_string()),
-                    _ => {
-                        let path = Path::new(&source);
-                        let part = |part: Option<&std::ffi::OsStr>| {
-                            part.map(|part| part.to_string_lossy().into_owned())
-                                .unwrap_or(source.clone())
-                        };
-                        (part(path.file_stem()), part(path.file_name()))
-                    }
-                };
-                let indexer = ingest
-                    .file
-                    .and_then(|file| Indexer::new(file, &options, ingest.complete).ok());
-                let description = TableDescription::Table(name);
-                let pane = match indexer {
-                    Some(indexer) => {
-                        Pane::reader(Reader::new(indexer, duckdb.reader_config()), description)
-                    }
-                    None => Pane::reader(Reader::new(Empty, duckdb.reader_config()), description),
-                };
-                panes.push(pane.loading_from(ingest.source, title, ingest.progress));
-            }
-            Err(err) => Message::AppShowError(format!("{source}: {err:#}")).enqueue(),
-        }
+        app.load(
+            &DataSource::from_str(&source)?,
+            &options,
+            args.max_rows,
+            false,
+        );
     }
     start_tui()?;
-    let result = start_app(App::new(Tabs::new(panes)).with_duckdb(duckdb));
+    let result = start_app(app);
     let _ = stop_tui();
     result
 }
