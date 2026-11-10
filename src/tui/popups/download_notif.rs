@@ -1,4 +1,8 @@
-use ratatui::widgets::{Block, Gauge, Paragraph, Widget};
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{Block, Gauge, Paragraph, Widget},
+};
 
 use crate::{
     misc::config::theme,
@@ -35,16 +39,30 @@ impl Component for DownloadNotification {
         buf: &mut ratatui::prelude::Buffer,
         _: crate::tui::component::FocusState,
     ) {
-        if let Some(percent) = self.dl.info().percent() {
-            Gauge::default()
-                .block(Block::app_default().app_title(self.title.as_str()))
-                .gauge_style(theme().block())
-                .percent(percent)
-                .render(area, buf);
-        } else {
-            Paragraph::new("Downloading...")
-                .block(Block::app_default().app_title(self.title.as_str()))
-                .render(area, buf);
-        }
+        render_progress(
+            &self.title,
+            self.dl.info().percent(),
+            "Downloading...",
+            area,
+            buf,
+        );
+    }
+}
+
+pub fn render_progress(
+    title: &str,
+    percent: Option<u16>,
+    waiting: &str,
+    area: Rect,
+    buf: &mut Buffer,
+) {
+    let block = Block::app_default().app_title(title);
+    match percent {
+        Some(percent) => Gauge::default()
+            .block(block)
+            .gauge_style(theme().block())
+            .percent(percent.min(100))
+            .render(area, buf),
+        None => Paragraph::new(waiting).block(block).render(area, buf),
     }
 }

@@ -44,6 +44,14 @@ impl Tabs {
         self.panes.iter()
     }
 
+    pub fn panes_mut(&mut self) -> impl Iterator<Item = &mut Pane> {
+        self.panes.iter_mut()
+    }
+
+    pub fn push(&mut self, pane: Pane) {
+        self.panes.push(pane);
+    }
+
     fn add(&mut self, tabular: Pane) {
         self.panes.push(tabular);
         self.idx = self.panes.len().saturating_sub(1);

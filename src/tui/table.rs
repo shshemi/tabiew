@@ -16,7 +16,7 @@ use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 use crate::{
     iters::zip_iters::ZipItersExt,
     misc::config::{config, theme},
-    reader::{Rows, is_numeric, single_line},
+    reader::{Datum, Rows, is_numeric, single_line},
     tui::{
         component::Component,
         misc::{
@@ -108,10 +108,24 @@ impl Table {
         self.col_offsets = vec![0];
     }
 
+    pub fn rows(&self) -> Option<Arc<Mutex<dyn Rows>>> {
+        match &self.data {
+            Data::Frame(_) => None,
+            Data::Reader(reader) => Some(reader.clone()),
+        }
+    }
+
     pub fn row_count(&self) -> usize {
         match &self.data {
             Data::Frame(df) => df.height(),
             Data::Reader(reader) => reader.lock().unwrap().row_count(),
+        }
+    }
+
+    pub fn complete(&self) -> bool {
+        match &self.data {
+            Data::Frame(_) => true,
+            Data::Reader(reader) => reader.lock().unwrap().complete(),
         }
     }
 
@@ -867,7 +881,7 @@ fn build_table<'a>(
 fn build_reader_table<'a>(
     columns: &'a [(String, String)],
     numeric: &[bool],
-    rows: impl Iterator<Item = &'a [String]>,
+    rows: impl Iterator<Item = &'a [Datum]>,
     col_widths: &[Constraint],
     col_space: u16,
     show_header: bool,
@@ -880,22 +894,24 @@ fn build_reader_table<'a>(
         true => text.right_aligned(),
         false => text,
     };
-    let mut table =
-        ratatui::widgets::Table::default()
-            .widths(col_widths)
-            .style(theme.text())
-            .row_highlight_style(theme.row_highlighted())
-            .column_spacing(col_space)
-            .rows(rows.enumerate().map(|(idx, row)| {
-                Row::new(row.iter().zip(numeric).map(|(value, numeric)| {
-                    Cell::new(align(Text::raw(single_line(value)), *numeric))
-                }))
-                .style(if striped {
-                    theme.row(offset_row + idx)
-                } else {
-                    theme.row(0)
-                })
-            }));
+    let mut table = ratatui::widgets::Table::default()
+        .widths(col_widths)
+        .style(theme.text())
+        .row_highlight_style(theme.row_highlighted())
+        .column_spacing(col_space)
+        .rows(rows.enumerate().map(|(idx, row)| {
+            Row::new(row.iter().zip(numeric).map(|(value, numeric)| {
+                Cell::new(align(
+                    Text::raw(single_line(value.as_deref().unwrap_or_default())),
+                    *numeric,
+                ))
+            }))
+            .style(if striped {
+                theme.row(offset_row + idx)
+            } else {
+                theme.row(0)
+            })
+        }));
     if show_header {
         table =
             table.header(
@@ -1041,7 +1057,7 @@ mod tests {
         let start = Instant::now();
         let views = loop {
             assert!(start.elapsed() < Duration::from_secs(10));
-            if let Some((_, views)) = db.flush().unwrap().tables.pop() {
+            if let Some((_, views)) = db.poll().unwrap().tables.pop() {
                 break views.unwrap();
             }
             std::thread::sleep(Duration::from_millis(10));

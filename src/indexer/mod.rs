@@ -9,7 +9,7 @@ use crate::{
     args::Format,
     duckdb::{CsvOptions, IngestOptions},
     misc::format::resolve_format,
-    reader::RowSource,
+    reader::{Datum, RowSource},
 };
 use anyhow::anyhow;
 use csv::CsvIndexer;
@@ -256,8 +256,12 @@ impl RowSource for Indexer {
     fn complete(&self) -> bool {
         self.index.done.load(Ordering::Acquire)
     }
-    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>> {
-        self.rows(offset, len)
+    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>> {
+        Ok(self
+            .rows(offset, len)?
+            .into_iter()
+            .map(|row| row.into_iter().map(Some).collect())
+            .collect())
     }
 }
 

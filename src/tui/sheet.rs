@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, ops::Add};
+use std::{
+    collections::BTreeMap,
+    ops::Add,
+    sync::{Arc, Mutex},
+};
 
 use crossterm::event::{KeyCode, KeyModifiers};
 use polars::{frame::DataFrame, prelude::AnyValue};
@@ -15,6 +19,7 @@ use crate::{
     AppResult,
     handler::message::Message::{self, AppShowError},
     misc::{config::theme, osc52::CopyToClipboardOsc52},
+    reader::{Rows, is_numeric},
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -25,24 +30,39 @@ use crate::{
     },
 };
 
+pub enum Data {
+    Frame(DataFrame),
+    Reader(Arc<Mutex<dyn Rows>>),
+}
+
+impl std::fmt::Debug for Data {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Data::Frame(df) => df.fmt(f),
+            Data::Reader(_) => f.write_str("Reader"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Sheet {
     scroll: Scroll,
     row: Option<usize>,
-    // values: IndexMap<PlSmallStr, (AnyValue<'static>, DataType)>,
-    df: DataFrame,
+    data: Data,
     format: Format,
     value: Value,
 }
 
 impl Sheet {
-    pub fn new(df: DataFrame, row: impl Into<Option<usize>>) -> Self {
+    pub fn new(data: Data, row: impl Into<Option<usize>>) -> Self {
         let row = row.into();
-        let value = row.and_then(|idx| get_row(&df, idx)).unwrap_or(Value::Null);
+        let value = row
+            .and_then(|idx| get_row(&data, idx))
+            .unwrap_or(Value::Null);
         Self {
             scroll: Default::default(),
             row,
-            df,
+            data,
             format: Default::default(),
             value,
         }
@@ -65,15 +85,15 @@ impl Sheet {
         self.sync_value();
     }
 
-    pub fn set_data_frame(&mut self, df: DataFrame) {
-        self.df = df;
+    pub fn set_data(&mut self, data: Data) {
+        self.data = data;
         self.sync_value();
     }
 
     fn sync_value(&mut self) {
         self.value = self
             .row
-            .and_then(|idx| get_row(&self.df, idx))
+            .and_then(|idx| get_row(&self.data, idx))
             .unwrap_or(Value::Null);
     }
 }
@@ -88,7 +108,7 @@ impl Component for Sheet {
         Clear.render(area, buf);
 
         if let Some(row) = self.row
-            && let Some(value) = get_row(&self.df, row)
+            && let Some(value) = get_row(&self.data, row)
         {
             let mut tb = TextBuilder::default();
             match self.format {
@@ -146,7 +166,7 @@ impl Component for Sheet {
             }
             (KeyCode::Char('c'), KeyModifiers::NONE) => {
                 let Some(row) = self.row else { return true };
-                let Some(value) = get_row(&self.df, row) else {
+                let Some(value) = get_row(&self.data, row) else {
                     return true;
                 };
                 match self.format.pretty_string(value) {
@@ -235,12 +255,46 @@ impl Value {
     }
 }
 
-fn get_row(df: &DataFrame, idx: usize) -> Option<Value> {
+fn get_row(data: &Data, idx: usize) -> Option<Value> {
+    let df = match data {
+        Data::Frame(df) => df,
+        Data::Reader(reader) => return reader_row(&mut *reader.lock().unwrap(), idx),
+    };
     let fields = df.fields();
     let values = df.get(idx)?;
     Some(any_value_to_value(AnyValue::StructOwned(Box::new((
         values, fields,
     )))))
+}
+
+fn reader_row(reader: &mut dyn Rows, idx: usize) -> Option<Value> {
+    reader.fill(idx..idx + 1).ok()?;
+    let columns = reader.columns();
+    let row = reader.cached(idx..idx + 1).into_iter().next()?;
+    Some(Value::Object(
+        columns
+            .into_iter()
+            .zip(row)
+            .map(|((name, data_type), datum)| (name, typed(&data_type, datum.as_deref())))
+            .collect(),
+    ))
+}
+
+fn typed(data_type: &str, datum: Option<&str>) -> Value {
+    let Some(text) = datum else {
+        return Value::Null;
+    };
+    let parsed = match data_type {
+        "BOOLEAN" => text.parse().ok().map(Value::Bool),
+        "FLOAT" | "DOUBLE" => text.parse().ok().map(Value::float),
+        _ if is_numeric(data_type) && !data_type.starts_with("DECIMAL") => text
+            .parse::<i64>()
+            .ok()
+            .map(Value::int)
+            .or_else(|| text.parse().ok().map(|u| Value::Number(Number::PosInt(u)))),
+        _ => None,
+    };
+    parsed.unwrap_or_else(|| Value::String(text.to_string()))
 }
 
 fn any_value_to_value(any_value: AnyValue) -> Value {

@@ -162,7 +162,7 @@ impl DuckDB {
                 let group = self.part_of;
                 self.join(&alias, name.as_deref(), true);
                 self.ingesting.push(Ingesting {
-                    source,
+                    source: source.clone(),
                     spooled,
                     group,
                     alias,
@@ -171,6 +171,7 @@ impl DuckDB {
                     result,
                 });
                 Ok(Load::Ingesting(Ingest {
+                    source,
                     progress,
                     file: Some(file),
                     complete,

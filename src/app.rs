@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
+use crate::duckdb::DuckDB;
 use crate::misc::config::config;
 use crate::net::remote_load::{self, RemoteLoad};
 use crate::tui::Pane;
 use crate::tui::layouts::notification::NotificationLayout;
-use crate::tui::popups::download_notif::DownloadNotification;
+use crate::tui::pane::TableDescription;
+use crate::tui::popups::download_notif::{DownloadNotification, render_progress};
 use crate::tui::popups::pickers::sql_query_picker::SqlQueryPicker;
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
@@ -41,6 +43,7 @@ pub struct App {
     toast: Option<Toast>,
     dls: Vec<DownloadNotification>,
     running: bool,
+    duckdb: Option<DuckDB>,
 }
 
 impl App {
@@ -56,6 +59,61 @@ impl App {
             toast: None,
             running: true,
             dls: Vec::new(),
+            duckdb: None,
+        }
+    }
+
+    pub fn with_duckdb(self, duckdb: DuckDB) -> Self {
+        Self {
+            duckdb: Some(duckdb),
+            ..self
+        }
+    }
+
+    fn poll_duckdb(&mut self) {
+        let Some(duckdb) = self.duckdb.as_mut() else {
+            return;
+        };
+        let mut errors = Vec::new();
+        let tables = match duckdb.poll() {
+            Ok(finished) => finished.tables,
+            Err(err) => {
+                errors.push(err.to_string());
+                Vec::new()
+            }
+        };
+        for (source, result) in tables {
+            let Some(pane) = self
+                .tabs
+                .panes_mut()
+                .find(|pane| pane.loading() == Some(source.as_path()))
+            else {
+                continue;
+            };
+            let mut readers = Vec::new();
+            match result {
+                Ok(names) => {
+                    for name in names {
+                        match duckdb.reader(&name) {
+                            Ok(reader) => readers.push((name, reader)),
+                            Err(err) => errors.push(err.to_string()),
+                        }
+                    }
+                }
+                Err(err) => errors.push(format!("{}: {err}", source.display())),
+            }
+            let mut readers = readers.into_iter();
+            match readers.next() {
+                Some((_, reader)) => pane.loaded(reader),
+                None => pane.stop_loading(),
+            }
+            for (name, reader) in readers {
+                self.tabs
+                    .push(Pane::reader(reader, TableDescription::Table(name)));
+            }
+        }
+        if let Some(error) = errors.pop() {
+            self.show_error(error);
         }
     }
 
@@ -207,15 +265,26 @@ impl Component for App {
             }
         }
 
+        let ingests = self
+            .tabs
+            .iter()
+            .enumerate()
+            .filter(|(idx, pane)| *idx != self.tabs.idx() || pane.table().col_count() > 0)
+            .filter_map(|(_, pane)| pane.progress())
+            .map(|(title, percent)| (title.to_string(), percent))
+            .collect::<Vec<_>>();
         let areas = Layout::new(
             Direction::Vertical,
-            self.dls.iter().map(|_| Constraint::Length(3)),
+            (0..self.dls.len() + ingests.len()).map(|_| Constraint::Length(3)),
         )
         .flex(Flex::End)
         .split(NotificationLayout::default().area(area));
 
         for (dl, area) in self.dls.iter_mut().zip(areas.iter()) {
             dl.render(*area, buf, FocusState::NotFocused);
+        }
+        for ((title, percent), area) in ingests.iter().zip(areas.iter().skip(self.dls.len())) {
+            render_progress(title, *percent, "Ingesting...", *area, buf);
         }
 
         if let Some(toast) = self.toast.as_mut() {
@@ -315,6 +384,7 @@ impl Component for App {
                     Err(err) => self.show_error(err.to_string()),
                 }
             });
+        self.poll_duckdb();
         self.tabs.tick();
     }
 }

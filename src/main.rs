@@ -8,18 +8,19 @@ use std::io::IsTerminal;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Duration;
 use tabiew::app::App;
 use tabiew::args::{Args, CtlArgs, Format};
 use tabiew::duckdb::{DataSource, DuckDB, IngestOptions, Load};
 use tabiew::handler::event::{Event, read_event};
 use tabiew::handler::message::Message;
+use tabiew::indexer::Indexer;
 use tabiew::misc::config;
 use tabiew::misc::osc52::flush_osc52_buffer;
 use tabiew::misc::sql::{TableSource, sql};
 use tabiew::misc::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 use tabiew::net::downloader::download_to_temp;
 use tabiew::parsers::data_frame_parser::DataFrameParser;
+use tabiew::reader::{Empty, Reader};
 use tabiew::readers::ReaderSource;
 use tabiew::readers::{
     ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,
@@ -30,8 +31,6 @@ use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::tabs::Tabs;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
-#[cfg(debug_assertions)]
-use tabiew::{duckdb::Ingest, indexer::Indexer};
 
 use tabiew::tui::Pane;
 use tabiew::{AppResult, ctl};
@@ -114,8 +113,9 @@ async fn main() {
         }
     }
 
+    let app = polars_app().unwrap_or_graceful_shutdown();
     start_tui().unwrap_or_graceful_shutdown();
-    start_app().unwrap_or_graceful_shutdown();
+    start_app(app).unwrap_or_graceful_shutdown();
     let _ = stop_tui();
 }
 
@@ -153,9 +153,6 @@ fn run_ctl(args: CtlArgs) -> AppResult<()> {
 fn run_duckdb(args: &Args) -> AppResult<()> {
     let mut duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
     let options = IngestOptions::from_args(args);
-    let mut ingesting = 0;
-    #[cfg(debug_assertions)]
-    let mut watched = Vec::new();
     let mut sources = args.sources.clone();
     if sources.is_empty() && args.multiparts.is_empty() && !std::io::stdin().is_terminal() {
         sources.push("-".to_string());
@@ -168,7 +165,7 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
             .map(|part| DataSource::from_str(part))
             .collect::<AppResult<Vec<_>>>()?;
         let loaded = duckdb.load_parts(&parts, &options, args.max_rows);
-        loads.push((args.multiparts.join(" + "), loaded));
+        loads.push((args.multiparts[0].clone(), loaded));
     }
     for source in sources {
         let loaded = match DataSource::from_str(&source)? {
@@ -178,103 +175,48 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
         };
         loads.push((source, loaded));
     }
+    let mut panes = Vec::new();
     for (source, loaded) in loads {
         match loaded {
-            Ok(Load::Ingesting(_ingest)) => {
-                ingesting += 1;
-                println!("{source}: ingesting");
-                #[cfg(debug_assertions)]
-                watched.push(Watch::new(source, _ingest, &options));
-            }
             Ok(Load::Ready(names)) => {
-                println!("{source}: loaded from the cache as {}", names.join(", "))
+                for name in names {
+                    panes.push(Pane::reader(
+                        duckdb.reader(&name)?,
+                        TableDescription::Table(name),
+                    ));
+                }
             }
-            Err(err) => eprintln!("{source}: {err:#}"),
+            Ok(Load::Ingesting(ingest)) => {
+                let (name, title) = match source.as_str() {
+                    "-" => ("Stdin".to_string(), "Stdin".to_string()),
+                    _ => {
+                        let path = Path::new(&source);
+                        let part = |part: Option<&std::ffi::OsStr>| {
+                            part.map(|part| part.to_string_lossy().into_owned())
+                                .unwrap_or(source.clone())
+                        };
+                        (part(path.file_stem()), part(path.file_name()))
+                    }
+                };
+                let indexer = ingest
+                    .file
+                    .and_then(|file| Indexer::new(file, &options, ingest.complete).ok());
+                let description = TableDescription::Table(name);
+                let pane = match indexer {
+                    Some(indexer) => {
+                        Pane::reader(Reader::new(indexer, duckdb.reader_config()), description)
+                    }
+                    None => Pane::reader(Reader::new(Empty, duckdb.reader_config()), description),
+                };
+                panes.push(pane.loading_from(ingest.source, title, ingest.progress));
+            }
+            Err(err) => Message::AppShowError(format!("{source}: {err:#}")).enqueue(),
         }
     }
-    while ingesting > 0 {
-        std::thread::sleep(Duration::from_millis(100));
-        #[cfg(debug_assertions)]
-        watched.iter_mut().for_each(Watch::tick);
-        for (source, result) in duckdb.flush()?.tables {
-            ingesting -= 1;
-            #[cfg(debug_assertions)]
-            watched.retain(|watch| !watch.is(&source));
-            match result {
-                Ok(names) => println!("{}: ready as {}", source.display(), names.join(", ")),
-                Err(err) => eprintln!("{}: {err:#}", source.display()),
-            }
-        }
-    }
-    Ok(())
-}
-
-#[cfg(debug_assertions)]
-struct Watch {
-    source: String,
-    ingest: Ingest,
-    indexer: Option<Indexer>,
-    percent: Option<u64>,
-    indexed: usize,
-    shown: bool,
-}
-
-#[cfg(debug_assertions)]
-impl Watch {
-    fn new(source: String, ingest: Ingest, options: &IngestOptions) -> Self {
-        let indexer = ingest.file.clone().and_then(|file| {
-            Indexer::new(file, options, ingest.complete.clone())
-                .inspect_err(|err| println!("{source}: {err:#}"))
-                .ok()
-        });
-        Self {
-            source,
-            ingest,
-            indexer,
-            percent: None,
-            indexed: 0,
-            shown: false,
-        }
-    }
-    fn is(&self, flushed: &Path) -> bool {
-        let source = Path::new(&self.source);
-        source == flushed || source.canonicalize().is_ok_and(|path| path == flushed)
-    }
-    fn tick(&mut self) {
-        let percent = self
-            .ingest
-            .progress
-            .fraction()
-            .map(|fraction| (fraction * 100.0) as u64);
-        if percent != self.percent {
-            self.percent = percent;
-            if let Some(percent) = percent {
-                println!("{}: {percent}%", self.source);
-            }
-        }
-        let Some(indexer) = &self.indexer else {
-            return;
-        };
-        if let Some(err) = indexer.error() {
-            println!("{}: {err}", self.source);
-            self.indexer = None;
-            return;
-        }
-        let indexed = indexer.indexed_rows();
-        if indexed != self.indexed {
-            self.indexed = indexed;
-            println!("{}: indexed {indexed} rows", self.source);
-        }
-        if !self.shown && (indexed >= 3 || indexer.row_count().is_some()) {
-            self.shown = true;
-            if let Ok(Some(header)) = indexer.header() {
-                println!("{}: header {header:?}", self.source);
-            }
-            for row in indexer.rows(0, 3).unwrap_or_default() {
-                println!("{}: row {row:?}", self.source);
-            }
-        }
-    }
+    start_tui()?;
+    let result = start_app(App::new(Tabs::new(panes)).with_duckdb(duckdb));
+    let _ = stop_tui();
+    result
 }
 
 fn print_json(value: &impl serde::Serialize) -> AppResult<()> {
@@ -282,7 +224,7 @@ fn print_json(value: &impl serde::Serialize) -> AppResult<()> {
     Ok(())
 }
 
-fn start_app() -> AppResult<()> {
+fn polars_app() -> AppResult<App> {
     let names = sql()
         .schema()
         .iter()
@@ -300,11 +242,10 @@ fn start_app() -> AppResult<()> {
         })
         .collect::<AppResult<Vec<_>>>()?;
 
-    let tabs = Tabs::new(panes);
+    Ok(App::new(Tabs::new(panes)))
+}
 
-    // Initialize the app
-    let mut app = App::new(tabs);
-
+fn start_app(mut app: App) -> AppResult<()> {
     // Main loop
     while app.running() {
         draw(&mut app)?;

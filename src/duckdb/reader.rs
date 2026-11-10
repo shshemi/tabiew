@@ -2,7 +2,7 @@ use crate::{
     AppResult,
     duckdb::{DuckDB, session::SessionConn, sql::quote},
     misc::config::config,
-    reader::{Reader, RowSource},
+    reader::{Datum, Reader, ReaderConfig, RowSource},
 };
 
 pub struct ViewSource {
@@ -19,6 +19,9 @@ impl DuckDB {
             ViewSource::new(self.session.session()?, view)?,
             self.reader,
         ))
+    }
+    pub fn reader_config(&self) -> ReaderConfig {
+        self.reader
     }
 }
 
@@ -60,7 +63,7 @@ impl RowSource for ViewSource {
     fn row_count(&self) -> usize {
         self.row_count
     }
-    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>> {
+    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>> {
         let width = self.columns.len();
         let precision = config().fp_precision();
         let floats = self
@@ -79,14 +82,11 @@ impl RowSource for ViewSource {
                 (0..width)
                     .map(|idx| {
                         Ok(match floats[idx] {
-                            true => r
-                                .get::<_, Option<f64>>(idx)?
-                                .map(|value| match precision {
-                                    Some(precision) => format!("{value:.precision$}"),
-                                    None => value.to_string(),
-                                })
-                                .unwrap_or_default(),
-                            false => r.get::<_, Option<String>>(idx)?.unwrap_or_default(),
+                            true => r.get::<_, Option<f64>>(idx)?.map(|value| match precision {
+                                Some(precision) => format!("{value:.precision$}"),
+                                None => value.to_string(),
+                            }),
+                            false => r.get::<_, Option<String>>(idx)?,
                         })
                     })
                     .collect()
@@ -133,14 +133,15 @@ mod tests {
         let rows = reader
             .rows(499..502)
             .unwrap()
-            .map(<[String]>::to_vec)
+            .map(<[Datum]>::to_vec)
             .collect::<Vec<_>>();
+        let cell = |value: &str| Some(value.to_string());
         assert_eq!(
             rows,
             [
-                ["499", "", "124.75"],
-                ["500", "even", "125"],
-                ["501", "", "125.25"]
+                [cell("499"), None, cell("124.75")],
+                [cell("500"), cell("even"), cell("125")],
+                [cell("501"), None, cell("125.25")]
             ]
         );
     }

@@ -2,20 +2,29 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use polars::frame::DataFrame;
 use rand::RngExt;
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Flex, Layout, Rect},
     widgets::{Block, Borders, Widget},
 };
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
-use super::{search_bar::SearchBar, sheet::Sheet};
+use super::{
+    search_bar::SearchBar,
+    sheet::{Data as SheetData, Sheet},
+};
 use crate::{
     AppResult,
     collections::non_empty_stack::NonEmptyStack,
+    duckdb::IngestProgress,
     handler::message::{Message, UnwrapOrEnqueueError},
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
         sql::{TableSource, sql},
     },
+    reader::Rows,
     tui::{
         app_default::AppDefault,
         component::{Component, FocusState},
@@ -28,6 +37,7 @@ use crate::{
         popups::{
             column_caster::ColumnCaster,
             data_frame_info::DataFrameInfo,
+            download_notif::render_progress,
             exporter::Exporter,
             exporters::{
                 arrow::ArrowExporter, avro::AvroExporter, csv::CsvExporter, json::JsonExporter,
@@ -53,14 +63,35 @@ pub struct Pane {
     dstack: NonEmptyStack<TableDescription>,
     sheet: Option<Sheet>,
     modal: Option<Modal>,
+    loading: Option<Loading>,
+}
+
+struct Loading {
+    source: PathBuf,
+    title: String,
+    progress: Arc<dyn IngestProgress>,
+}
+
+impl std::fmt::Debug for Loading {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.title)
+    }
 }
 
 impl Pane {
     /// Constructs a new instance of [`App`].
     pub fn new(data_frame: DataFrame, description: TableDescription) -> Self {
+        Self::with_table(Table::new(data_frame), description)
+    }
+
+    pub fn reader(rows: impl Rows + 'static, description: TableDescription) -> Self {
+        Self::with_table(Table::reader(rows), description)
+    }
+
+    fn with_table(table: Table, description: TableDescription) -> Self {
         Self {
             tstack: NonEmptyStack::new(
-                Table::new(data_frame)
+                table
                     .striped()
                     .with_selected(0)
                     .with_show_header(true)
@@ -70,7 +101,52 @@ impl Pane {
             dstack: NonEmptyStack::new(description),
             sheet: None,
             modal: None,
+            loading: None,
         }
+    }
+
+    pub fn loading_from(
+        self,
+        source: PathBuf,
+        title: String,
+        progress: Arc<dyn IngestProgress>,
+    ) -> Self {
+        Self {
+            loading: Some(Loading {
+                source,
+                title,
+                progress,
+            }),
+            ..self
+        }
+    }
+
+    pub fn loading(&self) -> Option<&Path> {
+        self.loading
+            .as_ref()
+            .map(|loading| loading.source.as_path())
+    }
+
+    pub fn progress(&self) -> Option<(&str, Option<u16>)> {
+        self.loading.as_ref().map(|loading| {
+            (
+                loading.title.as_str(),
+                loading
+                    .progress
+                    .fraction()
+                    .map(|fraction| (fraction * 100.0) as u16),
+            )
+        })
+    }
+
+    pub fn loaded(&mut self, rows: impl Rows + 'static) {
+        self.loading = None;
+        self.tstack.last_mut().set_reader(rows);
+        self.sync_sheet();
+    }
+
+    pub fn stop_loading(&mut self) {
+        self.loading = None;
     }
 
     pub fn table(&self) -> &Table {
@@ -93,6 +169,14 @@ impl Pane {
         self.tstack.iter()
     }
 
+    fn sheet_data(&self) -> Option<SheetData> {
+        match (self.table().data_frame(), self.table().rows()) {
+            (Some(df), _) => Some(SheetData::Frame(df.clone())),
+            (None, Some(rows)) => Some(SheetData::Reader(rows)),
+            (None, None) => None,
+        }
+    }
+
     fn frame(&self) -> Option<DataFrame> {
         let df = self.tstack.last().data_frame().cloned();
         if df.is_none() {
@@ -102,11 +186,10 @@ impl Pane {
     }
 
     pub fn show_sheet(&mut self) {
-        if self.sheet.is_none() {
-            let Some(df) = self.frame() else {
-                return;
-            };
-            self.sheet = Some(Sheet::new(df, self.table().selected()));
+        if self.sheet.is_none()
+            && let Some(data) = self.sheet_data()
+        {
+            self.sheet = Some(Sheet::new(data, self.table().selected()));
         }
     }
 
@@ -115,10 +198,11 @@ impl Pane {
     }
 
     fn sync_sheet(&mut self) {
+        let data = self.sheet_data();
         if let Some(sheet) = self.sheet.as_mut()
-            && let Some(df) = self.tstack.last().data_frame()
+            && let Some(data) = data
         {
-            sheet.set_data_frame(df.clone());
+            sheet.set_data(data);
             sheet.set_row(self.tstack.last().selected());
         }
     }
@@ -361,7 +445,25 @@ impl Pane {
             FocusState::NotFocused
         };
         block.render(area, buf);
-        self.tstack.last_mut().render(table_area, buf, focus_state);
+        match self.progress() {
+            Some((title, percent)) if self.table().col_count() == 0 => {
+                let [gauge_area] = Layout::vertical([Constraint::Length(3)])
+                    .flex(Flex::Center)
+                    .areas(table_area);
+                let [gauge_area] = Layout::horizontal([Constraint::Max(60)])
+                    .flex(Flex::Center)
+                    .horizontal_margin(2)
+                    .areas(gauge_area);
+                render_progress(
+                    &format!("Ingesting {title}"),
+                    percent,
+                    "Ingesting...",
+                    gauge_area,
+                    buf,
+                );
+            }
+            _ => self.tstack.last_mut().render(table_area, buf, focus_state),
+        }
         StatusBar::new(self).render(status_bar_area, buf);
     }
 

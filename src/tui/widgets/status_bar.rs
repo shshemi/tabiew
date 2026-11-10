@@ -43,8 +43,13 @@ impl<'a> Widget for StatusBar<'a> {
         let shp_tag = Tag::new(
             icons::GRID.str("Shape"),
             format!(
-                "{} x {}",
+                "{}{} x {}",
                 self.pane.table().row_count(),
+                if self.pane.table().complete() {
+                    ""
+                } else {
+                    "+"
+                },
                 self.pane.table().col_count()
             ),
             3,

@@ -8,7 +8,21 @@ pub trait RowSource {
     fn complete(&self) -> bool {
         true
     }
-    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>>;
+    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>>;
+}
+
+pub struct Empty;
+
+impl RowSource for Empty {
+    fn columns(&self) -> Vec<(String, String)> {
+        Vec::new()
+    }
+    fn row_count(&self) -> usize {
+        0
+    }
+    fn fetch(&self, _: usize, _: usize) -> AppResult<Vec<Vec<Datum>>> {
+        Ok(Vec::new())
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -17,7 +31,9 @@ pub struct ReaderConfig {
     pub segments: usize,
 }
 
-type Segment = (usize, Vec<Vec<String>>);
+pub type Datum = Option<String>;
+
+type Segment = (usize, Vec<Vec<Datum>>);
 
 pub trait Rows: Send {
     fn columns(&self) -> Vec<(String, String)>;
@@ -26,7 +42,7 @@ pub trait Rows: Send {
     fn widths(&self) -> &[u16];
     fn reset(&mut self);
     fn fill(&mut self, range: Range<usize>) -> AppResult<()>;
-    fn cached(&self, range: Range<usize>) -> Vec<&[String]>;
+    fn cached(&self, range: Range<usize>) -> Vec<&[Datum]>;
 }
 
 pub fn single_line(value: &str) -> Cow<'_, str> {
@@ -97,7 +113,7 @@ impl<S: RowSource> Reader<S> {
     pub fn row_count(&self) -> usize {
         self.source.row_count()
     }
-    pub fn rows(&mut self, range: Range<usize>) -> AppResult<impl Iterator<Item = &[String]>> {
+    pub fn rows(&mut self, range: Range<usize>) -> AppResult<impl Iterator<Item = &[Datum]>> {
         self.fill(range.clone())?;
         Ok(self.cached(range))
     }
@@ -121,13 +137,13 @@ impl<S: RowSource> Reader<S> {
                 .fetch(run[0] * self.segment_rows, run.len() * self.segment_rows)?
                 .into_iter();
             for segment in run {
-                let rows: Vec<Vec<String>> = rows.by_ref().take(self.segment_rows).collect();
+                let rows: Vec<Vec<Datum>> = rows.by_ref().take(self.segment_rows).collect();
                 for row in &rows {
                     if self.widths.len() < row.len() {
                         self.widths.resize(row.len(), 0);
                     }
                     for (max, value) in self.widths.iter_mut().zip(row) {
-                        *max = (*max).max(width_of(value));
+                        *max = (*max).max(width_of(value.as_deref().unwrap_or_default()));
                     }
                 }
                 self.cache.push_back((*segment, rows));
@@ -153,12 +169,12 @@ impl<S: RowSource> Reader<S> {
         }
         for (_, rows) in self.cache.iter_mut().rev().take(last - first) {
             for row in rows.iter_mut().filter(|row| row.len() < width) {
-                row.resize(width, String::new());
+                row.resize(width, None);
             }
         }
         Ok(())
     }
-    pub fn cached(&self, range: Range<usize>) -> impl Iterator<Item = &[String]> {
+    pub fn cached(&self, range: Range<usize>) -> impl Iterator<Item = &[Datum]> {
         let row_count = self.source.row_count();
         let start = range.start.min(row_count);
         let range = start..range.end.clamp(start, row_count);
@@ -198,7 +214,7 @@ impl<S: RowSource + Send> Rows for Reader<S> {
     fn fill(&mut self, range: Range<usize>) -> AppResult<()> {
         Reader::fill(self, range)
     }
-    fn cached(&self, range: Range<usize>) -> Vec<&[String]> {
+    fn cached(&self, range: Range<usize>) -> Vec<&[Datum]> {
         Reader::cached(self, range).collect()
     }
 }
@@ -227,10 +243,10 @@ mod tests {
         fn complete(&self) -> bool {
             self.complete.get()
         }
-        fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<String>>> {
+        fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>> {
             self.fetches.set(self.fetches.get() + 1);
             Ok((offset..(offset + len).min(self.rows.get()))
-                .map(|i| vec![i.to_string()])
+                .map(|i| vec![Some(i.to_string())])
                 .collect())
         }
     }
@@ -248,7 +264,11 @@ mod tests {
         reader
             .rows(range)
             .unwrap()
-            .map(<[String]>::to_vec)
+            .map(|row| {
+                row.iter()
+                    .map(|cell| cell.clone().unwrap_or_default())
+                    .collect()
+            })
             .collect()
     }
 

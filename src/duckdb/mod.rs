@@ -57,12 +57,13 @@ pub enum Load {
 }
 
 pub struct Ingest {
+    pub source: PathBuf,
     pub progress: Arc<dyn IngestProgress>,
     pub file: Option<PathBuf>,
     pub complete: Arc<AtomicBool>,
 }
 
-pub struct Flushed {
+pub struct Finished {
     pub tables: Vec<(PathBuf, AppResult<Vec<String>>)>,
     pub queries: Vec<AppResult<String>>,
 }
@@ -110,8 +111,8 @@ impl DuckDB {
     pub fn detach(&mut self, name: &str) -> AppResult<()> {
         self.session.detach(name)
     }
-    pub fn flush(&mut self) -> AppResult<Flushed> {
-        let mut flushed = Flushed {
+    pub fn poll(&mut self) -> AppResult<Finished> {
+        let mut finished = Finished {
             tables: Vec::new(),
             queries: Vec::new(),
         };
@@ -141,22 +142,22 @@ impl DuckDB {
             }
             let names = result.and_then(|()| self.finish(&ingesting));
             self.session.unpin(&ingesting.alias);
-            flushed.tables.push((ingesting.source, names));
+            finished.tables.push((ingesting.source, names));
         }
         while let Some(index) = self.groups.iter().position(|group| group.waiting == 0) {
             let group = self.groups.remove(index);
             let names = self.complete_group(&group);
             if group.reported {
-                flushed.tables.push((group.source, names));
+                finished.tables.push((group.source, names));
             }
         }
         if self.ingesting.is_empty() {
             for (sql, fallback) in std::mem::take(&mut self.pending_queries) {
-                flushed.queries.push(self.query(&sql, fallback));
+                finished.queries.push(self.query(&sql, fallback));
             }
         }
         self.session.flush()?;
-        Ok(flushed)
+        Ok(finished)
     }
     fn views(
         &mut self,
@@ -259,12 +260,12 @@ mod tests {
         let mut db = duckdb(&dir);
         let path = source(&dir, "sales.csv");
         let (alias, sender) = start(&mut db, &path, &["data"]);
-        assert!(db.flush().unwrap().tables.is_empty());
+        assert!(db.poll().unwrap().tables.is_empty());
         sender.send(Ok(())).unwrap();
-        let flushed = db.flush().unwrap();
-        assert_eq!(flushed.tables.len(), 1);
-        assert_eq!(flushed.tables[0].0, path);
-        assert_eq!(flushed.tables[0].1.as_ref().unwrap(), &["sales"]);
+        let finished = db.poll().unwrap();
+        assert_eq!(finished.tables.len(), 1);
+        assert_eq!(finished.tables[0].0, path);
+        assert_eq!(finished.tables[0].1.as_ref().unwrap(), &["sales"]);
         assert_eq!(count(&db, "sales"), 10);
         let file_db = db.session.file_db_mut(&alias).unwrap();
         assert!(FileDBMetadata::is_complete(file_db.file_path()));
@@ -276,8 +277,8 @@ mod tests {
         let mut db = duckdb(&dir);
         let (_, sender) = start(&mut db, &source(&dir, "shop.sqlite"), &["users", "orders"]);
         sender.send(Ok(())).unwrap();
-        let flushed = db.flush().unwrap();
-        assert_eq!(flushed.tables[0].1.as_ref().unwrap(), &["orders", "users"]);
+        let finished = db.poll().unwrap();
+        assert_eq!(finished.tables[0].1.as_ref().unwrap(), &["orders", "users"]);
         assert_eq!(count(&db, "orders"), 10);
     }
 
@@ -291,9 +292,9 @@ mod tests {
         drop(sender);
         let (empty, sender) = start(&mut db, &source(&dir, "three.csv"), &[]);
         sender.send(Ok(())).unwrap();
-        let flushed = db.flush().unwrap();
-        assert_eq!(flushed.tables.len(), 3);
-        assert!(flushed.tables.iter().all(|(_, result)| result.is_err()));
+        let finished = db.poll().unwrap();
+        assert_eq!(finished.tables.len(), 3);
+        assert!(finished.tables.iter().all(|(_, result)| result.is_err()));
         for alias in [failed, dropped, empty] {
             assert!(db.session.file_db_mut(&alias).is_none());
         }
@@ -306,9 +307,9 @@ mod tests {
         let mut db = duckdb(&dir);
         let (_, sender) = start(&mut db, &path, &["data"]);
         sender.send(Ok(())).unwrap();
-        db.flush().unwrap();
+        db.poll().unwrap();
         db.detach("sales").unwrap();
-        db.flush().unwrap();
+        db.poll().unwrap();
         let Load::Ready(names) = db
             .load(&path, None, &IngestOptions::default(), None)
             .unwrap()
@@ -325,12 +326,12 @@ mod tests {
         let mut db = duckdb(&dir);
         let (_, sender) = start(&mut db, &source(&dir, "sales.csv"), &["data"]);
         db.load_query("-- name: total\nSELECT count(*) AS n FROM sales");
-        assert!(db.flush().unwrap().queries.is_empty());
+        assert!(db.poll().unwrap().queries.is_empty());
         sender.send(Ok(())).unwrap();
-        let flushed = db.flush().unwrap();
-        assert_eq!(flushed.tables.len(), 1);
-        assert_eq!(flushed.queries.len(), 1);
-        assert_eq!(flushed.queries[0].as_deref().unwrap(), "total");
+        let finished = db.poll().unwrap();
+        assert_eq!(finished.tables.len(), 1);
+        assert_eq!(finished.queries.len(), 1);
+        assert_eq!(finished.queries[0].as_deref().unwrap(), "total");
         assert_eq!(count(&db, "total"), 1);
     }
 
@@ -344,7 +345,7 @@ mod tests {
         std::fs::write(&named, "CREATE VIEW best AS SELECT 1").unwrap();
         db.load_sql(&stem).unwrap();
         db.load_sql(&named).unwrap();
-        let queries = db.flush().unwrap().queries;
+        let queries = db.poll().unwrap().queries;
         let names: Vec<_> = queries.into_iter().map(Result::unwrap).collect();
         assert_eq!(names, ["top_sales", "best"]);
         assert!(db.load_sql(&dir.path().join("missing.sql")).is_err());
@@ -355,9 +356,9 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let mut db = duckdb(&dir);
         db.load_query("-- name: bad\nSELECT * FROM nowhere");
-        let queries = db.flush().unwrap().queries;
+        let queries = db.poll().unwrap().queries;
         assert_eq!(queries.len(), 1);
         assert!(queries[0].is_err());
-        assert!(db.flush().unwrap().queries.is_empty());
+        assert!(db.poll().unwrap().queries.is_empty());
     }
 }

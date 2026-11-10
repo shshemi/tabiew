@@ -71,6 +71,7 @@ impl DuckDB {
             return self.complete_group(&group).map(Load::Ready);
         }
         Ok(Load::Ingesting(Ingest {
+            source: self.groups[index].source.clone(),
             progress: Arc::new(Parts {
                 done: self.groups[index].parts.len() - running.len(),
                 parts: running,
