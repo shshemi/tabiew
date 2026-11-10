@@ -1,24 +1,41 @@
 use crate::{
     AppResult,
-    duckdb::{helper::quote, ingester::FileIngester, session::SessionConn},
+    duckdb::{
+        helper::quote,
+        ingester::{FileIngester, IngestProgress, progress::StepProgress},
+        session::SessionConn,
+    },
 };
 use duckdb::params;
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 pub struct JsonIngester {
     path: PathBuf,
     lines: bool,
+    progress: Arc<StepProgress>,
 }
 
 impl JsonIngester {
     pub fn new(path: PathBuf, lines: bool) -> Self {
-        Self { path, lines }
+        Self {
+            path,
+            lines,
+            progress: StepProgress::new(1),
+        }
     }
 }
 
 impl FileIngester for JsonIngester {
+    fn progress(&self) -> Arc<dyn IngestProgress> {
+        self.progress.clone()
+    }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
-        let format = if self.lines { "newline_delimited" } else { "auto" };
+        self.progress.start(&conn);
+        let format = if self.lines {
+            "newline_delimited"
+        } else {
+            "auto"
+        };
         conn.execute(
             &format!(
                 "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_json(?, format = ?)",

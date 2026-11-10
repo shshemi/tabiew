@@ -1,33 +1,43 @@
 use crate::{
     AppResult,
     duckdb::{
-        ingester::{FileIngester, TextTable},
+        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress},
         session::SessionConn,
     },
 };
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 pub struct MarkdownIngester {
     path: PathBuf,
+    progress: Arc<CountProgress>,
 }
 
 impl MarkdownIngester {
     pub fn new(path: PathBuf) -> Self {
-        Self { path }
+        Self {
+            path,
+            progress: CountProgress::new(),
+        }
     }
 }
 
 impl FileIngester for MarkdownIngester {
+    fn progress(&self) -> Arc<dyn IngestProgress> {
+        self.progress.clone()
+    }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
         let contents = std::fs::read_to_string(&self.path)?;
+        self.progress.total(contents.len() as u64);
         let mut tables = 0;
         let mut table = None;
         let mut row = Vec::new();
         let mut cell = String::new();
         let mut in_head = false;
         let mut in_cell = false;
-        for event in Parser::new_ext(&contents, Options::ENABLE_TABLES) {
+        for (event, range) in Parser::new_ext(&contents, Options::ENABLE_TABLES).into_offset_iter()
+        {
+            self.progress.set(range.end as u64);
             match event {
                 Event::Start(Tag::Table(_)) => {
                     tables += 1;

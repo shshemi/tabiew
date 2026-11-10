@@ -1,23 +1,35 @@
 use crate::{
     AppResult,
-    duckdb::{helper::quote, ingester::FileIngester, session::SessionConn},
+    duckdb::{
+        helper::quote,
+        ingester::{FileIngester, IngestProgress, progress::CountProgress},
+        session::SessionConn,
+    },
 };
 use duckdb::{appender_params_from_iter, types::Value};
 use rusqlite::{OpenFlags, types::ValueRef};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 pub struct SqliteIngester {
     path: PathBuf,
     key: Option<String>,
+    progress: Arc<CountProgress>,
 }
 
 impl SqliteIngester {
     pub fn new(path: PathBuf, key: Option<String>) -> Self {
-        Self { path, key }
+        Self {
+            path,
+            key,
+            progress: CountProgress::new(),
+        }
     }
 }
 
 impl FileIngester for SqliteIngester {
+    fn progress(&self) -> Arc<dyn IngestProgress> {
+        self.progress.clone()
+    }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
         let sqlite =
             rusqlite::Connection::open_with_flags(&self.path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
@@ -30,8 +42,10 @@ impl FileIngester for SqliteIngester {
             )?
             .query_map([], |row| row.get(0))?
             .collect::<Result<Vec<String>, _>>()?;
+        self.progress.total(tables.len() as u64);
         for table in tables {
             copy_table(&sqlite, &conn, alias, &table)?;
+            self.progress.add(1);
         }
         Ok(())
     }

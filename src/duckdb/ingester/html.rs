@@ -1,24 +1,31 @@
 use crate::{
     AppResult,
     duckdb::{
-        ingester::{FileIngester, TextTable},
+        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress},
         session::SessionConn,
     },
 };
 use scraper::{ElementRef, Html, Selector};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 pub struct HtmlIngester {
     path: PathBuf,
+    progress: Arc<CountProgress>,
 }
 
 impl HtmlIngester {
     pub fn new(path: PathBuf) -> Self {
-        Self { path }
+        Self {
+            path,
+            progress: CountProgress::new(),
+        }
     }
 }
 
 impl FileIngester for HtmlIngester {
+    fn progress(&self) -> Arc<dyn IngestProgress> {
+        self.progress.clone()
+    }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
         let contents = std::fs::read_to_string(&self.path)?;
         let document = Html::parse_document(&contents);
@@ -26,7 +33,9 @@ impl FileIngester for HtmlIngester {
         let head = Selector::parse("thead th").unwrap();
         let row = Selector::parse("tr").unwrap();
         let cell = Selector::parse("th, td").unwrap();
-        for (idx, element) in document.select(&table).enumerate() {
+        let tables = document.select(&table).collect::<Vec<_>>();
+        self.progress.total(tables.len() as u64);
+        for (idx, element) in tables.into_iter().enumerate() {
             let mut table = TextTable::new(&conn, alias, format!("html_table_{}", idx + 1));
             for header in element.select(&head) {
                 table.column(&cell_text(header));
@@ -47,6 +56,7 @@ impl FileIngester for HtmlIngester {
                 table.push(cells.into_iter().enumerate().collect())?;
             }
             table.finish()?;
+            self.progress.add(1);
         }
         Ok(())
     }

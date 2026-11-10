@@ -1,11 +1,15 @@
 use crate::{
     AppResult,
     args::{Args, Type},
-    duckdb::{helper::quote, ingester::FileIngester, session::SessionConn},
+    duckdb::{
+        helper::quote,
+        ingester::{FileIngester, IngestProgress, progress::StepProgress},
+        session::SessionConn,
+    },
 };
 use duckdb::params;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CsvOptions {
@@ -49,11 +53,16 @@ impl CsvOptions {
 pub struct CsvIngester {
     path: PathBuf,
     options: CsvOptions,
+    progress: Arc<StepProgress>,
 }
 
 impl CsvIngester {
     pub fn new(path: PathBuf, options: CsvOptions) -> Self {
-        Self { path, options }
+        Self {
+            path,
+            options,
+            progress: StepProgress::new(1),
+        }
     }
     fn sql(&self, alias: &str, varchar: &[String]) -> String {
         let mut options = String::new();
@@ -81,7 +90,11 @@ impl CsvIngester {
 }
 
 impl FileIngester for CsvIngester {
+    fn progress(&self) -> Arc<dyn IngestProgress> {
+        self.progress.clone()
+    }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
+        self.progress.start(&conn);
         let path = self.path.to_string_lossy().into_owned();
         let mut varchar = Vec::<String>::new();
         loop {

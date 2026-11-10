@@ -1,7 +1,11 @@
 use crate::{
     AppResult,
     args::Args,
-    duckdb::{helper::quote, ingester::FileIngester, session::SessionConn},
+    duckdb::{
+        helper::quote,
+        ingester::{FileIngester, IngestProgress, progress::StepProgress},
+        session::SessionConn,
+    },
     misc::available_col_name::available_col_name,
 };
 use duckdb::params;
@@ -10,6 +14,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
+    sync::Arc,
 };
 
 const SAMPLE: usize = 20_480;
@@ -54,16 +59,26 @@ impl FwfOptions {
 pub struct FwfIngester {
     path: PathBuf,
     options: FwfOptions,
+    progress: Arc<StepProgress>,
 }
 
 impl FwfIngester {
     pub fn new(path: PathBuf, options: FwfOptions) -> Self {
-        Self { path, options }
+        let steps = if options.widths.is_some() { 1 } else { 2 };
+        Self {
+            path,
+            options,
+            progress: StepProgress::new(steps),
+        }
     }
 }
 
 impl FileIngester for FwfIngester {
+    fn progress(&self) -> Arc<dyn IngestProgress> {
+        self.progress.clone()
+    }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
+        self.progress.start(&conn);
         let path = self.path.to_string_lossy().into_owned();
         let skip = self.options.header as i64;
         let header = if self.options.header {
@@ -117,6 +132,7 @@ impl FileIngester for FwfIngester {
                         blank[i] = gap;
                     }
                 }
+                self.progress.next();
                 let columns = inferred(&blank);
                 match &header {
                     Some(header) => merge_unnamed(columns, header),

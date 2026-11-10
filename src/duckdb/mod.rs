@@ -12,15 +12,17 @@ use crate::AppResult;
 use anyhow::anyhow;
 use cache::CacheManager;
 use config::Config;
-use duckdb::ProgressHandle;
 use helper::{SplitSql, random_name, split_sql};
 use ingester::Ingester;
 use session::Session;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use config::Config as DuckDBConfig;
-pub use ingester::{CsvOptions, IngestOptions};
+pub use ingester::{CsvOptions, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
 pub use inspect::inspect;
 
@@ -42,7 +44,7 @@ struct Ingesting {
 
 pub enum Load {
     Ready(Vec<String>),
-    Ingesting(ProgressHandle),
+    Ingesting(Arc<dyn IngestProgress>),
 }
 
 pub struct Flushed {

@@ -153,10 +153,14 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     let mut duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
     let options = IngestOptions::from_args(args);
     let mut ingesting = 0;
+    #[cfg(debug_assertions)]
+    let mut bars = Vec::new();
     for source in &args.sources {
         match duckdb.load(Path::new(source), None, &options, args.max_rows) {
-            Ok(Load::Ingesting(_)) => {
+            Ok(Load::Ingesting(_progress)) => {
                 ingesting += 1;
+                #[cfg(debug_assertions)]
+                bars.push((source, _progress, None));
                 println!("{source}: ingesting");
             }
             Ok(Load::Ready(names)) => {
@@ -167,6 +171,18 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     }
     while ingesting > 0 {
         std::thread::sleep(Duration::from_millis(100));
+        #[cfg(debug_assertions)]
+        for (source, progress, last) in &mut bars {
+            let percent = progress
+                .fraction()
+                .map(|fraction| (fraction * 100.0) as u64);
+            if percent != *last {
+                *last = percent;
+                if let Some(percent) = percent {
+                    println!("{source}: {percent}%");
+                }
+            }
+        }
         for (source, result) in duckdb.flush()?.tables {
             ingesting -= 1;
             match result {

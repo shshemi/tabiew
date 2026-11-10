@@ -8,6 +8,7 @@ mod json;
 mod logfmt;
 mod markdown;
 mod parquet;
+mod progress;
 mod sqlite;
 
 use crate::{
@@ -21,7 +22,7 @@ use avro::AvroIngester;
 use clap::ValueEnum;
 use csv::CsvIngester;
 pub use csv::CsvOptions;
-use duckdb::{Connection, ProgressHandle, appender_params_from_iter, types::Value};
+use duckdb::{Connection, appender_params_from_iter, types::Value};
 use excel::ExcelIngester;
 use fwf::{FwfIngester, FwfOptions};
 use html::HtmlIngester;
@@ -29,12 +30,14 @@ use json::JsonIngester;
 use logfmt::LogfmtIngester;
 use markdown::MarkdownIngester;
 use parquet::ParquetIngester;
+pub use progress::IngestProgress;
 use serde::{Serialize, Serializer};
 use sqlite::SqliteIngester;
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::oneshot::{self, Receiver};
 
 pub trait FileIngester: Send {
+    fn progress(&self) -> Arc<dyn IngestProgress>;
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()>;
 }
 
@@ -190,14 +193,14 @@ impl Ingester {
             Format::Markdown => Box::new(MarkdownIngester::new(source)),
         })
     }
-    pub fn ingest(self) -> AppResult<(ProgressHandle, Receiver<AppResult<()>>)> {
+    pub fn ingest(self) -> AppResult<(Arc<dyn IngestProgress>, Receiver<AppResult<()>>)> {
         let Self {
             conn,
             alias,
             mut file_ingester,
         } = self;
         conn.set_query_progress_tracking(true)?;
-        let progress = conn.progress_handle();
+        let progress = file_ingester.progress();
         let (sender, receiver) = oneshot::channel();
         tokio::task::spawn_blocking(move || sender.send(file_ingester.ingest(conn, &alias)));
         Ok((progress, receiver))
@@ -215,6 +218,9 @@ mod tests {
     }
 
     impl FileIngester for Fake {
+        fn progress(&self) -> Arc<dyn IngestProgress> {
+            progress::CountProgress::new()
+        }
         fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
             if self.fail {
                 return Err(anyhow!("broken file"));
@@ -230,6 +236,9 @@ mod tests {
     struct Panics;
 
     impl FileIngester for Panics {
+        fn progress(&self) -> Arc<dyn IngestProgress> {
+            progress::CountProgress::new()
+        }
         fn ingest(&mut self, _conn: SessionConn, _alias: &str) -> AppResult<()> {
             panic!("ingester bug")
         }
@@ -247,11 +256,10 @@ mod tests {
     #[tokio::test]
     async fn ingest_writes_the_table_then_releases_the_conn() {
         let mut session = Session::new(None).unwrap();
-        let (progress, result) = ingester(&mut session, Box::new(Fake { fail: false }))
+        let (_, result) = ingester(&mut session, Box::new(Fake { fail: false }))
             .ingest()
             .unwrap();
         result.await.unwrap().unwrap();
-        assert!(!progress.is_connected());
         session.create_view("mem", "mem", "data", None).unwrap();
         let count: i64 = session
             .session()
