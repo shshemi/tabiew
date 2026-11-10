@@ -19,12 +19,13 @@ use spool::Spool;
 use sql::{SplitSql, random_name, split_sql};
 use std::{
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, atomic::AtomicBool},
 };
 use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use cache::config::Config as DuckDBConfig;
-pub use ingester::{CsvOptions, IngestOptions, IngestProgress};
+pub(crate) use ingester::{cut_text, sample_columns};
+pub use ingester::{CsvOptions, FwfOptions, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
 pub use inspect::inspect;
 pub use source::DataSource;
@@ -51,7 +52,13 @@ struct Ingesting {
 
 pub enum Load {
     Ready(Vec<String>),
-    Ingesting(Arc<dyn IngestProgress>),
+    Ingesting(Ingest),
+}
+
+pub struct Ingest {
+    pub progress: Arc<dyn IngestProgress>,
+    pub file: Option<PathBuf>,
+    pub complete: Arc<AtomicBool>,
 }
 
 pub struct Flushed {

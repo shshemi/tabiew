@@ -1,9 +1,12 @@
 use crate::{
     AppResult,
-    duckdb::{DataSource, DuckDB, IngestOptions, Load, ingester::progress::Parts},
+    duckdb::{DataSource, DuckDB, Ingest, IngestOptions, Load, ingester::progress::Parts},
 };
 use anyhow::anyhow;
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{Arc, atomic::AtomicBool},
+};
 
 type Schema = Vec<(String, String)>;
 type Members = Vec<(String, String)>;
@@ -48,7 +51,7 @@ impl DuckDB {
                 DataSource::Url(url) => self.load_url(url, None, options, None),
             };
             match loaded {
-                Ok(Load::Ingesting(progress)) => running.push(progress),
+                Ok(Load::Ingesting(ingest)) => running.push(ingest.progress),
                 Ok(Load::Ready(_)) => {}
                 Err(e) => {
                     failed = Some(e);
@@ -67,10 +70,14 @@ impl DuckDB {
             let group = self.groups.remove(index);
             return self.complete_group(&group).map(Load::Ready);
         }
-        Ok(Load::Ingesting(Arc::new(Parts {
-            done: self.groups[index].parts.len() - running.len(),
-            parts: running,
-        })))
+        Ok(Load::Ingesting(Ingest {
+            progress: Arc::new(Parts {
+                done: self.groups[index].parts.len() - running.len(),
+                parts: running,
+            }),
+            file: None,
+            complete: Arc::new(AtomicBool::new(true)),
+        }))
     }
     pub(super) fn join(&mut self, alias: &str, name: Option<&str>, running: bool) -> bool {
         let Some(group) = self

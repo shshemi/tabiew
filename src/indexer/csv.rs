@@ -1,4 +1,8 @@
-use crate::{AppResult, duckdb::CsvOptions, indexer::FileIndexer};
+use crate::{
+    AppResult,
+    duckdb::CsvOptions,
+    indexer::{Fields, FileIndexer},
+};
 use anyhow::anyhow;
 use memchr::memchr2;
 use std::io::{self, BufRead, Read};
@@ -16,6 +20,31 @@ impl CsvIndexer {
             quote: ascii(options.quote)?,
             header: options.header,
         })
+    }
+    fn fields(&self, record: &[u8]) -> Vec<String> {
+        let mut fields = Vec::new();
+        let mut field = Vec::new();
+        let mut in_quotes = false;
+        let mut i = 0;
+        while i < record.len() {
+            let b = record[i];
+            if b == self.quote {
+                if in_quotes && record.get(i + 1) == Some(&self.quote) {
+                    field.push(self.quote);
+                    i += 1;
+                } else {
+                    in_quotes = !in_quotes;
+                }
+            } else if b == self.delimiter && !in_quotes {
+                fields.push(String::from_utf8_lossy(&field).into_owned());
+                field.clear();
+            } else {
+                field.push(b);
+            }
+            i += 1;
+        }
+        fields.push(String::from_utf8_lossy(&field).into_owned());
+        fields
     }
 }
 
@@ -86,30 +115,8 @@ impl FileIndexer for CsvIndexer {
             }
         }
     }
-    fn split(&self, record: &[u8]) -> Vec<String> {
-        let mut fields = Vec::new();
-        let mut field = Vec::new();
-        let mut in_quotes = false;
-        let mut i = 0;
-        while i < record.len() {
-            let b = record[i];
-            if b == self.quote {
-                if in_quotes && record.get(i + 1) == Some(&self.quote) {
-                    field.push(self.quote);
-                    i += 1;
-                } else {
-                    in_quotes = !in_quotes;
-                }
-            } else if b == self.delimiter && !in_quotes {
-                fields.push(String::from_utf8_lossy(&field).into_owned());
-                field.clear();
-            } else {
-                field.push(b);
-            }
-            i += 1;
-        }
-        fields.push(String::from_utf8_lossy(&field).into_owned());
-        fields
+    fn split(&self, record: &[u8]) -> Fields {
+        Fields::Values(self.fields(record))
     }
     fn header(&self) -> bool {
         self.header
@@ -169,7 +176,7 @@ mod tests {
         let mut record = Vec::new();
         let mut records = Vec::new();
         while indexer.read_record(&mut reader, &mut record).unwrap() {
-            records.push(indexer.split(&record));
+            records.push(indexer.fields(&record));
         }
         records
     }
@@ -223,9 +230,12 @@ mod tests {
     #[test]
     fn split_keeps_empty_fields_and_quoted_delimiters() {
         let indexer = indexer();
-        assert_eq!(indexer.split(b"a,,b,"), ["a", "", "b", ""]);
-        assert_eq!(indexer.split(b"a,\"b,c\",\"d\"\"e\""), ["a", "b,c", "d\"e"]);
-        assert_eq!(indexer.split(b""), [""]);
+        assert_eq!(indexer.fields(b"a,,b,"), ["a", "", "b", ""]);
+        assert_eq!(
+            indexer.fields(b"a,\"b,c\",\"d\"\"e\""),
+            ["a", "b,c", "d\"e"]
+        );
+        assert_eq!(indexer.fields(b""), [""]);
     }
 
     #[test]

@@ -17,6 +17,7 @@ pub(super) use csv::{CsvIngester, type_candidates};
 pub(super) use excel::ExcelIngester;
 pub(super) use fwf::FwfIngester;
 pub use fwf::FwfOptions;
+pub(crate) use fwf::{cut_text, sample_columns};
 pub(super) use html::HtmlIngester;
 pub(super) use json::JsonIngester;
 pub(super) use logfmt::LogfmtIngester;

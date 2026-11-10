@@ -6,14 +6,18 @@ mod text_table;
 
 use crate::{AppResult, args::Format, duckdb::session::SessionConn, misc::format::resolve_format};
 use download::Download;
-pub use formats::CsvOptions;
+pub use formats::{CsvOptions, FwfOptions};
+pub(crate) use formats::{cut_text, sample_columns};
 use formats::{
     ArrowIngester, AvroIngester, CsvIngester, ExcelIngester, FwfIngester, HtmlIngester,
     JsonIngester, LogfmtIngester, MarkdownIngester, ParquetIngester, SqliteIngester,
 };
 pub use options::IngestOptions;
 pub use progress::IngestProgress;
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{Arc, atomic::AtomicBool},
+};
 use text_table::TextTable;
 use tokio::sync::oneshot::{self, Receiver};
 use url::Url;
@@ -72,8 +76,8 @@ impl Ingester {
             Format::Markdown => Box::new(MarkdownIngester::new(source, options.types.clone())),
         })
     }
-    pub fn download(mut self, url: Url, path: PathBuf) -> Self {
-        self.file_ingester = Box::new(Download::new(url, path, self.file_ingester));
+    pub fn download(mut self, url: Url, path: PathBuf, complete: Arc<AtomicBool>) -> Self {
+        self.file_ingester = Box::new(Download::new(url, path, complete, self.file_ingester));
         self
     }
     pub fn ingest(self) -> AppResult<Ingest> {

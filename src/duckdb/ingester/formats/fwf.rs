@@ -103,19 +103,10 @@ impl FileIngester for FwfIngester {
         } else {
             Vec::new()
         };
-        let mut blank = Vec::<bool>::new();
-        if self.options.widths.is_none() {
-            for line in header.iter().chain(&sample) {
-                for (i, c) in line.chars().enumerate() {
-                    if i == blank.len() {
-                        blank.push(true);
-                    }
-                    if c != ' ' {
-                        blank[i] = false;
-                    }
-                }
-            }
-        }
+        let mut blank = match self.options.widths {
+            Some(_) => Vec::new(),
+            None => blank_positions(header.iter().chain(&sample).map(String::as_str)),
+        };
         let columns = match &self.options.widths {
             Some(widths) => fixed(widths, self.options.separator_length),
             None => shape(&blank, header.as_deref()),
@@ -205,7 +196,7 @@ impl FileIngester for FwfIngester {
     }
 }
 
-type Column = (usize, Option<usize>);
+pub(crate) type Column = (usize, Option<usize>);
 
 struct Lines<'a> {
     conn: &'a Connection,
@@ -304,6 +295,44 @@ fn type_check(kind: &str, value: &str) -> String {
         _ => format!("TRY_CAST({value} AS {kind}) IS NOT NULL"),
     };
     format!("coalesce(bool_and({value} IS NULL OR ({check})) AND count({value}) > 0, false)")
+}
+
+pub(crate) fn sample_columns(
+    header: Option<&str>,
+    sample: &[String],
+    options: &FwfOptions,
+) -> Vec<Column> {
+    match &options.widths {
+        Some(widths) => fixed(widths, options.separator_length),
+        None => shape(
+            &blank_positions(header.into_iter().chain(sample.iter().map(String::as_str))),
+            header,
+        ),
+    }
+}
+
+pub(crate) fn cut_text(line: &str, (start, len): Column) -> String {
+    line.chars()
+        .skip(start - 1)
+        .take(len.unwrap_or(usize::MAX))
+        .collect::<String>()
+        .trim()
+        .to_owned()
+}
+
+fn blank_positions<'a>(lines: impl IntoIterator<Item = &'a str>) -> Vec<bool> {
+    let mut blank = Vec::new();
+    for line in lines {
+        for (i, c) in line.chars().enumerate() {
+            if i == blank.len() {
+                blank.push(true);
+            }
+            if c != ' ' {
+                blank[i] = false;
+            }
+        }
+    }
+    blank
 }
 
 fn shape(blank: &[bool], header: Option<&str>) -> Vec<(usize, Option<usize>)> {

@@ -1,10 +1,13 @@
 use crate::{
     AppResult,
-    duckdb::{DuckDB, IngestOptions, Ingesting, Load, cache::file_db::FileDB, ingester::Ingester},
+    duckdb::{DuckDB, Ingest, IngestOptions, Ingesting, Load, cache::file_db::FileDB, ingester::Ingester},
     net::http,
 };
 use anyhow::anyhow;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, atomic::AtomicBool},
+};
 use url::Url;
 
 enum Input {
@@ -142,6 +145,7 @@ impl DuckDB {
             Input::Download(url, path) => (PathBuf::from(url.as_str()), Some(path), Some(url)),
         };
         let file = spooled.clone().unwrap_or_else(|| source.clone());
+        let complete = Arc::new(AtomicBool::new(download.is_none()));
         let ingested = Ingester::new(
             self.session.session()?,
             alias.clone(),
@@ -149,7 +153,7 @@ impl DuckDB {
             options,
         )
         .map(|ingester| match download {
-            Some(url) => ingester.download(url, file),
+            Some(url) => ingester.download(url, file.clone(), complete.clone()),
             None => ingester,
         })
         .and_then(Ingester::ingest);
@@ -166,7 +170,11 @@ impl DuckDB {
                     limit: max_rows,
                     result,
                 });
-                Ok(Load::Ingesting(progress))
+                Ok(Load::Ingesting(Ingest {
+                    progress,
+                    file: Some(file),
+                    complete,
+                }))
             }
             Err(e) => {
                 self.session.unpin(&alias);

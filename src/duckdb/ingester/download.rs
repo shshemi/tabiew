@@ -10,19 +10,28 @@ use std::{
     fs::File,
     io::{Read, Write},
     path::PathBuf,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 use url::Url;
 
 pub(super) struct Download {
     url: Url,
     path: PathBuf,
+    complete: Arc<AtomicBool>,
     inner: Box<dyn FileIngester>,
     progress: Arc<DownloadProgress>,
 }
 
 impl Download {
-    pub(super) fn new(url: Url, path: PathBuf, inner: Box<dyn FileIngester>) -> Self {
+    pub(super) fn new(
+        url: Url,
+        path: PathBuf,
+        complete: Arc<AtomicBool>,
+        inner: Box<dyn FileIngester>,
+    ) -> Self {
         let progress = Arc::new(DownloadProgress {
             download: CountProgress::new(),
             ingest: inner.progress(),
@@ -30,6 +39,7 @@ impl Download {
         Self {
             url,
             path,
+            complete,
             inner,
             progress,
         }
@@ -41,6 +51,15 @@ impl FileIngester for Download {
         self.progress.clone()
     }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
+        let downloaded = self.fetch();
+        self.complete.store(true, Ordering::Release);
+        downloaded?;
+        self.inner.ingest(conn, alias)
+    }
+}
+
+impl Download {
+    fn fetch(&self) -> AppResult<()> {
         let response = http::get(&self.url).call()?;
         let download = &self.progress.download;
         if let Some(length) = response
@@ -65,8 +84,7 @@ impl FileIngester for Download {
             download.set(downloaded);
         }
         download.total(downloaded);
-        drop(file);
-        self.inner.ingest(conn, alias)
+        Ok(())
     }
 }
 

@@ -30,6 +30,8 @@ use tabiew::tui::component::Component;
 use tabiew::tui::pane::TableDescription;
 use tabiew::tui::tabs::Tabs;
 use tabiew::tui::terminal::{draw, start_tui, stop_tui};
+#[cfg(debug_assertions)]
+use tabiew::{duckdb::Ingest, indexer::Indexer};
 
 use tabiew::tui::Pane;
 use tabiew::{AppResult, ctl};
@@ -153,7 +155,7 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     let options = IngestOptions::from_args(args);
     let mut ingesting = 0;
     #[cfg(debug_assertions)]
-    let mut bars = Vec::new();
+    let mut watched = Vec::new();
     let mut sources = args.sources.clone();
     if sources.is_empty() && args.multiparts.is_empty() && !std::io::stdin().is_terminal() {
         sources.push("-".to_string());
@@ -178,11 +180,11 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     }
     for (source, loaded) in loads {
         match loaded {
-            Ok(Load::Ingesting(_progress)) => {
+            Ok(Load::Ingesting(_ingest)) => {
                 ingesting += 1;
                 println!("{source}: ingesting");
                 #[cfg(debug_assertions)]
-                bars.push((source, _progress, None));
+                watched.push(Watch::new(source, _ingest, &options));
             }
             Ok(Load::Ready(names)) => {
                 println!("{source}: loaded from the cache as {}", names.join(", "))
@@ -193,19 +195,11 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     while ingesting > 0 {
         std::thread::sleep(Duration::from_millis(100));
         #[cfg(debug_assertions)]
-        for (source, progress, last) in &mut bars {
-            let percent = progress
-                .fraction()
-                .map(|fraction| (fraction * 100.0) as u64);
-            if percent != *last {
-                *last = percent;
-                if let Some(percent) = percent {
-                    println!("{source}: {percent}%");
-                }
-            }
-        }
+        watched.iter_mut().for_each(Watch::tick);
         for (source, result) in duckdb.flush()?.tables {
             ingesting -= 1;
+            #[cfg(debug_assertions)]
+            watched.retain(|watch| !watch.is(&source));
             match result {
                 Ok(names) => println!("{}: ready as {}", source.display(), names.join(", ")),
                 Err(err) => eprintln!("{}: {err:#}", source.display()),
@@ -213,6 +207,74 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(debug_assertions)]
+struct Watch {
+    source: String,
+    ingest: Ingest,
+    indexer: Option<Indexer>,
+    percent: Option<u64>,
+    indexed: usize,
+    shown: bool,
+}
+
+#[cfg(debug_assertions)]
+impl Watch {
+    fn new(source: String, ingest: Ingest, options: &IngestOptions) -> Self {
+        let indexer = ingest.file.clone().and_then(|file| {
+            Indexer::new(file, options, ingest.complete.clone())
+                .inspect_err(|err| println!("{source}: {err:#}"))
+                .ok()
+        });
+        Self {
+            source,
+            ingest,
+            indexer,
+            percent: None,
+            indexed: 0,
+            shown: false,
+        }
+    }
+    fn is(&self, flushed: &Path) -> bool {
+        let source = Path::new(&self.source);
+        source == flushed || source.canonicalize().is_ok_and(|path| path == flushed)
+    }
+    fn tick(&mut self) {
+        let percent = self
+            .ingest
+            .progress
+            .fraction()
+            .map(|fraction| (fraction * 100.0) as u64);
+        if percent != self.percent {
+            self.percent = percent;
+            if let Some(percent) = percent {
+                println!("{}: {percent}%", self.source);
+            }
+        }
+        let Some(indexer) = &self.indexer else {
+            return;
+        };
+        if let Some(err) = indexer.error() {
+            println!("{}: {err}", self.source);
+            self.indexer = None;
+            return;
+        }
+        let indexed = indexer.indexed_rows();
+        if indexed != self.indexed {
+            self.indexed = indexed;
+            println!("{}: indexed {indexed} rows", self.source);
+        }
+        if !self.shown && (indexed >= 3 || indexer.row_count().is_some()) {
+            self.shown = true;
+            if let Ok(Some(header)) = indexer.header() {
+                println!("{}: header {header:?}", self.source);
+            }
+            for row in indexer.rows(0, 3).unwrap_or_default() {
+                println!("{}: row {row:?}", self.source);
+            }
+        }
+    }
 }
 
 fn print_json(value: &impl serde::Serialize) -> AppResult<()> {
