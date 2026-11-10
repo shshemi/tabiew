@@ -23,7 +23,7 @@ use csv::CsvIngester;
 pub use csv::CsvOptions;
 use duckdb::{Connection, ProgressHandle, appender_params_from_iter, types::Value};
 use excel::ExcelIngester;
-use fwf::FwfIngester;
+use fwf::{FwfIngester, FwfOptions};
 use html::HtmlIngester;
 use json::JsonIngester;
 use logfmt::LogfmtIngester;
@@ -123,6 +123,7 @@ pub struct IngestOptions {
     #[serde(serialize_with = "format_name")]
     pub format: Option<Format>,
     pub csv: CsvOptions,
+    pub fwf: FwfOptions,
     #[serde(skip)]
     pub sqlite_key: Option<String>,
 }
@@ -132,6 +133,7 @@ impl IngestOptions {
         Self {
             format: args.format.clone(),
             csv: CsvOptions::from_args(args),
+            fwf: FwfOptions::from_args(args),
             sqlite_key: args.sqlite_key.clone(),
         }
     }
@@ -179,7 +181,7 @@ impl Ingester {
             Format::Jsonl => Box::new(JsonIngester::new(source, true)),
             Format::Parquet => Box::new(ParquetIngester::new(source)),
             Format::Arrow => Box::new(ArrowIngester::new(source)),
-            Format::Fwf => Box::new(FwfIngester::new(source)),
+            Format::Fwf => Box::new(FwfIngester::new(source, options.fwf.clone())),
             Format::Sqlite => Box::new(SqliteIngester::new(source, options.sqlite_key.clone())),
             Format::Excel => Box::new(ExcelIngester::new(source)),
             Format::Logfmt => Box::new(LogfmtIngester::new(source)),
