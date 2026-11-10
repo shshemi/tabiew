@@ -38,45 +38,84 @@ pub trait FileIngester: Send {
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()>;
 }
 
-fn write_text_table(
-    conn: &Connection,
-    alias: &str,
-    table: &str,
-    headers: &[String],
-    rows: &[Vec<String>],
-) -> AppResult<()> {
-    if headers.is_empty() {
-        return Ok(());
+const BATCH: usize = 122_880;
+
+struct TextTable<'a> {
+    conn: &'a Connection,
+    alias: &'a str,
+    name: String,
+    columns: Vec<String>,
+    created: usize,
+    batch: Vec<Vec<(usize, String)>>,
+}
+
+impl<'a> TextTable<'a> {
+    fn new(conn: &'a Connection, alias: &'a str, name: String) -> Self {
+        Self {
+            conn,
+            alias,
+            name,
+            columns: Vec::new(),
+            created: 0,
+            batch: Vec::new(),
+        }
     }
-    let columns = headers
-        .iter()
-        .fold(Vec::<String>::new(), |mut columns, header| {
-            columns.push(available_col_name(header, |name| {
-                !columns.iter().any(|column| column == name)
-            }));
-            columns
-        });
-    let definition = columns
-        .iter()
-        .map(|column| format!("{} VARCHAR", quote(column)))
-        .collect::<Vec<_>>();
-    conn.execute_batch(&format!(
-        "CREATE OR REPLACE TABLE {}.{} ({})",
-        quote(alias),
-        quote(table),
-        definition.join(", ")
-    ))?;
-    let mut appender = conn.appender_to_catalog_and_db(table, alias, "main")?;
-    for row in rows {
-        let values = (0..columns.len()).map(|i| {
-            row.get(i)
-                .map(|value| Value::Text(value.clone()))
-                .unwrap_or(Value::Null)
-        });
-        appender.append_row(appender_params_from_iter(values))?;
+    fn column(&mut self, name: &str) -> usize {
+        let column = available_col_name(name, |name| !self.columns.iter().any(|c| c == name));
+        self.columns.push(column);
+        self.columns.len() - 1
     }
-    appender.flush()?;
-    Ok(())
+    fn width(&self) -> usize {
+        self.columns.len()
+    }
+    fn push(&mut self, row: Vec<(usize, String)>) -> AppResult<()> {
+        self.batch.push(row);
+        if self.batch.len() >= BATCH {
+            self.flush()?;
+        }
+        Ok(())
+    }
+    fn finish(mut self) -> AppResult<()> {
+        self.flush()
+    }
+    fn flush(&mut self) -> AppResult<()> {
+        if self.columns.is_empty() {
+            self.batch.clear();
+            return Ok(());
+        }
+        let table = format!("{}.{}", quote(self.alias), quote(&self.name));
+        if self.created == 0 {
+            let definition = self
+                .columns
+                .iter()
+                .map(|column| format!("{} VARCHAR", quote(column)))
+                .collect::<Vec<_>>();
+            self.conn.execute_batch(&format!(
+                "CREATE OR REPLACE TABLE {table} ({})",
+                definition.join(", ")
+            ))?;
+        } else {
+            for column in &self.columns[self.created..] {
+                self.conn.execute_batch(&format!(
+                    "ALTER TABLE {table} ADD COLUMN {} VARCHAR",
+                    quote(column)
+                ))?;
+            }
+        }
+        self.created = self.columns.len();
+        let mut appender = self
+            .conn
+            .appender_to_catalog_and_db(&self.name, self.alias, "main")?;
+        for row in self.batch.drain(..) {
+            let mut values = vec![Value::Null; self.columns.len()];
+            for (index, value) in row {
+                values[index] = Value::Text(value);
+            }
+            appender.append_row(appender_params_from_iter(values))?;
+        }
+        appender.flush()?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
