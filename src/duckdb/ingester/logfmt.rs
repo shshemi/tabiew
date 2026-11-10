@@ -16,13 +16,15 @@ use std::{
 
 pub struct LogfmtIngester {
     path: PathBuf,
+    types: Vec<String>,
     progress: Arc<CountProgress>,
 }
 
 impl LogfmtIngester {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(path: PathBuf, types: Vec<String>) -> Self {
         Self {
             path,
+            types,
             progress: CountProgress::new(),
         }
     }
@@ -36,7 +38,7 @@ impl FileIngester for LogfmtIngester {
         let file = File::open(&self.path)?;
         self.progress.total(file.metadata()?.len());
         let mut reader = BufReader::new(file);
-        let mut table = TextTable::new(&conn, alias, "data".to_string());
+        let mut table = TextTable::new(&conn, alias, "data".to_string(), &self.types);
         let mut keys = IndexSet::<String>::new();
         let mut line = Vec::new();
         loop {

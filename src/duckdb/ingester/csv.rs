@@ -121,7 +121,7 @@ impl FileIngester for CsvIngester {
     }
 }
 
-fn type_candidates(types: &[Type]) -> Option<Vec<String>> {
+pub(super) fn type_candidates(types: &[Type]) -> Option<Vec<String>> {
     types
         .iter()
         .map(|t| {

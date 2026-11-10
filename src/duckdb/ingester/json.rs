@@ -36,13 +36,21 @@ impl FileIngester for JsonIngester {
         } else {
             "auto"
         };
-        conn.execute(
-            &format!(
-                "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_json(?, format = ?)",
+        let path = self.path.to_string_lossy().into_owned();
+        let sql = |options: &str| {
+            format!(
+                "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_json(?, format = ?{options})",
                 quote(alias)
-            ),
-            params![self.path.to_string_lossy().into_owned(), format],
-        )?;
+            )
+        };
+        match conn.execute(&sql(""), params![path, format]) {
+            Err(e) if e.to_string().contains("JSON transform error") => {
+                conn.execute(&sql(", sample_size = -1"), params![path, format])?;
+            }
+            result => {
+                result?;
+            }
+        }
         Ok(())
     }
 }

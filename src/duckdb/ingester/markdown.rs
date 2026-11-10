@@ -10,13 +10,15 @@ use std::{path::PathBuf, sync::Arc};
 
 pub struct MarkdownIngester {
     path: PathBuf,
+    types: Vec<String>,
     progress: Arc<CountProgress>,
 }
 
 impl MarkdownIngester {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(path: PathBuf, types: Vec<String>) -> Self {
         Self {
             path,
+            types,
             progress: CountProgress::new(),
         }
     }
@@ -45,6 +47,7 @@ impl FileIngester for MarkdownIngester {
                         &conn,
                         alias,
                         format!("markdown_table_{tables}"),
+                        &self.types,
                     ));
                 }
                 Event::End(TagEnd::Table) => {

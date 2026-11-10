@@ -8,7 +8,7 @@ use crate::{
     },
     misc::available_col_name::available_col_name,
 };
-use duckdb::params;
+use duckdb::{Connection, params};
 use serde::Serialize;
 use std::{
     fs::File,
@@ -59,15 +59,21 @@ impl FwfOptions {
 pub struct FwfIngester {
     path: PathBuf,
     options: FwfOptions,
+    types: Vec<String>,
     progress: Arc<StepProgress>,
 }
 
 impl FwfIngester {
-    pub fn new(path: PathBuf, options: FwfOptions) -> Self {
-        let steps = if options.widths.is_some() { 1 } else { 2 };
+    pub fn new(path: PathBuf, options: FwfOptions, types: Vec<String>) -> Self {
+        let steps = if options.widths.is_some() && types.is_empty() {
+            1
+        } else {
+            2
+        };
         Self {
             path,
             options,
+            types,
             progress: StepProgress::new(steps),
         }
     }
@@ -90,58 +96,69 @@ impl FileIngester for FwfIngester {
         } else {
             None
         };
-        let columns = match &self.options.widths {
-            Some(widths) => fixed(widths, self.options.separator_length),
-            None => {
-                let sample = conn
-                    .prepare(&format!("SELECT line FROM ({LINES}) LIMIT {SAMPLE}"))?
-                    .query_map(params![path, DELIM, skip], |row| row.get::<_, String>(0))?
-                    .collect::<Result<Vec<_>, _>>()?;
-                let mut blank = Vec::<bool>::new();
-                for line in header.iter().chain(&sample) {
-                    for (i, c) in line.chars().enumerate() {
-                        if i == blank.len() {
-                            blank.push(true);
-                        }
-                        if c != ' ' {
-                            blank[i] = false;
-                        }
+        let sample = if self.options.widths.is_none() || !self.types.is_empty() {
+            conn.prepare(&format!("SELECT line FROM ({LINES}) LIMIT {SAMPLE}"))?
+                .query_map(params![path, DELIM, skip], |row| row.get::<_, String>(0))?
+                .collect::<Result<Vec<_>, _>>()?
+        } else {
+            Vec::new()
+        };
+        let mut blank = Vec::<bool>::new();
+        if self.options.widths.is_none() {
+            for line in header.iter().chain(&sample) {
+                for (i, c) in line.chars().enumerate() {
+                    if i == blank.len() {
+                        blank.push(true);
                     }
-                }
-                let candidates = (0..blank.len()).filter(|&i| blank[i]).collect::<Vec<_>>();
-                if !candidates.is_empty() {
-                    let checks = candidates
-                        .iter()
-                        .map(|i| {
-                            format!(
-                                "coalesce(bool_and(substr(line, {}, 1) IN (' ', '')), true)",
-                                i + 1
-                            )
-                        })
-                        .collect::<Vec<_>>();
-                    let verified = conn.query_row(
-                        &format!("SELECT {} FROM ({LINES})", checks.join(", ")),
-                        params![path, DELIM, skip],
-                        |row| {
-                            (0..candidates.len())
-                                .map(|j| row.get::<_, bool>(j))
-                                .collect::<Result<Vec<_>, _>>()
-                        },
-                    )?;
-                    for (&i, gap) in candidates.iter().zip(verified) {
-                        blank[i] = gap;
+                    if c != ' ' {
+                        blank[i] = false;
                     }
-                }
-                self.progress.next();
-                let columns = inferred(&blank);
-                match &header {
-                    Some(header) => merge_unnamed(columns, header),
-                    None => columns,
                 }
             }
+        }
+        let columns = match &self.options.widths {
+            Some(widths) => fixed(widths, self.options.separator_length),
+            None => shape(&blank, header.as_deref()),
         };
         if columns.is_empty() {
             return Ok(());
+        }
+        let lines = Lines {
+            conn: &conn,
+            path: &path,
+            skip,
+        };
+        let types = &self.types;
+        let gaps = (0..blank.len()).filter(|&i| blank[i]).collect::<Vec<_>>();
+        let typed = lines.sampled(&columns, types)?;
+        let (gap_checks, kinds) = lines.verify(&gaps, &columns, &typed)?;
+        let (columns, kinds) = if gap_checks.contains(&false) {
+            for (&i, &gap) in gaps.iter().zip(&gap_checks) {
+                blank[i] = gap;
+            }
+            let reshaped = shape(&blank, header.as_deref());
+            let changed = reshaped
+                .iter()
+                .filter(|column| !columns.contains(column))
+                .copied()
+                .collect::<Vec<_>>();
+            let typed = lines.sampled(&changed, types)?;
+            let (_, changed_kinds) = lines.verify(&[], &changed, &typed)?;
+            let kinds = reshaped
+                .iter()
+                .map(|column| match columns.iter().position(|c| c == column) {
+                    Some(i) => kinds[i].clone(),
+                    None => {
+                        changed_kinds[changed.iter().position(|c| c == column).unwrap()].clone()
+                    }
+                })
+                .collect();
+            (reshaped, kinds)
+        } else {
+            (columns, kinds)
+        };
+        if self.options.widths.is_none() || !types.is_empty() {
+            self.progress.next();
         }
         let mut names = Vec::<String>::new();
         for (i, &(start, len)) in columns.iter().enumerate() {
@@ -160,13 +177,11 @@ impl FileIngester for FwfIngester {
         }
         let select = columns
             .iter()
+            .zip(&kinds)
             .zip(&names)
-            .map(|(&(start, len), name)| {
-                let len = len.map(|len| format!(", {len}")).unwrap_or_default();
-                format!(
-                    "NULLIF(trim(substr(line, {start}{len})), '') AS {}",
-                    quote(name)
-                )
+            .map(|((&(start, len), kind), name)| match kind {
+                Some(kind) => format!("CAST({} AS {kind}) AS {}", cut(start, len), quote(name)),
+                None => format!("{} AS {}", cut(start, len), quote(name)),
             })
             .collect::<Vec<_>>();
         let strict = if self.options.flexible_width {
@@ -187,6 +202,115 @@ impl FileIngester for FwfIngester {
             params![path, DELIM, skip],
         )?;
         Ok(())
+    }
+}
+
+type Column = (usize, Option<usize>);
+
+struct Lines<'a> {
+    conn: &'a Connection,
+    path: &'a str,
+    skip: i64,
+}
+
+impl Lines<'_> {
+    fn bools(&self, sql: &str, count: usize) -> AppResult<Vec<bool>> {
+        if count == 0 {
+            return Ok(Vec::new());
+        }
+        Ok(self
+            .conn
+            .query_row(sql, params![self.path, DELIM, self.skip], |row| {
+                (0..count)
+                    .map(|i| row.get::<_, bool>(i))
+                    .collect::<Result<Vec<_>, _>>()
+            })?)
+    }
+    fn sampled(&self, columns: &[Column], types: &[String]) -> AppResult<Vec<(Column, String)>> {
+        let pairs = columns
+            .iter()
+            .flat_map(|&column| types.iter().map(move |kind| (column, kind.clone())))
+            .collect::<Vec<_>>();
+        let checks = pairs
+            .iter()
+            .map(|((start, len), kind)| type_check(kind, &cut(*start, *len)))
+            .collect::<Vec<_>>();
+        let passed = self.bools(
+            &format!(
+                "SELECT {} FROM (SELECT line FROM ({LINES}) LIMIT {SAMPLE})",
+                checks.join(", ")
+            ),
+            checks.len(),
+        )?;
+        Ok(pairs
+            .into_iter()
+            .zip(passed)
+            .filter_map(|(pair, passed)| passed.then_some(pair))
+            .collect())
+    }
+    fn verify(
+        &self,
+        gaps: &[usize],
+        columns: &[Column],
+        typed: &[(Column, String)],
+    ) -> AppResult<(Vec<bool>, Vec<Option<String>>)> {
+        let checks = gaps
+            .iter()
+            .map(|i| {
+                format!(
+                    "coalesce(bool_and(substr(line, {}, 1) IN (' ', '')), true)",
+                    i + 1
+                )
+            })
+            .chain(
+                typed
+                    .iter()
+                    .map(|((start, len), kind)| type_check(kind, &cut(*start, *len))),
+            )
+            .collect::<Vec<_>>();
+        let mut passed = self.bools(
+            &format!("SELECT {} FROM ({LINES})", checks.join(", ")),
+            checks.len(),
+        )?;
+        let type_checks = passed.split_off(gaps.len());
+        let kinds = columns
+            .iter()
+            .map(|column| {
+                typed
+                    .iter()
+                    .zip(&type_checks)
+                    .find(|((typed, _), passed)| typed == column && **passed)
+                    .map(|((_, kind), _)| kind.clone())
+            })
+            .collect();
+        Ok((passed, kinds))
+    }
+}
+
+fn cut(start: usize, len: Option<usize>) -> String {
+    let len = len.map(|len| format!(", {len}")).unwrap_or_default();
+    format!("NULLIF(trim(substr(line, {start}{len})), '')")
+}
+
+fn type_check(kind: &str, value: &str) -> String {
+    let check = match kind {
+        "BIGINT" => format!(
+            "regexp_full_match({value}, '[+-]?[0-9]+') AND TRY_CAST({value} AS BIGINT) IS NOT NULL"
+        ),
+        "BOOLEAN" => format!("lower({value}) IN ('true', 'false')"),
+        "DATE" => format!(
+            "regexp_full_match({value}, '[0-9]{{4}}-[0-9]{{2}}-[0-9]{{2}}') AND TRY_CAST({value} AS DATE) IS NOT NULL"
+        ),
+        _ => format!("TRY_CAST({value} AS {kind}) IS NOT NULL"),
+    };
+    format!("coalesce(bool_and({value} IS NULL OR ({check})) AND count({value}) > 0, false)")
+}
+
+fn shape(blank: &[bool], header: Option<&str>) -> Vec<(usize, Option<usize>)> {
+    let columns = inferred(blank);
+    match header {
+        Some(header) => merge_unnamed(columns, header),
+        None => columns,
     }
 }
 

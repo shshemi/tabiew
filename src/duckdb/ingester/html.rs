@@ -10,13 +10,15 @@ use std::{path::PathBuf, sync::Arc};
 
 pub struct HtmlIngester {
     path: PathBuf,
+    types: Vec<String>,
     progress: Arc<CountProgress>,
 }
 
 impl HtmlIngester {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(path: PathBuf, types: Vec<String>) -> Self {
         Self {
             path,
+            types,
             progress: CountProgress::new(),
         }
     }
@@ -36,7 +38,8 @@ impl FileIngester for HtmlIngester {
         let tables = document.select(&table).collect::<Vec<_>>();
         self.progress.total(tables.len() as u64);
         for (idx, element) in tables.into_iter().enumerate() {
-            let mut table = TextTable::new(&conn, alias, format!("html_table_{}", idx + 1));
+            let mut table =
+                TextTable::new(&conn, alias, format!("html_table_{}", idx + 1), &self.types);
             for header in element.select(&head) {
                 table.column(&cell_text(header));
             }
