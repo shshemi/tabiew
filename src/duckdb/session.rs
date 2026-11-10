@@ -13,7 +13,7 @@ use indexmap::IndexMap;
 use std::{ops::Deref, sync::Arc};
 
 enum Table {
-    View(String),
+    View(Vec<String>),
     Query,
 }
 
@@ -144,12 +144,52 @@ impl Session {
             limit.map(|n| format!(" LIMIT {n}")).unwrap_or_default()
         ))?;
         self.name_map
-            .insert(name.clone(), Table::View(alias.to_string()));
+            .insert(name.clone(), Table::View(vec![alias.to_string()]));
         Ok(name)
     }
-    pub fn alias(&self, name: &str) -> Option<&str> {
+    pub fn create_union(
+        &mut self,
+        name: &str,
+        members: &[(String, String)],
+        limit: Option<usize>,
+    ) -> AppResult<String> {
+        if let Some((alias, _)) = members
+            .iter()
+            .find(|(alias, _)| !self.attached.contains_key(alias))
+        {
+            return Err(anyhow!("Unknown alias {alias}"));
+        }
+        let name = self.available_name(name);
+        let union = members
+            .iter()
+            .map(|(alias, table)| format!("SELECT * FROM {}.{}", quote(alias), quote(table)))
+            .collect::<Vec<_>>();
+        self.conn.execute_batch(&format!(
+            "CREATE VIEW {} AS SELECT * FROM ({}){}",
+            quote(&name),
+            union.join(" UNION ALL "),
+            limit.map(|n| format!(" LIMIT {n}")).unwrap_or_default()
+        ))?;
+        let mut aliases = members
+            .iter()
+            .map(|(alias, _)| alias.clone())
+            .collect::<Vec<_>>();
+        aliases.dedup();
+        self.name_map.insert(name.clone(), Table::View(aliases));
+        Ok(name)
+    }
+    pub fn columns(&self, alias: &str, table: &str) -> AppResult<Vec<(String, String)>> {
+        Ok(self
+            .conn
+            .prepare(
+                "SELECT column_name, data_type FROM duckdb_columns() WHERE database_name = ? AND table_name = ? ORDER BY column_index",
+            )?
+            .query_map(params![alias, table], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+    pub fn aliases(&self, name: &str) -> Option<&[String]> {
         match self.name_map.get(name)? {
-            Table::View(alias) => Some(alias),
+            Table::View(aliases) => Some(aliases),
             Table::Query => None,
         }
     }
@@ -209,7 +249,7 @@ impl Session {
                     && !self
                         .name_map
                         .values()
-                        .any(|t| matches!(t, Table::View(view) if view == *alias))
+                        .any(|t| matches!(t, Table::View(aliases) if aliases.contains(alias)))
             })
             .map(|(alias, _)| alias.clone())
             .collect::<Vec<_>>();
@@ -296,7 +336,7 @@ mod tests {
         let alias = attach_file(&mut session, &dir.path().join("abc.duckdb"));
         assert!(session.create_view("one", &alias, "data", None).is_err());
         assert!(session.create_view("one", "nope", "data", None).is_err());
-        assert!(session.alias("one").is_none());
+        assert!(session.aliases("one").is_none());
     }
 
     #[test]
@@ -319,7 +359,7 @@ mod tests {
         assert_eq!(view(&mut session, "sales"), "sales");
         assert_eq!(view(&mut session, "sales"), "sales_2");
         assert_eq!(view(&mut session, "_"), "__2");
-        assert_eq!(session.alias("sales_2"), Some(alias.as_str()));
+        assert_eq!(session.aliases("sales_2"), Some([alias.clone()].as_slice()));
     }
 
     #[test]
@@ -414,7 +454,7 @@ mod tests {
         assert_eq!(count(&session, "top"), 3);
         let name = session.create_query("top", &[], "SELECT 1").unwrap();
         assert_eq!(name, "top_2");
-        assert!(session.alias("top").is_none());
+        assert!(session.aliases("top").is_none());
         assert!(session.create_query("bad", &[], "SELEC 1").is_err());
         session.detach("top").unwrap();
         assert_eq!(session.flush().unwrap(), Vec::<String>::new());

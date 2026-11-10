@@ -39,13 +39,22 @@ impl CacheManager {
         })
     }
     pub fn create_new_db(&mut self, file_path: &Path, options: &Value) -> AppResult<FileDB> {
-        if self.cache_size.is_some() {
-            self.lru_cache_eviction(file_path)?;
-        }
-        let duckdb_file_name = hash_file_path(&self.cache_dir, file_path)?;
-        let file_db = FileDB::create(&duckdb_file_name, file_path, options)?;
-        self.track(&duckdb_file_name);
-        Ok(file_db)
+        let size = file_path
+            .metadata()
+            .map_err(|e| anyhow!("Failed to get metadata of file: {}", e))?
+            .len();
+        let hashed_file = hash_file_path(&self.cache_dir, file_path)?;
+        self.create_db(&hashed_file, file_path, size, options)
+    }
+    pub fn create_url_db(
+        &mut self,
+        url: &str,
+        validators: &str,
+        size: u64,
+        options: &Value,
+    ) -> AppResult<FileDB> {
+        let hashed_file = hash_key(&self.cache_dir, &[url.as_bytes(), validators.as_bytes()]);
+        self.create_db(&hashed_file, Path::new(url), size, options)
     }
     pub fn check_existing_cache_db(
         &mut self,
@@ -53,26 +62,46 @@ impl CacheManager {
         options: &Value,
     ) -> AppResult<Option<FileDB>> {
         let hashed_file = hash_file_path(&self.cache_dir, file_path)?;
-        let file_db = FileDB::new(&hashed_file)?;
-        if !std::fs::exists(&hashed_file).map_err(|e| anyhow!(e))?
-            || !FileDBMetadata::is_complete_for(&hashed_file, options)
+        self.check_db(&hashed_file, options)
+    }
+    pub fn check_url_db(
+        &mut self,
+        url: &str,
+        validators: &str,
+        options: &Value,
+    ) -> AppResult<Option<FileDB>> {
+        let hashed_file = hash_key(&self.cache_dir, &[url.as_bytes(), validators.as_bytes()]);
+        self.check_db(&hashed_file, options)
+    }
+    fn create_db(
+        &mut self,
+        hashed_file: &Path,
+        source: &Path,
+        size: u64,
+        options: &Value,
+    ) -> AppResult<FileDB> {
+        if self.cache_size.is_some() {
+            self.lru_cache_eviction(ByteSize(size))?;
+        }
+        let file_db = FileDB::create(hashed_file, source, options)?;
+        self.track(hashed_file);
+        Ok(file_db)
+    }
+    fn check_db(&mut self, hashed_file: &Path, options: &Value) -> AppResult<Option<FileDB>> {
+        let file_db = FileDB::new(hashed_file)?;
+        if !std::fs::exists(hashed_file).map_err(|e| anyhow!(e))?
+            || !FileDBMetadata::is_complete_for(hashed_file, options)
         {
             return Ok(None);
         }
-        self.track(&hashed_file);
+        self.track(hashed_file);
         Ok(Some(file_db))
     }
     pub fn delete_cache(&mut self, file_db: FileDB) -> AppResult<()> {
         self.lru_file_cache.pop(file_db.file_path());
         file_db.delete()
     }
-    fn lru_cache_eviction(&mut self, file_path: &Path) -> AppResult<()> {
-        let file_size = ByteSize(
-            file_path
-                .metadata()
-                .map_err(|e| anyhow!("Failed to get metadata of file: {}", e))?
-                .len(),
-        );
+    fn lru_cache_eviction(&mut self, file_size: ByteSize) -> AppResult<()> {
         if let Some(cache_size) = self.cache_size {
             if file_size >= cache_size {
                 return Err(anyhow!("File size is bigger than the cache size"));
@@ -137,14 +166,26 @@ fn hash_file_path(cache_dir: &Path, file_path: &Path) -> AppResult<PathBuf> {
         .map_err(|e| anyhow!("Failed to get modified time of the file: {}", e))?
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or_default();
-    let file_path_bytes = file_path.as_os_str().as_encoded_bytes();
+    Ok(hash_key(
+        cache_dir,
+        &[
+            file_path.as_os_str().as_encoded_bytes(),
+            &last_modified_time.as_nanos().to_le_bytes(),
+        ],
+    ))
+}
+
+fn hash_key(cache_dir: &Path, parts: &[&[u8]]) -> PathBuf {
     let mut sha_hasher = Sha256::new();
-    sha_hasher.update(file_path_bytes);
-    sha_hasher.update(last_modified_time.as_nanos().to_le_bytes());
-    let hash_res = sha_hasher.finalize();
-    let hex: String = hash_res.iter().map(|b| format!("{b:02x}")).collect();
-    let duckdb_file_name = format!("{hex}.duckdb");
-    Ok(cache_dir.join(duckdb_file_name))
+    for part in parts {
+        sha_hasher.update(part);
+    }
+    let hex: String = sha_hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    cache_dir.join(format!("{hex}.duckdb"))
 }
 
 struct CacheEntry {

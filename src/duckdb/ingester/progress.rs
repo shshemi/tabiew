@@ -76,3 +76,19 @@ impl IngestProgress for CountProgress {
         (total > 0).then(|| (self.done.load(Ordering::Relaxed) as f64 / total as f64).min(1.0))
     }
 }
+
+pub struct Parts {
+    pub done: usize,
+    pub parts: Vec<Arc<dyn IngestProgress>>,
+}
+
+impl IngestProgress for Parts {
+    fn fraction(&self) -> Option<f64> {
+        let running = self
+            .parts
+            .iter()
+            .map(|part| part.fraction().unwrap_or(0.0))
+            .sum::<f64>();
+        Some((self.done as f64 + running) / (self.done + self.parts.len()) as f64)
+    }
+}

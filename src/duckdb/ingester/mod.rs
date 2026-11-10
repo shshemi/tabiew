@@ -8,7 +8,7 @@ mod json;
 mod logfmt;
 mod markdown;
 mod parquet;
-mod progress;
+pub(super) mod progress;
 mod sqlite;
 
 use crate::{

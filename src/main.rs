@@ -155,13 +155,35 @@ fn run_duckdb(args: &Args) -> AppResult<()> {
     let mut ingesting = 0;
     #[cfg(debug_assertions)]
     let mut bars = Vec::new();
-    for source in &args.sources {
-        match duckdb.load(Path::new(source), None, &options, args.max_rows) {
+    let mut sources = args.sources.clone();
+    if sources.is_empty() && args.multiparts.is_empty() && !std::io::stdin().is_terminal() {
+        sources.push("-".to_string());
+    }
+    let mut loads = Vec::new();
+    if !args.multiparts.is_empty() {
+        let parts = args
+            .multiparts
+            .iter()
+            .map(|part| DataSource::from_str(part))
+            .collect::<AppResult<Vec<_>>>()?;
+        let loaded = duckdb.load_parts(&parts, &options, args.max_rows);
+        loads.push((args.multiparts.join(" + "), loaded));
+    }
+    for source in sources {
+        let loaded = match DataSource::from_str(&source)? {
+            DataSource::Stdin => duckdb.load_stdin(None, &options, args.max_rows),
+            DataSource::File(path) => duckdb.load(&path, None, &options, args.max_rows),
+            DataSource::Url(url) => duckdb.load_url(&url, None, &options, args.max_rows),
+        };
+        loads.push((source, loaded));
+    }
+    for (source, loaded) in loads {
+        match loaded {
             Ok(Load::Ingesting(_progress)) => {
                 ingesting += 1;
+                println!("{source}: ingesting");
                 #[cfg(debug_assertions)]
                 bars.push((source, _progress, None));
-                println!("{source}: ingesting");
             }
             Ok(Load::Ready(names)) => {
                 println!("{source}: loaded from the cache as {}", names.join(", "))
