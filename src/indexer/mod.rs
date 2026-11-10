@@ -241,8 +241,14 @@ impl Indexer {
 }
 
 impl RowSource for Indexer {
-    fn columns(&self) -> Vec<String> {
-        self.header().ok().flatten().unwrap_or_default()
+    fn columns(&self) -> Vec<(String, String)> {
+        self.header()
+            .ok()
+            .flatten()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|name| (name, "VARCHAR".to_string()))
+            .collect()
     }
     fn row_count(&self) -> usize {
         self.indexed_rows()

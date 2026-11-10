@@ -1,4 +1,7 @@
-use std::ops::{Add, Div};
+use std::{
+    ops::{Add, Div},
+    sync::{Arc, Mutex},
+};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
@@ -6,13 +9,14 @@ use polars::{frame::DataFrame, prelude::AnyValue};
 use ratatui::{
     layout::{Constraint, Layout, Position, Rect},
     text::Text,
-    widgets::{Cell, List, ListItem, ListState, Row, StatefulWidget, TableState},
+    widgets::{Cell, List, ListItem, ListState, Paragraph, Row, StatefulWidget, TableState},
 };
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
     iters::zip_iters::ZipItersExt,
     misc::config::{config, theme},
+    reader::{Rows, is_numeric, single_line},
     tui::{
         component::Component,
         misc::{
@@ -21,9 +25,24 @@ use crate::{
     },
 };
 
+#[derive(Clone)]
+enum Data {
+    Frame(DataFrame),
+    Reader(Arc<Mutex<dyn Rows>>),
+}
+
+impl std::fmt::Debug for Data {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Data::Frame(df) => df.fmt(f),
+            Data::Reader(_) => f.write_str("Reader"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Table {
-    df: DataFrame,
+    data: Data,
     col_widths: Vec<Constraint>,
     col_offsets: Vec<usize>,
     col_space: u16,
@@ -60,8 +79,46 @@ impl Table {
             show_header: false,
             gutter_mode: GutterMode::Visible(gutter_width),
             fp_precision: config().fp_precision(),
-            df,
+            data: Data::Frame(df),
             col_space,
+        }
+    }
+
+    pub fn reader(rows: impl Rows + 'static) -> Self {
+        Self {
+            col_widths: Vec::new(),
+            selected: None,
+            col_offsets: vec![0],
+            offset: 0,
+            rendered_rows: 0,
+            rendered_width: 0,
+            column_mode: ColumnMode::Compact,
+            striped: false,
+            show_header: false,
+            gutter_mode: GutterMode::Visible(1),
+            fp_precision: config().fp_precision(),
+            data: Data::Reader(Arc::new(Mutex::new(rows))),
+            col_space: 1,
+        }
+    }
+
+    pub fn set_reader(&mut self, rows: impl Rows + 'static) {
+        self.data = Data::Reader(Arc::new(Mutex::new(rows)));
+        self.col_widths.clear();
+        self.col_offsets = vec![0];
+    }
+
+    pub fn row_count(&self) -> usize {
+        match &self.data {
+            Data::Frame(df) => df.height(),
+            Data::Reader(reader) => reader.lock().unwrap().row_count(),
+        }
+    }
+
+    pub fn col_count(&self) -> usize {
+        match &self.data {
+            Data::Frame(df) => df.width(),
+            Data::Reader(reader) => reader.lock().unwrap().columns().len(),
         }
     }
 
@@ -74,7 +131,7 @@ impl Table {
         let col_offsets = col_offsets(&col_widths, self.col_space);
         let gutter_width = df.height().to_string().len() as u16;
         Self {
-            df,
+            data: Data::Frame(df),
             col_widths,
             col_offsets,
             offset: 0,
@@ -143,17 +200,25 @@ impl Table {
         }
     }
 
-    pub fn data_frame(&self) -> &DataFrame {
-        &self.df
+    pub fn data_frame(&self) -> Option<&DataFrame> {
+        match &self.data {
+            Data::Frame(df) => Some(df),
+            Data::Reader(_) => None,
+        }
     }
 
-    pub fn data_frame_mut(&mut self) -> &mut DataFrame {
-        &mut self.df
+    pub fn data_frame_mut(&mut self) -> Option<&mut DataFrame> {
+        match &mut self.data {
+            Data::Frame(df) => Some(df),
+            Data::Reader(_) => None,
+        }
     }
 
     pub fn set_data_frame(&mut self, df: DataFrame) {
-        if self.df.schema_equal(&df).is_ok() {
-            self.df = df;
+        if let Data::Frame(current) = &mut self.data
+            && current.schema_equal(&df).is_ok()
+        {
+            *current = df;
         }
     }
 
@@ -163,7 +228,7 @@ impl Table {
 
     pub fn set_gutter_visibility(&mut self, value: bool) {
         if value {
-            self.gutter_mode = GutterMode::Visible(self.df.height().to_string().len() as u16)
+            self.gutter_mode = GutterMode::Visible(self.row_count().to_string().len() as u16)
         } else {
             self.gutter_mode = GutterMode::Hidden
         }
@@ -182,11 +247,11 @@ impl Table {
     }
 
     pub fn set_offset(&mut self, idx: impl Into<usize>) {
-        self.offset = idx.into().min(self.df.height());
+        self.offset = idx.into().min(self.row_count());
     }
 
     pub fn select(&mut self, idx: impl Into<Option<usize>>) {
-        let height = self.df.height();
+        let height = self.row_count();
         if height > 0 {
             self.selected = idx.into().map(|idx| idx.min(height - 1));
         }
@@ -219,7 +284,7 @@ impl Table {
         if let Some(selected) = self.selected {
             self.select(selected.saturating_sub(1));
         } else {
-            self.select(self.df.height().saturating_sub(1));
+            self.select(self.row_count().saturating_sub(1));
         }
     }
 
@@ -236,7 +301,7 @@ impl Table {
     }
 
     fn select_last(&mut self) {
-        self.select(self.df.height().saturating_sub(1));
+        self.select(self.row_count().saturating_sub(1));
     }
 
     fn page_up(&mut self) {
@@ -336,16 +401,21 @@ impl Table {
     /// whenever it changes.
     fn refresh_col_widths(&mut self) {
         self.fp_precision = config().fp_precision();
-        self.col_widths = DataFrameWidthsCalculator::default()
-            .calculate(&self.df)
-            .into_iter()
-            .map(Constraint::Length)
-            .collect_vec();
+        match &self.data {
+            Data::Frame(df) => {
+                self.col_widths = DataFrameWidthsCalculator::default()
+                    .calculate(df)
+                    .into_iter()
+                    .map(Constraint::Length)
+                    .collect_vec();
+            }
+            Data::Reader(reader) => reader.lock().unwrap().reset(),
+        }
         self.col_offsets = col_offsets(&self.col_widths, self.col_space);
     }
 
     fn minimum_compact_width(&self) -> u16 {
-        let col_count = self.df.width();
+        let col_count = self.col_widths.len();
         let width = col_count + col_count.saturating_sub(1) * self.col_space as usize;
         u16::try_from(width).unwrap_or(u16::MAX)
     }
@@ -372,23 +442,60 @@ impl Component for Table {
 
         self.selected = self
             .selected
-            .map(|selected| selected.min(self.df.height().saturating_sub(1)));
+            .map(|selected| selected.min(self.row_count().saturating_sub(1)));
 
         if let Some(selected) = self.selected {
             self.offset = self
                 .offset
                 .clamp(selected.saturating_sub(height.saturating_sub(1)), selected)
-                .min(self.df.height().saturating_sub(height));
+                .min(self.row_count().saturating_sub(height));
         } else {
-            self.offset = self.offset.min(self.df.height().saturating_sub(height))
+            self.offset = self.offset.min(self.row_count().saturating_sub(height))
         }
+
+        let row_count = self.row_count();
+        if let GutterMode::Visible(width) = &mut self.gutter_mode {
+            *width = row_count.to_string().len() as u16;
+        }
+
+        let reader = match &self.data {
+            Data::Reader(reader) => Some(reader.clone()),
+            Data::Frame(_) => None,
+        };
+        let mut guard = reader.as_ref().map(|reader| reader.lock().unwrap());
+        let range = self.offset..self.offset + height;
+        let filled = guard.as_mut().map(|reader| reader.fill(range.clone()));
+        let rows = match (guard.as_ref(), filled) {
+            (Some(reader), Some(Ok(()))) => {
+                let widths = reader.widths();
+                if widths.len() != self.col_widths.len()
+                    || widths
+                        .iter()
+                        .zip(&self.col_widths)
+                        .any(|(width, constraint)| *width != contraint_value(constraint))
+                {
+                    self.col_widths = widths.iter().copied().map(Constraint::Length).collect();
+                    self.col_offsets = col_offsets(&self.col_widths, self.col_space);
+                }
+                Some((reader.columns(), reader.cached(range)))
+            }
+            (_, Some(Err(err))) => {
+                ratatui::widgets::Widget::render(
+                    Paragraph::new(err.to_string()).style(theme().text()),
+                    area,
+                    buf,
+                );
+                return;
+            }
+            _ => None,
+        };
 
         let (gutter_area, table_area) = self.gutter_table_area(area);
 
         if let Some(gutter_area) = gutter_area {
             List::default()
                 .items(
-                    (self.offset..(self.offset + height).min(self.df.height()))
+                    (self.offset..(self.offset + height).min(row_count))
                         .map(|idx| self.gutter_item(idx)),
                 )
                 .highlight_style(theme().row_highlighted())
@@ -409,9 +516,75 @@ impl Component for Table {
             self.column_mode = ColumnMode::Expanded(0);
         }
 
+        let selected = if focus_state.is_focused() {
+            self.selected.map(|s| s.saturating_sub(self.offset))
+        } else {
+            None
+        };
+
+        if let Some((columns, rows)) = rows {
+            if columns.is_empty() {
+                return;
+            }
+            let (col_start, col_end) = match &mut self.column_mode {
+                ColumnMode::Compact => (0, columns.len() - 1),
+                ColumnMode::Expanded(x) => {
+                    let total_width = self
+                        .col_offsets
+                        .last()
+                        .copied()
+                        .unwrap_or(0)
+                        .max(table_area.width as usize);
+                    *x = (*x).min(total_width.saturating_sub(table_area.width as usize));
+                    (
+                        column_index(&self.col_offsets, x),
+                        column_index(&self.col_offsets, &x.add(table_area.width as usize)),
+                    )
+                }
+            };
+            let col_end = col_end.min(columns.len() - 1);
+            let numeric = columns
+                .iter()
+                .map(|(_, data_type)| is_numeric(data_type))
+                .collect_vec();
+            let table = build_reader_table(
+                &columns[col_start..=col_end],
+                &numeric[col_start..=col_end],
+                rows.iter().map(|row| &row[col_start..=col_end]),
+                &self.col_widths[col_start..=col_end],
+                self.col_space,
+                self.show_header,
+                self.striped,
+                self.offset,
+                col_start,
+            );
+            match self.column_mode {
+                ColumnMode::Compact => table.render(
+                    table_area,
+                    buf,
+                    &mut TableState::default().with_selected(selected),
+                ),
+                ColumnMode::Expanded(x) => render_scrolled(
+                    table,
+                    &self.col_offsets,
+                    col_start,
+                    col_end,
+                    x,
+                    table_area,
+                    buf,
+                    selected,
+                ),
+            }
+            return;
+        }
+        drop(guard);
+        let Data::Frame(df) = &self.data else {
+            return;
+        };
+
         match &mut self.column_mode {
             ColumnMode::Compact => {
-                let df = self.df.slice(self.offset as i64, height);
+                let df = df.slice(self.offset as i64, height);
                 let table = build_table(
                     &df,
                     &self.col_widths,
@@ -433,7 +606,7 @@ impl Component for Table {
                 );
             }
             ColumnMode::Expanded(x) => {
-                if self.df.columns().is_empty() {
+                if df.columns().is_empty() {
                     return;
                 }
                 let total_width = self
@@ -445,9 +618,8 @@ impl Component for Table {
                 *x = (*x).min(total_width.saturating_sub(table_area.width as usize));
                 let col_start = column_index(&self.col_offsets, x);
                 let col_end = column_index(&self.col_offsets, &x.add(table_area.width as usize));
-                let df = self
-                    .df
-                    .select(&self.df.get_column_names()[col_start..=col_end])
+                let df = df
+                    .select(&df.get_column_names()[col_start..=col_end])
                     .unwrap_or_default()
                     .slice(self.offset as i64, height);
                 let table = build_table(
@@ -691,6 +863,86 @@ fn build_table<'a>(
     table
 }
 
+#[allow(clippy::too_many_arguments)]
+fn build_reader_table<'a>(
+    columns: &'a [(String, String)],
+    numeric: &[bool],
+    rows: impl Iterator<Item = &'a [String]>,
+    col_widths: &[Constraint],
+    col_space: u16,
+    show_header: bool,
+    striped: bool,
+    offset_row: usize,
+    offset_col: usize,
+) -> ratatui::widgets::Table<'a> {
+    let theme = theme();
+    let align = |text: Text<'a>, numeric: bool| match numeric {
+        true => text.right_aligned(),
+        false => text,
+    };
+    let mut table =
+        ratatui::widgets::Table::default()
+            .widths(col_widths)
+            .style(theme.text())
+            .row_highlight_style(theme.row_highlighted())
+            .column_spacing(col_space)
+            .rows(rows.enumerate().map(|(idx, row)| {
+                Row::new(row.iter().zip(numeric).map(|(value, numeric)| {
+                    Cell::new(align(Text::raw(single_line(value)), *numeric))
+                }))
+                .style(if striped {
+                    theme.row(offset_row + idx)
+                } else {
+                    theme.row(0)
+                })
+            }));
+    if show_header {
+        table =
+            table.header(
+                Row::new(columns.iter().zip(numeric).enumerate().map(
+                    |(i, ((name, _), numeric))| {
+                        Cell::new(align(Text::raw(name.as_str()), *numeric))
+                            .style(theme.header(offset_col + i))
+                    },
+                ))
+                .style(theme.table_header()),
+            )
+    }
+    table
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_scrolled(
+    table: ratatui::widgets::Table<'_>,
+    col_offsets: &[usize],
+    col_start: usize,
+    col_end: usize,
+    x: usize,
+    table_area: Rect,
+    buf: &mut ratatui::prelude::Buffer,
+    selected: Option<usize>,
+) {
+    let width = (col_offsets[col_end + 1] - col_offsets[col_start]).max(table_area.width as usize);
+    let size = ratatui::layout::Size {
+        width: width as u16,
+        height: table_area.height,
+    };
+    let mut scroll_area = ScrollView::new(size).scrollbars_visibility(ScrollbarVisibility::Never);
+    scroll_area.render_stateful_widget(
+        table,
+        scroll_area.area(),
+        &mut TableState::default().with_selected(selected),
+    );
+    scroll_area.render(
+        table_area,
+        buf,
+        &mut ScrollViewState::with_offset(Position {
+            x: x.saturating_sub(col_offsets.get(col_start).copied().unwrap_or_default()) as u16,
+            y: 0,
+        }),
+    );
+}
+
 fn contraint_value(constraint: &Constraint) -> u16 {
     match constraint {
         Constraint::Min(val)
@@ -698,5 +950,116 @@ fn contraint_value(constraint: &Constraint) -> u16 {
         | Constraint::Length(val)
         | Constraint::Fill(val) => *val,
         Constraint::Percentage(_) | Constraint::Ratio(_, _) => 0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        duckdb::{DuckDB, DuckDBConfig, IngestOptions, Load},
+        indexer::Indexer,
+        reader::{Reader, ReaderConfig},
+        tui::component::FocusState,
+    };
+    use ratatui::{Terminal, backend::TestBackend};
+    use std::{
+        sync::atomic::AtomicBool,
+        time::{Duration, Instant},
+    };
+    use tempfile::TempDir;
+
+    const CSV: &str = "id,name,price,note\n1,alpha,1.5,\"two\nlines\"\n2,beta,22.25,\"a\tb\"\n3,gamma,333.125,\n4,delta,4,plain\n";
+
+    fn screen(table: &mut Table) -> String {
+        let mut terminal = Terminal::new(TestBackend::new(60, 7)).unwrap();
+        terminal
+            .draw(|frame| table.render(frame.area(), frame.buffer_mut(), FocusState::Focused))
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        (0..buffer.area.height)
+            .map(|y| {
+                (0..buffer.area.width)
+                    .map(|x| buffer[(x, y)].symbol())
+                    .collect::<String>()
+                    .trim_end()
+                    .to_string()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn flat(screen: &str) -> String {
+        screen
+            .lines()
+            .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn key(code: KeyCode, modifiers: KeyModifiers) -> KeyEvent {
+        KeyEvent::new(code, modifiers)
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn duckdb_and_indexer_readers_render_in_the_table() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("prices.csv");
+        std::fs::write(&path, CSV).unwrap();
+        let options = IngestOptions::default();
+        let indexer =
+            Indexer::new(path.clone(), &options, Arc::new(AtomicBool::new(true))).unwrap();
+        let start = Instant::now();
+        while indexer.row_count().is_none() {
+            assert!(start.elapsed() < Duration::from_secs(5));
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let mut table = Table::reader(Reader::new(
+            indexer,
+            ReaderConfig {
+                segment_rows: 2,
+                segments: 2,
+            },
+        ))
+        .with_show_header(true)
+        .with_selected(0);
+        let indexed = screen(&mut table);
+        println!("indexer:\n{indexed}");
+        let indexed = flat(&indexed);
+        assert!(indexed.contains("id name price note"));
+        assert!(indexed.contains("1 1 alpha 1.5 two"));
+        assert!(indexed.contains("2 2 beta 22.25 a b"));
+        let mut db = DuckDB::new(DuckDBConfig {
+            cache_dir: dir.path().join("cache"),
+            ..DuckDBConfig::default()
+        })
+        .unwrap();
+        assert!(matches!(
+            db.load(&path, None, &options, None).unwrap(),
+            Load::Ingesting(_)
+        ));
+        let start = Instant::now();
+        let views = loop {
+            assert!(start.elapsed() < Duration::from_secs(10));
+            if let Some((_, views)) = db.flush().unwrap().tables.pop() {
+                break views.unwrap();
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        };
+        let mut table = Table::reader(db.reader(&views[0]).unwrap())
+            .with_show_header(true)
+            .with_selected(0);
+        let ingested = screen(&mut table);
+        println!("duckdb:\n{ingested}");
+        let ingested = flat(&ingested);
+        assert!(ingested.contains("id name price note"));
+        assert!(ingested.contains("1 1 alpha 1.5 two"));
+        assert!(ingested.contains("3 3 gamma 333.125"));
+        table.handle(key(KeyCode::Char('G'), KeyModifiers::SHIFT));
+        let last = screen(&mut table);
+        println!("duckdb after G:\n{last}");
+        let last = flat(&last);
+        assert_eq!(table.selected(), Some(3));
+        assert!(last.contains("4 4 delta 4 plain"));
     }
 }

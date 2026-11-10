@@ -213,14 +213,17 @@ fn read_rows(app: &App, offset: Option<usize>, count: Option<usize>) -> AppResul
         .table();
     let offset = offset.unwrap_or(table.offset());
     let count = count.unwrap_or(table.rendered_rows());
-    let mut df = table.data_frame().slice(offset as i64, count);
+    let frame = table
+        .data_frame()
+        .ok_or_else(|| anyhow!("not available on DuckDB tables yet"))?;
+    let mut df = frame.slice(offset as i64, count);
     let mut buf = Vec::new();
     JsonWriter::new(&mut buf)
         .with_json_format(polars::io::json::JsonFormat::Json)
         .finish(&mut df)?;
     Ok(Rows {
         offset,
-        total: table.data_frame().height(),
+        total: frame.height(),
         records: String::from_utf8(buf)?,
     })
 }
@@ -230,7 +233,10 @@ fn current_table(app: &App) -> AppResult<DataFrame> {
         .tabs()
         .selected()
         .ok_or_else(|| anyhow!("no tab is open"))?;
-    Ok(pane.table().data_frame().clone())
+    pane.table()
+        .data_frame()
+        .cloned()
+        .ok_or_else(|| anyhow!("not available on DuckDB tables yet"))
 }
 
 fn query_current_table(app: &App, query: &str) -> AppResult<DataFrame> {

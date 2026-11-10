@@ -35,7 +35,7 @@ impl<'a> Widget for StatusBar<'a> {
                 format!(
                     "{:>width$}",
                     self.pane.table().selected().unwrap_or_default().add(1),
-                    width = self.pane.table().data_frame().height().to_string().len(),
+                    width = self.pane.table().row_count().to_string().len(),
                 ),
                 2,
             )
@@ -44,8 +44,8 @@ impl<'a> Widget for StatusBar<'a> {
             icons::GRID.str("Shape"),
             format!(
                 "{} x {}",
-                self.pane.table().data_frame().height(),
-                self.pane.table().data_frame().width()
+                self.pane.table().row_count(),
+                self.pane.table().col_count()
             ),
             3,
         );

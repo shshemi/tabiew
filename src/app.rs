@@ -148,7 +148,7 @@ impl App {
             self.tabs
                 .selected()
                 .map(Pane::table)
-                .map(Table::data_frame)
+                .and_then(Table::data_frame)
                 .cloned(),
         )));
     }

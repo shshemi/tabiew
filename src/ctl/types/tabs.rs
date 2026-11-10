@@ -60,13 +60,16 @@ impl Table {
         Self {
             schema: table
                 .data_frame()
-                .schema()
-                .iter()
-                .map(|(name, dtype)| Field {
-                    name: name.to_string(),
-                    dtype: dtype.clone(),
+                .map(|df| {
+                    df.schema()
+                        .iter()
+                        .map(|(name, dtype)| Field {
+                            name: name.to_string(),
+                            dtype: dtype.clone(),
+                        })
+                        .collect()
                 })
-                .collect(),
+                .unwrap_or_default(),
             offset: table.offset(),
             rendered_rows: table.rendered_rows(),
             description: description.into(),

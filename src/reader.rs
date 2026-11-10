@@ -1,8 +1,9 @@
 use crate::AppResult;
-use std::{collections::VecDeque, ops::Range};
+use std::{borrow::Cow, collections::VecDeque, ops::Range};
+use unicode_width::UnicodeWidthStr;
 
 pub trait RowSource {
-    fn columns(&self) -> Vec<String>;
+    fn columns(&self) -> Vec<(String, String)>;
     fn row_count(&self) -> usize;
     fn complete(&self) -> bool {
         true
@@ -18,12 +19,55 @@ pub struct ReaderConfig {
 
 type Segment = (usize, Vec<Vec<String>>);
 
+pub trait Rows: Send {
+    fn columns(&self) -> Vec<(String, String)>;
+    fn row_count(&self) -> usize;
+    fn complete(&self) -> bool;
+    fn widths(&self) -> &[u16];
+    fn reset(&mut self);
+    fn fill(&mut self, range: Range<usize>) -> AppResult<()>;
+    fn cached(&self, range: Range<usize>) -> Vec<&[String]>;
+}
+
+pub fn single_line(value: &str) -> Cow<'_, str> {
+    let line = value.lines().next().unwrap_or_default();
+    if line.contains('\t') {
+        Cow::Owned(line.replace('\t', " "))
+    } else {
+        Cow::Borrowed(line)
+    }
+}
+
+pub fn is_numeric(data_type: &str) -> bool {
+    data_type.starts_with("DECIMAL")
+        || [
+            "TINYINT",
+            "SMALLINT",
+            "INTEGER",
+            "BIGINT",
+            "HUGEINT",
+            "UTINYINT",
+            "USMALLINT",
+            "UINTEGER",
+            "UBIGINT",
+            "UHUGEINT",
+            "FLOAT",
+            "DOUBLE",
+        ]
+        .contains(&data_type)
+}
+
+fn width_of(value: &str) -> u16 {
+    u16::try_from(single_line(value).width()).unwrap_or(u16::MAX)
+}
+
 pub struct Reader<S> {
     source: S,
     segment_rows: usize,
     segments: usize,
     cache: VecDeque<Segment>,
     complete: bool,
+    widths: Vec<u16>,
 }
 
 impl<S: RowSource> Reader<S> {
@@ -34,18 +78,30 @@ impl<S: RowSource> Reader<S> {
             segments: config.segments.max(1),
             cache: VecDeque::new(),
             complete: false,
+            widths: Vec::new(),
         }
     }
     pub fn source(&self) -> &S {
         &self.source
     }
-    pub fn columns(&self) -> Vec<String> {
+    pub fn columns(&self) -> Vec<(String, String)> {
         self.source.columns()
+    }
+    pub fn widths(&self) -> &[u16] {
+        &self.widths
+    }
+    pub fn reset(&mut self) {
+        self.cache.clear();
+        self.widths.clear();
     }
     pub fn row_count(&self) -> usize {
         self.source.row_count()
     }
     pub fn rows(&mut self, range: Range<usize>) -> AppResult<impl Iterator<Item = &[String]>> {
+        self.fill(range.clone())?;
+        Ok(self.cached(range))
+    }
+    pub fn fill(&mut self, range: Range<usize>) -> AppResult<()> {
         if !self.complete {
             self.cache
                 .retain(|(_, rows)| rows.len() == self.segment_rows);
@@ -65,8 +121,16 @@ impl<S: RowSource> Reader<S> {
                 .fetch(run[0] * self.segment_rows, run.len() * self.segment_rows)?
                 .into_iter();
             for segment in run {
-                self.cache
-                    .push_back((*segment, rows.by_ref().take(self.segment_rows).collect()));
+                let rows: Vec<Vec<String>> = rows.by_ref().take(self.segment_rows).collect();
+                for row in &rows {
+                    if self.widths.len() < row.len() {
+                        self.widths.resize(row.len(), 0);
+                    }
+                    for (max, value) in self.widths.iter_mut().zip(row) {
+                        *max = (*max).max(width_of(value));
+                    }
+                }
+                self.cache.push_back((*segment, rows));
             }
         }
         for segment in (first..last).rev() {
@@ -79,15 +143,30 @@ impl<S: RowSource> Reader<S> {
         while self.cache.len() > self.segments.max(last - first) {
             self.cache.pop_front();
         }
-        let width = self.source.columns().len();
-        let segment_rows = self.segment_rows;
+        let columns = self.source.columns();
+        let width = columns.len();
+        if self.widths.len() < width {
+            self.widths.resize(width, 0);
+        }
+        for (max, (name, _)) in self.widths.iter_mut().zip(&columns) {
+            *max = (*max).max(width_of(name));
+        }
         for (_, rows) in self.cache.iter_mut().rev().take(last - first) {
             for row in rows.iter_mut().filter(|row| row.len() < width) {
                 row.resize(width, String::new());
             }
         }
+        Ok(())
+    }
+    pub fn cached(&self, range: Range<usize>) -> impl Iterator<Item = &[String]> {
+        let row_count = self.source.row_count();
+        let start = range.start.min(row_count);
+        let range = start..range.end.clamp(start, row_count);
+        let first = range.start / self.segment_rows;
+        let last = range.end.div_ceil(self.segment_rows).max(first);
+        let segment_rows = self.segment_rows;
         let cache = &self.cache;
-        Ok((first..last)
+        (first..last)
             .flat_map(move |segment| {
                 cache
                     .iter()
@@ -96,7 +175,31 @@ impl<S: RowSource> Reader<S> {
                     .flat_map(|(_, rows)| rows.iter().map(Vec::as_slice))
             })
             .skip(range.start - first * segment_rows)
-            .take(range.len()))
+            .take(range.len())
+    }
+}
+
+impl<S: RowSource + Send> Rows for Reader<S> {
+    fn columns(&self) -> Vec<(String, String)> {
+        Reader::columns(self)
+    }
+    fn row_count(&self) -> usize {
+        Reader::row_count(self)
+    }
+    fn complete(&self) -> bool {
+        self.source.complete()
+    }
+    fn widths(&self) -> &[u16] {
+        Reader::widths(self)
+    }
+    fn reset(&mut self) {
+        Reader::reset(self)
+    }
+    fn fill(&mut self, range: Range<usize>) -> AppResult<()> {
+        Reader::fill(self, range)
+    }
+    fn cached(&self, range: Range<usize>) -> Vec<&[String]> {
+        Reader::cached(self, range).collect()
     }
 }
 
@@ -113,8 +216,10 @@ mod tests {
     }
 
     impl RowSource for &Numbers {
-        fn columns(&self) -> Vec<String> {
-            (0..self.width.get()).map(|i| format!("c{i}")).collect()
+        fn columns(&self) -> Vec<(String, String)> {
+            (0..self.width.get())
+                .map(|i| (format!("c{i}"), "VARCHAR".to_string()))
+                .collect()
         }
         fn row_count(&self) -> usize {
             self.rows.get()
@@ -203,5 +308,18 @@ mod tests {
         source.width.set(3);
         assert_eq!(read(&mut reader, 0..1), [["0", "", ""]]);
         assert_eq!(source.fetches.get(), 1);
+    }
+
+    #[test]
+    fn widths_grow_with_headers_and_fetched_segments_only() {
+        let source = numbers(1000, true);
+        let mut reader = Reader::new(&source, CONFIG);
+        read(&mut reader, 0..1);
+        assert_eq!(reader.widths(), [2]);
+        read(&mut reader, 150..151);
+        assert_eq!(reader.widths(), [3]);
+        read(&mut reader, 0..1);
+        assert_eq!(reader.widths(), [3]);
+        assert_eq!(single_line("a\tb\nsecond"), "a b");
     }
 }

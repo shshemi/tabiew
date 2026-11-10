@@ -93,12 +93,20 @@ impl Pane {
         self.tstack.iter()
     }
 
+    fn frame(&self) -> Option<DataFrame> {
+        let df = self.tstack.last().data_frame().cloned();
+        if df.is_none() {
+            Message::AppShowError("Not available on DuckDB tables yet".to_string()).enqueue();
+        }
+        df
+    }
+
     pub fn show_sheet(&mut self) {
         if self.sheet.is_none() {
-            self.sheet = Some(Sheet::new(
-                self.table().data_frame().clone(),
-                self.table().selected(),
-            ));
+            let Some(df) = self.frame() else {
+                return;
+            };
+            self.sheet = Some(Sheet::new(df, self.table().selected()));
         }
     }
 
@@ -107,40 +115,44 @@ impl Pane {
     }
 
     fn sync_sheet(&mut self) {
-        if let Some(sheet) = self.sheet.as_mut() {
-            sheet.set_data_frame(self.tstack.last().data_frame().clone());
+        if let Some(sheet) = self.sheet.as_mut()
+            && let Some(df) = self.tstack.last().data_frame()
+        {
+            sheet.set_data_frame(df.clone());
             sheet.set_row(self.tstack.last().selected());
         }
     }
 
     fn show_fuzzy_search(&mut self) {
+        let Some(df) = self.frame() else {
+            return;
+        };
         let tbl = self.tstack.last().to_owned();
         self.tstack.push(tbl);
         self.dstack
             .push(TableDescription::Search(Default::default()));
-        self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(
-            self.tstack.last().data_frame().clone(),
-        )));
+        self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(df)));
     }
 
     fn show_exact_search(&mut self) {
+        let Some(df) = self.frame() else {
+            return;
+        };
         let tbl = self.tstack.last().to_owned();
         self.tstack.push(tbl);
         self.dstack
             .push(TableDescription::Search(Default::default()));
-        self.modal = Some(Modal::SearchBar(SearchBar::exact(
-            self.tstack.last().data_frame().clone(),
-        )));
+        self.modal = Some(Modal::SearchBar(SearchBar::exact(df)));
     }
 
     fn show_data_frame_info(&mut self) {
+        let Some(df) = self.frame() else {
+            return;
+        };
         match &self.dstack.last() {
             TableDescription::Table(desc) => {
                 if let Some(input) = sql().schema().get(desc).map(|info| info.source()).cloned() {
-                    self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
-                        self.tstack.last().data_frame(),
-                        input,
-                    )))
+                    self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(&df, input)))
                 }
             }
             TableDescription::Query(_)
@@ -151,7 +163,7 @@ impl Pane {
             | TableDescription::Search(_)
             | TableDescription::FuzzySearch(_) => {
                 self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
-                    self.tstack.last().data_frame(),
+                    &df,
                     TableSource::User,
                 )))
             }
@@ -164,7 +176,10 @@ impl Pane {
         y_label: &str,
         group_by: Option<&str>,
     ) -> AppResult<()> {
-        let df = self.tstack.last().data_frame();
+        let Some(df) = self.frame() else {
+            return Ok(());
+        };
+        let df = &df;
         let plot = if let Some(group_by) = group_by {
             scatter_plot::ScatterPlotBuilder::new(df, x_label, y_label)
                 .with_group(group_by)
@@ -177,9 +192,11 @@ impl Pane {
     }
 
     fn show_inline_query_picker(&mut self, query_type: QueryType) {
+        let Some(df) = self.frame() else {
+            return;
+        };
         self.modal = Some(Modal::InlineQueryPicker(InlineQueryPicker::new(
-            self.tstack.last().data_frame().clone(),
-            query_type,
+            df, query_type,
         )));
     }
 
@@ -195,55 +212,66 @@ impl Pane {
     }
 
     fn show_arrow_exporter(&mut self) {
-        self.modal = Some(Modal::ExportArrow(ArrowExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportArrow(ArrowExporter::new(df.into())))
     }
 
     fn show_avro_exporter(&mut self) {
-        self.modal = Some(Modal::ExportAvro(AvroExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportAvro(AvroExporter::new(df.into())))
     }
 
     fn show_csv_exporter(&mut self) {
-        self.modal = Some(Modal::ExportCsv(CsvExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportCsv(CsvExporter::new(df.into())))
     }
 
     fn show_json_exporter(&mut self) {
-        self.modal = Some(Modal::ExportJson(JsonExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportJson(JsonExporter::new(df.into())))
     }
 
     fn show_jsonl_exporter(&mut self) {
-        self.modal = Some(Modal::ExportJsonl(JsonlExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportJsonl(JsonlExporter::new(df.into())))
     }
 
     fn show_markdown_exporter(&mut self) {
-        self.modal = Some(Modal::ExportMarkdown(MarkdownExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportMarkdown(MarkdownExporter::new(df.into())))
     }
 
     fn show_parquet_exporter(&mut self) {
-        self.modal = Some(Modal::ExportParquet(ParquetExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportParquet(ParquetExporter::new(df.into())))
     }
 
     fn show_tsv_exporter(&mut self) {
-        self.modal = Some(Modal::ExportTsv(TsvExporter::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ExportTsv(TsvExporter::new(df.into())))
     }
 
     fn show_histogram(&mut self, col: &str, buckets: usize) -> AppResult<()> {
-        let df = self.tstack.last().data_frame();
+        let Some(df) = self.frame() else {
+            return Ok(());
+        };
+        let df = &df;
         self.modal = Some(Modal::HistogramPlot(
             histogram_plot::HistogramPlotBuilder::new(df, col, buckets).build()?,
         ));
@@ -251,27 +279,35 @@ impl Pane {
     }
 
     fn show_histogram_builder(&mut self) {
+        let Some(df) = self.frame() else {
+            return;
+        };
         self.modal = Some(Modal::HistogramBuilder(HistogramBuilder::new(
-            histogram_builder::State::new(self.tstack.last().data_frame()),
+            histogram_builder::State::new(&df),
         )))
     }
 
     fn show_scatter_plot_builder(&mut self) {
+        let Some(df) = self.frame() else {
+            return;
+        };
         self.modal = Some(Modal::ScatterPlotBuilder(Wizard::new(
-            scatter_plot_builder::State::new(self.tstack.last().data_frame().clone()),
+            scatter_plot_builder::State::new(df),
         )))
     }
 
     fn show_table_registerer(&mut self) {
-        self.modal = Some(Modal::TableRegisterer(TableRegisterer::new(
-            self.tstack.last().data_frame().clone(),
-        )));
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::TableRegisterer(TableRegisterer::new(df)));
     }
 
     fn show_column_caster(&mut self) {
-        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(
-            self.tstack.last().data_frame().clone().into(),
-        )))
+        let Some(df) = self.frame() else {
+            return;
+        };
+        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(df.into())))
     }
 
     fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
@@ -292,7 +328,7 @@ impl Pane {
     }
 
     fn select_random(&mut self) {
-        let height = self.tstack.last().data_frame().height();
+        let height = self.tstack.last().row_count();
         if height > 0 {
             self.select(rand::rng().random_range(0..height));
         }
@@ -521,7 +557,10 @@ impl Component for Pane {
                 self.show_fuzzy_search();
             }
             Message::PaneEditInExternalEditor => {
-                match edit_in_external_editor(self.tstack.last().data_frame().clone()) {
+                let Some(df) = self.frame() else {
+                    return;
+                };
+                match edit_in_external_editor(df) {
                     Ok(df) => self.push_data_frame(
                         df,
                         TableDescription::Table("Manual edit using $EDITOR".to_owned()),
