@@ -1,4 +1,4 @@
-use std::{env, process::Command};
+use std::{env, path::Path, process::Command};
 
 use anyhow::anyhow;
 use polars::frame::DataFrame;
@@ -12,8 +12,21 @@ use crate::{
     writers::{Destination, WriteToCsv, WriteToFile},
 };
 
-pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
+pub fn run_editor(path: &Path) -> AppResult<()> {
     let editor = env::var("EDITOR").map_err(|_| anyhow!("$EDITOR is not set"))?;
+    disable_event_read();
+    stop_tui()?;
+    let status = Command::new(editor).arg(path).status();
+    start_tui()?;
+    invalidate_tui();
+    enable_event_read();
+    match status?.success() {
+        true => Ok(()),
+        false => Err(anyhow!("Editor failed")),
+    }
+}
+
+pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
     let tempfile = tempfile::NamedTempFile::new()?;
 
     WriteToCsv::default()
@@ -22,17 +35,8 @@ pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
         .with_separator_char(',')
         .write_to_file(Destination::File(tempfile.path().to_owned()), &mut df)?;
 
-    let editor_status = {
-        disable_event_read();
-        stop_tui()?;
-        let status = Command::new(editor).arg(tempfile.path()).status();
-        start_tui()?;
-        invalidate_tui();
-        enable_event_read();
-        status
-    }?;
-
-    if editor_status.success() {
+    run_editor(tempfile.path())?;
+    {
         let mut df = CsvToDataFrame::default()
             .with_no_header(false)
             .with_quote_char('"')
@@ -45,7 +49,5 @@ pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
         let parser = DataFrameParser::from_env_args();
         parser.parse_and_update(&mut df);
         Ok(df)
-    } else {
-        Err(anyhow!("Editor failed"))
     }
 }

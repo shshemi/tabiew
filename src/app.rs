@@ -4,6 +4,7 @@ use crate::AppResult;
 use crate::duckdb::{DataSource, DuckDB, IngestOptions, Load, Opened, Store};
 use crate::indexer::Indexer;
 use crate::misc::config::config;
+use crate::misc::external_editor::run_editor;
 use crate::misc::sql::{BackendSchema, TableInfo, sql};
 use crate::net::remote_load::{self, RemoteLoad};
 use crate::reader::{Empty, Reader, RowSource};
@@ -18,6 +19,7 @@ use crate::tui::popups::pickers::sql_query_picker::{self, SqlQueryPicker};
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
+use crate::writers::ExportFormat;
 use crate::{
     handler::message::Message,
     tui::{
@@ -191,6 +193,7 @@ impl App {
         };
         let mut errors = Vec::new();
         let mut toasts = Vec::new();
+        let mut trim = false;
         let mut changed = false;
         let (tables, queries) = match duckdb.poll() {
             Ok(finished) => {
@@ -218,6 +221,21 @@ impl App {
                     for pane in self.tabs.panes_mut() {
                         pane.reset_view(&view);
                         pane.install_pending(&view);
+                    }
+                }
+                if !finished.plots.is_empty() || !finished.exports.is_empty() {
+                    trim = true;
+                }
+                for (view, plot) in finished.plots {
+                    match plot.and_then(|data| {
+                        self.tabs
+                            .panes_mut()
+                            .find(|pane| pane.table().view().as_deref() == Some(view.as_str()))
+                            .map(|pane| pane.show_plot(data))
+                            .unwrap_or(Ok(()))
+                    }) {
+                        Ok(()) => (),
+                        Err(err) => errors.push(err.to_string()),
                     }
                 }
                 for export in finished.exports {
@@ -279,15 +297,23 @@ impl App {
             }
         }
         for query in queries {
-            match query.and_then(|name| Ok((duckdb.counted_reader(&name)?, name))) {
-                Ok((reader, name)) => self
-                    .tabs
-                    .add(Pane::reader(reader, TableDescription::Table(name))),
+            match query {
+                Ok((name, progress)) => {
+                    let mut pane = Pane::reader(
+                        Reader::new(Empty, duckdb.reader_config()),
+                        TableDescription::Table(name.clone()),
+                    );
+                    pane.set_running(name.clone(), name, progress, None);
+                    self.tabs.add(pane);
+                }
                 Err(err) => errors.push(err.to_string()),
             }
         }
         for toast in toasts {
             self.show_toast(toast);
+        }
+        if trim {
+            crate::misc::workers::release_memory();
         }
         if changed {
             self.sync_schema();
@@ -527,6 +553,47 @@ impl App {
                 self.sync_schema();
                 self.show_toast(format!("Data frame registered with name '{name}'"));
             }
+            Err(err) => self.show_error(err.to_string()),
+        }
+    }
+
+    fn edit_in_editor(&mut self, view: &str) {
+        let idx = self.tabs.idx();
+        let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
+        else {
+            return;
+        };
+        let path = duckdb.scratch_path(&format!("edit-{view}.csv"));
+        let edited = duckdb
+            .export_now(
+                view,
+                ExportFormat::Csv {
+                    separator: ',',
+                    quote: '"',
+                    header: true,
+                },
+                &path,
+            )
+            .and_then(|()| run_editor(&path))
+            .and_then(|()| {
+                duckdb.open_query(
+                    &format!(
+                        "SELECT * FROM read_csv('{}')",
+                        path.to_string_lossy().replace('\'', "''")
+                    ),
+                    None,
+                    Store::Wait,
+                )
+            });
+        match edited {
+            Ok(Opened::Pending(result, progress)) => {
+                pane.push_reader(
+                    Reader::new(Empty, duckdb.reader_config()),
+                    TableDescription::Table("Manual edit using $EDITOR".to_owned()),
+                );
+                pane.set_running(result, "$EDITOR changes".to_owned(), progress, None);
+            }
+            Ok(Opened::Ready(_)) => (),
             Err(err) => self.show_error(err.to_string()),
         }
     }
@@ -781,6 +848,14 @@ impl Component for App {
             Message::AppSearchStart(fuzzy) => self.search_start(*fuzzy),
             Message::AppCast(column, target) => self.cast(column, *target),
             Message::AppRegister(name) => self.register(name),
+            Message::AppEditInEditor(view) => self.edit_in_editor(view),
+            Message::AppPlot(view, request) => {
+                if let Some(duckdb) = self.duckdb.as_mut()
+                    && let Err(err) = duckdb.plot(view, request.clone())
+                {
+                    self.show_error(err.to_string());
+                }
+            }
             Message::AppShowInfo(view) => self.show_info(view),
             Message::AppExport(view, format, dest) => {
                 if let Some(duckdb) = self.duckdb.as_mut()

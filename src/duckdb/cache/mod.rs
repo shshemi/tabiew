@@ -33,6 +33,7 @@ impl CacheManager {
             lru_cache = LruCache::new(NonZeroUsize::new(lru_capacity).unwrap());
         }
         build_db_lru(&mut lru_cache, cache_dir.as_ref(), cache_size)?;
+        sweep_locks(cache_dir.as_ref());
         Ok(Self {
             cache_dir: cache_dir.as_ref().to_path_buf(),
             cache_size,
@@ -89,10 +90,11 @@ impl CacheManager {
         Ok(file_db)
     }
     fn check_db(&mut self, hashed_file: &Path, options: &Value) -> AppResult<Option<FileDB>> {
+        if !std::fs::exists(hashed_file).map_err(|e| anyhow!(e))? {
+            return Ok(None);
+        }
         let file_db = FileDB::new(hashed_file)?;
-        if !std::fs::exists(hashed_file).map_err(|e| anyhow!(e))?
-            || !FileDBMetadata::is_complete_for(hashed_file, options)
-        {
+        if !FileDBMetadata::is_complete_for(hashed_file, options) {
             return Ok(None);
         }
         self.track(hashed_file);
@@ -151,6 +153,22 @@ impl CacheManager {
             && evicted != file_path
         {
             let _ = delete_file(&evicted);
+        }
+    }
+}
+
+fn sweep_locks(cache_dir: &Path) {
+    for lock in std::fs::read_dir(cache_dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.to_string_lossy().ends_with(".duckdb.lock"))
+    {
+        if !lock.with_extension("").exists()
+            && std::fs::File::open(&lock).is_ok_and(|file| file.try_lock().is_ok())
+        {
+            let _ = std::fs::remove_file(&lock);
         }
     }
 }

@@ -8,7 +8,7 @@ use url::Url;
 
 use crate::{
     AppResult,
-    duckdb::DataSource,
+    duckdb::{DataSource, PlotRequest},
     net::remote_load::{Importer, Reader},
     tui::{
         pane::TableDescription,
@@ -58,6 +58,8 @@ pub enum Message {
     AppSearchStart(bool),
     AppCast(String, TargetType),
     AppRegister(String),
+    AppEditInEditor(String),
+    AppPlot(String, PlotRequest),
     AppShowInfo(String),
     AppExport(String, ExportFormat, Destination),
     AppSearch(String, String, bool),

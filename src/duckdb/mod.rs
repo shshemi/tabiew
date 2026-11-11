@@ -5,6 +5,7 @@ mod ingester;
 mod inspect;
 mod load;
 mod parts;
+mod plots;
 pub mod reader;
 mod results;
 mod schema;
@@ -36,6 +37,7 @@ pub use ingester::{CsvOptions, FwfOptions, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
 pub use inspect::inspect;
 pub use cache::file_db::ColumnStats;
+pub use plots::{PlotData, PlotRequest};
 pub use results::{Opened, Store};
 pub use schema::TableEntry;
 pub use source::DataSource;
@@ -56,6 +58,7 @@ pub struct DuckDB {
     results: usize,
     materializing: Vec<Materializing>,
     exporting: Vec<export::Exporting>,
+    plotting: Vec<plots::Plotting>,
     stats: HashMap<String, Vec<cache::file_db::ColumnStats>>,
     stats_jobs: Vec<StatsJob>,
     counts: HashMap<String, usize>,
@@ -87,11 +90,12 @@ pub struct Ingest {
 
 pub struct Finished {
     pub tables: Vec<(PathBuf, AppResult<Vec<String>>)>,
-    pub queries: Vec<AppResult<String>>,
+    pub queries: Vec<AppResult<(String, Arc<dyn IngestProgress>)>>,
     pub results: Vec<String>,
     pub swapped: Vec<String>,
     pub failed: Vec<(String, String)>,
     pub exports: Vec<Result<String, String>>,
+    pub plots: Vec<(String, AppResult<PlotData>)>,
     pub stats: bool,
 }
 
@@ -137,6 +141,7 @@ impl DuckDB {
             results: 0,
             materializing: Vec::new(),
             exporting: Vec::new(),
+            plotting: Vec::new(),
             stats: HashMap::new(),
             stats_jobs: Vec::new(),
             counts: HashMap::new(),
@@ -168,6 +173,7 @@ impl DuckDB {
             swapped: polled.swapped,
             failed: polled.failed,
             exports: self.poll_exports(),
+            plots: self.poll_plots(),
             stats: self.poll_stats() | self.poll_counts(),
         };
         self.poll_probes(&mut finished);
@@ -234,10 +240,21 @@ impl DuckDB {
             })
             .collect()
     }
-    fn query(&mut self, sql: &str, fallback: Option<String>) -> AppResult<String> {
+    fn query(
+        &mut self,
+        sql: &str,
+        fallback: Option<String>,
+    ) -> AppResult<(String, Arc<dyn IngestProgress>)> {
         let SplitSql { setup, name, query } = split_sql(sql);
         let name = name.or(fallback).unwrap_or_else(random_name);
-        self.session.create_query(&name, &setup, &query)
+        let name = self.session.create_query(&name, &setup, &query)?;
+        let progress = self.materialize(
+            &name,
+            &format!("Running {name}"),
+            &format!("SELECT * FROM {}", sql::quote(&name)),
+            None,
+        )?;
+        Ok((name, progress))
     }
     fn complete(&mut self, alias: &str) -> AppResult<()> {
         match self.session.file_db_mut(alias) {

@@ -228,7 +228,7 @@ impl DuckDB {
             Some(&stored),
         )
     }
-    fn materialize(
+    pub(super) fn materialize(
         &mut self,
         view: &str,
         title: &str,
@@ -272,6 +272,14 @@ impl DuckDB {
                     .iter()
                     .map(|exporting| (exporting.title.as_str(), exporting.progress.fraction())),
             )
+            .chain(
+                self.plotting
+                    .iter()
+                    .map(|plotting| (plotting.title.as_str(), plotting.progress.fraction())),
+            )
+    }
+    pub fn scratch_path(&self, name: &str) -> PathBuf {
+        self._scratch.dir().join(name)
     }
     pub fn register(&mut self, name: &str, current: &str) -> AppResult<String> {
         let name = name.trim();

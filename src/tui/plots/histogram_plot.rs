@@ -118,12 +118,12 @@ fn bars_from_data(data: Vec<(String, u64)>) -> Vec<Bar<'static>> {
         .map(|(_, v)| v.to_string().len())
         .max()
         .unwrap_or_default();
-    data.iter()
+    data.into_iter()
         .enumerate()
         .map(|(idx, (label, value))| {
             let label = label.trim().chars().take(label_len).collect::<String>();
             Bar::default()
-                .value(*value)
+                .value(value)
                 .text_value(format!("{value:>value_len$} "))
                 .label(Line::styled(
                     format!("{label:>label_len$}"),
@@ -150,12 +150,21 @@ impl<'a> HistogramPlotBuilder<'a> {
     }
 
     pub fn build(self) -> AppResult<HistogramPlot> {
-        let data = histogram_plot_data(self.df, self.column, self.buckets)?;
-        Ok(HistogramPlot {
+        Ok(HistogramPlot::from_data(histogram_plot_data(
+            self.df,
+            self.column,
+            self.buckets,
+        )?))
+    }
+}
+
+impl HistogramPlot {
+    pub fn from_data(data: Vec<(String, u64)>) -> Self {
+        HistogramPlot {
             offset: 0,
             max_value: data.iter().map(|(_, v)| *v).max().unwrap_or_default(),
             bars: bars_from_data(data),
-        })
+        }
     }
 }
 
@@ -214,7 +223,7 @@ fn continues_histogram(counts: DataFrame, buckets: usize) -> AppResult<Vec<(Stri
     let arr = casted.f64()?;
     let (min, max) = arr.min_max().ok_or(anyhow!("No value found"))?;
     let width = (max - min) / (buckets as f64);
-    let counts = arr
+    let counts: Vec<u32> = arr
         .iter()
         .flatten()
         .zip(counts[1].as_materialized_series().u32()?.iter().flatten())
@@ -223,17 +232,23 @@ fn continues_histogram(counts: DataFrame, buckets: usize) -> AppResult<Vec<(Stri
             buckets[idx] += c;
             buckets
         });
+    Ok(bucket_labels(
+        min,
+        max,
+        counts.into_iter().map(u64::from).collect(),
+    ))
+}
+
+pub fn bucket_labels(min: f64, max: f64, counts: Vec<u64>) -> Vec<(String, u64)> {
+    let width = (max - min) / (counts.len() as f64);
     let label_len = format!("{max:.2}").len();
-    Ok(counts
+    counts
         .into_iter()
         .enumerate()
         .map(|(idx, r)| {
             let start = (idx as f64) * width + min;
             let end = (idx.add(1) as f64) * width + min;
-            (
-                format!(" {start:>w$.2} - {end:>w$.2}", w = label_len),
-                r as u64,
-            )
+            (format!(" {start:>w$.2} - {end:>w$.2}", w = label_len), r)
         })
-        .collect())
+        .collect()
 }

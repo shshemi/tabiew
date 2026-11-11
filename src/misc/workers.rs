@@ -26,6 +26,16 @@ static QUEUE: Mutex<Queue> = Mutex::new(Queue {
     running: 0,
 });
 
+pub fn release_memory() {
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    {
+        unsafe extern "C" {
+            fn malloc_trim(pad: usize) -> i32;
+        }
+        unsafe { malloc_trim(0) };
+    }
+}
+
 pub fn spawn(job: impl FnOnce() + Send + 'static) {
     QUEUE.lock().unwrap().jobs.push_back(Box::new(job));
     pump();

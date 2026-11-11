@@ -1,5 +1,8 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::frame::DataFrame;
+use polars::{
+    frame::DataFrame,
+    prelude::{DataType, Field, TimeUnit},
+};
 use rand::RngExt;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
@@ -18,14 +21,14 @@ use super::{
 use crate::{
     AppResult,
     collections::non_empty_stack::NonEmptyStack,
-    duckdb::IngestProgress,
+    duckdb::{IngestProgress, PlotData, PlotRequest},
     handler::message::{Message, UnwrapOrEnqueueError},
     misc::{
         config::config,
         external_editor::edit_in_external_editor,
         sql::{TableSource, sql},
     },
-    reader::Rows,
+    reader::{Rows, is_numeric},
     tui::{
         app_default::AppDefault,
         component::{Component, FocusState},
@@ -449,6 +452,18 @@ impl Pane {
         y_label: &str,
         group_by: Option<&str>,
     ) -> AppResult<()> {
+        if let Some((view, _)) = self.plot_view() {
+            Message::AppPlot(
+                view,
+                PlotRequest::Scatter {
+                    x: x_label.to_owned(),
+                    y: y_label.to_owned(),
+                    group: group_by.map(str::to_owned),
+                },
+            )
+            .enqueue();
+            return Ok(());
+        }
         let Some(df) = self.frame() else {
             return Ok(());
         };
@@ -551,6 +566,21 @@ impl Pane {
     }
 
     fn show_histogram(&mut self, col: &str, buckets: usize) -> AppResult<()> {
+        if let Some((view, columns)) = self.plot_view() {
+            let numeric = columns
+                .iter()
+                .any(|(name, data_type)| name == col && is_numeric(data_type));
+            Message::AppPlot(
+                view,
+                PlotRequest::Histogram {
+                    column: col.to_owned(),
+                    buckets,
+                    numeric,
+                },
+            )
+            .enqueue();
+            return Ok(());
+        }
         let Some(df) = self.frame() else {
             return Ok(());
         };
@@ -561,8 +591,41 @@ impl Pane {
         Ok(())
     }
 
+    fn plot_view(&self) -> Option<(String, Vec<(String, String)>)> {
+        if self.table().data_frame().is_some() {
+            return None;
+        }
+        let columns = self.table().rows()?.lock().ok()?.columns().to_vec();
+        Some((self.table().view()?, columns))
+    }
+
+    fn plot_frame(&self) -> Option<DataFrame> {
+        match self.plot_view() {
+            Some((_, columns)) => Some(DataFrame::empty_with_schema(
+                &columns
+                    .iter()
+                    .map(|(name, data_type)| Field::new(name.into(), polars_type(data_type)))
+                    .collect(),
+            )),
+            None => self.frame(),
+        }
+    }
+
+    pub fn show_plot(&mut self, data: PlotData) -> AppResult<()> {
+        self.modal = Some(match data {
+            PlotData::Histogram(data) => Modal::HistogramPlot(HistogramPlot::from_data(data)),
+            PlotData::Scatter {
+                points,
+                x,
+                y,
+                groups,
+            } => Modal::ScatterPlot(ScatterPlot::from_points(points, x, y, groups)?),
+        });
+        Ok(())
+    }
+
     fn show_histogram_builder(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.plot_frame() else {
             return;
         };
         self.modal = Some(Modal::HistogramBuilder(HistogramBuilder::new(
@@ -571,7 +634,7 @@ impl Pane {
     }
 
     fn show_scatter_plot_builder(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.plot_frame() else {
             return;
         };
         self.modal = Some(Modal::ScatterPlotBuilder(Wizard::new(
@@ -916,6 +979,12 @@ impl Component for Pane {
                 self.show_fuzzy_search();
             }
             Message::PaneEditInExternalEditor => {
+                if self.table().data_frame().is_none()
+                    && let Some(view) = self.table().view()
+                {
+                    Message::AppEditInEditor(view).enqueue();
+                    return;
+                }
                 let Some(df) = self.frame() else {
                     return;
                 };
@@ -1096,5 +1165,18 @@ impl TableDescription {
             | TableDescription::Search(desc)
             | TableDescription::FuzzySearch(desc) => desc,
         }
+    }
+}
+
+fn polars_type(data_type: &str) -> DataType {
+    match data_type {
+        "BOOLEAN" => DataType::Boolean,
+        "VARCHAR" => DataType::String,
+        "DATE" => DataType::Date,
+        "TIMESTAMP" => DataType::Datetime(TimeUnit::Microseconds, None),
+        "FLOAT" | "DOUBLE" => DataType::Float64,
+        _ if data_type.starts_with("DECIMAL") => DataType::Float64,
+        _ if is_numeric(data_type) => DataType::Int64,
+        _ => DataType::Null,
     }
 }

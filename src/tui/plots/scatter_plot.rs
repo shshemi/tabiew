@@ -157,6 +157,25 @@ impl<'a> ScatterPlotBuilder<'a> {
     }
 }
 
+impl ScatterPlot {
+    pub fn from_points(
+        data: RaggedVec<(f64, f64)>,
+        x_label: String,
+        y_label: String,
+        groups: Option<Vec<String>>,
+    ) -> AppResult<Self> {
+        let [x_bounds, y_bounds] = data_bounds(&data)?;
+        Ok(ScatterPlot {
+            data,
+            x_bounds,
+            y_bounds,
+            x_label,
+            y_label,
+            groups,
+        })
+    }
+}
+
 fn data_bounds(data: &RaggedVec<(f64, f64)>) -> AppResult<[[f64; 2]; 2]> {
     data.iter()
         .flat_map(|v| v.iter())

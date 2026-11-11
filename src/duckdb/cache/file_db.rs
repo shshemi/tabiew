@@ -165,7 +165,8 @@ impl FileDB {
         self.get_write_lock()?;
         remove_if_exists(&self.file_path)?;
         remove_if_exists(&self.file_path.with_extension("duckdb.wal"))?;
-        remove_if_exists(&FileDBMetadata::path(&self.file_path))
+        remove_if_exists(&FileDBMetadata::path(&self.file_path))?;
+        remove_if_exists(&self.file_path.with_extension("duckdb.lock"))
     }
 }
 
