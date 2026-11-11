@@ -9,12 +9,12 @@ use crate::{
 
 #[derive(Debug)]
 pub struct TableRegisterer {
-    df: DataFrame,
+    df: Option<DataFrame>,
     picker: TextPicker,
 }
 
 impl TableRegisterer {
-    pub fn new(df: DataFrame) -> Self {
+    pub fn new(df: Option<DataFrame>) -> Self {
         Self {
             df,
             picker: TextPicker::default().with_title(icons::TAG.title("Name")),
@@ -23,13 +23,17 @@ impl TableRegisterer {
 
     fn register(&self) {
         let name = self.picker.value().trim();
+        let Some(df) = &self.df else {
+            Message::AppRegister(name.to_owned()).enqueue();
+            return;
+        };
         if name.is_empty() {
             Message::AppShowError(format!("'{name}' is not a valid name")).enqueue();
         } else if sql().schema().get(name).is_some() {
             Message::AppShowError(format!("Table name '{name}' already exists in the backed"))
                 .enqueue();
         } else {
-            sql().register(name, self.df.clone(), TableSource::User);
+            sql().register(name, df.clone(), TableSource::User);
             Message::AppShowToast(format!("Data frame registered with name '{name}'")).enqueue();
         }
     }

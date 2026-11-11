@@ -36,8 +36,11 @@ impl Component for DataFrameInfo {
         buf: &mut ratatui::prelude::Buffer,
         focus_state: crate::tui::component::FocusState,
     ) {
-        let [area2, area3] =
-            Layout::vertical([Constraint::Length(6), Constraint::Fill(1)]).areas(area);
+        let [area2, area3] = Layout::vertical([
+            Constraint::Length(6 + u16::from(self.meta_info.table_info().disk_text().is_some())),
+            Constraint::Fill(1),
+        ])
+        .areas(area);
         self.meta_info.render(area2, buf, focus_state);
         self.field_info.render(area3, buf, focus_state);
     }

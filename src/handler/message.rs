@@ -57,6 +57,8 @@ pub enum Message {
     AppDropQuery(String),
     AppSearchStart(bool),
     AppCast(String, TargetType),
+    AppRegister(String),
+    AppShowInfo(String),
     AppExport(String, ExportFormat, Destination),
     AppSearch(String, String, bool),
     AppOpenTable(String),

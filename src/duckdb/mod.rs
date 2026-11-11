@@ -48,6 +48,7 @@ pub struct DuckDB {
     probing: Vec<load::Probing>,
     parts_probing: Vec<parts::PartsProbing>,
     probed: HashMap<String, load::Probe>,
+    in_memory_below: Option<u64>,
     pending_queries: Vec<(String, Option<String>)>,
     groups: Vec<Group>,
     part_of: Option<usize>,
@@ -102,6 +103,10 @@ impl DuckDB {
             config.lru_capacity.unwrap_or(0),
         )?;
         let session = Session::new(config.allotted_ram)?;
+        let in_memory_below = match config.load_small_in_mem {
+            true => session.memory_limit(),
+            false => None,
+        };
         let scratch = Scratch::new(
             &config
                 .temp_dir
@@ -118,6 +123,7 @@ impl DuckDB {
             probing: Vec::new(),
             parts_probing: Vec::new(),
             probed: HashMap::new(),
+            in_memory_below,
             pending_queries: Vec::new(),
             groups: Vec::new(),
             part_of: None,
@@ -234,10 +240,10 @@ impl DuckDB {
         self.session.create_query(&name, &setup, &query)
     }
     fn complete(&mut self, alias: &str) -> AppResult<()> {
-        self.session
-            .file_db_mut(alias)
-            .ok_or_else(|| anyhow!("Unknown alias {alias}"))?
-            .mark_complete()
+        match self.session.file_db_mut(alias) {
+            Some(file_db) => file_db.mark_complete(),
+            None => Ok(()),
+        }
     }
     fn finish(&mut self, ingesting: &Ingesting) -> AppResult<Vec<String>> {
         self.complete(&ingesting.alias)?;

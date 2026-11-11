@@ -42,25 +42,35 @@ impl Component for DataFrameMetaInfo {
         _focus_state: crate::tui::component::FocusState,
     ) {
         Clear.render(area, buf);
-        Table::default()
-            .rows([
-                Row::new([
-                    Span::styled("Path", theme().header(0)),
-                    Span::styled(self.info.source().display_path(), theme().text()),
-                ]),
-                Row::new([
-                    Span::styled("Shape", theme().header(1)),
-                    Span::styled(self.info.shape_text(), theme().text()),
-                ]),
-                Row::new([
-                    Span::styled("Total Estimated Memory", theme().header(2)),
-                    Span::styled(self.info.total_est_size_text(), theme().text()),
-                ]),
-                Row::new([
-                    Span::styled("Total Null Count", theme().header(3)),
-                    Span::styled(self.info.total_null_text(), theme().text()),
-                ]),
+        let disk = self.info.disk_text().map(|disk| {
+            Row::new([
+                Span::styled("Size on Disk", theme().header(2)),
+                Span::styled(disk, theme().text()),
             ])
+        });
+        Table::default()
+            .rows(
+                [
+                    Row::new([
+                        Span::styled("Path", theme().header(0)),
+                        Span::styled(self.info.source().display_path(), theme().text()),
+                    ]),
+                    Row::new([
+                        Span::styled("Shape", theme().header(1)),
+                        Span::styled(self.info.shape_text(), theme().text()),
+                    ]),
+                    Row::new([
+                        Span::styled("Total Estimated Memory", theme().header(2)),
+                        Span::styled(self.info.total_est_size_text(), theme().text()),
+                    ]),
+                    Row::new([
+                        Span::styled("Total Null Count", theme().header(3)),
+                        Span::styled(self.info.total_null_text(), theme().text()),
+                    ]),
+                ]
+                .into_iter()
+                .chain(disk),
+            )
             .widths([Constraint::Max(23), Constraint::Fill(1)])
             .block(
                 Block::app_default()

@@ -20,6 +20,8 @@ pub struct ColumnStats {
     pub nulls: u64,
     pub min: Option<String>,
     pub max: Option<String>,
+    #[serde(default)]
+    pub bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

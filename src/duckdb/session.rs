@@ -122,6 +122,23 @@ impl Session {
             }
         }
     }
+    pub fn memory_limit(&self) -> Option<u64> {
+        self.conn
+            .query_row("SELECT current_setting('memory_limit')", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .ok()?
+            .parse::<ByteSize>()
+            .ok()
+            .map(|limit| limit.as_u64())
+    }
+    pub fn in_memory(&self, name: &str) -> bool {
+        matches!(self.name_map.get(name), Some(Table::View(aliases)) if aliases.iter().all(|alias| {
+            self.attached
+                .get(alias)
+                .is_some_and(|attached| attached.file_db.is_none())
+        }))
+    }
     pub fn source_path(&self, name: &str) -> Option<PathBuf> {
         let Table::View(aliases) = self.name_map.get(name)? else {
             return None;

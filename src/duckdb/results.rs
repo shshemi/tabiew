@@ -273,6 +273,44 @@ impl DuckDB {
                     .map(|exporting| (exporting.title.as_str(), exporting.progress.fraction())),
             )
     }
+    pub fn register(&mut self, name: &str, current: &str) -> AppResult<String> {
+        let name = name.trim();
+        if name.is_empty() || name == "_" || name.starts_with(RESULT_PREFIX) {
+            return Err(anyhow!("'{name}' is not a valid name"));
+        }
+        if self
+            .session
+            .names()
+            .any(|existing| existing.eq_ignore_ascii_case(name))
+        {
+            return Err(anyhow!("Table name '{name}' already exists"));
+        }
+        let select = format!("SELECT * FROM {}", quote(current));
+        let name = self.session.create_query(name, &[], &select)?;
+        self.materialize(
+            &name,
+            &format!("Registering {name}"),
+            &select,
+            Some(Count::default()),
+        )?;
+        Ok(name)
+    }
+    pub(super) fn scratch_size(&self, name: &str) -> Option<u64> {
+        self.session
+            .session()
+            .ok()?
+            .query_row(
+                &format!(
+                    "SELECT count(DISTINCT block_id) * (SELECT block_size FROM pragma_database_size() WHERE database_name = '{SCRATCH}') FROM pragma_storage_info(?) WHERE persistent"
+                ),
+                [table(name)],
+                |r| r.get::<_, Option<i64>>(0),
+            )
+            .ok()
+            .flatten()
+            .filter(|bytes| *bytes > 0)
+            .map(|bytes| bytes as u64)
+    }
     pub fn drop_result(&mut self, view: &str) {
         if !view.starts_with(RESULT_PREFIX) {
             return;
@@ -324,7 +362,7 @@ impl DuckDB {
                 true => Err(anyhow!("Dropped")),
                 false => result.and_then(|()| {
                     self.session.execute_batch(&format!(
-                        "CREATE OR REPLACE VIEW {} AS SELECT * FROM {}",
+                        "CREATE OR REPLACE VIEW {} AS SELECT * FROM {}; CHECKPOINT {SCRATCH}",
                         quote(&view),
                         table(&view)
                     ))

@@ -31,6 +31,8 @@ pub struct Config {
 
     /// the segments the reader keeps in memory
     pub segments: usize,
+
+    pub load_small_in_mem: bool,
 }
 
 impl Default for Config {
@@ -43,6 +45,7 @@ impl Default for Config {
             temp_dir: None,
             segment_rows: 512,
             segments: 4,
+            load_small_in_mem: false,
         }
     }
 }

@@ -139,6 +139,7 @@ pub struct TableInfo {
     schema: TableSchema,
     duckdb: Option<bool>,
     known: (bool, bool),
+    disk: Option<u64>,
 }
 
 impl TableInfo {
@@ -153,6 +154,7 @@ impl TableInfo {
             schema,
             duckdb: None,
             known: (true, true),
+            disk: None,
         }
     }
 
@@ -164,6 +166,14 @@ impl TableInfo {
                 .and_then(|stats| stats.get(idx))
                 .map(|stats| stats.nulls as usize)
         };
+        let bytes = |idx: usize| {
+            entry
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.get(idx))
+                .and_then(|stats| stats.bytes)
+        };
+        let total = (0..entry.columns.len()).map(bytes).sum::<Option<u64>>();
         Self {
             origin: entry
                 .source
@@ -173,7 +183,7 @@ impl TableInfo {
             height: entry.rows.unwrap_or_default(),
             width: entry.columns.len(),
             total_null: (0..entry.columns.len()).filter_map(nulls).sum(),
-            total_est_size: Size(entry.size.unwrap_or_default()),
+            total_est_size: Size(total.unwrap_or_default()),
             schema: TableSchema {
                 schema: entry
                     .columns
@@ -185,7 +195,7 @@ impl TableInfo {
                             name.clone(),
                             FieldInfo {
                                 dtype: DataType::Null,
-                                est_size: Size::default(),
+                                est_size: Size(bytes(idx).unwrap_or_default()),
                                 null_count: nulls(idx).unwrap_or_default(),
                                 min: Scalar::null(DataType::Null),
                                 max: Scalar::null(DataType::Null),
@@ -194,6 +204,7 @@ impl TableInfo {
                                     nulls: nulls(idx),
                                     min: stats.and_then(|stats| stats.min.clone()),
                                     max: stats.and_then(|stats| stats.max.clone()),
+                                    size: bytes(idx).map(|bytes| Size(bytes).to_string()),
                                 }),
                             },
                         )
@@ -201,7 +212,8 @@ impl TableInfo {
                     .collect(),
             },
             duckdb: Some(entry.stats.is_some()),
-            known: (entry.rows.is_some(), entry.size.is_some()),
+            known: (entry.rows.is_some(), total.is_some()),
+            disk: entry.disk,
         }
     }
 
@@ -221,6 +233,13 @@ impl TableInfo {
             true => self.total_est_size.to_string(),
             false => "-".to_string(),
         }
+    }
+
+    pub fn disk_text(&self) -> Option<String> {
+        self.disk.map(|disk| match disk {
+            0 => "0 B (in memory)".to_string(),
+            disk => Size(disk).to_string(),
+        })
     }
 
     pub fn shape_text(&self) -> String {
@@ -334,6 +353,7 @@ pub struct FieldText {
     pub nulls: Option<usize>,
     pub min: Option<String>,
     pub max: Option<String>,
+    pub size: Option<String>,
 }
 
 impl FieldInfo {

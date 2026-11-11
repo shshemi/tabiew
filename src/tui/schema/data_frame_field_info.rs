@@ -81,7 +81,7 @@ impl Component for DataFrameFieldInfo {
                                 Some(text) => [
                                     name.to_owned(),
                                     text.dtype.clone(),
-                                    "-".to_string(),
+                                    dash(text.size.clone()),
                                     dash(text.nulls.map(|nulls| nulls.to_string())),
                                     dash(text.min.clone()),
                                     dash(text.max.clone()),

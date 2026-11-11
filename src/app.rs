@@ -291,6 +291,13 @@ impl App {
         }
         if changed {
             self.sync_schema();
+            for pane in self.tabs.panes_mut() {
+                if let Some(view) = pane.info_view()
+                    && let Some(entry) = self.duckdb.as_mut().and_then(|duckdb| duckdb.entry(&view))
+                {
+                    pane.show_info(TableInfo::duckdb(&entry), view);
+                }
+            }
         }
         if let Some(error) = errors.pop() {
             self.show_error(error);
@@ -506,6 +513,37 @@ impl App {
             Ok(Opened::Ready(_)) => (),
             Err(err) => self.show_toast(err.to_string()),
         }
+    }
+
+    fn register(&mut self, name: &str) {
+        let (Some(duckdb), Some(view)) = (
+            self.duckdb.as_mut(),
+            self.tabs.selected().and_then(|pane| pane.table().view()),
+        ) else {
+            return;
+        };
+        match duckdb.register(name, &view) {
+            Ok(name) => {
+                self.sync_schema();
+                self.show_toast(format!("Data frame registered with name '{name}'"));
+            }
+            Err(err) => self.show_error(err.to_string()),
+        }
+    }
+
+    fn show_info(&mut self, view: &str) {
+        let idx = self.tabs.idx();
+        let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
+        else {
+            return;
+        };
+        let Some(entry) = duckdb.entry(view) else {
+            return;
+        };
+        if entry.stats.is_none() {
+            let _ = duckdb.request_stats(view);
+        }
+        pane.show_info(TableInfo::duckdb(&entry), view.to_owned());
     }
 
     fn cast(&mut self, column: &str, target: TargetType) {
@@ -742,6 +780,8 @@ impl Component for App {
             Message::AppQuery(sql) => self.query(sql),
             Message::AppSearchStart(fuzzy) => self.search_start(*fuzzy),
             Message::AppCast(column, target) => self.cast(column, *target),
+            Message::AppRegister(name) => self.register(name),
+            Message::AppShowInfo(view) => self.show_info(view),
             Message::AppExport(view, format, dest) => {
                 if let Some(duckdb) = self.duckdb.as_mut()
                     && let Err(err) = duckdb.export(view, *format, dest.clone())

@@ -409,6 +409,16 @@ impl Pane {
     }
 
     fn show_data_frame_info(&mut self) {
+        if self.table().data_frame().is_none() {
+            match self.table().view() {
+                Some(view) => Message::AppShowInfo(view).enqueue(),
+                None => {
+                    Message::AppShowError("Not available until the table is ingested".to_string())
+                        .enqueue()
+                }
+            }
+            return;
+        }
         let Some(df) = self.frame() else {
             return;
         };
@@ -570,10 +580,27 @@ impl Pane {
     }
 
     fn show_table_registerer(&mut self) {
-        let Some(df) = self.frame() else {
-            return;
+        let df = match (self.table().data_frame(), self.table().view()) {
+            (Some(df), _) => Some(df.clone()),
+            (None, Some(_)) => None,
+            (None, None) => {
+                Message::AppShowError("Not available until the table is ingested".to_string())
+                    .enqueue();
+                return;
+            }
         };
         self.modal = Some(Modal::TableRegisterer(TableRegisterer::new(df)));
+    }
+
+    pub fn show_info(&mut self, info: crate::misc::sql::TableInfo, view: String) {
+        self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::duckdb(info, view)));
+    }
+
+    pub fn info_view(&self) -> Option<String> {
+        match &self.modal {
+            Some(Modal::DataFrameInfo(info)) => info.view().map(str::to_owned),
+            _ => None,
+        }
     }
 
     fn show_column_caster(&mut self) {

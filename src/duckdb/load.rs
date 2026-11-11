@@ -79,13 +79,26 @@ impl DuckDB {
             path.file_stem()
                 .map(|stem| stem.to_string_lossy().into_owned())
         });
+        if self
+            .in_memory_below
+            .is_some_and(|limit| std::fs::metadata(path).is_ok_and(|meta| meta.len() < limit))
+        {
+            return self.ingest(
+                Input::File(path.clone()),
+                None,
+                name,
+                options,
+                max_rows,
+                None,
+            );
+        }
         if let Some(file_db) = self.cache_manager.check_existing_cache_db(path, &key)? {
             return self.ready(file_db, name.as_deref(), max_rows);
         }
         let file_db = self.cache_manager.create_new_db(path, &key)?;
         self.ingest(
             Input::File(path.clone()),
-            file_db,
+            Some(file_db),
             name,
             options,
             max_rows,
@@ -107,7 +120,7 @@ impl DuckDB {
         let name = table_name.unwrap_or("Stdin").to_string();
         self.ingest(
             Input::Spooled(path),
-            file_db,
+            Some(file_db),
             Some(name),
             options,
             max_rows,
@@ -228,7 +241,7 @@ impl DuckDB {
         };
         self.ingest(
             Input::Download(url.clone(), file),
-            file_db,
+            Some(file_db),
             name,
             options,
             max_rows,
@@ -252,13 +265,13 @@ impl DuckDB {
     fn ingest(
         &mut self,
         input: Input,
-        file_db: FileDB,
+        file_db: Option<FileDB>,
         name: Option<String>,
         options: &IngestOptions,
         max_rows: Option<usize>,
         complete: Option<Arc<AtomicBool>>,
     ) -> AppResult<Load> {
-        let alias = self.session.attach(Some(file_db))?;
+        let alias = self.session.attach(file_db)?;
         let (source, spooled, download) = match input {
             Input::File(path) => (path, None, None),
             Input::Spooled(path) => (PathBuf::from("-"), Some(path), None),

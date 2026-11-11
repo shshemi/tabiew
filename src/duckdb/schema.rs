@@ -18,7 +18,7 @@ pub struct TableEntry {
     pub name: String,
     pub source: Option<PathBuf>,
     pub rows: Option<usize>,
-    pub size: Option<u64>,
+    pub disk: Option<u64>,
     pub columns: Vec<(String, String)>,
     pub stats: Option<Vec<ColumnStats>>,
 }
@@ -34,17 +34,41 @@ pub(super) struct StatsJob {
     result: Receiver<AppResult<Vec<ColumnStats>>>,
 }
 
-fn stats(conn: &Connection, view: &str, columns: &[String]) -> AppResult<Vec<ColumnStats>> {
+fn width(data_type: &str) -> Option<u64> {
+    match data_type {
+        "BOOLEAN" | "TINYINT" | "UTINYINT" => Some(1),
+        "SMALLINT" | "USMALLINT" => Some(2),
+        "INTEGER" | "UINTEGER" | "FLOAT" | "DATE" => Some(4),
+        "BIGINT" | "UBIGINT" | "DOUBLE" | "TIME" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" => {
+            Some(8)
+        }
+        "HUGEINT" | "UHUGEINT" | "UUID" | "INTERVAL" => Some(16),
+        _ if data_type.starts_with("DECIMAL") => Some(16),
+        _ => None,
+    }
+}
+
+fn stats(
+    conn: &Connection,
+    view: &str,
+    columns: &[(String, String)],
+) -> AppResult<Vec<ColumnStats>> {
     let query = |extremes: bool| {
         let fields = columns
             .iter()
-            .map(|column| {
+            .map(|(column, data_type)| {
                 let column = quote(column);
+                let bytes = match (width(data_type), data_type.as_str()) {
+                    (Some(_), _) => "NULL".to_string(),
+                    (None, "BLOB") => format!("sum(octet_length({column}))"),
+                    (None, "VARCHAR") => format!("sum(strlen({column}))"),
+                    (None, _) => format!("sum(strlen(CAST({column} AS VARCHAR)))"),
+                };
                 match extremes {
                     true => format!(
-                        "count({column}), CAST(min({column}) AS VARCHAR), CAST(max({column}) AS VARCHAR)"
+                        "count({column}), CAST(min({column}) AS VARCHAR), CAST(max({column}) AS VARCHAR), {bytes}"
                     ),
-                    false => format!("count({column}), NULL, NULL"),
+                    false => format!("count({column}), NULL, NULL, {bytes}"),
                 }
             })
             .collect::<Vec<_>>()
@@ -54,12 +78,18 @@ fn stats(conn: &Connection, view: &str, columns: &[String]) -> AppResult<Vec<Col
             [],
             |r| {
                 let rows = r.get::<_, u64>(0)?;
-                (0..columns.len())
-                    .map(|idx| {
+                columns
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, (_, data_type))| {
                         Ok(ColumnStats {
-                            nulls: rows - r.get::<_, u64>(idx * 3 + 1)?,
-                            min: r.get(idx * 3 + 2)?,
-                            max: r.get(idx * 3 + 3)?,
+                            nulls: rows - r.get::<_, u64>(idx * 4 + 1)?,
+                            min: r.get(idx * 4 + 2)?,
+                            max: r.get(idx * 4 + 3)?,
+                            bytes: Some(match width(data_type) {
+                                Some(width) => width * rows,
+                                None => r.get::<_, Option<u64>>(idx * 4 + 4)?.unwrap_or_default(),
+                            }),
                         })
                     })
                     .collect()
@@ -72,43 +102,43 @@ fn stats(conn: &Connection, view: &str, columns: &[String]) -> AppResult<Vec<Col
 impl DuckDB {
     pub fn tables(&mut self) -> Vec<TableEntry> {
         let names = self.session.names().map(str::to_string).collect::<Vec<_>>();
-        names
-            .into_iter()
-            .filter_map(|name| {
-                let view = ViewSource::growing(self.session.session().ok()?, &name).ok()?;
-                let rows = self.counts.get(&name).copied();
-                if rows.is_none() {
-                    self.request_count(&name, None).ok()?;
-                }
-                if !self.stats.contains_key(&name)
-                    && let Some(stats) = self.session.stored_stats(&name)
-                {
-                    self.stats.insert(name.clone(), stats);
-                }
-                Some(TableEntry {
-                    source: self.session.source_path(&name),
-                    rows,
-                    size: self.session.stored_size(&name),
-                    columns: view.columns().to_vec(),
-                    stats: self.stats.get(&name).cloned(),
-                    name,
-                })
-            })
-            .collect()
+        names.iter().filter_map(|name| self.entry(name)).collect()
+    }
+    pub fn entry(&mut self, name: &str) -> Option<TableEntry> {
+        let view = ViewSource::growing(self.session.session().ok()?, name).ok()?;
+        let rows = self.counts.get(name).copied();
+        if rows.is_none() {
+            self.request_count(name, None).ok()?;
+        }
+        if !self.stats.contains_key(name)
+            && let Some(stats) = self.session.stored_stats(name)
+            && stats.iter().all(|stats| stats.bytes.is_some())
+        {
+            self.stats.insert(name.to_string(), stats);
+        }
+        Some(TableEntry {
+            source: self.session.source_path(name),
+            rows,
+            disk: match self.session.in_memory(name) {
+                true => Some(0),
+                false => self
+                    .session
+                    .stored_size(name)
+                    .or_else(|| self.scratch_size(name)),
+            },
+            columns: view.columns().to_vec(),
+            stats: self.stats.get(name).cloned(),
+            name: name.to_string(),
+        })
     }
     pub fn request_stats(&mut self, view: &str) -> AppResult<()> {
         if self.stats.contains_key(view) || self.stats_jobs.iter().any(|job| job.view == view) {
             return Ok(());
         }
-        if !self.session.names().any(|name| name == view) {
-            return Err(anyhow!("Unknown table {view}"));
-        }
         let conn = self.session.session()?;
-        let columns = ViewSource::new(self.session.session()?, view)?
+        let columns = ViewSource::growing(self.session.session()?, view)?
             .columns()
-            .iter()
-            .map(|(name, _)| name.clone())
-            .collect::<Vec<_>>();
+            .to_vec();
         let (sender, result) = oneshot::channel();
         let name = view.to_string();
         workers::spawn(move || {
@@ -239,7 +269,7 @@ mod tests {
         let tables = db.tables();
         assert_eq!(tables.len(), 1);
         assert_eq!((tables[0].name.as_str(), tables[0].rows), ("sales", None));
-        assert!(tables[0].size.is_some_and(|size| size > 0));
+        assert!(tables[0].disk.is_some_and(|disk| disk > 0));
         wait(&mut db, |finished| finished.stats);
         assert_eq!(db.tables()[0].rows, Some(3));
         assert_eq!(db.counted_reader("sales").unwrap().row_count(), 3);
@@ -259,11 +289,13 @@ mod tests {
                 nulls: 0,
                 min: Some("1".to_string()),
                 max: Some("3".to_string()),
+                bytes: Some(24),
             },
             ColumnStats {
                 nulls: 1,
                 min: Some("a".to_string()),
                 max: Some("b".to_string()),
+                bytes: Some(2),
             },
         ];
         assert_eq!(db.tables()[0].stats.as_ref(), Some(&expected));
