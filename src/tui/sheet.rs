@@ -273,9 +273,9 @@ fn reader_row(reader: &mut dyn Rows, idx: usize) -> Option<Value> {
     let row = reader.cached(idx..idx + 1).into_iter().next()?;
     Some(Value::Object(
         columns
-            .into_iter()
+            .iter()
             .zip(row)
-            .map(|((name, data_type), datum)| (name, typed(&data_type, datum.as_deref())))
+            .map(|((name, data_type), datum)| (name.clone(), typed(data_type, datum.as_deref())))
             .collect(),
     ))
 }

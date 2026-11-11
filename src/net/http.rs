@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::misc::config::config;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct HttpConfig {
     pub user_agent: Option<String>,
@@ -15,6 +15,19 @@ pub struct HttpConfig {
     pub request_timeout: Option<Duration>,
     pub max_redirects: Option<u32>,
     pub https_only: bool,
+}
+
+impl Default for HttpConfig {
+    fn default() -> Self {
+        Self {
+            user_agent: None,
+            connect_timeout: Some(Duration::from_secs(10)),
+            read_timeout: Some(Duration::from_secs(30)),
+            request_timeout: None,
+            max_redirects: None,
+            https_only: false,
+        }
+    }
 }
 
 pub fn head(url: &Url) -> RequestBuilder<WithoutBody> {

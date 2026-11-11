@@ -2,13 +2,13 @@ use crate::{
     AppResult,
     duckdb::{DuckDB, session::SessionConn, sql::quote},
     misc::config::config,
-    reader::{Datum, Reader, ReaderConfig, RowSource},
+    reader::{Columns, Datum, Reader, ReaderConfig, RowSource},
 };
 
 pub struct ViewSource {
     conn: SessionConn,
     view: String,
-    columns: Vec<(String, String)>,
+    columns: Columns,
     row_count: usize,
     select: String,
 }
@@ -27,10 +27,11 @@ impl DuckDB {
 
 impl ViewSource {
     pub fn new(conn: SessionConn, view: &str) -> AppResult<Self> {
-        let columns: Vec<(String, String)> = conn
+        let columns: Columns = conn
             .prepare(&format!("DESCRIBE {}", quote(view)))?
             .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<Vec<(String, String)>, _>>()?
+            .into();
         let row_count =
             conn.query_row(&format!("SELECT count(*) FROM {}", quote(view)), [], |r| {
                 r.get::<_, i64>(0)
@@ -54,7 +55,7 @@ impl ViewSource {
 }
 
 impl RowSource for ViewSource {
-    fn columns(&self) -> Vec<(String, String)> {
+    fn columns(&self) -> Columns {
         self.columns.clone()
     }
     fn row_count(&self) -> usize {
@@ -122,7 +123,7 @@ mod tests {
             },
         );
         assert_eq!(
-            reader.columns(),
+            *reader.columns(),
             [
                 ("id".to_string(), "BIGINT".to_string()),
                 ("kind".to_string(), "VARCHAR".to_string()),

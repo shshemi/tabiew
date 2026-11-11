@@ -1,9 +1,11 @@
 use crate::AppResult;
-use std::{borrow::Cow, collections::VecDeque, ops::Range};
+use std::{borrow::Cow, collections::VecDeque, ops::Range, sync::Arc};
 use unicode_width::UnicodeWidthStr;
 
+pub type Columns = Arc<[(String, String)]>;
+
 pub trait RowSource {
-    fn columns(&self) -> Vec<(String, String)>;
+    fn columns(&self) -> Columns;
     fn row_count(&self) -> usize;
     fn complete(&self) -> bool {
         true
@@ -17,8 +19,8 @@ pub trait RowSource {
 pub struct Empty;
 
 impl RowSource for Empty {
-    fn columns(&self) -> Vec<(String, String)> {
-        Vec::new()
+    fn columns(&self) -> Columns {
+        Arc::from([])
     }
     fn row_count(&self) -> usize {
         0
@@ -39,7 +41,7 @@ pub type Datum = Option<String>;
 type Segment = (usize, Vec<Vec<Datum>>);
 
 pub trait Rows: Send {
-    fn columns(&self) -> Vec<(String, String)>;
+    fn columns(&self) -> Columns;
     fn row_count(&self) -> usize;
     fn complete(&self) -> bool;
     fn view(&self) -> Option<String>;
@@ -104,7 +106,7 @@ impl<S: RowSource> Reader<S> {
     pub fn source(&self) -> &S {
         &self.source
     }
-    pub fn columns(&self) -> Vec<(String, String)> {
+    pub fn columns(&self) -> Columns {
         self.source.columns()
     }
     pub fn widths(&self) -> &[u16] {
@@ -168,7 +170,7 @@ impl<S: RowSource> Reader<S> {
         if self.widths.len() < width {
             self.widths.resize(width, 0);
         }
-        for (max, (name, _)) in self.widths.iter_mut().zip(&columns) {
+        for (max, (name, _)) in self.widths.iter_mut().zip(columns.iter()) {
             *max = (*max).max(width_of(name));
         }
         for (_, rows) in self.cache.iter_mut().rev().take(last - first) {
@@ -200,7 +202,7 @@ impl<S: RowSource> Reader<S> {
 }
 
 impl<S: RowSource + Send> Rows for Reader<S> {
-    fn columns(&self) -> Vec<(String, String)> {
+    fn columns(&self) -> Columns {
         Reader::columns(self)
     }
     fn row_count(&self) -> usize {
@@ -239,7 +241,7 @@ mod tests {
     }
 
     impl RowSource for &Numbers {
-        fn columns(&self) -> Vec<(String, String)> {
+        fn columns(&self) -> Columns {
             (0..self.width.get())
                 .map(|i| (format!("c{i}"), "VARCHAR".to_string()))
                 .collect()

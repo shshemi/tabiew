@@ -43,7 +43,8 @@ pub fn write_batches<E: std::error::Error + Send + Sync + 'static>(
     batches: impl Iterator<Item = Result<RecordBatch, E>>,
 ) -> AppResult<()> {
     let table = format!("{}.data", quote(alias));
-    for (idx, batch) in batches.enumerate() {
+    conn.execute_batch("BEGIN")?;
+    let written = batches.enumerate().try_for_each(|(idx, batch)| {
         let batch = ArrowBatchRegistration::new(batch?);
         let sql = if idx == 0 {
             format!("CREATE OR REPLACE TABLE {table} AS SELECT * FROM arrow_batch(?)")
@@ -51,6 +52,12 @@ pub fn write_batches<E: std::error::Error + Send + Sync + 'static>(
             format!("INSERT INTO {table} SELECT * FROM arrow_batch(?)")
         };
         conn.execute(&sql, params![&batch])?;
-    }
-    Ok(())
+        AppResult::Ok(())
+    });
+    conn.execute_batch(if written.is_ok() {
+        "COMMIT"
+    } else {
+        "ROLLBACK"
+    })?;
+    written
 }

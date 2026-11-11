@@ -352,7 +352,7 @@ impl App {
                     .filter(|table| table.view().is_some())
                     .and_then(Table::rows)
                     .and_then(|rows| rows.lock().ok().map(|rows| rows.columns()))
-                    .map(|columns| columns.into_iter().map(|(name, _)| name).collect()),
+                    .map(|columns| columns.iter().map(|(name, _)| name.clone()).collect()),
             ),
             None => SqlQueryPicker::new(table.and_then(Table::data_frame).cloned()),
         }));

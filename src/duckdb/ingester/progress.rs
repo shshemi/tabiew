@@ -77,6 +77,21 @@ impl IngestProgress for CountProgress {
     }
 }
 
+#[derive(Default)]
+pub struct Deferred(OnceLock<Arc<dyn IngestProgress>>);
+
+impl Deferred {
+    pub fn set(&self, progress: Arc<dyn IngestProgress>) {
+        let _ = self.0.set(progress);
+    }
+}
+
+impl IngestProgress for Deferred {
+    fn fraction(&self) -> Option<f64> {
+        self.0.get().and_then(|progress| progress.fraction())
+    }
+}
+
 pub struct Parts {
     pub done: usize,
     pub parts: Vec<Arc<dyn IngestProgress>>,

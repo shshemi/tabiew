@@ -300,7 +300,12 @@ impl Pane {
             (Some(df), _) => InlineQueryPicker::new(df.clone(), query_type),
             (None, Some(rows)) => InlineQueryPicker::duckdb(
                 rows.lock()
-                    .map(|rows| rows.columns().into_iter().map(|(name, _)| name).collect())
+                    .map(|rows| {
+                        rows.columns()
+                            .iter()
+                            .map(|(name, _)| name.clone())
+                            .collect()
+                    })
                     .unwrap_or_default(),
                 query_type,
             ),

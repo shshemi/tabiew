@@ -71,7 +71,7 @@ impl DuckDB {
                 Some(TableEntry {
                     source: self.session.source_path(&name),
                     rows: view.row_count(),
-                    columns: view.columns(),
+                    columns: view.columns().to_vec(),
                     stats: self.stats.get(&name).cloned(),
                     name,
                 })
@@ -88,8 +88,8 @@ impl DuckDB {
         let conn = self.session.session()?;
         let columns = ViewSource::new(self.session.session()?, view)?
             .columns()
-            .into_iter()
-            .map(|(name, _)| name)
+            .iter()
+            .map(|(name, _)| name.clone())
             .collect::<Vec<_>>();
         let (sender, result) = oneshot::channel();
         let name = view.to_string();
@@ -198,7 +198,8 @@ mod tests {
         assert!(db.stats_jobs.is_empty());
         let other = dir.path().join("other.csv");
         std::fs::write(&other, "x\n1\n").unwrap();
-        db.load(&other, None, &IngestOptions::default(), None).unwrap();
+        db.load(&other, None, &IngestOptions::default(), None)
+            .unwrap();
         wait(&mut db, |finished| !finished.tables.is_empty());
         let reader = db.reader("sales").unwrap();
         db.detach("other").unwrap();

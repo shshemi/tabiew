@@ -43,6 +43,7 @@ pub struct DuckDB {
     session: Session,
     spool: Spool,
     ingesting: Vec<Ingesting>,
+    probing: Vec<load::Probing>,
     pending_queries: Vec<(String, Option<String>)>,
     groups: Vec<Group>,
     part_of: Option<usize>,
@@ -105,6 +106,7 @@ impl DuckDB {
             session,
             spool,
             ingesting: Vec::new(),
+            probing: Vec::new(),
             pending_queries: Vec::new(),
             groups: Vec::new(),
             part_of: None,
@@ -143,6 +145,7 @@ impl DuckDB {
             failed,
             stats: self.poll_stats(),
         };
+        self.poll_probes(&mut finished);
         let mut i = 0;
         while i < self.ingesting.len() {
             let result = match self.ingesting[i].result.try_recv() {
@@ -178,7 +181,7 @@ impl DuckDB {
                 finished.tables.push((group.source, names));
             }
         }
-        if self.ingesting.is_empty() {
+        if self.ingesting.is_empty() && self.probing.is_empty() {
             for (sql, fallback) in std::mem::take(&mut self.pending_queries) {
                 finished.queries.push(self.query(&sql, fallback));
             }

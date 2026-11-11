@@ -9,7 +9,7 @@ use crate::{
     args::Format,
     duckdb::{CsvOptions, IngestOptions},
     misc::format::resolve_format,
-    reader::{Datum, RowSource},
+    reader::{Columns, Datum, RowSource},
 };
 use anyhow::anyhow;
 use csv::CsvIndexer;
@@ -28,7 +28,7 @@ use std::{
     time::Duration,
 };
 
-pub const BLOCK: usize = 1024;
+pub const BLOCK: usize = 512;
 const WAIT: Duration = Duration::from_millis(50);
 
 #[derive(Debug, PartialEq)]
@@ -107,6 +107,7 @@ pub struct Indexer {
     index: Arc<Index>,
     keys: RwLock<IndexSet<String>>,
     header: OnceLock<Vec<String>>,
+    columns: RwLock<Columns>,
 }
 
 impl Indexer {
@@ -143,6 +144,7 @@ impl Indexer {
             index,
             keys: RwLock::default(),
             header: OnceLock::new(),
+            columns: RwLock::new(Arc::from([])),
         })
     }
     fn file_indexer(source: &Path, options: &IngestOptions) -> AppResult<Arc<dyn FileIndexer>> {
@@ -241,14 +243,25 @@ impl Indexer {
 }
 
 impl RowSource for Indexer {
-    fn columns(&self) -> Vec<(String, String)> {
-        self.header()
+    fn columns(&self) -> Columns {
+        let cached = self.columns.read().unwrap().clone();
+        let known = match self.file_indexer.header() {
+            true => cached.len(),
+            false => self.keys.read().unwrap().len(),
+        };
+        if !cached.is_empty() && cached.len() == known {
+            return cached;
+        }
+        let columns: Columns = self
+            .header()
             .ok()
             .flatten()
             .unwrap_or_default()
             .into_iter()
             .map(|name| (name, "VARCHAR".to_string()))
-            .collect()
+            .collect();
+        *self.columns.write().unwrap() = columns.clone();
+        columns
     }
     fn row_count(&self) -> usize {
         self.indexed_rows()
@@ -351,6 +364,7 @@ mod tests {
             index: Arc::new(Index::default()),
             keys: RwLock::default(),
             header: OnceLock::new(),
+            columns: RwLock::new(Arc::from([])),
         };
         assert_eq!(indexer.row_count(), None);
         assert_eq!(indexer.indexed_rows(), 0);

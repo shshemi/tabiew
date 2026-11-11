@@ -1,14 +1,60 @@
 use crate::{
     AppResult,
-    duckdb::{DuckDB, Ingest, IngestOptions, Ingesting, Load, cache::file_db::FileDB, ingester::Ingester},
+    duckdb::{
+        DuckDB, Finished, Ingest, IngestOptions, Ingesting, Load,
+        cache::file_db::FileDB,
+        ingester::{Ingester, progress::Deferred},
+    },
     net::http,
 };
 use anyhow::anyhow;
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, atomic::AtomicBool},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
+use tokio::sync::oneshot::{self, Receiver, error::TryRecvError};
 use url::Url;
+
+pub(super) struct Probing {
+    url: Url,
+    name: Option<String>,
+    file: PathBuf,
+    options: IngestOptions,
+    max_rows: Option<usize>,
+    complete: Arc<AtomicBool>,
+    progress: Arc<Deferred>,
+    result: Receiver<Probe>,
+}
+
+#[derive(Default)]
+struct Probe {
+    validators: Option<String>,
+    size: u64,
+}
+
+fn probe(url: &Url) -> Probe {
+    let head = http::head(url)
+        .header("Accept-Encoding", "identity")
+        .call()
+        .ok();
+    let header = |name: &str| {
+        head.as_ref()
+            .and_then(|response| response.headers().get(name))
+            .and_then(|value| value.to_str().ok())
+            .map(String::from)
+    };
+    let length = header("Content-Length");
+    Probe {
+        validators: header("ETag").or_else(|| {
+            header("Last-Modified")
+                .map(|modified| format!("{modified} {}", length.clone().unwrap_or_default()))
+        }),
+        size: length.and_then(|length| length.parse().ok()).unwrap_or(0),
+    }
+}
 
 enum Input {
     File(PathBuf),
@@ -36,7 +82,14 @@ impl DuckDB {
             return self.ready(file_db, name.as_deref(), max_rows);
         }
         let file_db = self.cache_manager.create_new_db(path, &key)?;
-        self.ingest(Input::File(path.clone()), file_db, name, options, max_rows)
+        self.ingest(
+            Input::File(path.clone()),
+            file_db,
+            name,
+            options,
+            max_rows,
+            None,
+        )
     }
     pub fn load_stdin(
         &mut self,
@@ -51,7 +104,14 @@ impl DuckDB {
             &serde_json::to_value(options)?,
         )?;
         let name = table_name.unwrap_or("Stdin").to_string();
-        self.ingest(Input::Spooled(path), file_db, Some(name), options, max_rows)
+        self.ingest(
+            Input::Spooled(path),
+            file_db,
+            Some(name),
+            options,
+            max_rows,
+            None,
+        )
     }
     pub fn load_url(
         &mut self,
@@ -60,7 +120,6 @@ impl DuckDB {
         options: &IngestOptions,
         max_rows: Option<usize>,
     ) -> AppResult<Load> {
-        let key = serde_json::to_value(options)?;
         let file_name = url
             .path_segments()
             .and_then(|mut segments| segments.next_back())
@@ -72,39 +131,90 @@ impl DuckDB {
                 .file_stem()
                 .map(|stem| stem.to_string_lossy().into_owned())
         });
-        let head = http::head(url)
-            .header("Accept-Encoding", "identity")
-            .call()
-            .ok();
-        let header = |name: &str| {
-            head.as_ref()
-                .and_then(|response| response.headers().get(name))
-                .and_then(|value| value.to_str().ok())
-                .map(String::from)
-        };
-        let validators = header("ETag").or_else(|| {
-            header("Last-Modified").map(|modified| {
-                format!(
-                    "{modified} {}",
-                    header("Content-Length").unwrap_or_default()
-                )
-            })
+        let file = self.spool.path(&file_name);
+        if self.part_of.is_some() {
+            return self.resolve_url(url, name, probe(url), file, options, max_rows, None);
+        }
+        let complete = Arc::new(AtomicBool::new(false));
+        let progress = Arc::new(Deferred::default());
+        let (sender, result) = oneshot::channel();
+        let target = url.clone();
+        std::thread::spawn(move || sender.send(probe(&target)));
+        self.probing.push(Probing {
+            url: url.clone(),
+            name,
+            file: file.clone(),
+            options: options.clone(),
+            max_rows,
+            complete: complete.clone(),
+            progress: progress.clone(),
+            result,
         });
-        if let Some(validators) = &validators
+        Ok(Load::Ingesting(Ingest {
+            source: PathBuf::from(url.as_str()),
+            progress,
+            file: Some(file),
+            complete,
+        }))
+    }
+    pub(super) fn poll_probes(&mut self, finished: &mut Finished) {
+        let mut i = 0;
+        while i < self.probing.len() {
+            let probe = match self.probing[i].result.try_recv() {
+                Err(TryRecvError::Empty) => {
+                    i += 1;
+                    continue;
+                }
+                Ok(probe) => probe,
+                Err(TryRecvError::Closed) => Probe::default(),
+            };
+            let probing = self.probing.swap_remove(i);
+            let source = PathBuf::from(probing.url.as_str());
+            let loaded = self.resolve_url(
+                &probing.url,
+                probing.name,
+                probe,
+                probing.file,
+                &probing.options,
+                probing.max_rows,
+                Some(probing.complete.clone()),
+            );
+            match loaded {
+                Ok(Load::Ingesting(ingest)) => probing.progress.set(ingest.progress),
+                Ok(Load::Ready(names)) => {
+                    probing.complete.store(true, Ordering::Release);
+                    finished.tables.push((source, Ok(names)));
+                }
+                Err(e) => {
+                    probing.complete.store(true, Ordering::Release);
+                    finished.tables.push((source, Err(e)));
+                }
+            }
+        }
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn resolve_url(
+        &mut self,
+        url: &Url,
+        name: Option<String>,
+        probe: Probe,
+        file: PathBuf,
+        options: &IngestOptions,
+        max_rows: Option<usize>,
+        complete: Option<Arc<AtomicBool>>,
+    ) -> AppResult<Load> {
+        let key = serde_json::to_value(options)?;
+        if let Some(validators) = &probe.validators
             && let Some(file_db) =
                 self.cache_manager
                     .check_url_db(url.as_str(), validators, &key)?
         {
             return self.ready(file_db, name.as_deref(), max_rows);
         }
-        let file = self.spool.path(&file_name);
-        let file_db = match &validators {
+        let file_db = match &probe.validators {
             Some(validators) => {
-                let size = header("Content-Length")
-                    .and_then(|length| length.parse().ok())
-                    .unwrap_or(0);
                 self.cache_manager
-                    .create_url_db(url.as_str(), validators, size, &key)?
+                    .create_url_db(url.as_str(), validators, probe.size, &key)?
             }
             None => FileDB::create(&file.with_extension("duckdb"), &file, &key)?,
         };
@@ -114,6 +224,7 @@ impl DuckDB {
             name,
             options,
             max_rows,
+            complete,
         )
     }
     pub(super) fn ready(
@@ -137,6 +248,7 @@ impl DuckDB {
         name: Option<String>,
         options: &IngestOptions,
         max_rows: Option<usize>,
+        complete: Option<Arc<AtomicBool>>,
     ) -> AppResult<Load> {
         let alias = self.session.attach(Some(file_db))?;
         let (source, spooled, download) = match input {
@@ -145,7 +257,7 @@ impl DuckDB {
             Input::Download(url, path) => (PathBuf::from(url.as_str()), Some(path), Some(url)),
         };
         let file = spooled.clone().unwrap_or_else(|| source.clone());
-        let complete = Arc::new(AtomicBool::new(download.is_none()));
+        let complete = complete.unwrap_or_else(|| Arc::new(AtomicBool::new(download.is_none())));
         let ingested = Ingester::new(
             self.session.session()?,
             alias.clone(),
