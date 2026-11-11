@@ -96,6 +96,32 @@ impl Session {
             let _ = file_db.store_stats(table, stats);
         }
     }
+    pub fn stored_size(&self, name: &str) -> Option<u64> {
+        let (alias, table) = self.whole.get(name)?;
+        let blocks = self
+            .conn
+            .query_row(
+                "SELECT count(DISTINCT block_id) * (SELECT block_size FROM pragma_database_size() WHERE database_name = ?) FROM pragma_storage_info(?) WHERE persistent",
+                params![alias, format!("{}.{}", quote(alias), quote(table))],
+                |r| r.get::<_, Option<i64>>(0),
+            )
+            .ok()
+            .flatten()
+            .filter(|bytes| *bytes > 0);
+        match blocks {
+            Some(bytes) => Some(bytes as u64),
+            None => {
+                let path = self.whole_table(name)?.0.file_path().to_path_buf();
+                Some(
+                    [path.clone(), path.with_extension("duckdb.wal")]
+                        .iter()
+                        .filter_map(|path| std::fs::metadata(path).ok())
+                        .map(|metadata| metadata.len())
+                        .sum(),
+                )
+            }
+        }
+    }
     pub fn source_path(&self, name: &str) -> Option<PathBuf> {
         let Table::View(aliases) = self.name_map.get(name)? else {
             return None;

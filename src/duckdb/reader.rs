@@ -84,6 +84,12 @@ impl ViewSource {
     }
 }
 
+impl ViewSource {
+    pub fn deferred(&self) -> bool {
+        self.deferred.load(Ordering::Relaxed)
+    }
+}
+
 impl RowSource for ViewSource {
     fn columns(&self) -> Columns {
         self.columns.clone()

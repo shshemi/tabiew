@@ -6,11 +6,12 @@ use crate::indexer::Indexer;
 use crate::misc::config::config;
 use crate::misc::sql::{BackendSchema, TableInfo, sql};
 use crate::net::remote_load::{self, RemoteLoad};
-use crate::reader::{Empty, Reader};
+use crate::reader::{Empty, Reader, RowSource};
 use crate::tui::Pane;
 use crate::tui::layouts::notification::NotificationLayout;
 use crate::tui::pane::TableDescription;
-use crate::tui::popups::download_notif::{DownloadNotification, render_progress};
+use crate::tui::popups::column_caster::TargetType;
+use crate::tui::popups::download_notif::{DownloadNotification, idle, render_progress};
 use crate::tui::popups::importers::load_with_polars;
 use crate::tui::popups::pickers::inline_query_picker::QueryType;
 use crate::tui::popups::pickers::sql_query_picker::{self, SqlQueryPicker};
@@ -202,7 +203,10 @@ impl App {
                         .find(|pane| pane.loading() == Some(Path::new(&view)))
                     {
                         match duckdb.reader(&view) {
-                            Ok(reader) => pane.loaded(reader),
+                            Ok(reader) => {
+                                toasts.extend(pane.done());
+                                pane.loaded(reader)
+                            }
                             Err(err) => {
                                 pane.failed();
                                 errors.push(err.to_string());
@@ -213,12 +217,18 @@ impl App {
                 for view in finished.swapped {
                     for pane in self.tabs.panes_mut() {
                         pane.reset_view(&view);
+                        pane.install_pending(&view);
                     }
                 }
                 for export in finished.exports {
                     match export {
                         Ok(done) => toasts.push(done),
                         Err(error) => errors.push(error),
+                    }
+                }
+                for (view, _) in &finished.failed {
+                    for pane in self.tabs.panes_mut() {
+                        pane.fail_pending(view);
                     }
                 }
                 for (view, error) in finished.failed {
@@ -269,7 +279,7 @@ impl App {
             }
         }
         for query in queries {
-            match query.and_then(|name| Ok((duckdb.reader(&name)?, name))) {
+            match query.and_then(|name| Ok((duckdb.counted_reader(&name)?, name))) {
                 Ok((reader, name)) => self
                     .tabs
                     .add(Pane::reader(reader, TableDescription::Table(name))),
@@ -398,7 +408,7 @@ impl App {
 
     fn open_table(&mut self, name: &str) {
         match self.duckdb.as_mut() {
-            Some(duckdb) => match duckdb.reader(name) {
+            Some(duckdb) => match duckdb.counted_reader(name) {
                 Ok(reader) => {
                     self.schema = None;
                     self.tabs.add(Pane::reader(
@@ -461,10 +471,17 @@ impl App {
                 .map(|reader| Opened::Ready(Box::new(reader))),
             false => duckdb.open_search(base, pattern, fuzzy),
         };
+        pane.cancel_pending();
+        let mut opened = opened;
+        let slow = first_page_slow(&mut opened);
         match opened {
+            Ok(Opened::Ready(reader)) if slow => {
+                let view = reader.source().view().unwrap_or_default().to_string();
+                pane.set_pending(view, true, move |pane| pane.loaded(*reader));
+            }
             Ok(Opened::Ready(reader)) => pane.loaded(*reader),
             Ok(Opened::Pending(view, progress)) => {
-                pane.set_running(view, format!("Search {pattern}"), progress)
+                pane.set_running(view, format!("Searching {pattern}"), progress, None)
             }
             Err(err) => self.show_error(err.to_string()),
         }
@@ -483,11 +500,43 @@ impl App {
                     Reader::new(Empty, duckdb.reader_config()),
                     TableDescription::Query(sql.to_owned()),
                 );
-                pane.set_running(view, sql.to_owned(), progress);
+                pane.set_running(view, sql.to_owned(), progress, None);
                 self.tabs.add(pane);
             }
             Ok(Opened::Ready(_)) => (),
             Err(err) => self.show_toast(err.to_string()),
+        }
+    }
+
+    fn cast(&mut self, column: &str, target: TargetType) {
+        let idx = self.tabs.idx();
+        let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
+        else {
+            return;
+        };
+        let Some(current) = pane.table().view() else {
+            return;
+        };
+        let quoted = format!("\"{}\"", column.replace('"', "\"\""));
+        let sql = format!(
+            "SELECT * REPLACE (CAST({quoted} AS {}) AS {quoted}) FROM _",
+            target.duckdb()
+        );
+        match duckdb.open_query(&sql, Some(&current), Store::Wait) {
+            Ok(Opened::Pending(view, progress)) => {
+                pane.push_reader(
+                    Reader::new(Empty, duckdb.reader_config()),
+                    TableDescription::Cast(format!("'{column}' as {target}")),
+                );
+                pane.set_running(
+                    view,
+                    sql,
+                    progress,
+                    Some(format!("Column '{column}' were casted to '{target}'")),
+                );
+            }
+            Ok(Opened::Ready(_)) => (),
+            Err(err) => self.show_error(err.to_string()),
         }
     }
 
@@ -523,14 +572,23 @@ impl App {
             QueryType::Filter => Store::Background,
             QueryType::Order => Store::Wait,
         };
-        match duckdb.open_query(&sql, Some(&current), store) {
+        let mut opened = duckdb.open_query(&sql, Some(&current), store);
+        let slow = first_page_slow(&mut opened);
+        match opened {
+            Ok(Opened::Ready(reader)) if slow => {
+                let view = reader.source().view().unwrap_or_default().to_string();
+                pane.set_pending(view, false, move |pane| {
+                    pane.push_reader(*reader, description);
+                    Message::AppShowToast(toast).enqueue();
+                });
+            }
             Ok(Opened::Ready(reader)) => {
                 pane.push_reader(*reader, description);
                 self.show_toast(toast);
             }
             Ok(Opened::Pending(view, progress)) => {
                 pane.push_reader(Reader::new(Empty, duckdb.reader_config()), description);
-                pane.set_running(view, sql, progress);
+                pane.set_running(view, sql, progress, Some(toast));
             }
             Err(err) => self.show_error(err.to_string()),
         }
@@ -618,7 +676,7 @@ impl Component for App {
             dl.render(*area, buf, FocusState::NotFocused);
         }
         for ((title, percent), area) in ingests.iter().zip(areas.iter().skip(self.dls.len())) {
-            render_progress(title, *percent, "Ingesting...", *area, buf);
+            render_progress(title, *percent, &idle(title), *area, buf);
         }
 
         if let Some(toast) = self.toast.as_mut() {
@@ -683,6 +741,7 @@ impl Component for App {
             Message::AppImport(source, reader) => self.import(source, reader.clone()),
             Message::AppQuery(sql) => self.query(sql),
             Message::AppSearchStart(fuzzy) => self.search_start(*fuzzy),
+            Message::AppCast(column, target) => self.cast(column, *target),
             Message::AppExport(view, format, dest) => {
                 if let Some(duckdb) = self.duckdb.as_mut()
                     && let Err(err) = duckdb.export(view, *format, dest.clone())
@@ -804,4 +863,12 @@ fn label(source: &DataSource) -> String {
         DataSource::File(path) => path.to_string_lossy().into_owned(),
         DataSource::Url(url) => url.to_string(),
     }
+}
+
+fn first_page_slow(opened: &mut AppResult<Opened>) -> bool {
+    let Ok(Opened::Ready(reader)) = opened else {
+        return false;
+    };
+    let _ = reader.fill(0..1);
+    reader.source().deferred()
 }

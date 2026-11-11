@@ -55,6 +55,8 @@ pub struct DuckDB {
     exporting: Vec<export::Exporting>,
     stats: HashMap<String, Vec<cache::file_db::ColumnStats>>,
     stats_jobs: Vec<StatsJob>,
+    counts: HashMap<String, usize>,
+    count_jobs: Vec<schema::CountJob>,
     _scratch: Scratch,
 }
 
@@ -124,6 +126,8 @@ impl DuckDB {
             exporting: Vec::new(),
             stats: HashMap::new(),
             stats_jobs: Vec::new(),
+            counts: HashMap::new(),
+            count_jobs: Vec::new(),
             _scratch: scratch,
         })
     }
@@ -151,7 +155,7 @@ impl DuckDB {
             swapped: polled.swapped,
             failed: polled.failed,
             exports: self.poll_exports(),
-            stats: self.poll_stats(),
+            stats: self.poll_stats() | self.poll_counts(),
         };
         self.poll_probes(&mut finished);
         let mut i = 0;

@@ -10,7 +10,10 @@ use crate::{
     AppResult,
     duckdb::DataSource,
     net::remote_load::{Importer, Reader},
-    tui::{pane::TableDescription, popups::pickers::inline_query_picker::QueryType},
+    tui::{
+        pane::TableDescription,
+        popups::{column_caster::TargetType, pickers::inline_query_picker::QueryType},
+    },
     writers::{Destination, ExportFormat},
 };
 
@@ -53,6 +56,7 @@ pub enum Message {
     AppInlineQuery(QueryType, String),
     AppDropQuery(String),
     AppSearchStart(bool),
+    AppCast(String, TargetType),
     AppExport(String, ExportFormat, Destination),
     AppSearch(String, String, bool),
     AppOpenTable(String),

@@ -119,7 +119,7 @@ impl DuckDB {
         current: Option<&str>,
         store: Store,
     ) -> AppResult<Opened> {
-        self.open(sql, current, store, sql, None)
+        self.open(sql, current, store, &format!("Running {sql}"), None)
     }
     fn open(
         &mut self,
@@ -223,7 +223,7 @@ impl DuckDB {
             &format!("SELECT * FROM _ WHERE {matched}"),
             Some(view),
             Store::Background,
-            &format!("Search {pattern}"),
+            &format!("Searching {pattern}"),
             Some(&stored),
         )
     }

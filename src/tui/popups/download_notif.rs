@@ -49,6 +49,13 @@ impl Component for DownloadNotification {
     }
 }
 
+pub fn idle(title: &str) -> String {
+    format!(
+        "{}...",
+        title.split_whitespace().next().unwrap_or("Working")
+    )
+}
+
 pub fn render_progress(
     title: &str,
     percent: Option<u16>,

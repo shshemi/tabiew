@@ -1,7 +1,12 @@
 use crate::{
     AppResult,
-    duckdb::{DuckDB, cache::file_db::ColumnStats, reader::ViewSource, sql::quote},
-    reader::RowSource,
+    duckdb::{
+        DuckDB,
+        cache::file_db::ColumnStats,
+        reader::{Count, ViewSource},
+        sql::quote,
+    },
+    reader::{Reader, RowSource},
 };
 use anyhow::anyhow;
 use duckdb::Connection;
@@ -11,9 +16,16 @@ use tokio::sync::oneshot::{self, Receiver, error::TryRecvError};
 pub struct TableEntry {
     pub name: String,
     pub source: Option<PathBuf>,
-    pub rows: usize,
+    pub rows: Option<usize>,
+    pub size: Option<u64>,
     pub columns: Vec<(String, String)>,
     pub stats: Option<Vec<ColumnStats>>,
+}
+
+pub(super) struct CountJob {
+    view: String,
+    counts: Vec<Count>,
+    result: Receiver<AppResult<usize>>,
 }
 
 pub(super) struct StatsJob {
@@ -62,7 +74,11 @@ impl DuckDB {
         names
             .into_iter()
             .filter_map(|name| {
-                let view = ViewSource::new(self.session.session().ok()?, &name).ok()?;
+                let view = ViewSource::growing(self.session.session().ok()?, &name).ok()?;
+                let rows = self.counts.get(&name).copied();
+                if rows.is_none() {
+                    self.request_count(&name, None).ok()?;
+                }
                 if !self.stats.contains_key(&name)
                     && let Some(stats) = self.session.stored_stats(&name)
                 {
@@ -70,7 +86,8 @@ impl DuckDB {
                 }
                 Some(TableEntry {
                     source: self.session.source_path(&name),
-                    rows: view.row_count(),
+                    rows,
+                    size: self.session.stored_size(&name),
                     columns: view.columns().to_vec(),
                     stats: self.stats.get(&name).cloned(),
                     name,
@@ -102,6 +119,62 @@ impl DuckDB {
     }
     pub fn forget_stats(&mut self, view: &str) {
         self.stats.remove(view);
+        self.counts.remove(view);
+    }
+    pub fn counted_reader(&mut self, view: &str) -> AppResult<Reader<ViewSource>> {
+        let (reader, count) = self.growing_reader(view)?;
+        match self.counts.get(view) {
+            Some(rows) => {
+                let _ = count.set(*rows);
+            }
+            None => self.request_count(view, Some(count))?,
+        }
+        Ok(reader)
+    }
+    fn request_count(&mut self, view: &str, count: Option<Count>) -> AppResult<()> {
+        if let Some(job) = self.count_jobs.iter_mut().find(|job| job.view == view) {
+            job.counts.extend(count);
+            return Ok(());
+        }
+        let conn = self.session.session()?;
+        let (sender, result) = oneshot::channel();
+        let sql = format!("SELECT count(*) FROM {}", quote(view));
+        std::thread::spawn(move || {
+            sender.send(
+                conn.query_row(&sql, [], |r| r.get::<_, i64>(0))
+                    .map(|rows| rows as usize)
+                    .map_err(Into::into),
+            )
+        });
+        self.count_jobs.push(CountJob {
+            view: view.to_string(),
+            counts: count.into_iter().collect(),
+            result,
+        });
+        Ok(())
+    }
+    pub(super) fn poll_counts(&mut self) -> bool {
+        let mut changed = false;
+        let mut i = 0;
+        while i < self.count_jobs.len() {
+            let result = match self.count_jobs[i].result.try_recv() {
+                Err(TryRecvError::Empty) => {
+                    i += 1;
+                    continue;
+                }
+                Ok(result) => result,
+                Err(TryRecvError::Closed) => Err(anyhow!("Count stopped without a result")),
+            };
+            let job = self.count_jobs.swap_remove(i);
+            if let Ok(rows) = result {
+                for count in &job.counts {
+                    let _ = count.set(rows);
+                }
+                self.counts.insert(job.view, rows);
+                changed = true;
+            }
+        }
+        changed
     }
     pub(super) fn poll_stats(&mut self) -> bool {
         let mut changed = false;
@@ -162,7 +235,11 @@ mod tests {
         wait(&mut db, |finished| !finished.tables.is_empty());
         let tables = db.tables();
         assert_eq!(tables.len(), 1);
-        assert_eq!((tables[0].name.as_str(), tables[0].rows), ("sales", 3));
+        assert_eq!((tables[0].name.as_str(), tables[0].rows), ("sales", None));
+        assert!(tables[0].size.is_some_and(|size| size > 0));
+        wait(&mut db, |finished| finished.stats);
+        assert_eq!(db.tables()[0].rows, Some(3));
+        assert_eq!(db.counted_reader("sales").unwrap().row_count(), 3);
         assert_eq!(
             tables[0].source.as_deref(),
             Some(path.canonicalize().unwrap().as_path())

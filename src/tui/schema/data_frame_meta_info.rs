@@ -50,10 +50,7 @@ impl Component for DataFrameMetaInfo {
                 ]),
                 Row::new([
                     Span::styled("Shape", theme().header(1)),
-                    Span::styled(
-                        format!("{} x {}", self.info.height(), self.info.width()),
-                        theme().text(),
-                    ),
+                    Span::styled(self.info.shape_text(), theme().text()),
                 ]),
                 Row::new([
                     Span::styled("Total Estimated Memory", theme().header(2)),

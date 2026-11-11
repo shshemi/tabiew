@@ -23,13 +23,19 @@ use crate::{
 pub type ColumnCaster = Wizard<State>;
 
 #[derive(Debug)]
+pub enum Source {
+    Frame(DataFrame),
+    View(Vec<(String, String)>),
+}
+
+#[derive(Debug)]
 pub enum State {
     PickColumn {
-        df: DataFrame,
+        df: Source,
         picker: SearchPicker<String>,
     },
     PickType {
-        df: DataFrame,
+        df: Source,
         col_name: String,
         picker: SearchPicker<TargetType>,
     },
@@ -51,7 +57,32 @@ impl WizardStep for State {
                 }
             }
             State::PickType {
-                mut df,
+                df: Source::View(columns),
+                col_name,
+                picker,
+            } => {
+                if let Some(target_type) = picker.selected_item() {
+                    Message::PaneDismissModal.enqueue();
+                    let current = columns
+                        .iter()
+                        .find(|(name, _)| *name == col_name)
+                        .map(|(_, data_type)| data_type.as_str());
+                    match current.and_then(TargetType::from_duckdb) == Some(*target_type) {
+                        true => Message::AppShowError(format!(
+                            "Column '{col_name}' is already {target_type}"
+                        ))
+                        .enqueue(),
+                        false => Message::AppCast(col_name.clone(), *target_type).enqueue(),
+                    }
+                }
+                State::PickType {
+                    df: Source::View(columns),
+                    col_name,
+                    picker,
+                }
+            }
+            State::PickType {
+                df: Source::Frame(mut df),
                 col_name,
                 picker,
             } => {
@@ -74,7 +105,7 @@ impl WizardStep for State {
                     }
                 }
                 State::PickType {
-                    df,
+                    df: Source::Frame(df),
                     col_name,
                     picker,
                 }
@@ -94,19 +125,36 @@ impl WizardStep for State {
     }
 }
 
-impl From<DataFrame> for State {
-    fn from(value: DataFrame) -> Self {
+impl From<Source> for State {
+    fn from(value: Source) -> Self {
+        let names = match &value {
+            Source::Frame(df) => df
+                .columns()
+                .iter()
+                .map(|col| col.name().as_str().to_owned())
+                .collect(),
+            Source::View(columns) => columns.iter().map(|(name, _)| name.clone()).collect(),
+        };
         State::PickColumn {
-            picker: SearchPicker::new(
-                value
-                    .columns()
-                    .iter()
-                    .map(|col| col.name().as_str().to_owned())
-                    .collect(),
-            )
-            .with_title(icons::COLUMN.title("Column")),
+            picker: SearchPicker::new(names).with_title(icons::COLUMN.title("Column")),
             df: value,
         }
+    }
+}
+
+impl TargetType {
+    pub fn duckdb(&self) -> &'static str {
+        match self {
+            TargetType::Boolean => "BOOLEAN",
+            TargetType::Date => "DATE",
+            TargetType::Datetime => "TIMESTAMP",
+            TargetType::Float => "DOUBLE",
+            TargetType::Int => "BIGINT",
+            TargetType::String => "VARCHAR",
+        }
+    }
+    fn from_duckdb(data_type: &str) -> Option<Self> {
+        TargetType::iter().find(|target| target.duckdb() == data_type)
     }
 }
 

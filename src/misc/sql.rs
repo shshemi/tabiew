@@ -138,6 +138,7 @@ pub struct TableInfo {
     total_est_size: Size,
     schema: TableSchema,
     duckdb: Option<bool>,
+    known: (bool, bool),
 }
 
 impl TableInfo {
@@ -151,6 +152,7 @@ impl TableInfo {
             total_est_size: schema.iter().map(|(_, info)| info.estimated_size()).sum(),
             schema,
             duckdb: None,
+            known: (true, true),
         }
     }
 
@@ -168,10 +170,10 @@ impl TableInfo {
                 .clone()
                 .map(TableSource::File)
                 .unwrap_or(TableSource::User),
-            height: entry.rows,
+            height: entry.rows.unwrap_or_default(),
             width: entry.columns.len(),
             total_null: (0..entry.columns.len()).filter_map(nulls).sum(),
-            total_est_size: Size::default(),
+            total_est_size: Size(entry.size.unwrap_or_default()),
             schema: TableSchema {
                 schema: entry
                     .columns
@@ -199,6 +201,7 @@ impl TableInfo {
                     .collect(),
             },
             duckdb: Some(entry.stats.is_some()),
+            known: (entry.rows.is_some(), entry.size.is_some()),
         }
     }
 
@@ -214,9 +217,16 @@ impl TableInfo {
     }
 
     pub fn total_est_size_text(&self) -> String {
-        match self.duckdb {
-            Some(_) => "-".to_string(),
-            None => self.total_est_size.to_string(),
+        match self.known.1 {
+            true => self.total_est_size.to_string(),
+            false => "-".to_string(),
+        }
+    }
+
+    pub fn shape_text(&self) -> String {
+        match self.known.0 {
+            true => format!("{} x {}", self.height, self.width),
+            false => format!("- x {}", self.width),
         }
     }
 

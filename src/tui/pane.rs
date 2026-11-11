@@ -36,9 +36,9 @@ use crate::{
             scatter_plot::{self, ScatterPlot},
         },
         popups::{
-            column_caster::ColumnCaster,
+            column_caster::{ColumnCaster, Source},
             data_frame_info::DataFrameInfo,
-            download_notif::render_progress,
+            download_notif::{idle, render_progress},
             exporter::Exporter,
             exporters::{
                 arrow::ArrowExporter, avro::AvroExporter, csv::CsvExporter, json::JsonExporter,
@@ -67,6 +67,19 @@ pub struct Pane {
     modal: Option<Modal>,
     loading: Option<Loading>,
     search: Option<Search>,
+    pending: Option<Pending>,
+}
+
+struct Pending {
+    view: String,
+    replaces: bool,
+    install: Box<dyn FnOnce(&mut Pane)>,
+}
+
+impl std::fmt::Debug for Pending {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.view)
+    }
 }
 
 #[derive(Debug)]
@@ -83,6 +96,7 @@ struct Loading {
     title: String,
     verb: &'static str,
     progress: Arc<dyn IngestProgress>,
+    done: Option<String>,
 }
 
 impl std::fmt::Debug for Loading {
@@ -116,6 +130,7 @@ impl Pane {
             modal: None,
             loading: None,
             search: None,
+            pending: None,
         }
     }
 
@@ -131,6 +146,7 @@ impl Pane {
                 title,
                 verb: "Ingesting",
                 progress,
+                done: None,
             }),
             ..self
         }
@@ -216,17 +232,71 @@ impl Pane {
         self.sync_sheet();
     }
 
+    pub fn set_pending(
+        &mut self,
+        view: String,
+        replaces: bool,
+        install: impl FnOnce(&mut Pane) + 'static,
+    ) {
+        self.cancel_pending();
+        self.pending = Some(Pending {
+            view,
+            replaces,
+            install: Box::new(install),
+        });
+    }
+
+    pub fn cancel_pending(&mut self) -> Option<bool> {
+        let pending = self.pending.take()?;
+        Message::AppDropQuery(pending.view).enqueue();
+        Some(pending.replaces)
+    }
+
+    pub fn install_pending(&mut self, view: &str) {
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.view == view)
+            && let Some(pending) = self.pending.take()
+        {
+            (pending.install)(self);
+        }
+    }
+
+    pub fn fail_pending(&mut self, view: &str) {
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.view == view)
+        {
+            self.cancel_pending();
+        }
+    }
+
     pub fn stop_loading(&mut self) {
         self.loading = None;
     }
 
-    pub fn set_running(&mut self, view: String, title: String, progress: Arc<dyn IngestProgress>) {
+    pub fn set_running(
+        &mut self,
+        view: String,
+        title: String,
+        progress: Arc<dyn IngestProgress>,
+        done: Option<String>,
+    ) {
         self.loading = Some(Loading {
             title,
             source: PathBuf::from(view),
             verb: "Running",
             progress,
+            done,
         });
+    }
+
+    pub fn done(&mut self) -> Option<String> {
+        self.loading
+            .as_mut()
+            .and_then(|loading| loading.done.take())
     }
 
     pub fn failed(&mut self) {
@@ -507,10 +577,20 @@ impl Pane {
     }
 
     fn show_column_caster(&mut self) {
-        let Some(df) = self.frame() else {
-            return;
+        let source = match (self.table().data_frame(), self.table().rows()) {
+            (Some(df), _) => Source::Frame(df.clone()),
+            (None, Some(rows)) if self.table().view().is_some() => Source::View(
+                rows.lock()
+                    .map(|rows| rows.columns().to_vec())
+                    .unwrap_or_default(),
+            ),
+            _ => {
+                Message::AppShowError("Not available until the table is ingested".to_string())
+                    .enqueue();
+                return;
+            }
         };
-        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(df.into())))
+        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(source.into())))
     }
 
     fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
@@ -534,6 +614,9 @@ impl Pane {
     }
 
     fn pop_data_frame(&mut self) {
+        if self.cancel_pending() == Some(false) {
+            return;
+        }
         let stacked = self.tstack.len_without_base() > 0;
         let below = self.tstack.iter().rev().nth(1).and_then(Table::view);
         if let Some(view) = self.tstack.pop().and_then(|table| table.view())
@@ -607,7 +690,7 @@ impl Pane {
                     .flex(Flex::Center)
                     .horizontal_margin(2)
                     .areas(gauge_area);
-                render_progress(&title, percent, "Working...", gauge_area, buf);
+                render_progress(&title, percent, &idle(&title), gauge_area, buf);
             }
             _ => self.tstack.last_mut().render(table_area, buf, focus_state),
         }
@@ -751,7 +834,7 @@ impl Component for Pane {
                         true
                     }
                     (KeyCode::Char('q'), KeyModifiers::NONE)
-                        if self.tstack.len_without_base() > 0 =>
+                        if self.tstack.len_without_base() > 0 || self.pending.is_some() =>
                     {
                         self.pop_data_frame();
                         true
