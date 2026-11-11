@@ -8,6 +8,7 @@ use ratatui::{
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
+    time::{Duration, Instant},
 };
 
 use super::{
@@ -64,6 +65,16 @@ pub struct Pane {
     sheet: Option<Sheet>,
     modal: Option<Modal>,
     loading: Option<Loading>,
+    search: Option<Search>,
+}
+
+#[derive(Debug)]
+struct Search {
+    base: String,
+    fuzzy: bool,
+    sent: String,
+    typed: String,
+    since: Instant,
 }
 
 struct Loading {
@@ -103,6 +114,7 @@ impl Pane {
             sheet: None,
             modal: None,
             loading: None,
+            search: None,
         }
     }
 
@@ -141,9 +153,65 @@ impl Pane {
         })
     }
 
+    pub fn start_search(&mut self, rows: impl Rows + 'static, base: String, fuzzy: bool) {
+        self.push_reader(rows, TableDescription::Search(String::new()));
+        self.modal = Some(Modal::SearchBar(SearchBar::duckdb(match fuzzy {
+            true => SearchType::Fuzzy,
+            false => SearchType::Exact,
+        })));
+        self.search = Some(Search {
+            base,
+            fuzzy,
+            sent: String::new(),
+            typed: String::new(),
+            since: Instant::now(),
+        });
+    }
+
+    fn send_search(&mut self, wait: Duration) {
+        let Some(Modal::SearchBar(search_bar)) = &self.modal else {
+            return;
+        };
+        let Some(search) = self.search.as_mut() else {
+            return;
+        };
+        if search.typed != search_bar.value() {
+            search.typed = search_bar.value().to_owned();
+            search.since = Instant::now();
+        }
+        if search.sent != search.typed && search.since.elapsed() >= wait {
+            search.sent = search.typed.clone();
+            Message::AppSearch(search.base.clone(), search.sent.clone(), search.fuzzy).enqueue();
+            let description = match search.fuzzy {
+                true => TableDescription::FuzzySearch(search.sent.clone()),
+                false => TableDescription::Search(search.sent.clone()),
+            };
+            *self.description_mut() = description;
+        }
+    }
+
     pub fn loaded(&mut self, rows: impl Rows + 'static) {
+        let below = self.tstack.iter().rev().nth(1).and_then(Table::view);
+        if let Some(old) = self.table().view()
+            && Some(&old) != below.as_ref()
+            && Some(&old) != rows.view().as_ref()
+        {
+            Message::AppDropQuery(old).enqueue();
+        }
         self.loading = None;
         self.tstack.last_mut().set_reader(rows);
+        self.sync_sheet();
+    }
+
+    pub fn reset_view(&mut self, view: &str) {
+        for table in self.tstack.iter() {
+            if table.view().as_deref() == Some(view)
+                && let Some(rows) = table.rows()
+                && let Ok(mut rows) = rows.lock()
+            {
+                rows.reset();
+            }
+        }
         self.sync_sheet();
     }
 
@@ -228,6 +296,10 @@ impl Pane {
     }
 
     fn show_fuzzy_search(&mut self) {
+        if self.table().rows().is_some() {
+            Message::AppSearchStart(true).enqueue();
+            return;
+        }
         let Some(df) = self.frame() else {
             return;
         };
@@ -239,6 +311,10 @@ impl Pane {
     }
 
     fn show_exact_search(&mut self) {
+        if self.table().rows().is_some() {
+            Message::AppSearchStart(false).enqueue();
+            return;
+        }
         let Some(df) = self.frame() else {
             return;
         };
@@ -446,9 +522,16 @@ impl Pane {
 
     fn pop_data_frame(&mut self) {
         let stacked = self.tstack.len_without_base() > 0;
-        if let Some(view) = self.tstack.pop().and_then(|table| table.view()) {
+        let below = self.tstack.iter().rev().nth(1).and_then(Table::view);
+        if let Some(view) = self.tstack.pop().and_then(|table| table.view())
+            && Some(&view) != below.as_ref()
+        {
             Message::AppDropQuery(view).enqueue();
-        } else if stacked
+        }
+        if stacked {
+            self.search = None;
+        }
+        if stacked
             && self
                 .loading
                 .as_ref()
@@ -474,6 +557,8 @@ impl Pane {
     }
 
     fn dismiss_modal(&mut self) {
+        self.send_search(Duration::ZERO);
+        self.search = None;
         self.modal.take();
     }
 
@@ -724,9 +809,10 @@ impl Component for Pane {
     }
 
     fn tick(&mut self) {
+        self.send_search(Duration::from_millis(200));
         match &mut self.modal {
             Some(Modal::SearchBar(search_bar)) => {
-                if let Some(df) = search_bar.searcher().latest() {
+                if let Some(df) = search_bar.searcher().and_then(|searcher| searcher.latest()) {
                     self.tstack.last_mut().set_data_frame(df);
                     *self.description_mut() = match search_bar.search_type() {
                         SearchType::Fuzzy => {

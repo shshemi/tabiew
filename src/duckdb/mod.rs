@@ -81,6 +81,7 @@ pub struct Finished {
     pub tables: Vec<(PathBuf, AppResult<Vec<String>>)>,
     pub queries: Vec<AppResult<String>>,
     pub results: Vec<String>,
+    pub swapped: Vec<String>,
     pub failed: Vec<(String, String)>,
     pub stats: bool,
 }
@@ -137,12 +138,13 @@ impl DuckDB {
         self.session.detach(name)
     }
     pub fn poll(&mut self) -> AppResult<Finished> {
-        let (results, failed) = self.poll_results();
+        let polled = self.poll_results();
         let mut finished = Finished {
             tables: Vec::new(),
             queries: Vec::new(),
-            results,
-            failed,
+            results: polled.ready,
+            swapped: polled.swapped,
+            failed: polled.failed,
             stats: self.poll_stats(),
         };
         self.poll_probes(&mut finished);

@@ -51,6 +51,8 @@ pub enum Message {
     AppQuery(String),
     AppInlineQuery(QueryType, String),
     AppDropQuery(String),
+    AppSearchStart(bool),
+    AppSearch(String, String, bool),
     AppOpenTable(String),
     AppDropTable(String),
     AppTableStats(String),

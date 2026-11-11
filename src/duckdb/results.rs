@@ -3,10 +3,10 @@ use crate::{
     duckdb::{
         DuckDB,
         ingester::{IngestProgress, progress::StepProgress},
-        reader::ViewSource,
+        reader::{Count, ViewSource},
         sql::{SplitSql, quote, split_sql},
     },
-    reader::Reader,
+    reader::{Reader, RowSource},
 };
 use anyhow::anyhow;
 use duckdb::InterruptHandle;
@@ -97,7 +97,14 @@ pub(super) struct Materializing {
     interrupt: Arc<InterruptHandle>,
     dropped: bool,
     waiting: bool,
+    count: Option<Count>,
     result: Receiver<AppResult<()>>,
+}
+
+pub(super) struct Polled {
+    pub(super) ready: Vec<String>,
+    pub(super) swapped: Vec<String>,
+    pub(super) failed: Vec<(String, String)>,
 }
 
 fn table(view: &str) -> String {
@@ -111,17 +118,33 @@ impl DuckDB {
         current: Option<&str>,
         store: Store,
     ) -> AppResult<Opened> {
-        let SplitSql { setup, query, .. } = split_sql(sql);
-        let query = query.trim().trim_end_matches(';');
-        let query = match current {
-            Some(current) => format!(
-                "WITH _ AS (SELECT * FROM {}) SELECT * FROM ({query})",
-                quote(current)
-            ),
-            None => query.to_string(),
+        self.open(sql, current, store, sql, None)
+    }
+    fn open(
+        &mut self,
+        sql: &str,
+        current: Option<&str>,
+        store: Store,
+        title: &str,
+        stored: Option<&str>,
+    ) -> AppResult<Opened> {
+        let bind = |query: &str| {
+            let query = query.trim().trim_end_matches(';');
+            match current {
+                Some(current) => format!(
+                    "WITH _ AS (SELECT * FROM {}) SELECT * FROM ({query})",
+                    quote(current)
+                ),
+                None => query.to_string(),
+            }
         };
+        let SplitSql { setup, query, .. } = split_sql(sql);
+        let query = bind(&query);
         self.results += 1;
         let view = format!("{RESULT_PREFIX}{}", self.results);
+        let select = stored
+            .map(bind)
+            .unwrap_or_else(|| format!("SELECT * FROM {}", quote(&view)));
         let mut batch = setup;
         batch.push(format!("CREATE VIEW {} AS {query}", quote(&view)));
         self.session.execute_batch(&batch.join(";\n"))?;
@@ -129,12 +152,12 @@ impl DuckDB {
             Store::View => self
                 .reader(&view)
                 .map(|reader| Opened::Ready(Box::new(reader))),
-            Store::Background => self.reader(&view).and_then(|reader| {
-                self.materialize(&view, sql, false)?;
+            Store::Background => self.growing_reader(&view).and_then(|(reader, count)| {
+                self.materialize(&view, title, &select, Some(count))?;
                 Ok(Opened::Ready(Box::new(reader)))
             }),
             Store::Wait => self
-                .materialize(&view, sql, true)
+                .materialize(&view, title, &select, None)
                 .map(|progress| Opened::Pending(view.clone(), progress)),
         };
         if opened.is_err() {
@@ -142,22 +165,60 @@ impl DuckDB {
         }
         opened
     }
+    pub fn open_search(&mut self, view: &str, pattern: &str, fuzzy: bool) -> AppResult<Opened> {
+        let columns = ViewSource::growing(self.session.session()?, view)?.columns();
+        if columns.is_empty() {
+            return Err(anyhow!("Nothing to search in {view}"));
+        }
+        let literal = |text: &str| format!("'{}'", text.replace('\'', "''"));
+        let like = pattern.chars().fold(String::from("%"), |mut like, c| {
+            if matches!(c, '%' | '_' | '!') {
+                like.push('!');
+            }
+            like.push(c);
+            like.push('%');
+            like
+        });
+        let any = |test: &dyn Fn(String) -> String| {
+            columns
+                .iter()
+                .map(|(name, _)| test(format!("CAST({} AS VARCHAR)", quote(name))))
+                .collect::<Vec<_>>()
+                .join(" OR ")
+        };
+        let (matched, exact) = match fuzzy {
+            true => (
+                any(&|text| format!("{text} ILIKE {} ESCAPE '!'", literal(&like))),
+                any(&|text| format!("lower({text}) = lower({})", literal(pattern))),
+            ),
+            false => (
+                any(&|text| format!("contains({text}, {})", literal(pattern))),
+                any(&|text| format!("{text} = {}", literal(pattern))),
+            ),
+        };
+        self.open(
+            &format!("SELECT * FROM _ WHERE {matched}"),
+            Some(view),
+            Store::Background,
+            &format!("Search {pattern}"),
+            Some(&format!(
+                "WITH _matched AS MATERIALIZED (SELECT *, coalesce({exact}, false) AS _exact FROM _ WHERE {matched}) SELECT * EXCLUDE (_exact) FROM _matched WHERE _exact UNION ALL SELECT * EXCLUDE (_exact) FROM _matched WHERE NOT _exact"
+            )),
+        )
+    }
     fn materialize(
         &mut self,
         view: &str,
         title: &str,
-        waiting: bool,
+        select: &str,
+        count: Option<Count>,
     ) -> AppResult<Arc<dyn IngestProgress>> {
         let conn = self.session.session()?;
         conn.set_query_progress_tracking(true)?;
         let progress = StepProgress::new(1);
         progress.start(&conn);
         let interrupt = conn.interrupt_handle();
-        let sql = format!(
-            "CREATE TABLE {} AS SELECT * FROM {}",
-            table(view),
-            quote(view)
-        );
+        let sql = format!("CREATE TABLE {} AS {select}", table(view));
         let (sender, result) = oneshot::channel();
         std::thread::spawn(move || sender.send(conn.execute_batch(&sql).map_err(Into::into)));
         self.materializing.push(Materializing {
@@ -166,7 +227,8 @@ impl DuckDB {
             progress: progress.clone(),
             interrupt,
             dropped: false,
-            waiting,
+            waiting: count.is_none(),
+            count,
             result,
         });
         Ok(progress)
@@ -205,9 +267,12 @@ impl DuckDB {
             }
         }
     }
-    pub(super) fn poll_results(&mut self) -> (Vec<String>, Vec<(String, String)>) {
-        let mut ready = Vec::new();
-        let mut errors = Vec::new();
+    pub(super) fn poll_results(&mut self) -> Polled {
+        let mut polled = Polled {
+            ready: Vec::new(),
+            swapped: Vec::new(),
+            failed: Vec::new(),
+        };
         let mut i = 0;
         while i < self.materializing.len() {
             let result = match self.materializing[i].result.try_recv() {
@@ -223,6 +288,7 @@ impl DuckDB {
                 title,
                 dropped,
                 waiting,
+                count,
                 ..
             } = self.materializing.swap_remove(i);
             let swapped = match dropped {
@@ -236,8 +302,21 @@ impl DuckDB {
                 }),
             };
             match swapped {
-                Ok(()) if waiting => ready.push(view),
-                Ok(()) => (),
+                Ok(()) if waiting => polled.ready.push(view),
+                Ok(()) => {
+                    if let Some(count) = count
+                        && let Ok(rows) = self.session.session().and_then(|conn| {
+                            Ok(conn.query_row(
+                                &format!("SELECT count(*) FROM {}", table(&view)),
+                                [],
+                                |r| r.get::<_, i64>(0),
+                            )?)
+                        })
+                    {
+                        let _ = count.set(rows as usize);
+                    }
+                    polled.swapped.push(view);
+                }
                 Err(err) => {
                     let _ = self
                         .session
@@ -248,19 +327,19 @@ impl DuckDB {
                             .execute_batch(&format!("DROP VIEW IF EXISTS {}", quote(&view)));
                     }
                     if !dropped {
-                        errors.push((view, format!("{title}: {err}")));
+                        polled.failed.push((view, format!("{title}: {err}")));
                     }
                 }
             }
         }
-        (ready, errors)
+        polled
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{duckdb::DuckDBConfig, reader::RowSource};
+    use crate::duckdb::DuckDBConfig;
     use std::time::{Duration, Instant};
     use tempfile::TempDir;
 
@@ -301,8 +380,10 @@ mod tests {
                 .collect::<Vec<_>>()
         };
         let expected = [[Some("999".to_string())], [Some("997".to_string())]];
-        assert_eq!(ordered.row_count(), 500);
+        assert!(!ordered.source().complete());
         assert_eq!(first(&mut ordered), expected);
+        assert_eq!(ordered.row_count(), 500);
+        assert!(ordered.source().complete());
         assert_eq!(db.materializing().count(), 1);
         let start = Instant::now();
         while db.materializing().next().is_some() {
@@ -351,5 +432,57 @@ mod tests {
         assert_eq!(first(&mut db.reader(&ready).unwrap()), expected);
         drop((base, ordered, db));
         assert!(!scratch.exists());
+    }
+
+    #[test]
+    fn search_matches_any_column_with_exact_cells_first() {
+        let dir = TempDir::new().unwrap();
+        let mut db = DuckDB::new(DuckDBConfig {
+            cache_dir: dir.path().join("cache"),
+            ..DuckDBConfig::default()
+        })
+        .unwrap();
+        let Opened::Ready(base) = db
+            .open_query(
+                "SELECT * FROM (VALUES (1, 'it''s 50% off'), (2, 'Xan'), (3, 'an'), (40, NULL), (5, 'b_n')) t(id, note)",
+                None,
+                Store::View,
+            )
+            .unwrap()
+        else {
+            panic!("pending");
+        };
+        let view = base.source().view().unwrap().to_string();
+        let mut early = Vec::new();
+        let mut ids = |pattern: &str, fuzzy: bool| {
+            let Opened::Ready(mut reader) = db.open_search(&view, pattern, fuzzy).unwrap() else {
+                panic!("pending");
+            };
+            let read = |reader: &mut Reader<ViewSource>| {
+                reader.reset();
+                reader
+                    .rows(0..10)
+                    .unwrap()
+                    .map(|row| row[0].clone().unwrap())
+                    .collect::<Vec<_>>()
+            };
+            early.push(read(&mut reader));
+            let name = reader.source().view().unwrap().to_string();
+            let start = Instant::now();
+            while !db.poll().unwrap().swapped.contains(&name) {
+                assert!(start.elapsed() < Duration::from_secs(10));
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            read(&mut reader)
+        };
+        assert_eq!(ids("an", false), ["3", "2"]);
+        assert_eq!(ids("4", false), ["40"]);
+        assert_eq!(ids("it's 50%", false), ["1"]);
+        assert_eq!(ids("AN", false), [""; 0]);
+        assert_eq!(ids("AN", true), ["3", "2"]);
+        assert_eq!(ids("xn", true), ["2"]);
+        assert_eq!(ids("b_n", true), ["5"]);
+        assert_eq!(ids("5%f", true), ["1"]);
+        assert_eq!(early[0], ["2", "3"]);
     }
 }

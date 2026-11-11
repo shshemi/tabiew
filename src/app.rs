@@ -204,6 +204,11 @@ impl App {
                         }
                     }
                 }
+                for view in finished.swapped {
+                    for pane in self.tabs.panes_mut() {
+                        pane.reset_view(&view);
+                    }
+                }
                 for (view, error) in finished.failed {
                     if let Some(pane) = self
                         .tabs
@@ -402,6 +407,43 @@ impl App {
                 }
             }
             None => sql().unregister(name),
+        }
+    }
+
+    fn search_start(&mut self, fuzzy: bool) {
+        let idx = self.tabs.idx();
+        let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
+        else {
+            return;
+        };
+        let Some(view) = pane.table().view() else {
+            self.show_error("Not available until the table is ingested");
+            return;
+        };
+        match duckdb.reader(&view) {
+            Ok(reader) => pane.start_search(reader, view, fuzzy),
+            Err(err) => self.show_error(err.to_string()),
+        }
+    }
+
+    fn search(&mut self, base: &str, pattern: &str, fuzzy: bool) {
+        let idx = self.tabs.idx();
+        let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
+        else {
+            return;
+        };
+        let opened = match pattern.is_empty() {
+            true => duckdb
+                .reader(base)
+                .map(|reader| Opened::Ready(Box::new(reader))),
+            false => duckdb.open_search(base, pattern, fuzzy),
+        };
+        match opened {
+            Ok(Opened::Ready(reader)) => pane.loaded(*reader),
+            Ok(Opened::Pending(view, progress)) => {
+                pane.set_running(view, format!("Search {pattern}"), progress)
+            }
+            Err(err) => self.show_error(err.to_string()),
         }
     }
 
@@ -617,6 +659,8 @@ impl Component for App {
             Message::AppDownloadDataSource(url, reader) => self.add_download(url, reader.clone()),
             Message::AppImport(source, reader) => self.import(source, reader.clone()),
             Message::AppQuery(sql) => self.query(sql),
+            Message::AppSearchStart(fuzzy) => self.search_start(*fuzzy),
+            Message::AppSearch(base, pattern, fuzzy) => self.search(base, pattern, *fuzzy),
             Message::AppInlineQuery(query_type, value) => self.inline_query(*query_type, value),
             Message::AppOpenTable(name) => self.open_table(name),
             Message::AppDropTable(name) => self.drop_table(name),

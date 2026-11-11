@@ -24,8 +24,8 @@ pub enum SearchType {
 pub struct SearchBar {
     input: Input,
     search_type: SearchType,
-    searcher: Searcher,
-    rollback_df: DataFrame,
+    searcher: Option<Searcher>,
+    rollback_df: Option<DataFrame>,
 }
 
 impl SearchBar {
@@ -33,8 +33,8 @@ impl SearchBar {
         SearchBar {
             input: Default::default(),
             search_type: SearchType::Exact,
-            searcher: Searcher::exact(dataframe.clone(), Default::default()),
-            rollback_df: dataframe,
+            searcher: Some(Searcher::exact(dataframe.clone(), Default::default())),
+            rollback_df: Some(dataframe),
         }
     }
 
@@ -42,21 +42,26 @@ impl SearchBar {
         SearchBar {
             input: Default::default(),
             search_type: SearchType::Fuzzy,
-            searcher: Searcher::fuzzy(dataframe.clone(), Default::default()),
-            rollback_df: dataframe,
+            searcher: Some(Searcher::fuzzy(dataframe.clone(), Default::default())),
+            rollback_df: Some(dataframe),
         }
     }
 
-    pub fn searcher(&self) -> &Searcher {
-        &self.searcher
+    pub fn duckdb(search_type: SearchType) -> Self {
+        SearchBar {
+            input: Default::default(),
+            search_type,
+            searcher: None,
+            rollback_df: None,
+        }
+    }
+
+    pub fn searcher(&self) -> Option<&Searcher> {
+        self.searcher.as_ref()
     }
 
     pub fn search_type(&self) -> &SearchType {
         &self.search_type
-    }
-
-    pub fn into_rollback_df(self) -> DataFrame {
-        self.rollback_df
     }
 
     pub fn value(&self) -> &str {
@@ -64,17 +69,14 @@ impl SearchBar {
     }
 
     fn update_search(&mut self) {
-        if self.input.value() != self.searcher.pattern() {
-            match self.search_type {
-                SearchType::Fuzzy => {
-                    self.searcher =
-                        Searcher::fuzzy(self.rollback_df.clone(), self.input.value().to_owned())
-                }
-                SearchType::Exact => {
-                    self.searcher =
-                        Searcher::exact(self.rollback_df.clone(), self.input.value().to_owned())
-                }
-            }
+        if let (Some(searcher), Some(rollback_df)) = (&self.searcher, &self.rollback_df)
+            && self.input.value() != searcher.pattern()
+        {
+            let pattern = self.input.value().to_owned();
+            self.searcher = Some(match self.search_type {
+                SearchType::Fuzzy => Searcher::fuzzy(rollback_df.clone(), pattern),
+                SearchType::Exact => Searcher::exact(rollback_df.clone(), pattern),
+            });
         }
     }
 }
