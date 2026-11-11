@@ -56,6 +56,8 @@ impl Session {
             "SET autoinstall_known_extensions = false; SET allow_community_extensions = false;",
         )?;
         conn.register_table_function::<ArrowVTab>("arrow_batch")?;
+        conn.register_scalar_function::<super::skim::SkimScore>(super::skim::NAME)?;
+        conn.register_scalar_function::<super::skim::FloatText>(super::skim::FLOAT_TEXT)?;
         if let Some(memory_limit) = memory_limit {
             if memory_limit == ByteSize::b(0) {
                 return Err(anyhow!("Memory limit cannot be 0"));

@@ -8,6 +8,7 @@ pub mod reader;
 mod results;
 mod schema;
 mod session;
+mod skim;
 mod source;
 mod spool;
 mod sql;

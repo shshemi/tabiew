@@ -3,7 +3,8 @@ use crate::{
     duckdb::{
         DuckDB,
         ingester::{IngestProgress, progress::StepProgress},
-        reader::{Count, ViewSource},
+        reader::{Count, ViewSource, is_float},
+        skim,
         sql::{SplitSql, quote, split_sql},
     },
     reader::{Reader, RowSource},
@@ -179,31 +180,51 @@ impl DuckDB {
             like.push('%');
             like
         });
-        let any = |test: &dyn Fn(String) -> String| {
+        let cells = |test: &dyn Fn(String) -> String, separator: &str| {
             columns
                 .iter()
-                .map(|(name, _)| test(format!("CAST({} AS VARCHAR)", quote(name))))
+                .map(|(name, data_type)| {
+                    test(match is_float(data_type) {
+                        true => format!("{}({})", skim::FLOAT_TEXT, quote(name)),
+                        false => format!("CAST({} AS VARCHAR)", quote(name)),
+                    })
+                })
                 .collect::<Vec<_>>()
-                .join(" OR ")
+                .join(separator)
         };
-        let (matched, exact) = match fuzzy {
-            true => (
-                any(&|text| format!("{text} ILIKE {} ESCAPE '!'", literal(&like))),
-                any(&|text| format!("lower({text}) = lower({})", literal(pattern))),
-            ),
-            false => (
-                any(&|text| format!("contains({text}, {})", literal(pattern))),
-                any(&|text| format!("{text} = {}", literal(pattern))),
-            ),
+        let (matched, stored) = match fuzzy {
+            true => {
+                let matched = cells(
+                    &|text| format!("{text} ILIKE {} ESCAPE '!'", literal(&like)),
+                    " OR ",
+                );
+                let score = cells(
+                    &|text| format!("{}({text}, {})", skim::NAME, literal(pattern)),
+                    ", ",
+                );
+                let stored = format!(
+                    "WITH _scored AS MATERIALIZED (SELECT *, greatest({score}) AS _score FROM _ WHERE {matched}), _numbered AS (SELECT *, row_number() OVER () AS _row FROM _scored WHERE _score IS NOT NULL) SELECT * EXCLUDE (_score, _row) FROM _numbered ORDER BY _score DESC, _row"
+                );
+                (matched, stored)
+            }
+            false => {
+                let matched = cells(
+                    &|text| format!("contains({text}, {})", literal(pattern)),
+                    " OR ",
+                );
+                let exact = cells(&|text| format!("{text} = {}", literal(pattern)), " OR ");
+                let stored = format!(
+                    "WITH _matched AS MATERIALIZED (SELECT *, coalesce({exact}, false) AS _exact FROM _ WHERE {matched}) SELECT * EXCLUDE (_exact) FROM _matched WHERE _exact UNION ALL SELECT * EXCLUDE (_exact) FROM _matched WHERE NOT _exact"
+                );
+                (matched, stored)
+            }
         };
         self.open(
             &format!("SELECT * FROM _ WHERE {matched}"),
             Some(view),
             Store::Background,
             &format!("Search {pattern}"),
-            Some(&format!(
-                "WITH _matched AS MATERIALIZED (SELECT *, coalesce({exact}, false) AS _exact FROM _ WHERE {matched}) SELECT * EXCLUDE (_exact) FROM _matched WHERE _exact UNION ALL SELECT * EXCLUDE (_exact) FROM _matched WHERE NOT _exact"
-            )),
+            Some(&stored),
         )
     }
     fn materialize(
@@ -340,7 +361,11 @@ impl DuckDB {
 mod tests {
     use super::*;
     use crate::duckdb::DuckDBConfig;
-    use std::time::{Duration, Instant};
+    use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+    use std::{
+        cmp::Reverse,
+        time::{Duration, Instant},
+    };
     use tempfile::TempDir;
 
     #[test]
@@ -444,7 +469,7 @@ mod tests {
         .unwrap();
         let Opened::Ready(base) = db
             .open_query(
-                "SELECT * FROM (VALUES (1, 'it''s 50% off'), (2, 'Xan'), (3, 'an'), (40, NULL), (5, 'b_n')) t(id, note)",
+                "SELECT * FROM (VALUES (1, 'it''s 50% off'), (2, 'Xan'), (3, 'an'), (40, NULL), (5, 'b_n'), (6, 'a big name'), (7, 'banana'), (8, 'nan'), (9, 'A N')) t(id, note)",
                 None,
                 Store::View,
             )
@@ -453,15 +478,26 @@ mod tests {
             panic!("pending");
         };
         let view = base.source().view().unwrap().to_string();
+        let Opened::Ready(floats) = db
+            .open_query(
+                "SELECT * FROM (VALUES (1, 77.5::DOUBLE), (2, 77.0), (3, 1e20), (4, 0.00001)) t(id, x)",
+                None,
+                Store::View,
+            )
+            .unwrap()
+        else {
+            panic!("pending");
+        };
+        let floats = floats.source().view().unwrap().to_string();
         let mut early = Vec::new();
-        let mut ids = |pattern: &str, fuzzy: bool| {
-            let Opened::Ready(mut reader) = db.open_search(&view, pattern, fuzzy).unwrap() else {
+        let mut ids = |view: &str, pattern: &str, fuzzy: bool| {
+            let Opened::Ready(mut reader) = db.open_search(view, pattern, fuzzy).unwrap() else {
                 panic!("pending");
             };
             let read = |reader: &mut Reader<ViewSource>| {
                 reader.reset();
                 reader
-                    .rows(0..10)
+                    .rows(0..20)
                     .unwrap()
                     .map(|row| row[0].clone().unwrap())
                     .collect::<Vec<_>>()
@@ -475,14 +511,45 @@ mod tests {
             }
             read(&mut reader)
         };
-        assert_eq!(ids("an", false), ["3", "2"]);
-        assert_eq!(ids("4", false), ["40"]);
-        assert_eq!(ids("it's 50%", false), ["1"]);
-        assert_eq!(ids("AN", false), [""; 0]);
-        assert_eq!(ids("AN", true), ["3", "2"]);
-        assert_eq!(ids("xn", true), ["2"]);
-        assert_eq!(ids("b_n", true), ["5"]);
-        assert_eq!(ids("5%f", true), ["1"]);
-        assert_eq!(early[0], ["2", "3"]);
+        assert_eq!(ids(&view, "an", false), ["3", "2", "7", "8"]);
+        assert_eq!(ids(&view, "4", false), ["40"]);
+        assert_eq!(ids(&view, "it's 50%", false), ["1"]);
+        assert_eq!(ids(&view, "AN", false), [""; 0]);
+        let rows = [
+            (1, Some("it's 50% off")),
+            (2, Some("Xan")),
+            (3, Some("an")),
+            (40, None),
+            (5, Some("b_n")),
+            (6, Some("a big name")),
+            (7, Some("banana")),
+            (8, Some("nan")),
+            (9, Some("A N")),
+        ];
+        let matcher = SkimMatcherV2::default();
+        for pattern in ["an", "AN", "xn", "b_n", "5%f", "n", "A", "a n", "zz"] {
+            let mut scored = rows
+                .iter()
+                .enumerate()
+                .filter_map(|(index, (id, note))| {
+                    [Some(id.to_string()), note.map(String::from)]
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|cell| match cell == pattern {
+                            true => Some(i64::MAX),
+                            false => matcher.fuzzy_match(&cell, pattern),
+                        })
+                        .max()
+                        .map(|score| (Reverse(score), index, id.to_string()))
+                })
+                .collect::<Vec<_>>();
+            scored.sort();
+            let expected = scored.into_iter().map(|(.., id)| id).collect::<Vec<_>>();
+            assert_eq!(ids(&view, pattern, true), expected, "{pattern}");
+        }
+        assert_eq!(ids(&floats, "77", false), ["2", "1"]);
+        assert_eq!(ids(&floats, "77.0", false), [""; 0]);
+        assert_eq!(ids(&floats, "000", true), ["4", "3"]);
+        assert_eq!(early[0], ["2", "3", "7", "8"]);
     }
 }

@@ -160,7 +160,7 @@ impl ViewSource {
     }
 }
 
-fn is_float(data_type: &str) -> bool {
+pub(super) fn is_float(data_type: &str) -> bool {
     matches!(data_type, "DOUBLE" | "FLOAT")
 }
 
