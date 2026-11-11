@@ -84,14 +84,14 @@ impl Tabs {
 
     fn remove_selected(&mut self) {
         if self.idx < self.panes.len() {
-            self.panes.remove(self.idx);
+            drop_queries(&self.panes.remove(self.idx));
         }
         self.sync_switcher();
     }
 
     fn remove(&mut self, idx: usize) {
         if idx < self.panes.len() {
-            self.panes.remove(idx);
+            drop_queries(&self.panes.remove(idx));
             if idx < self.idx {
                 self.idx = self.idx().saturating_sub(1);
             }
@@ -137,6 +137,12 @@ impl Tabs {
 
     fn dismiss_tab_switcher(&mut self) {
         self.switcher.take();
+    }
+}
+
+fn drop_queries(pane: &Pane) {
+    for view in pane.views() {
+        Message::AppDropQuery(view).enqueue();
     }
 }
 

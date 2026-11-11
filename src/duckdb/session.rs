@@ -68,6 +68,9 @@ impl Session {
             pending: Vec::new(),
         })
     }
+    pub fn execute_batch(&self, sql: &str) -> AppResult<()> {
+        Ok(self.conn.execute_batch(sql)?)
+    }
     pub fn set_temp_dir(&self, dir: &Path) -> AppResult<()> {
         self.conn
             .execute("SET temp_directory = ?", params![dir.to_string_lossy()])

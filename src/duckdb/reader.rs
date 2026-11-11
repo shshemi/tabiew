@@ -51,9 +51,6 @@ impl ViewSource {
             select,
         })
     }
-    pub fn view(&self) -> &str {
-        &self.view
-    }
 }
 
 impl RowSource for ViewSource {
@@ -62,6 +59,9 @@ impl RowSource for ViewSource {
     }
     fn row_count(&self) -> usize {
         self.row_count
+    }
+    fn view(&self) -> Option<&str> {
+        Some(&self.view)
     }
     fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>> {
         let width = self.columns.len();

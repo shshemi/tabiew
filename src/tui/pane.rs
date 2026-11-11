@@ -69,6 +69,7 @@ pub struct Pane {
 struct Loading {
     source: PathBuf,
     title: String,
+    verb: &'static str,
     progress: Arc<dyn IngestProgress>,
 }
 
@@ -115,6 +116,7 @@ impl Pane {
             loading: Some(Loading {
                 source,
                 title,
+                verb: "Ingesting",
                 progress,
             }),
             ..self
@@ -127,10 +129,10 @@ impl Pane {
             .map(|loading| loading.source.as_path())
     }
 
-    pub fn progress(&self) -> Option<(&str, Option<u16>)> {
+    pub fn progress(&self) -> Option<(String, Option<u16>)> {
         self.loading.as_ref().map(|loading| {
             (
-                loading.title.as_str(),
+                format!("{} {}", loading.verb, loading.title),
                 loading
                     .progress
                     .fraction()
@@ -147,6 +149,24 @@ impl Pane {
 
     pub fn stop_loading(&mut self) {
         self.loading = None;
+    }
+
+    pub fn set_running(&mut self, view: String, title: String, progress: Arc<dyn IngestProgress>) {
+        self.loading = Some(Loading {
+            title,
+            source: PathBuf::from(view),
+            verb: "Running",
+            progress,
+        });
+    }
+
+    pub fn failed(&mut self) {
+        self.loading = None;
+        if self.tstack.len_without_base() > 0 {
+            self.tstack.pop();
+            self.dstack.pop();
+            self.sync_sheet();
+        }
     }
 
     pub fn table(&self) -> &Table {
@@ -276,12 +296,17 @@ impl Pane {
     }
 
     fn show_inline_query_picker(&mut self, query_type: QueryType) {
-        let Some(df) = self.frame() else {
-            return;
+        let picker = match (self.table().data_frame(), self.table().rows()) {
+            (Some(df), _) => InlineQueryPicker::new(df.clone(), query_type),
+            (None, Some(rows)) => InlineQueryPicker::duckdb(
+                rows.lock()
+                    .map(|rows| rows.columns().into_iter().map(|(name, _)| name).collect())
+                    .unwrap_or_default(),
+                query_type,
+            ),
+            (None, None) => return,
         };
-        self.modal = Some(Modal::InlineQueryPicker(InlineQueryPicker::new(
-            df, query_type,
-        )));
+        self.modal = Some(Modal::InlineQueryPicker(picker));
     }
 
     fn show_go_to_line_with_value(&mut self, value: usize) {
@@ -400,8 +425,33 @@ impl Pane {
         self.dstack.push(description);
     }
 
+    pub fn push_reader(&mut self, rows: impl Rows + 'static, description: TableDescription) {
+        self.tstack.push(self.tstack.last().clone_with_reader(rows));
+        self.dstack.push(description);
+        self.sync_sheet();
+    }
+
+    pub fn views(&self) -> impl Iterator<Item = String> {
+        self.tstack.iter().filter_map(Table::view).chain(
+            self.loading
+                .as_ref()
+                .map(|loading| loading.source.to_string_lossy().into_owned()),
+        )
+    }
+
     fn pop_data_frame(&mut self) {
-        self.tstack.pop();
+        let stacked = self.tstack.len_without_base() > 0;
+        if let Some(view) = self.tstack.pop().and_then(|table| table.view()) {
+            Message::AppDropQuery(view).enqueue();
+        } else if stacked
+            && self
+                .loading
+                .as_ref()
+                .is_some_and(|loading| loading.verb == "Running")
+            && let Some(loading) = self.loading.take()
+        {
+            Message::AppDropQuery(loading.source.to_string_lossy().into_owned()).enqueue();
+        }
         self.dstack.pop();
         self.sync_sheet();
     }
@@ -454,13 +504,7 @@ impl Pane {
                     .flex(Flex::Center)
                     .horizontal_margin(2)
                     .areas(gauge_area);
-                render_progress(
-                    &format!("Ingesting {title}"),
-                    percent,
-                    "Ingesting...",
-                    gauge_area,
-                    buf,
-                );
+                render_progress(&title, percent, "Working...", gauge_area, buf);
             }
             _ => self.tstack.last_mut().render(table_area, buf, focus_state),
         }

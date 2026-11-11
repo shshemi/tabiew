@@ -5,6 +5,7 @@ mod inspect;
 mod load;
 mod parts;
 pub mod reader;
+mod results;
 mod session;
 mod source;
 mod spool;
@@ -14,6 +15,7 @@ use crate::{AppResult, reader::ReaderConfig};
 use anyhow::anyhow;
 use cache::{CacheManager, config::Config};
 use parts::Group;
+use results::{Materializing, Scratch};
 use session::Session;
 use spool::Spool;
 use sql::{SplitSql, random_name, split_sql};
@@ -28,6 +30,7 @@ pub(crate) use ingester::{cut_text, sample_columns};
 pub use ingester::{CsvOptions, FwfOptions, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
 pub use inspect::inspect;
+pub use results::{Opened, Store};
 pub use source::DataSource;
 
 pub struct DuckDB {
@@ -39,6 +42,9 @@ pub struct DuckDB {
     groups: Vec<Group>,
     part_of: Option<usize>,
     reader: ReaderConfig,
+    results: usize,
+    materializing: Vec<Materializing>,
+    _scratch: Scratch,
 }
 
 struct Ingesting {
@@ -66,6 +72,8 @@ pub struct Ingest {
 pub struct Finished {
     pub tables: Vec<(PathBuf, AppResult<Vec<String>>)>,
     pub queries: Vec<AppResult<String>>,
+    pub results: Vec<String>,
+    pub failed: Vec<(String, String)>,
 }
 
 impl DuckDB {
@@ -76,11 +84,13 @@ impl DuckDB {
             config.lru_capacity.unwrap_or(0),
         )?;
         let session = Session::new(config.allotted_ram)?;
-        session.set_temp_dir(
+        let scratch = Scratch::new(
             &config
                 .temp_dir
                 .unwrap_or_else(|| config.cache_dir.join("tmp")),
         )?;
+        session.set_temp_dir(scratch.dir())?;
+        session.execute_batch(&scratch.attach_sql())?;
         let spool = Spool::new(&config.cache_dir)?;
         Ok(Self {
             cache_manager,
@@ -94,6 +104,9 @@ impl DuckDB {
                 segment_rows: config.segment_rows,
                 segments: config.segments,
             },
+            results: 0,
+            materializing: Vec::new(),
+            _scratch: scratch,
         })
     }
     pub fn load_sql(&mut self, path: &Path) -> AppResult<()> {
@@ -112,9 +125,12 @@ impl DuckDB {
         self.session.detach(name)
     }
     pub fn poll(&mut self) -> AppResult<Finished> {
+        let (results, failed) = self.poll_results();
         let mut finished = Finished {
             tables: Vec::new(),
             queries: Vec::new(),
+            results,
+            failed,
         };
         let mut i = 0;
         while i < self.ingesting.len() {

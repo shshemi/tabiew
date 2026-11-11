@@ -10,7 +10,7 @@ use crate::{
     AppResult,
     duckdb::DataSource,
     net::remote_load::{Importer, Reader},
-    tui::pane::TableDescription,
+    tui::{pane::TableDescription, popups::pickers::inline_query_picker::QueryType},
 };
 
 static SHARED_CHANNEL: LazyLock<(Sender<Message>, Mutex<Receiver<Message>>)> =
@@ -48,6 +48,9 @@ pub enum Message {
     AppDownloadDataSource(Url, Arc<dyn Reader>),
     AppImport(DataSource, Arc<dyn Importer>),
     AppReloadConfig,
+    AppQuery(String),
+    AppInlineQuery(QueryType, String),
+    AppDropQuery(String),
     TabsSelect(usize),
     TabsDismissSwitcher,
     TabsAddNamePane(DataFrame, String),

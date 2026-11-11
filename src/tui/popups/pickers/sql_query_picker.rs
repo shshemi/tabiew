@@ -21,11 +21,26 @@ static HISTORY: CappedVec<HistoryOrSqlSuggestion> = CappedVec::<HistoryOrSqlSugg
 pub struct SqlQueryPicker {
     picker: TextPickerWithSuggestion<SqlQueryProvider>,
     dataframe: Option<DataFrame>,
+    duckdb: bool,
+}
+
+pub fn remember(query: &str) {
+    HISTORY.push(HistoryOrSqlSuggestion::History {
+        text: query.to_owned(),
+    });
 }
 
 impl SqlQueryPicker {
     pub fn new(dataframe: Option<DataFrame>) -> Self {
         let all_columns = sql_completion::collect_all_columns(dataframe.as_ref());
+        Self::with_columns(dataframe, all_columns, false)
+    }
+
+    pub fn duckdb(columns: Vec<String>) -> Self {
+        Self::with_columns(None, columns, true)
+    }
+
+    fn with_columns(dataframe: Option<DataFrame>, all_columns: Vec<String>, duckdb: bool) -> Self {
         let provider = SqlQueryProvider {
             dataframe: dataframe.clone(),
             all_columns,
@@ -35,6 +50,7 @@ impl SqlQueryPicker {
             picker: TextPickerWithSuggestion::new(provider)
                 .with_title(icons::DATABASE.title("SQL")),
             dataframe,
+            duckdb,
         }
     }
 }
@@ -59,6 +75,8 @@ impl Component for SqlQueryPicker {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     if self.picker.has_suggestions() {
                         self.picker.apply_selected_suggestion();
+                    } else if self.duckdb {
+                        Message::AppQuery(self.picker.value().to_owned()).enqueue();
                     } else {
                         let value = self.picker.value();
                         match sql().execute_with_default(value, self.dataframe.clone()) {
@@ -71,9 +89,7 @@ impl Component for SqlQueryPicker {
                                 } else {
                                     Message::AppDismissOverlay.enqueue();
                                     Message::TabsAddQueryPane(df, value.to_owned()).enqueue();
-                                    HISTORY.push(HistoryOrSqlSuggestion::History {
-                                        text: value.to_owned(),
-                                    });
+                                    remember(value);
                                 }
                             }
                             Err(error) => Message::AppShowToast(error.to_string()).enqueue(),

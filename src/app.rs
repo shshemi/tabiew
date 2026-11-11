@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use crate::AppResult;
-use crate::duckdb::{DataSource, DuckDB, IngestOptions, Load};
+use crate::duckdb::{DataSource, DuckDB, IngestOptions, Load, Opened, Store};
 use crate::indexer::Indexer;
 use crate::misc::config::config;
 use crate::net::remote_load::{self, RemoteLoad};
@@ -11,7 +11,8 @@ use crate::tui::layouts::notification::NotificationLayout;
 use crate::tui::pane::TableDescription;
 use crate::tui::popups::download_notif::{DownloadNotification, render_progress};
 use crate::tui::popups::importers::load_with_polars;
-use crate::tui::popups::pickers::sql_query_picker::SqlQueryPicker;
+use crate::tui::popups::pickers::inline_query_picker::QueryType;
+use crate::tui::popups::pickers::sql_query_picker::{self, SqlQueryPicker};
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
@@ -184,7 +185,34 @@ impl App {
         };
         let mut errors = Vec::new();
         let tables = match duckdb.poll() {
-            Ok(finished) => finished.tables,
+            Ok(finished) => {
+                for view in finished.results {
+                    if let Some(pane) = self
+                        .tabs
+                        .panes_mut()
+                        .find(|pane| pane.loading() == Some(Path::new(&view)))
+                    {
+                        match duckdb.reader(&view) {
+                            Ok(reader) => pane.loaded(reader),
+                            Err(err) => {
+                                pane.failed();
+                                errors.push(err.to_string());
+                            }
+                        }
+                    }
+                }
+                for (view, error) in finished.failed {
+                    if let Some(pane) = self
+                        .tabs
+                        .panes_mut()
+                        .find(|pane| pane.loading() == Some(Path::new(&view)))
+                    {
+                        pane.failed();
+                    }
+                    errors.push(error);
+                }
+                finished.tables
+            }
             Err(err) => {
                 errors.push(err.to_string());
                 Vec::new()
@@ -310,13 +338,85 @@ impl App {
     }
 
     fn show_sql_query_picker(&mut self) {
-        self.overlay = Some(Overlay::SqlQueryPicker(SqlQueryPicker::new(
-            self.tabs
-                .selected()
-                .map(Pane::table)
-                .and_then(Table::data_frame)
-                .cloned(),
-        )));
+        let table = self.tabs.selected().map(Pane::table);
+        self.overlay = Some(Overlay::SqlQueryPicker(match self.duckdb {
+            Some(_) => SqlQueryPicker::duckdb(
+                table
+                    .and_then(Table::rows)
+                    .and_then(|rows| rows.lock().ok().map(|rows| rows.columns()))
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|(name, _)| name)
+                    .collect(),
+            ),
+            None => SqlQueryPicker::new(table.and_then(Table::data_frame).cloned()),
+        }));
+    }
+
+    fn query(&mut self, sql: &str) {
+        let Some(duckdb) = self.duckdb.as_mut() else {
+            return;
+        };
+        let current = self.tabs.selected().and_then(|pane| pane.table().view());
+        match duckdb.open_query(sql, current.as_deref(), Store::Wait) {
+            Ok(Opened::Pending(view, progress)) => {
+                self.overlay = None;
+                sql_query_picker::remember(sql);
+                let mut pane = Pane::reader(
+                    Reader::new(Empty, duckdb.reader_config()),
+                    TableDescription::Query(sql.to_owned()),
+                );
+                pane.set_running(view, sql.to_owned(), progress);
+                self.tabs.add(pane);
+            }
+            Ok(Opened::Ready(_)) => (),
+            Err(err) => self.show_toast(err.to_string()),
+        }
+    }
+
+    fn inline_query(&mut self, query_type: QueryType, value: &str) {
+        let idx = self.tabs.idx();
+        let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
+        else {
+            return;
+        };
+        let Some(current) = pane.table().view() else {
+            self.show_error("Not available until the table is ingested");
+            return;
+        };
+        let (sql, description, toast) = match query_type {
+            QueryType::Select => (
+                format!("SELECT {value} FROM _"),
+                TableDescription::Select(value.to_owned()),
+                format!("Column selection '{value}' occurred"),
+            ),
+            QueryType::Filter => (
+                format!("SELECT * FROM _ WHERE {value}"),
+                TableDescription::Filter(value.to_owned()),
+                format!("Filter '{value}' applied"),
+            ),
+            QueryType::Order => (
+                format!("SELECT * FROM _ ORDER BY {value}"),
+                TableDescription::Order(value.to_owned()),
+                format!("Data frame ordered by '{value}'"),
+            ),
+        };
+        let store = match query_type {
+            QueryType::Select => Store::View,
+            QueryType::Filter => Store::Background,
+            QueryType::Order => Store::Wait,
+        };
+        match duckdb.open_query(&sql, Some(&current), store) {
+            Ok(Opened::Ready(reader)) => {
+                pane.push_reader(*reader, description);
+                self.show_toast(toast);
+            }
+            Ok(Opened::Pending(view, progress)) => {
+                pane.push_reader(Reader::new(Empty, duckdb.reader_config()), description);
+                pane.set_running(view, sql, progress);
+            }
+            Err(err) => self.show_error(err.to_string()),
+        }
     }
 
     fn add_download(&mut self, url: &Url, reader: Arc<dyn remote_load::Reader>) {
@@ -373,14 +473,22 @@ impl Component for App {
             }
         }
 
-        let ingests = self
-            .tabs
-            .iter()
-            .enumerate()
-            .filter(|(idx, pane)| *idx != self.tabs.idx() || pane.table().col_count() > 0)
-            .filter_map(|(_, pane)| pane.progress())
-            .map(|(title, percent)| (title.to_string(), percent))
-            .collect::<Vec<_>>();
+        let ingests =
+            self.tabs
+                .iter()
+                .enumerate()
+                .filter(|(idx, pane)| *idx != self.tabs.idx() || pane.table().col_count() > 0)
+                .filter_map(|(_, pane)| pane.progress())
+                .map(|(title, percent)| (title.to_string(), percent))
+                .chain(self.duckdb.iter().flat_map(DuckDB::materializing).map(
+                    |(title, fraction)| {
+                        (
+                            title.to_string(),
+                            fraction.map(|fraction| (fraction * 100.0) as u16),
+                        )
+                    },
+                ))
+                .collect::<Vec<_>>();
         let areas = Layout::new(
             Direction::Vertical,
             (0..self.dls.len() + ingests.len()).map(|_| Constraint::Length(3)),
@@ -455,6 +563,13 @@ impl Component for App {
             Message::AppReloadConfig => self.reload_app_config(),
             Message::AppDownloadDataSource(url, reader) => self.add_download(url, reader.clone()),
             Message::AppImport(source, reader) => self.import(source, reader.clone()),
+            Message::AppQuery(sql) => self.query(sql),
+            Message::AppInlineQuery(query_type, value) => self.inline_query(*query_type, value),
+            Message::AppDropQuery(view) => {
+                if let Some(duckdb) = self.duckdb.as_mut() {
+                    duckdb.drop_result(view);
+                }
+            }
             _ => (),
         };
         if let Some(overlay) = self.overlay.as_mut() {

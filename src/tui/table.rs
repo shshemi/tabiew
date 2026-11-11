@@ -136,6 +136,24 @@ impl Table {
         }
     }
 
+    pub fn clone_with_reader(&self, rows: impl Rows + 'static) -> Self {
+        Self {
+            selected: self.selected.map(|_| 0),
+            rendered_rows: self.rendered_rows,
+            rendered_width: self.rendered_width,
+            column_mode: self.column_mode,
+            striped: self.striped,
+            show_header: self.show_header,
+            col_space: self.col_space,
+            ..Self::reader(rows)
+        }
+    }
+
+    pub fn view(&self) -> Option<String> {
+        self.rows()
+            .and_then(|rows| rows.lock().ok().and_then(|rows| rows.view()))
+    }
+
     pub fn clone_with_data_frame(&self, df: DataFrame) -> Self {
         let col_widths = DataFrameWidthsCalculator::default()
             .calculate(&df)

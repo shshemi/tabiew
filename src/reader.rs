@@ -8,6 +8,9 @@ pub trait RowSource {
     fn complete(&self) -> bool {
         true
     }
+    fn view(&self) -> Option<&str> {
+        None
+    }
     fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>>;
 }
 
@@ -39,6 +42,7 @@ pub trait Rows: Send {
     fn columns(&self) -> Vec<(String, String)>;
     fn row_count(&self) -> usize;
     fn complete(&self) -> bool;
+    fn view(&self) -> Option<String>;
     fn widths(&self) -> &[u16];
     fn reset(&mut self);
     fn fill(&mut self, range: Range<usize>) -> AppResult<()>;
@@ -204,6 +208,9 @@ impl<S: RowSource + Send> Rows for Reader<S> {
     }
     fn complete(&self) -> bool {
         self.source.complete()
+    }
+    fn view(&self) -> Option<String> {
+        self.source.view().map(str::to_string)
     }
     fn widths(&self) -> &[u16] {
         Reader::widths(self)

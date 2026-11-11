@@ -15,13 +15,25 @@ use crate::{
 #[derive(Debug)]
 pub struct InlineQueryPicker {
     picker: TextPickerWithSuggestion<InlineQueryProvider>,
-    dataframe: DataFrame,
+    dataframe: Option<DataFrame>,
     query_type: QueryType,
 }
 
 impl InlineQueryPicker {
     pub fn new(dataframe: DataFrame, query_type: QueryType) -> Self {
         let all_columns = sql_completion::collect_all_columns(Some(&dataframe));
+        Self::with_columns(Some(dataframe), all_columns, query_type)
+    }
+
+    pub fn duckdb(columns: Vec<String>, query_type: QueryType) -> Self {
+        Self::with_columns(None, columns, query_type)
+    }
+
+    fn with_columns(
+        dataframe: Option<DataFrame>,
+        all_columns: Vec<String>,
+        query_type: QueryType,
+    ) -> Self {
         let provider = InlineQueryProvider {
             dataframe: dataframe.clone(),
             query_type,
@@ -36,17 +48,21 @@ impl InlineQueryPicker {
 
     fn submit(&self) {
         let value = self.picker.value();
+        let Some(dataframe) = self.dataframe.clone() else {
+            Message::PaneDismissModal.enqueue();
+            Message::AppInlineQuery(self.query_type, value.to_owned()).enqueue();
+            return;
+        };
         let result = match self.query_type {
-            QueryType::Select => sql()
-                .execute_with_default(&format!("SELECT {value} FROM _"), self.dataframe.clone()),
-            QueryType::Filter => sql().execute_with_default(
-                &format!("SELECT * FROM _ where {value}"),
-                self.dataframe.clone(),
-            ),
-            QueryType::Order => sql().execute_with_default(
-                &format!("SELECT * FROM _ ORDER BY {value}"),
-                self.dataframe.clone(),
-            ),
+            QueryType::Select => {
+                sql().execute_with_default(&format!("SELECT {value} FROM _"), dataframe)
+            }
+            QueryType::Filter => {
+                sql().execute_with_default(&format!("SELECT * FROM _ where {value}"), dataframe)
+            }
+            QueryType::Order => {
+                sql().execute_with_default(&format!("SELECT * FROM _ ORDER BY {value}"), dataframe)
+            }
         };
         match (result, self.query_type) {
             (Ok(result_dataframe), QueryType::Select) => {
@@ -120,7 +136,7 @@ impl Component for InlineQueryPicker {
 
 #[derive(Debug)]
 struct InlineQueryProvider {
-    dataframe: DataFrame,
+    dataframe: Option<DataFrame>,
     query_type: QueryType,
     all_columns: Vec<String>,
 }
@@ -134,7 +150,7 @@ impl Provider for InlineQueryProvider {
             cursor,
             self.query_type.sql_prefix(),
             &self.all_columns,
-            Some(&self.dataframe),
+            self.dataframe.as_ref(),
         )
     }
 }
