@@ -109,12 +109,9 @@ impl CacheManager {
                 return Err(anyhow!("File size is bigger than the cache size"));
             }
             let mut in_use = Vec::new();
+            let mut usage = self.current_cache_usage()?.as_u64();
             let result = loop {
-                let free_space = match self.current_cache_usage() {
-                    Ok(usage) => cache_size.as_u64().saturating_sub(usage.as_u64()),
-                    Err(e) => break Err(e),
-                };
-                if free_space >= file_size.as_u64() {
+                if cache_size.as_u64().saturating_sub(usage) >= file_size.as_u64() {
                     break Ok(());
                 }
                 let Some((evicted, ())) = self.lru_file_cache.pop_lru() else {
@@ -123,8 +120,14 @@ impl CacheManager {
                         file_size
                     ));
                 };
-                if delete_file(&evicted).is_err() {
-                    in_use.push(evicted);
+                let size = [evicted.clone(), evicted.with_extension("duckdb.wal")]
+                    .iter()
+                    .filter_map(|path| std::fs::metadata(path).ok())
+                    .map(|metadata| metadata.len())
+                    .sum::<u64>();
+                match delete_file(&evicted) {
+                    Ok(()) => usage = usage.saturating_sub(size),
+                    Err(_) => in_use.push(evicted),
                 }
             };
             for path in in_use.into_iter().rev() {
