@@ -186,9 +186,10 @@ impl App {
         };
         let mut errors = Vec::new();
         let mut changed = false;
-        let tables = match duckdb.poll() {
+        let (tables, queries) = match duckdb.poll() {
             Ok(finished) => {
-                changed = finished.stats || !finished.tables.is_empty();
+                changed =
+                    finished.stats || !finished.tables.is_empty() || !finished.queries.is_empty();
                 for view in finished.results {
                     if let Some(pane) = self
                         .tabs
@@ -219,11 +220,11 @@ impl App {
                     }
                     errors.push(error);
                 }
-                finished.tables
+                (finished.tables, finished.queries)
             }
             Err(err) => {
                 errors.push(err.to_string());
-                Vec::new()
+                (Vec::new(), Vec::new())
             }
         };
         for (source, result) in tables {
@@ -254,6 +255,14 @@ impl App {
             for (name, reader) in readers {
                 self.tabs
                     .push(Pane::reader(reader, TableDescription::Table(name)));
+            }
+        }
+        for query in queries {
+            match query.and_then(|name| Ok((duckdb.reader(&name)?, name))) {
+                Ok((reader, name)) => self
+                    .tabs
+                    .add(Pane::reader(reader, TableDescription::Table(name))),
+                Err(err) => errors.push(err.to_string()),
             }
         }
         if changed {

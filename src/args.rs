@@ -132,6 +132,22 @@ pub struct Args {
         required = false
     )]
     pub max_rows: Option<usize>,
+
+    #[arg(
+        short = 'c',
+        long = "command",
+        allow_hyphen_values = true,
+        help = "Runs a SQL query once the sources are loaded and opens its result in a tab. Repeatable. Name the result with `-- name: <name>` on the first line or `CREATE VIEW <name> AS ...`.",
+        requires = "duckdb"
+    )]
+    pub commands: Vec<String>,
+
+    #[arg(
+        long,
+        help = "Runs the SQL in a file like --command, named after the file unless the SQL names it. Repeatable, runs before --command.",
+        requires = "duckdb"
+    )]
+    pub sql_file: Vec<std::path::PathBuf>,
 }
 
 #[derive(Debug, Subcommand)]

@@ -149,7 +149,13 @@ fn run_ctl(args: CtlArgs) -> AppResult<()> {
 }
 
 fn run_duckdb(args: &Args) -> AppResult<()> {
-    let duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
+    let mut duckdb = DuckDB::new(config::config().duckdb_config().clone())?;
+    for file in &args.sql_file {
+        duckdb.load_sql(file)?;
+    }
+    for sql in &args.commands {
+        duckdb.load_query(sql);
+    }
     let options = IngestOptions::from_args(args);
     let mut app = App::new(Tabs::new(Vec::new())).with_duckdb(duckdb, options.clone());
     let mut sources = args.sources.clone();
