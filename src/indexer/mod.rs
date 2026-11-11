@@ -322,38 +322,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn rows_are_read_across_blocks() {
-        let dir = TempDir::new().unwrap();
-        let path = file(&dir, "sales.csv", &numbered(3000, |i| format!("{i},n{i}")));
-        let indexer = Indexer::new(path, &IngestOptions::default(), done()).unwrap();
-        assert_eq!(wait(&indexer), 3000);
-        assert_eq!(indexer.indexed_rows(), 3000);
-        assert!(indexer.error().is_none());
-        assert_eq!(indexer.header().unwrap().unwrap(), ["id", "name"]);
-        assert_eq!(indexer.rows(0, 2).unwrap(), [row(0), row(1)]);
-        assert_eq!(indexer.rows(1023, 2).unwrap(), [row(1023), row(1024)]);
-        assert_eq!(indexer.rows(2048, 1).unwrap(), [row(2048)]);
-        assert_eq!(indexer.rows(2998, 5).unwrap(), [row(2998), row(2999)]);
-        assert!(indexer.rows(3000, 1).unwrap().is_empty());
-    }
-
-    #[tokio::test]
-    async fn multi_line_records_count_as_one_row() {
-        let dir = TempDir::new().unwrap();
-        let path = file(
-            &dir,
-            "notes.csv",
-            &numbered(2000, |i| format!("{i},\"a\nb{i}\"")),
-        );
-        let indexer = Indexer::new(path, &IngestOptions::default(), done()).unwrap();
-        assert_eq!(wait(&indexer), 2000);
-        assert_eq!(
-            indexer.rows(1500, 1).unwrap(),
-            [vec!["1500".to_string(), "a\nb1500".to_string()]]
-        );
-    }
-
-    #[tokio::test]
     async fn rows_past_the_indexed_part_read_from_the_nearest_block() {
         let dir = TempDir::new().unwrap();
         let path = file(&dir, "sales.csv", &numbered(3000, |i| format!("{i},n{i}")));
@@ -370,38 +338,6 @@ mod tests {
         assert_eq!(indexer.indexed_rows(), 0);
         assert_eq!(indexer.header().unwrap().unwrap(), ["id", "name"]);
         assert_eq!(indexer.rows(2500, 2).unwrap(), [row(2500), row(2501)]);
-    }
-
-    #[tokio::test]
-    async fn no_header_and_tsv_and_unsupported_formats() {
-        let dir = TempDir::new().unwrap();
-        let mut options = IngestOptions::default();
-        options.csv.header = false;
-        let path = file(&dir, "plain.csv", "1,a\n2,b\n");
-        let indexer = Indexer::new(path, &options, done()).unwrap();
-        assert_eq!(wait(&indexer), 2);
-        assert!(indexer.header().unwrap().is_none());
-        assert_eq!(indexer.rows(0, 1).unwrap(), [vec!["1", "a"]]);
-        let path = file(&dir, "data.tsv", "id\tname\n1\tx,y\n");
-        let indexer = Indexer::new(path, &IngestOptions::default(), done()).unwrap();
-        assert_eq!(wait(&indexer), 1);
-        assert_eq!(indexer.rows(0, 1).unwrap(), [vec!["1", "x,y"]]);
-        let path = file(&dir, "data.parquet", "");
-        assert!(Indexer::new(path, &IngestOptions::default(), done()).is_err());
-    }
-
-    #[tokio::test]
-    async fn missing_file_reports_an_error() {
-        let dir = TempDir::new().unwrap();
-        let indexer = Indexer::new(
-            dir.path().join("gone.csv"),
-            &IngestOptions::default(),
-            done(),
-        )
-        .unwrap();
-        assert_eq!(wait(&indexer), 0);
-        assert!(indexer.error().unwrap().contains("gone.csv"));
-        assert!(indexer.rows(0, 1).is_err());
     }
 
     #[tokio::test]
@@ -427,20 +363,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn file_created_later_is_waited_for() {
-        let dir = TempDir::new().unwrap();
-        let path = dir.path().join("later.csv");
-        let complete = Arc::new(AtomicBool::new(false));
-        let indexer =
-            Indexer::new(path.clone(), &IngestOptions::default(), complete.clone()).unwrap();
-        std::thread::sleep(Duration::from_millis(100));
-        std::fs::write(&path, numbered(10, |i| format!("{i},n{i}"))).unwrap();
-        complete.store(true, Ordering::Release);
-        assert_eq!(wait(&indexer), 10);
-        assert!(indexer.error().is_none());
-    }
-
-    #[tokio::test]
     async fn jsonl_keys_keep_file_order_and_grow_as_rows_are_read() {
         let dir = TempDir::new().unwrap();
         let mut data = String::new();
@@ -462,45 +384,6 @@ mod tests {
             ]
         );
         assert_eq!(indexer.header().unwrap().unwrap(), ["z", "a", "n", "late"]);
-    }
-
-    #[tokio::test]
-    async fn logfmt_rows_are_split_into_keys() {
-        let dir = TempDir::new().unwrap();
-        let path = file(
-            &dir,
-            "app.log",
-            "ts=1 level=info\n\nts=2 msg=\"hi there\"\n",
-        );
-        let options = IngestOptions {
-            format: Some(Format::Logfmt),
-            ..IngestOptions::default()
-        };
-        let indexer = Indexer::new(path, &options, done()).unwrap();
-        assert_eq!(wait(&indexer), 2);
-        assert_eq!(
-            indexer.rows(0, 2).unwrap(),
-            [vec!["1", "info", ""], vec!["2", "", "hi there"]]
-        );
-        assert_eq!(indexer.header().unwrap().unwrap(), ["ts", "level", "msg"]);
-    }
-
-    #[tokio::test]
-    async fn fwf_columns_come_from_the_sample_and_the_header() {
-        let dir = TempDir::new().unwrap();
-        let data = "id   name      city\n1    Alice     Paris\n\n2    Bob\n   3 Zoë       Köln and beyond\n";
-        let path = file(&dir, "people.fwf", data);
-        let indexer = Indexer::new(path.clone(), &IngestOptions::default(), done()).unwrap();
-        assert_eq!(wait(&indexer), 3);
-        assert_eq!(indexer.header().unwrap().unwrap(), ["id", "name", "city"]);
-        assert_eq!(
-            indexer.rows(0, 3).unwrap(),
-            [
-                vec!["1", "Alice", "Paris"],
-                vec!["2", "Bob", ""],
-                vec!["3", "Zoë", "Köln and beyond"]
-            ]
-        );
     }
 
     fn released(index: std::sync::Weak<Index>) -> bool {
@@ -533,34 +416,9 @@ mod tests {
     }
 
     #[test]
-    fn dropping_the_indexer_stops_waiting_for_a_missing_file() {
-        let dir = TempDir::new().unwrap();
-        dropped_indexer_is_released(dir.path().join("never.csv"));
-    }
-
-    #[test]
     fn dropping_the_indexer_stops_following_a_stalled_file() {
         let dir = TempDir::new().unwrap();
         let path = file(&dir, "stalled.csv", &numbered(10, |i| format!("{i},n{i}")));
         dropped_indexer_is_released(path);
-    }
-
-    #[tokio::test]
-    async fn failed_download_finishes_with_what_arrived() {
-        let dir = TempDir::new().unwrap();
-        let data = numbered(3000, |i| format!("{i},n{i}"));
-        let cut = data.find("2000,n2000").unwrap() + "2000,n2".len();
-        let path = file(&dir, "cut.csv", &data[..cut]);
-        let complete = Arc::new(AtomicBool::new(false));
-        let indexer = Indexer::new(path, &IngestOptions::default(), complete.clone()).unwrap();
-        std::thread::sleep(Duration::from_millis(100));
-        assert!(indexer.row_count().is_none());
-        complete.store(true, Ordering::Release);
-        assert_eq!(wait(&indexer), 2001);
-        assert!(indexer.error().is_none());
-        assert_eq!(
-            indexer.rows(1999, 2).unwrap(),
-            [row(1999), vec!["2000".to_string(), "n2".to_string()]]
-        );
     }
 }

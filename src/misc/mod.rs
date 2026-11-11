@@ -11,3 +11,4 @@ pub mod search;
 pub mod sql;
 pub mod stdin;
 pub mod unwrap_or_graceful_shutdown;
+pub mod workers;

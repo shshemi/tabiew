@@ -2,6 +2,7 @@ use crate::{
     AppResult,
     duckdb::{DuckDB, ingester::progress::StepProgress, sql::quote},
     misc::osc52::CopyToClipboardOsc52,
+    misc::workers,
     writers::{Destination, ExportFormat, escape_cell},
 };
 use anyhow::anyhow;
@@ -51,7 +52,9 @@ impl DuckDB {
         let done = format!("Exported to {target} in {} format", label(format));
         let view = view.to_string();
         let (sender, result) = oneshot::channel();
-        std::thread::spawn(move || sender.send(write(&conn, &view, format, &path)));
+        workers::spawn(move || {
+            let _ = sender.send(write(&conn, &view, format, &path));
+        });
         self.exporting.push(Exporting {
             title,
             progress,

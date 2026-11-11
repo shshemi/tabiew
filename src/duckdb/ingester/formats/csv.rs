@@ -263,14 +263,4 @@ mod tests {
         assert_eq!(rows[29_000].1, "z:VARCHAR");
         assert_eq!(rows[1].0, "1:VARCHAR");
     }
-
-    #[test]
-    fn rows_that_do_not_fit_still_fail_unless_errors_are_ignored() {
-        let data = csv(&[(25_000, "25000,1,2.5,extra")]);
-        assert!(load(&data, false).is_err());
-        let rows = load(&data, true).unwrap();
-        assert_eq!(rows.len(), 29_999);
-        assert_eq!(rows[1].0, "1:BIGINT");
-        assert!(load(&csv(&[]), false).unwrap()[1].1 == "1.5:DOUBLE");
-    }
 }

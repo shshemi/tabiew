@@ -1,7 +1,7 @@
 use crate::{
     AppResult,
     duckdb::{
-        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress},
+        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress, read_file},
         session::SessionConn,
     },
 };
@@ -29,7 +29,7 @@ impl FileIngester for MarkdownIngester {
         self.progress.clone()
     }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
-        let contents = std::fs::read_to_string(&self.path)?;
+        let contents = read_file(&self.path)?;
         self.progress.total(contents.len() as u64);
         let mut tables = 0;
         let mut table = None;

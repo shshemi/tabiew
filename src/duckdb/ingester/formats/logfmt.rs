@@ -1,15 +1,17 @@
 use crate::{
     AppResult,
     duckdb::{
-        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress},
+        ingester::{FileIngester, IngestProgress, TextTable, line_limit, progress::CountProgress},
         session::SessionConn,
     },
 };
+use anyhow::anyhow;
+use bytesize::ByteSize;
 use indexmap::IndexSet;
 use logfmt_zerocopy::Logfmt;
 use std::{
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Read},
     path::PathBuf,
     sync::Arc,
 };
@@ -41,11 +43,20 @@ impl FileIngester for LogfmtIngester {
         let mut table = TextTable::new(&conn, alias, "data".to_string(), &self.types);
         let mut keys = IndexSet::<String>::new();
         let mut line = Vec::new();
-        loop {
+        let limit = line_limit();
+        for number in 1.. {
             line.clear();
-            let read = reader.read_until(b'\n', &mut line)?;
+            let read = (&mut reader)
+                .take(limit as u64 + 1)
+                .read_until(b'\n', &mut line)?;
             if read == 0 {
-                return table.finish();
+                break;
+            }
+            if read > limit {
+                return Err(anyhow!(
+                    "Line {number} is longer than process_ram_size / 4 ({}). Raise process_ram_size in the config",
+                    ByteSize(limit as u64)
+                ));
             }
             self.progress.add(read as u64);
             let text = String::from_utf8_lossy(&line);
@@ -65,5 +76,6 @@ impl FileIngester for LogfmtIngester {
                 .collect();
             table.push(row)?;
         }
+        table.finish()
     }
 }

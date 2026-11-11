@@ -1,15 +1,35 @@
 use crate::{
     AppResult,
     duckdb::{ingester::options::TYPES, sql::quote},
-    misc::available_col_name::available_col_name,
+    misc::{available_col_name::available_col_name, config::config},
 };
+use anyhow::anyhow;
+use bytesize::ByteSize;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use duckdb::{
     Connection, appender_params_from_iter,
     types::{TimeUnit, Value},
 };
+use std::path::Path;
 
 const BATCH: usize = 122_880;
+
+pub(super) fn line_limit() -> usize {
+    config().line_limit()
+}
+
+pub(super) fn read_file(path: &Path) -> AppResult<String> {
+    let size = std::fs::metadata(path)?.len();
+    if size > line_limit() as u64 {
+        return Err(anyhow!(
+            "{} is {}, more than process_ram_size / 4 ({}). Raise process_ram_size in the config",
+            path.display(),
+            ByteSize(size),
+            ByteSize(line_limit() as u64)
+        ));
+    }
+    Ok(std::fs::read_to_string(path)?)
+}
 
 pub(super) struct TextTable<'a> {
     conn: &'a Connection,
@@ -20,6 +40,8 @@ pub(super) struct TextTable<'a> {
     kinds: Vec<&'static str>,
     created: usize,
     batch: Vec<Vec<(usize, String)>>,
+    bytes: usize,
+    limit: usize,
 }
 
 impl<'a> TextTable<'a> {
@@ -38,6 +60,8 @@ impl<'a> TextTable<'a> {
             kinds: Vec::new(),
             created: 0,
             batch: Vec::new(),
+            bytes: 0,
+            limit: line_limit(),
         }
     }
     pub(super) fn column(&mut self, name: &str) -> usize {
@@ -49,8 +73,9 @@ impl<'a> TextTable<'a> {
         self.columns.len()
     }
     pub(super) fn push(&mut self, row: Vec<(usize, String)>) -> AppResult<()> {
+        self.bytes += row.iter().map(|(_, value)| value.len()).sum::<usize>();
         self.batch.push(row);
-        if self.batch.len() >= BATCH {
+        if self.batch.len() >= BATCH || self.bytes >= self.limit {
             self.flush()?;
         }
         Ok(())
@@ -59,6 +84,7 @@ impl<'a> TextTable<'a> {
         self.flush()
     }
     fn flush(&mut self) -> AppResult<()> {
+        self.bytes = 0;
         if self.columns.is_empty() {
             self.batch.clear();
             return Ok(());

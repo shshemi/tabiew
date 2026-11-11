@@ -3,10 +3,11 @@ use std::{
     ops::Deref,
     sync::{
         OnceLock, RwLock,
-        atomic::{AtomicBool, AtomicI8, Ordering},
+        atomic::{AtomicBool, AtomicI8, AtomicUsize, Ordering},
     },
 };
 
+use bytesize::ByteSize;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,6 +26,8 @@ pub struct Config {
     show_table_row_numbers: AtomicBool,
     use_nerd_font: AtomicBool,
     fp_precision: AtomicI8,
+    process_ram_size: RwLock<ByteSize>,
+    worker_threads: AtomicUsize,
 }
 
 impl Config {
@@ -38,6 +41,8 @@ impl Config {
             show_table_row_numbers: table_row_numbers,
             use_nerd_font: nerd_font,
             fp_precision,
+            process_ram_size,
+            worker_threads,
         } = toml::from_str(&contents)?;
         self.set_theme(theme.into_inner()?);
         self.set_http_config(http.into_inner()?);
@@ -48,6 +53,11 @@ impl Config {
             .swap(nerd_font.into_inner(), Ordering::Relaxed);
         self.fp_precision
             .swap(fp_precision.into_inner(), Ordering::Relaxed);
+        *self.process_ram_size.write().unwrap_or_graceful_shutdown() =
+            process_ram_size.into_inner()?;
+        self.worker_threads
+            .swap(worker_threads.into_inner(), Ordering::Relaxed);
+        super::workers::pump();
         Ok(())
     }
 
@@ -82,6 +92,18 @@ impl Config {
 
     pub fn set_duckdb_config(&self, duckdb_config: impl Into<DuckDBConfig>) {
         *self.duckdb.write().unwrap_or_graceful_shutdown() = duckdb_config.into()
+    }
+
+    pub fn process_ram_size(&self) -> ByteSize {
+        *self.process_ram_size.read().unwrap_or_graceful_shutdown()
+    }
+
+    pub fn worker_threads(&self) -> usize {
+        self.worker_threads.load(Ordering::Relaxed)
+    }
+
+    pub fn line_limit(&self) -> usize {
+        (self.process_ram_size().as_u64() / 4) as usize
     }
 
     pub fn fp_precision(&self) -> Option<usize> {
@@ -122,6 +144,8 @@ impl Default for Config {
             http: RwLock::new(HttpConfig::default()),
             duckdb: RwLock::new(DuckDBConfig::default()),
             fp_precision: AtomicI8::new(-1),
+            process_ram_size: RwLock::new(ByteSize::gib(1)),
+            worker_threads: AtomicUsize::new(8),
         }
     }
 }

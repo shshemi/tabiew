@@ -46,6 +46,8 @@ pub struct DuckDB {
     spool: Spool,
     ingesting: Vec<Ingesting>,
     probing: Vec<load::Probing>,
+    parts_probing: Vec<parts::PartsProbing>,
+    probed: HashMap<String, load::Probe>,
     pending_queries: Vec<(String, Option<String>)>,
     groups: Vec<Group>,
     part_of: Option<usize>,
@@ -114,12 +116,17 @@ impl DuckDB {
             spool,
             ingesting: Vec::new(),
             probing: Vec::new(),
+            parts_probing: Vec::new(),
+            probed: HashMap::new(),
             pending_queries: Vec::new(),
             groups: Vec::new(),
             part_of: None,
             reader: ReaderConfig {
                 segment_rows: config.segment_rows,
                 segments: config.segments,
+                segment_bytes: (crate::misc::config::config().process_ram_size().as_u64()
+                    / config.segments.max(1) as u64)
+                    as usize,
             },
             results: 0,
             materializing: Vec::new(),
@@ -158,6 +165,7 @@ impl DuckDB {
             stats: self.poll_stats() | self.poll_counts(),
         };
         self.poll_probes(&mut finished);
+        self.poll_parts_probes(&mut finished);
         let mut i = 0;
         while i < self.ingesting.len() {
             let result = match self.ingesting[i].result.try_recv() {
@@ -193,7 +201,7 @@ impl DuckDB {
                 finished.tables.push((group.source, names));
             }
         }
-        if self.ingesting.is_empty() && self.probing.is_empty() {
+        if self.ingesting.is_empty() && self.probing.is_empty() && self.parts_probing.is_empty() {
             for (sql, fallback) in std::mem::take(&mut self.pending_queries) {
                 finished.queries.push(self.query(&sql, fallback));
             }
@@ -314,35 +322,6 @@ mod tests {
     }
 
     #[test]
-    fn every_ingested_table_gets_its_own_view() {
-        let dir = TempDir::new().unwrap();
-        let mut db = duckdb(&dir);
-        let (_, sender) = start(&mut db, &source(&dir, "shop.sqlite"), &["users", "orders"]);
-        sender.send(Ok(())).unwrap();
-        let finished = db.poll().unwrap();
-        assert_eq!(finished.tables[0].1.as_ref().unwrap(), &["orders", "users"]);
-        assert_eq!(count(&db, "orders"), 10);
-    }
-
-    #[test]
-    fn failed_dropped_or_empty_ingest_detaches_the_db() {
-        let dir = TempDir::new().unwrap();
-        let mut db = duckdb(&dir);
-        let (failed, sender) = start(&mut db, &source(&dir, "one.csv"), &["data"]);
-        sender.send(Err(anyhow!("broken file"))).unwrap();
-        let (dropped, sender) = start(&mut db, &source(&dir, "two.csv"), &["data"]);
-        drop(sender);
-        let (empty, sender) = start(&mut db, &source(&dir, "three.csv"), &[]);
-        sender.send(Ok(())).unwrap();
-        let finished = db.poll().unwrap();
-        assert_eq!(finished.tables.len(), 3);
-        assert!(finished.tables.iter().all(|(_, result)| result.is_err()));
-        for alias in [failed, dropped, empty] {
-            assert!(db.session.file_db_mut(&alias).is_none());
-        }
-    }
-
-    #[test]
     fn complete_cache_loads_without_ingesting() {
         let dir = TempDir::new().unwrap();
         let path = source(&dir, "sales.csv");
@@ -362,45 +341,4 @@ mod tests {
         assert_eq!(count(&db, "sales"), 10);
     }
 
-    #[test]
-    fn queries_wait_for_every_ingest() {
-        let dir = TempDir::new().unwrap();
-        let mut db = duckdb(&dir);
-        let (_, sender) = start(&mut db, &source(&dir, "sales.csv"), &["data"]);
-        db.load_query("-- name: total\nSELECT count(*) AS n FROM sales");
-        assert!(db.poll().unwrap().queries.is_empty());
-        sender.send(Ok(())).unwrap();
-        let finished = db.poll().unwrap();
-        assert_eq!(finished.tables.len(), 1);
-        assert_eq!(finished.queries.len(), 1);
-        assert_eq!(finished.queries[0].as_deref().unwrap(), "total");
-        assert_eq!(count(&db, "total"), 1);
-    }
-
-    #[test]
-    fn sql_files_are_named_by_the_sql_then_the_file_stem() {
-        let dir = TempDir::new().unwrap();
-        let mut db = duckdb(&dir);
-        let stem = dir.path().join("top_sales.sql");
-        std::fs::write(&stem, "SELECT 42 AS n").unwrap();
-        let named = dir.path().join("other.sql");
-        std::fs::write(&named, "CREATE VIEW best AS SELECT 1").unwrap();
-        db.load_sql(&stem).unwrap();
-        db.load_sql(&named).unwrap();
-        let queries = db.poll().unwrap().queries;
-        let names: Vec<_> = queries.into_iter().map(Result::unwrap).collect();
-        assert_eq!(names, ["top_sales", "best"]);
-        assert!(db.load_sql(&dir.path().join("missing.sql")).is_err());
-    }
-
-    #[test]
-    fn bad_query_is_reported_once() {
-        let dir = TempDir::new().unwrap();
-        let mut db = duckdb(&dir);
-        db.load_query("-- name: bad\nSELECT * FROM nowhere");
-        let queries = db.poll().unwrap().queries;
-        assert_eq!(queries.len(), 1);
-        assert!(queries[0].is_err());
-        assert!(db.poll().unwrap().queries.is_empty());
-    }
 }

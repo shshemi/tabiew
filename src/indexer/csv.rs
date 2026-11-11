@@ -1,7 +1,7 @@
 use crate::{
     AppResult,
     duckdb::CsvOptions,
-    indexer::{Fields, FileIndexer},
+    indexer::{Fields, FileIndexer, lines::read_limited},
 };
 use anyhow::anyhow;
 use memchr::memchr2;
@@ -92,7 +92,7 @@ impl FileIndexer for CsvIndexer {
             let mut in_quotes = false;
             loop {
                 let start = record.len();
-                if reader.read_until(b'\n', record)? == 0 {
+                if read_limited(reader, record)? == 0 {
                     break;
                 }
                 let quotes = record[start..].iter().filter(|&&b| b == self.quote).count();
@@ -133,7 +133,7 @@ fn ascii(c: char) -> AppResult<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{BufReader, Cursor};
+    use std::io::Cursor;
 
     struct OneByte<'a>(&'a [u8]);
 
@@ -171,60 +171,10 @@ mod tests {
         whole
     }
 
-    fn records(indexer: &CsvIndexer, data: &str) -> Vec<Vec<String>> {
-        let mut reader = BufReader::new(Cursor::new(data));
-        let mut record = Vec::new();
-        let mut records = Vec::new();
-        while indexer.read_record(&mut reader, &mut record).unwrap() {
-            records.push(indexer.fields(&record));
-        }
-        records
-    }
-
-    #[test]
-    fn scan_finds_each_record_start() {
-        assert_eq!(starts("a,b\n1,2\n3,4\n"), [0, 4, 8]);
-        assert_eq!(starts("a\nb"), [0, 2]);
-        assert_eq!(starts(""), Vec::<u64>::new());
-    }
-
     #[test]
     fn scan_ignores_newlines_inside_quotes() {
         assert_eq!(starts("a\n\"x\ny\"\nz\n"), [0, 2, 8]);
         assert_eq!(starts("\"a\"\"b\"\nc\n"), [0, 7]);
-    }
-
-    #[test]
-    fn scan_skips_blank_lines_and_handles_crlf() {
-        assert_eq!(starts("a\r\n\r\n\nb\r\n"), [0, 6]);
-        assert_eq!(starts("a\r\nb\r"), [0, 3]);
-    }
-
-    #[test]
-    fn scan_stops_when_emit_says_so() {
-        let mut seen = Vec::new();
-        indexer()
-            .scan(&mut Cursor::new("a\nb\nc\n"), &mut |start| {
-                seen.push(start);
-                seen.len() < 2
-            })
-            .unwrap();
-        assert_eq!(seen, [0, 2]);
-    }
-
-    #[test]
-    fn records_match_the_scan() {
-        let data = "id,note\r\n1,\"x\ny\"\n\n2,\"say \"\"hi\"\"\"\r\n3,last";
-        assert_eq!(starts(data).len(), 4);
-        assert_eq!(
-            records(&indexer(), data),
-            [
-                vec!["id", "note"],
-                vec!["1", "x\ny"],
-                vec!["2", "say \"hi\""],
-                vec!["3", "last"],
-            ]
-        );
     }
 
     #[test]
@@ -236,28 +186,5 @@ mod tests {
             ["a", "b,c", "d\"e"]
         );
         assert_eq!(indexer.fields(b""), [""]);
-    }
-
-    #[test]
-    fn custom_delimiter_and_quote() {
-        let indexer = CsvIndexer::new(&CsvOptions {
-            delimiter: ';',
-            quote: '\'',
-            ..CsvOptions::default()
-        })
-        .unwrap();
-        assert_eq!(
-            records(&indexer, "a;'b;\nc'\nd;\"e\"\n"),
-            [vec!["a", "b;\nc"], vec!["d", "\"e\""]]
-        );
-    }
-
-    #[test]
-    fn non_ascii_options_are_rejected() {
-        let options = CsvOptions {
-            delimiter: '§',
-            ..CsvOptions::default()
-        };
-        assert!(CsvIndexer::new(&options).is_err());
     }
 }

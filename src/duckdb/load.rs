@@ -5,6 +5,7 @@ use crate::{
         cache::file_db::FileDB,
         ingester::{Ingester, progress::Deferred},
     },
+    misc::workers,
     net::http,
 };
 use anyhow::anyhow;
@@ -29,13 +30,13 @@ pub(super) struct Probing {
     result: Receiver<Probe>,
 }
 
-#[derive(Default)]
-struct Probe {
+#[derive(Default, Clone)]
+pub(super) struct Probe {
     validators: Option<String>,
     size: u64,
 }
 
-fn probe(url: &Url) -> Probe {
+pub(super) fn probe(url: &Url) -> Probe {
     let head = http::head(url)
         .header("Accept-Encoding", "identity")
         .call()
@@ -133,13 +134,20 @@ impl DuckDB {
         });
         let file = self.spool.path(&file_name);
         if self.part_of.is_some() {
-            return self.resolve_url(url, name, probe(url), file, options, max_rows, None);
+            let probe = self
+                .probed
+                .get(url.as_str())
+                .cloned()
+                .unwrap_or_else(|| probe(url));
+            return self.resolve_url(url, name, probe, file, options, max_rows, None);
         }
         let complete = Arc::new(AtomicBool::new(false));
         let progress = Arc::new(Deferred::default());
         let (sender, result) = oneshot::channel();
         let target = url.clone();
-        std::thread::spawn(move || sender.send(probe(&target)));
+        workers::spawn(move || {
+            let _ = sender.send(probe(&target));
+        });
         self.probing.push(Probing {
             url: url.clone(),
             name,

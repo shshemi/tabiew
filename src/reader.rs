@@ -1,4 +1,5 @@
 use crate::AppResult;
+use anyhow::anyhow;
 use std::{borrow::Cow, collections::VecDeque, ops::Range, sync::Arc};
 use unicode_width::UnicodeWidthStr;
 
@@ -34,6 +35,7 @@ impl RowSource for Empty {
 pub struct ReaderConfig {
     pub segment_rows: usize,
     pub segments: usize,
+    pub segment_bytes: usize,
 }
 
 pub type Datum = Option<String>;
@@ -87,6 +89,7 @@ pub struct Reader<S> {
     source: S,
     segment_rows: usize,
     segments: usize,
+    segment_bytes: usize,
     cache: VecDeque<Segment>,
     complete: bool,
     widths: Vec<u16>,
@@ -98,6 +101,7 @@ impl<S: RowSource> Reader<S> {
             source,
             segment_rows: config.segment_rows.max(1),
             segments: config.segments.max(1),
+            segment_bytes: config.segment_bytes,
             cache: VecDeque::new(),
             complete: false,
             widths: Vec::new(),
@@ -144,6 +148,19 @@ impl<S: RowSource> Reader<S> {
                 .into_iter();
             for segment in run {
                 let rows: Vec<Vec<Datum>> = rows.by_ref().take(self.segment_rows).collect();
+                let bytes = rows
+                    .iter()
+                    .flatten()
+                    .map(|value| value.as_ref().map_or(0, String::len) + size_of::<Datum>())
+                    .sum::<usize>();
+                if bytes > self.segment_bytes {
+                    return Err(anyhow!(
+                        "{} rows take {}, more than process_ram_size / segments ({}). Raise process_ram_size in the config",
+                        rows.len(),
+                        bytesize::ByteSize(bytes as u64),
+                        bytesize::ByteSize(self.segment_bytes as u64)
+                    ));
+                }
                 for row in &rows {
                     if self.widths.len() < row.len() {
                         self.widths.resize(row.len(), 0);
@@ -288,6 +305,7 @@ mod tests {
     const CONFIG: ReaderConfig = ReaderConfig {
         segment_rows: 100,
         segments: 3,
+        segment_bytes: usize::MAX,
     };
 
     #[test]
@@ -327,6 +345,19 @@ mod tests {
         read(&mut reader, 100..200);
         read(&mut reader, 100..200);
         assert_eq!(source.fetches.get(), 3);
+    }
+
+    #[test]
+    fn segments_bigger_than_their_share_of_process_ram_size_fail() {
+        let source = numbers(1000, true);
+        let config = ReaderConfig {
+            segment_bytes: 100 * (size_of::<Datum>() + 2),
+            ..CONFIG
+        };
+        let mut reader = Reader::new(&source, config);
+        assert!(reader.rows(0..10).is_ok());
+        let error = reader.rows(200..210).err().unwrap().to_string();
+        assert!(error.contains("process_ram_size"), "{error}");
     }
 
     #[test]

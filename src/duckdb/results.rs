@@ -7,6 +7,7 @@ use crate::{
         skim,
         sql::{SplitSql, quote, split_sql},
     },
+    misc::workers,
     reader::{Reader, RowSource},
 };
 use anyhow::anyhow;
@@ -241,7 +242,9 @@ impl DuckDB {
         let interrupt = conn.interrupt_handle();
         let sql = format!("CREATE TABLE {} AS {select}", table(view));
         let (sender, result) = oneshot::channel();
-        std::thread::spawn(move || sender.send(conn.execute_batch(&sql).map_err(Into::into)));
+        workers::spawn(move || {
+            let _ = sender.send(conn.execute_batch(&sql).map_err(Into::into));
+        });
         self.materializing.push(Materializing {
             view: view.to_string(),
             title: title.to_string(),

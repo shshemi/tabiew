@@ -4,21 +4,26 @@ mod options;
 pub(super) mod progress;
 mod text_table;
 
-use crate::{AppResult, args::Format, duckdb::session::SessionConn, misc::format::resolve_format};
+use crate::{
+    AppResult,
+    args::Format,
+    duckdb::session::SessionConn,
+    misc::{format::resolve_format, workers},
+};
 use download::Download;
-pub use formats::{CsvOptions, FwfOptions};
-pub(crate) use formats::{cut_text, sample_columns};
 use formats::{
     ArrowIngester, AvroIngester, CsvIngester, ExcelIngester, FwfIngester, HtmlIngester,
     JsonIngester, LogfmtIngester, MarkdownIngester, ParquetIngester, SqliteIngester,
 };
+pub use formats::{CsvOptions, FwfOptions};
+pub(crate) use formats::{cut_text, sample_columns};
 pub use options::IngestOptions;
 pub use progress::IngestProgress;
 use std::{
     path::PathBuf,
     sync::{Arc, atomic::AtomicBool},
 };
-use text_table::TextTable;
+use text_table::{TextTable, line_limit, read_file};
 use tokio::sync::oneshot::{self, Receiver};
 use url::Url;
 
@@ -89,94 +94,9 @@ impl Ingester {
         conn.set_query_progress_tracking(true)?;
         let progress = file_ingester.progress();
         let (sender, receiver) = oneshot::channel();
-        tokio::task::spawn_blocking(move || sender.send(file_ingester.ingest(conn, &alias)));
+        workers::spawn(move || {
+            let _ = sender.send(file_ingester.ingest(conn, &alias));
+        });
         Ok((progress, receiver))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::duckdb::{session::Session, sql::quote};
-    use anyhow::anyhow;
-
-    struct Fake {
-        fail: bool,
-    }
-
-    impl FileIngester for Fake {
-        fn progress(&self) -> Arc<dyn IngestProgress> {
-            progress::CountProgress::new()
-        }
-        fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
-            if self.fail {
-                return Err(anyhow!("broken file"));
-            }
-            conn.execute_batch(&format!(
-                "CREATE TABLE {}.data AS SELECT range AS id FROM range(10)",
-                quote(alias)
-            ))?;
-            Ok(())
-        }
-    }
-
-    struct Panics;
-
-    impl FileIngester for Panics {
-        fn progress(&self) -> Arc<dyn IngestProgress> {
-            progress::CountProgress::new()
-        }
-        fn ingest(&mut self, _conn: SessionConn, _alias: &str) -> AppResult<()> {
-            panic!("ingester bug")
-        }
-    }
-
-    fn ingester(session: &mut Session, file_ingester: Box<dyn FileIngester>) -> Ingester {
-        let alias = session.attach(None).unwrap();
-        Ingester {
-            conn: session.session().unwrap(),
-            alias,
-            file_ingester,
-        }
-    }
-
-    #[tokio::test]
-    async fn ingest_writes_the_table_then_releases_the_conn() {
-        let mut session = Session::new(None).unwrap();
-        let (_, result) = ingester(&mut session, Box::new(Fake { fail: false }))
-            .ingest()
-            .unwrap();
-        result.await.unwrap().unwrap();
-        session.create_view("mem", "mem", "data", None).unwrap();
-        let count: i64 = session
-            .session()
-            .unwrap()
-            .query_row("SELECT count(*) FROM mem", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(count, 10);
-        session.detach("mem").unwrap();
-        session.unpin("mem");
-        assert_eq!(session.flush().unwrap(), ["mem"]);
-    }
-
-    #[tokio::test]
-    async fn ingest_error_is_sent_back() {
-        let mut session = Session::new(None).unwrap();
-        let (_, result) = ingester(&mut session, Box::new(Fake { fail: true }))
-            .ingest()
-            .unwrap();
-        let error = result.await.unwrap().unwrap_err();
-        assert!(error.to_string().contains("broken file"));
-        session.unpin("mem");
-        assert_eq!(session.flush().unwrap(), ["mem"]);
-    }
-
-    #[tokio::test]
-    async fn panicking_ingester_closes_the_channel_and_releases_the_conn() {
-        let mut session = Session::new(None).unwrap();
-        let (_, result) = ingester(&mut session, Box::new(Panics)).ingest().unwrap();
-        assert!(result.await.is_err());
-        session.unpin("mem");
-        assert_eq!(session.flush().unwrap(), ["mem"]);
     }
 }

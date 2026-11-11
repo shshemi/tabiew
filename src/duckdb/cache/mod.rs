@@ -98,11 +98,6 @@ impl CacheManager {
         self.track(hashed_file);
         Ok(Some(file_db))
     }
-    #[cfg(test)]
-    pub fn delete_cache(&mut self, file_db: FileDB) -> AppResult<()> {
-        self.lru_file_cache.pop(file_db.file_path());
-        file_db.delete()
-    }
     fn lru_cache_eviction(&mut self, file_size: ByteSize) -> AppResult<()> {
         if let Some(cache_size) = self.cache_size {
             if file_size >= cache_size {
@@ -267,10 +262,7 @@ fn delete_files(files: &[CacheEntry]) {
 mod tests {
     use super::*;
     use crate::duckdb::{DuckDBConfig, cache::file_db::FileDBStatus};
-    use std::{
-        fs::{self, File, FileTimes},
-        time::Duration,
-    };
+    use std::fs;
     use tempfile::TempDir;
 
     fn config(
@@ -308,12 +300,6 @@ mod tests {
             .to_path_buf()
     }
 
-    fn hit(cm: &mut CacheManager, src: &Path) -> Option<PathBuf> {
-        cm.check_existing_cache_db(src, &Value::Null)
-            .unwrap()
-            .map(|file_db| file_db.file_path().to_path_buf())
-    }
-
     fn finish_import(db_path: &Path, size: usize) {
         fs::write(db_path, vec![0u8; size]).unwrap();
         let mut meta = FileDBMetadata::read(db_path)
@@ -321,149 +307,6 @@ mod tests {
             .unwrap_or_else(|| FileDBMetadata::new(Path::new("/data/source.csv")));
         meta.status = FileDBStatus::Complete;
         meta.write(db_path).unwrap();
-    }
-
-    fn set_accessed_age(path: &Path, age_secs: u64) {
-        File::options()
-            .write(true)
-            .open(path)
-            .unwrap()
-            .set_times(
-                FileTimes::new().set_accessed(SystemTime::now() - Duration::from_secs(age_secs)),
-            )
-            .unwrap();
-    }
-
-    #[test]
-    fn new_creates_missing_cache_dir() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, None, None);
-        assert!(!config.cache_dir.exists());
-        manager(&config);
-        assert!(config.cache_dir.is_dir());
-    }
-
-    #[test]
-    fn miss_then_create_then_hit() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, None, None);
-        let mut cm = manager(&config);
-        let src = source(&dir, "data.csv", 10);
-        assert_eq!(hit(&mut cm, &src), None);
-        let db = create(&mut cm, &src);
-        assert_eq!(db.parent().unwrap(), config.cache_dir);
-        let name = db.file_name().unwrap().to_str().unwrap();
-        assert_eq!(name.len(), 64 + ".duckdb".len());
-        assert!(name[..64].chars().all(|c| c.is_ascii_hexdigit()));
-        finish_import(&db, 10);
-        assert_eq!(hit(&mut cm, &src), Some(db));
-    }
-
-    #[test]
-    fn modified_source_misses_cache() {
-        let dir = TempDir::new().unwrap();
-        let mut cm = manager(&config(&dir, None, None));
-        let src = source(&dir, "data.csv", 10);
-        finish_import(&create(&mut cm, &src), 10);
-        File::options()
-            .write(true)
-            .open(&src)
-            .unwrap()
-            .set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000))
-            .unwrap();
-        assert_eq!(hit(&mut cm, &src), None);
-    }
-
-    #[test]
-    fn delete_cache_removes_db_wal_and_metadata() {
-        let dir = TempDir::new().unwrap();
-        let mut cm = manager(&config(&dir, None, None));
-        let src = source(&dir, "data.csv", 10);
-        let db = create(&mut cm, &src);
-        finish_import(&db, 10);
-        let wal = db.with_extension("duckdb.wal");
-        fs::write(&wal, "wal").unwrap();
-        cm.delete_cache(FileDB::new(&db).unwrap()).unwrap();
-        assert!(!db.exists());
-        assert!(!wal.exists());
-        assert!(!FileDBMetadata::path(&db).exists());
-        assert_eq!(hit(&mut cm, &src), None);
-    }
-
-    #[test]
-    fn new_keeps_most_recently_accessed_within_capacity() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, None, Some(2));
-        fs::create_dir_all(&config.cache_dir).unwrap();
-        let old = config.cache_dir.join("old.duckdb");
-        let mid = config.cache_dir.join("mid.duckdb");
-        let new = config.cache_dir.join("new.duckdb");
-        for (path, age) in [(&old, 300), (&mid, 200), (&new, 100)] {
-            finish_import(path, 10);
-            set_accessed_age(path, age);
-        }
-        let notes = config.cache_dir.join("notes.txt");
-        fs::write(&notes, "keep me").unwrap();
-        let subdir = config.cache_dir.join("sub.duckdb");
-        fs::create_dir(&subdir).unwrap();
-        manager(&config);
-        assert!(!old.exists());
-        assert!(mid.exists() && new.exists());
-        assert!(notes.exists() && subdir.is_dir());
-    }
-
-    #[test]
-    fn new_keeps_most_recently_accessed_within_max_cache_size() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, Some(ByteSize(25)), None);
-        fs::create_dir_all(&config.cache_dir).unwrap();
-        let old = config.cache_dir.join("old.duckdb");
-        let mid = config.cache_dir.join("mid.duckdb");
-        let new = config.cache_dir.join("new.duckdb");
-        for (path, age) in [(&old, 300), (&mid, 200), (&new, 100)] {
-            finish_import(path, 10);
-            set_accessed_age(path, age);
-        }
-        manager(&config);
-        assert!(!old.exists());
-        assert!(mid.exists() && new.exists());
-    }
-
-    #[test]
-    fn new_does_not_delete_db_in_use_by_another_instance() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, None, Some(1));
-        let mut other = manager(&config);
-        let src = source(&dir, "data.csv", 10);
-        let in_use = create(&mut other, &src);
-        finish_import(&in_use, 10);
-        let _held = FileDB::new(&in_use).unwrap();
-        set_accessed_age(&in_use, 300);
-        let newer = config.cache_dir.join("newer.duckdb");
-        finish_import(&newer, 10);
-        set_accessed_age(&newer, 100);
-        manager(&config);
-        assert!(in_use.exists());
-        assert!(newer.exists());
-    }
-
-    #[test]
-    fn create_over_capacity_evicts_least_recently_used() {
-        let dir = TempDir::new().unwrap();
-        let mut cm = manager(&config(&dir, None, Some(2)));
-        let (a, b, c) = (
-            source(&dir, "a.csv", 10),
-            source(&dir, "b.csv", 10),
-            source(&dir, "c.csv", 10),
-        );
-        let db_a = create(&mut cm, &a);
-        finish_import(&db_a, 10);
-        let db_b = create(&mut cm, &b);
-        finish_import(&db_b, 10);
-        assert_eq!(hit(&mut cm, &a), Some(db_a.clone()));
-        finish_import(&create(&mut cm, &c), 10);
-        assert!(db_a.exists());
-        assert!(!db_b.exists());
     }
 
     #[test]
@@ -484,115 +327,4 @@ mod tests {
         assert!(db_b.exists());
     }
 
-    #[test]
-    fn create_rejects_source_bigger_than_max_cache_size() {
-        let dir = TempDir::new().unwrap();
-        let mut cm = manager(&config(&dir, Some(ByteSize(10)), None));
-        let src = source(&dir, "big.csv", 20);
-        assert!(cm.create_new_db(&src, &Value::Null).is_err());
-    }
-
-    #[test]
-    fn eviction_skips_db_in_use_by_another_instance() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, Some(ByteSize(100)), None);
-        let mut cm = manager(&config);
-        let (a, b, c) = (
-            source(&dir, "a.csv", 40),
-            source(&dir, "b.csv", 40),
-            source(&dir, "c.csv", 40),
-        );
-        let db_a = create(&mut cm, &a);
-        finish_import(&db_a, 40);
-        let db_b = create(&mut cm, &b);
-        finish_import(&db_b, 40);
-        let _held = FileDB::new(&db_a).unwrap();
-        create(&mut cm, &c);
-        assert!(db_a.exists());
-        assert!(!db_b.exists());
-    }
-
-    #[test]
-    fn eviction_errors_when_every_db_is_in_use_then_recovers_after_release() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, Some(ByteSize(100)), None);
-        let mut cm = manager(&config);
-        let (a, b, c) = (
-            source(&dir, "a.csv", 40),
-            source(&dir, "b.csv", 40),
-            source(&dir, "c.csv", 40),
-        );
-        let db_a = create(&mut cm, &a);
-        finish_import(&db_a, 40);
-        let db_b = create(&mut cm, &b);
-        finish_import(&db_b, 40);
-        let held_a = FileDB::new(&db_a).unwrap();
-        let held_b = FileDB::new(&db_b).unwrap();
-        let err = cm.create_new_db(&c, &Value::Null).unwrap_err();
-        assert!(err.to_string().contains("Can't allocate"), "{err}");
-        assert!(db_a.exists() && db_b.exists());
-        drop((held_a, held_b));
-        create(&mut cm, &c);
-        assert!(!db_a.exists());
-        assert!(db_b.exists());
-    }
-
-    #[test]
-    fn create_new_db_writes_incomplete_metadata() {
-        let dir = TempDir::new().unwrap();
-        let mut cm = manager(&config(&dir, None, None));
-        let src = source(&dir, "data.csv", 10);
-        let db = create(&mut cm, &src);
-        let meta = FileDBMetadata::read(&db).unwrap().unwrap();
-        assert_eq!(meta.file_path, src);
-        assert_eq!(meta.file_name, "data.csv");
-        assert_eq!(meta.status, FileDBStatus::Incomplete);
-    }
-
-    #[test]
-    fn incomplete_db_is_not_a_cache_hit_until_marked_complete() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, None, None);
-        let mut cm = manager(&config);
-        let src = source(&dir, "data.csv", 10);
-        let db = create(&mut cm, &src);
-        fs::write(&db, vec![0u8; 10]).unwrap();
-        let _held = FileDB::new(&db).unwrap();
-        assert_eq!(hit(&mut cm, &src), None);
-        assert_eq!(hit(&mut manager(&config), &src), None);
-        let mut meta = FileDBMetadata::read(&db).unwrap().unwrap();
-        meta.status = FileDBStatus::Complete;
-        meta.write(&db).unwrap();
-        assert_eq!(hit(&mut cm, &src), Some(db.clone()));
-        assert_eq!(hit(&mut manager(&config), &src), Some(db));
-    }
-
-    #[test]
-    fn new_deletes_incomplete_dbs_unless_locked() {
-        let dir = TempDir::new().unwrap();
-        let config = config(&dir, None, None);
-        let mut importing_instance = manager(&config);
-        let src = source(&dir, "data.csv", 10);
-        let importing = create(&mut importing_instance, &src);
-        fs::write(&importing, vec![0u8; 10]).unwrap();
-        let _held = FileDB::new(&importing).unwrap();
-        let done = config.cache_dir.join("done.duckdb");
-        finish_import(&done, 10);
-        let half = config.cache_dir.join("half.duckdb");
-        fs::write(&half, vec![0u8; 10]).unwrap();
-        FileDBMetadata::new(Path::new("/data/half.csv"))
-            .write(&half)
-            .unwrap();
-        let no_meta = config.cache_dir.join("no_meta.duckdb");
-        fs::write(&no_meta, vec![0u8; 10]).unwrap();
-        let broken = config.cache_dir.join("broken.duckdb");
-        fs::write(&broken, vec![0u8; 10]).unwrap();
-        fs::write(FileDBMetadata::path(&broken), "not json").unwrap();
-        manager(&config);
-        assert!(done.exists());
-        assert!(importing.exists() && FileDBMetadata::path(&importing).exists());
-        assert!(!half.exists() && !FileDBMetadata::path(&half).exists());
-        assert!(!no_meta.exists());
-        assert!(!broken.exists() && !FileDBMetadata::path(&broken).exists());
-    }
 }

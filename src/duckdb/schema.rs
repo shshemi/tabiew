@@ -6,6 +6,7 @@ use crate::{
         reader::{Count, ViewSource},
         sql::quote,
     },
+    misc::workers,
     reader::{Reader, RowSource},
 };
 use anyhow::anyhow;
@@ -110,7 +111,9 @@ impl DuckDB {
             .collect::<Vec<_>>();
         let (sender, result) = oneshot::channel();
         let name = view.to_string();
-        std::thread::spawn(move || sender.send(stats(&conn, &name, &columns)));
+        workers::spawn(move || {
+            let _ = sender.send(stats(&conn, &name, &columns));
+        });
         self.stats_jobs.push(StatsJob {
             view: view.to_string(),
             result,
@@ -139,12 +142,12 @@ impl DuckDB {
         let conn = self.session.session()?;
         let (sender, result) = oneshot::channel();
         let sql = format!("SELECT count(*) FROM {}", quote(view));
-        std::thread::spawn(move || {
-            sender.send(
+        workers::spawn(move || {
+            let _ = sender.send(
                 conn.query_row(&sql, [], |r| r.get::<_, i64>(0))
                     .map(|rows| rows as usize)
                     .map_err(Into::into),
-            )
+            );
         });
         self.count_jobs.push(CountJob {
             view: view.to_string(),

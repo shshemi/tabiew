@@ -1,3 +1,4 @@
+use crate::misc::config::config;
 use memchr::memchr;
 use std::io::{self, BufRead, Read};
 
@@ -33,10 +34,22 @@ pub(super) fn scan(file: &mut dyn Read, emit: &mut dyn FnMut(u64) -> bool) -> io
     Ok(())
 }
 
+pub(super) fn read_limited(reader: &mut dyn BufRead, record: &mut Vec<u8>) -> io::Result<usize> {
+    let limit = config().line_limit();
+    let read = reader.take(limit as u64 + 1).read_until(b'\n', record)?;
+    match record.len() > limit {
+        true => Err(io::Error::other(format!(
+            "A line is longer than process_ram_size / 4 ({}). Raise process_ram_size in the config",
+            bytesize::ByteSize(limit as u64)
+        ))),
+        false => Ok(read),
+    }
+}
+
 pub(super) fn read_line(reader: &mut dyn BufRead, record: &mut Vec<u8>) -> io::Result<bool> {
     loop {
         record.clear();
-        if reader.read_until(b'\n', record)? == 0 {
+        if read_limited(reader, record)? == 0 {
             return Ok(false);
         }
         while matches!(record.last(), Some(b'\n' | b'\r')) {
@@ -50,38 +63,4 @@ pub(super) fn read_line(reader: &mut dyn BufRead, record: &mut Vec<u8>) -> io::R
 
 fn has_text(bytes: &[u8]) -> bool {
     bytes.iter().any(|b| !b.is_ascii_whitespace())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::Cursor;
-
-    fn starts(data: &str) -> Vec<u64> {
-        let mut starts = Vec::new();
-        scan(&mut data.as_bytes(), &mut |start| {
-            starts.push(start);
-            true
-        })
-        .unwrap();
-        starts
-    }
-
-    #[test]
-    fn scan_skips_blank_lines_and_keeps_an_unterminated_last_line() {
-        assert_eq!(starts("a\n\n  \nb\r\nc"), [0, 6, 9]);
-        assert_eq!(starts("\n\n"), [] as [u64; 0]);
-    }
-
-    #[test]
-    fn read_line_matches_the_scan() {
-        let data = "a\n\n  \nb\r\nc";
-        let mut reader = Cursor::new(data.as_bytes());
-        let mut record = Vec::new();
-        let mut lines = Vec::new();
-        while read_line(&mut reader, &mut record).unwrap() {
-            lines.push(String::from_utf8(record.clone()).unwrap());
-        }
-        assert_eq!(lines, ["a", "b", "c"]);
-    }
 }

@@ -1053,6 +1053,7 @@ mod tests {
             ReaderConfig {
                 segment_rows: 2,
                 segments: 2,
+                segment_bytes: usize::MAX,
             },
         ))
         .with_show_header(true)

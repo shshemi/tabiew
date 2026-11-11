@@ -1,7 +1,7 @@
 use crate::{
     AppResult,
     duckdb::{
-        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress},
+        ingester::{FileIngester, IngestProgress, TextTable, progress::CountProgress, read_file},
         session::SessionConn,
     },
 };
@@ -29,7 +29,7 @@ impl FileIngester for HtmlIngester {
         self.progress.clone()
     }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
-        let contents = std::fs::read_to_string(&self.path)?;
+        let contents = read_file(&self.path)?;
         let document = Html::parse_document(&contents);
         let table = Selector::parse("table").unwrap();
         let head = Selector::parse("thead th").unwrap();
