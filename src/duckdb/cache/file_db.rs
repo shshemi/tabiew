@@ -3,6 +3,7 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
+    collections::BTreeMap,
     fs::{File, TryLockError},
     path::{Path, PathBuf},
 };
@@ -15,12 +16,21 @@ pub enum FileDBStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ColumnStats {
+    pub nulls: u64,
+    pub min: Option<String>,
+    pub max: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileDBMetadata {
     pub file_path: PathBuf,
     pub file_name: String,
     pub status: FileDBStatus,
     #[serde(default)]
     pub options: Value,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub stats: BTreeMap<String, Vec<ColumnStats>>,
 }
 
 impl FileDBMetadata {
@@ -33,6 +43,7 @@ impl FileDBMetadata {
                 .unwrap_or_default(),
             status: FileDBStatus::Incomplete,
             options: Value::Null,
+            stats: BTreeMap::new(),
         }
     }
 
@@ -128,6 +139,24 @@ impl FileDB {
         metadata.status = FileDBStatus::Complete;
         metadata.write(&self.file_path)?;
         self.get_read_lock()
+    }
+
+    pub fn stats(&self, table: &str) -> Option<Vec<ColumnStats>> {
+        FileDBMetadata::read(&self.file_path)
+            .ok()??
+            .stats
+            .remove(table)
+    }
+
+    pub fn store_stats(&self, table: &str, stats: &[ColumnStats]) -> AppResult<()> {
+        let mut metadata = FileDBMetadata::read(&self.file_path)?
+            .ok_or_else(|| anyhow!("No metadata for {:?}", self.file_path))?;
+        metadata.stats.insert(table.to_string(), stats.to_vec());
+        metadata.write(&self.file_path)
+    }
+
+    pub fn source_path(&self) -> Option<PathBuf> {
+        Some(FileDBMetadata::read(&self.file_path).ok()??.file_path)
     }
 
     pub fn delete(mut self) -> AppResult<()> {

@@ -6,6 +6,7 @@ mod load;
 mod parts;
 pub mod reader;
 mod results;
+mod schema;
 mod session;
 mod source;
 mod spool;
@@ -16,10 +17,12 @@ use anyhow::anyhow;
 use cache::{CacheManager, config::Config};
 use parts::Group;
 use results::{Materializing, Scratch};
+use schema::StatsJob;
 use session::Session;
 use spool::Spool;
 use sql::{SplitSql, random_name, split_sql};
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     sync::{Arc, atomic::AtomicBool},
 };
@@ -30,7 +33,9 @@ pub(crate) use ingester::{cut_text, sample_columns};
 pub use ingester::{CsvOptions, FwfOptions, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
 pub use inspect::inspect;
+pub use cache::file_db::ColumnStats;
 pub use results::{Opened, Store};
+pub use schema::TableEntry;
 pub use source::DataSource;
 
 pub struct DuckDB {
@@ -44,6 +49,8 @@ pub struct DuckDB {
     reader: ReaderConfig,
     results: usize,
     materializing: Vec<Materializing>,
+    stats: HashMap<String, Vec<cache::file_db::ColumnStats>>,
+    stats_jobs: Vec<StatsJob>,
     _scratch: Scratch,
 }
 
@@ -74,6 +81,7 @@ pub struct Finished {
     pub queries: Vec<AppResult<String>>,
     pub results: Vec<String>,
     pub failed: Vec<(String, String)>,
+    pub stats: bool,
 }
 
 impl DuckDB {
@@ -106,6 +114,8 @@ impl DuckDB {
             },
             results: 0,
             materializing: Vec::new(),
+            stats: HashMap::new(),
+            stats_jobs: Vec::new(),
             _scratch: scratch,
         })
     }
@@ -131,6 +141,7 @@ impl DuckDB {
             queries: Vec::new(),
             results,
             failed,
+            stats: self.poll_stats(),
         };
         let mut i = 0;
         while i < self.ingesting.len() {

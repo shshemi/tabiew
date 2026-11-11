@@ -1,7 +1,7 @@
 use crate::{
     AppResult,
     duckdb::{
-        cache::file_db::{FileDB, FileDBMetadata},
+        cache::file_db::{ColumnStats, FileDB, FileDBMetadata},
         sql::quote,
     },
     iters::enumerate_names,
@@ -10,7 +10,12 @@ use anyhow::anyhow;
 use bytesize::ByteSize;
 use duckdb::{Connection, params, vtab::arrow::ArrowVTab};
 use indexmap::IndexMap;
-use std::{ops::Deref, path::Path, sync::Arc};
+use std::{
+    collections::HashMap,
+    ops::Deref,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 enum Table {
     View(Vec<String>),
@@ -39,6 +44,7 @@ pub struct Session {
     active: Arc<()>,
     attached: IndexMap<String, Attached>,
     name_map: IndexMap<String, Table>,
+    whole: HashMap<String, (String, String)>,
     pending: Vec<String>,
 }
 
@@ -65,8 +71,38 @@ impl Session {
             active: Arc::new(()),
             attached: IndexMap::new(),
             name_map: IndexMap::new(),
+            whole: HashMap::new(),
             pending: Vec::new(),
         })
+    }
+    pub fn names(&self) -> impl Iterator<Item = &str> {
+        self.name_map
+            .keys()
+            .filter(|name| !self.pending.contains(name))
+            .map(String::as_str)
+    }
+    fn whole_table(&self, name: &str) -> Option<(&FileDB, &str)> {
+        let (alias, table) = self.whole.get(name)?;
+        Some((self.attached.get(alias)?.file_db.as_ref()?, table))
+    }
+    pub fn stored_stats(&self, name: &str) -> Option<Vec<ColumnStats>> {
+        let (file_db, table) = self.whole_table(name)?;
+        file_db.stats(table)
+    }
+    pub fn store_stats(&self, name: &str, stats: &[ColumnStats]) {
+        if let Some((file_db, table)) = self.whole_table(name) {
+            let _ = file_db.store_stats(table, stats);
+        }
+    }
+    pub fn source_path(&self, name: &str) -> Option<PathBuf> {
+        let Table::View(aliases) = self.name_map.get(name)? else {
+            return None;
+        };
+        self.attached
+            .get(aliases.first()?)?
+            .file_db
+            .as_ref()?
+            .source_path()
     }
     pub fn execute_batch(&self, sql: &str) -> AppResult<()> {
         Ok(self.conn.execute_batch(sql)?)
@@ -154,6 +190,10 @@ impl Session {
         ))?;
         self.name_map
             .insert(name.clone(), Table::View(vec![alias.to_string()]));
+        if limit.is_none() {
+            self.whole
+                .insert(name.clone(), (alias.to_string(), table.to_string()));
+        }
         Ok(name)
     }
     pub fn create_union(
@@ -250,6 +290,7 @@ impl Session {
                 .execute(&format!("DROP VIEW IF EXISTS {}", quote(&name)), [])?;
             self.pending.pop();
             self.name_map.shift_remove(&name);
+            self.whole.remove(&name);
         }
         let unused = self
             .attached

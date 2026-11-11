@@ -57,11 +57,11 @@ impl Component for DataFrameMetaInfo {
                 ]),
                 Row::new([
                     Span::styled("Total Estimated Memory", theme().header(2)),
-                    Span::styled(format!("{}", self.info.total_est_size()), theme().text()),
+                    Span::styled(self.info.total_est_size_text(), theme().text()),
                 ]),
                 Row::new([
                     Span::styled("Total Null Count", theme().header(3)),
-                    Span::styled(self.info.total_null().to_string(), theme().text()),
+                    Span::styled(self.info.total_null_text(), theme().text()),
                 ]),
             ])
             .widths([Constraint::Max(23), Constraint::Fill(1)])

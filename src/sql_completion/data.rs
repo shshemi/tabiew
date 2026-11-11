@@ -1,21 +1,16 @@
 use std::collections::HashSet;
 
-use polars::frame::DataFrame;
-
 use crate::misc::sql::sql;
 
 /// Gather all unique column names: first from the given DataFrame (the `_`
 /// table), then from every registered table in the SQL backend.
-pub fn collect_all_columns(dataframe: Option<&DataFrame>) -> Vec<String> {
+pub fn collect_all_columns(default_columns: Option<&[String]>) -> Vec<String> {
     let mut columns: Vec<String> = Vec::new();
     let mut seen = HashSet::new();
 
-    if let Some(dataframe) = dataframe {
-        for name in dataframe.get_column_names() {
-            let name = name.to_string();
-            if seen.insert(name.clone()) {
-                columns.push(name);
-            }
+    for name in default_columns.into_iter().flatten() {
+        if seen.insert(name.clone()) {
+            columns.push(name.clone());
         }
     }
 
@@ -32,15 +27,11 @@ pub fn collect_all_columns(dataframe: Option<&DataFrame>) -> Vec<String> {
 }
 
 /// Return column names for a specific table.
-pub fn get_table_columns(table: &str, default_dataframe: Option<&DataFrame>) -> Vec<String> {
+pub fn get_table_columns(table: &str, default_columns: Option<&[String]>) -> Vec<String> {
     if table == "_"
-        && let Some(dataframe) = default_dataframe
+        && let Some(columns) = default_columns
     {
-        return dataframe
-            .get_column_names()
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect();
+        return columns.to_vec();
     }
 
     let backend = sql();

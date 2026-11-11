@@ -3,8 +3,6 @@ mod data;
 mod extraction;
 mod suggestion;
 
-use polars::frame::DataFrame;
-
 pub use context::CompletionContext;
 pub use data::{collect_all_columns, filter_by_prefix, get_table_columns, get_table_names};
 pub use extraction::extract_token_and_context;
@@ -61,7 +59,7 @@ pub fn suggestions(
     cursor: usize,
     sql_prefix: &str,
     all_columns: &[String],
-    dataframe: Option<&DataFrame>,
+    default_columns: Option<&[String]>,
 ) -> Vec<SqlSuggestion> {
     let (token, context) = extract_token_and_context(value, cursor, sql_prefix);
 
@@ -75,11 +73,11 @@ pub fn suggestions(
         CompletionContext::Column => filter_by_prefix(all_columns.iter(), &token_lower),
         CompletionContext::Keyword => keyword_suggestions(&token_lower),
         CompletionContext::QualifiedColumn(table) => {
-            let columns = get_table_columns(table, dataframe);
+            let columns = get_table_columns(table, default_columns);
             filter_by_prefix(columns.iter(), &token_lower)
         }
         CompletionContext::Table => {
-            let tables = get_table_names(dataframe.is_some());
+            let tables = get_table_names(default_columns.is_some());
             filter_by_prefix(tables.iter(), &token_lower)
         }
         CompletionContext::None => Vec::new(),

@@ -16,7 +16,10 @@ use polars::{
 use polars_sql::SQLContext;
 use url::Url;
 
-use crate::{duckdb::DataSource, iters::enumerate_names};
+use crate::{
+    duckdb::{DataSource, TableEntry},
+    iters::enumerate_names,
+};
 
 use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 
@@ -37,6 +40,10 @@ impl SqlBackend {
 
     pub fn schema(&self) -> &BackendSchema {
         &self.schema
+    }
+
+    pub fn set_schema(&mut self, schema: BackendSchema) {
+        self.schema = schema;
     }
 
     pub fn register(
@@ -130,6 +137,7 @@ pub struct TableInfo {
     total_null: usize,
     total_est_size: Size,
     schema: TableSchema,
+    duckdb: Option<bool>,
 }
 
 impl TableInfo {
@@ -142,6 +150,73 @@ impl TableInfo {
             total_null: schema.iter().map(|(_, info)| info.null_count()).sum(),
             total_est_size: schema.iter().map(|(_, info)| info.estimated_size()).sum(),
             schema,
+            duckdb: None,
+        }
+    }
+
+    pub fn duckdb(entry: &TableEntry) -> Self {
+        let nulls = |idx: usize| {
+            entry
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.get(idx))
+                .map(|stats| stats.nulls as usize)
+        };
+        Self {
+            origin: entry
+                .source
+                .clone()
+                .map(TableSource::File)
+                .unwrap_or(TableSource::User),
+            height: entry.rows,
+            width: entry.columns.len(),
+            total_null: (0..entry.columns.len()).filter_map(nulls).sum(),
+            total_est_size: Size::default(),
+            schema: TableSchema {
+                schema: entry
+                    .columns
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, (name, data_type))| {
+                        let stats = entry.stats.as_ref().and_then(|stats| stats.get(idx));
+                        (
+                            name.clone(),
+                            FieldInfo {
+                                dtype: DataType::Null,
+                                est_size: Size::default(),
+                                null_count: nulls(idx).unwrap_or_default(),
+                                min: Scalar::null(DataType::Null),
+                                max: Scalar::null(DataType::Null),
+                                text: Some(FieldText {
+                                    dtype: data_type.clone(),
+                                    nulls: nulls(idx),
+                                    min: stats.and_then(|stats| stats.min.clone()),
+                                    max: stats.and_then(|stats| stats.max.clone()),
+                                }),
+                            },
+                        )
+                    })
+                    .collect(),
+            },
+            duckdb: Some(entry.stats.is_some()),
+        }
+    }
+
+    pub fn needs_stats(&self) -> bool {
+        self.duckdb == Some(false)
+    }
+
+    pub fn total_null_text(&self) -> String {
+        match self.duckdb {
+            Some(false) => "-".to_string(),
+            _ => self.total_null.to_string(),
+        }
+    }
+
+    pub fn total_est_size_text(&self) -> String {
+        match self.duckdb {
+            Some(_) => "-".to_string(),
+            None => self.total_est_size.to_string(),
         }
     }
 
@@ -240,6 +315,15 @@ pub struct FieldInfo {
     null_count: usize,
     min: Scalar,
     max: Scalar,
+    text: Option<FieldText>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FieldText {
+    pub dtype: String,
+    pub nulls: Option<usize>,
+    pub min: Option<String>,
+    pub max: Option<String>,
 }
 
 impl FieldInfo {
@@ -253,7 +337,12 @@ impl FieldInfo {
             null_count: series.null_count(),
             min: Scalar::new(min.dtype(), min),
             max: Scalar::new(max.dtype(), max),
+            text: None,
         }
+    }
+
+    pub fn text(&self) -> Option<&FieldText> {
+        self.text.as_ref()
     }
     pub fn dtype(&self) -> &DataType {
         &self.dtype

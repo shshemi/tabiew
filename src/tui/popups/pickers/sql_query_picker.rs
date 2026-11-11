@@ -32,17 +32,28 @@ pub fn remember(query: &str) {
 
 impl SqlQueryPicker {
     pub fn new(dataframe: Option<DataFrame>) -> Self {
-        let all_columns = sql_completion::collect_all_columns(dataframe.as_ref());
-        Self::with_columns(dataframe, all_columns, false)
+        let columns = dataframe.as_ref().map(|dataframe| {
+            dataframe
+                .get_column_names()
+                .into_iter()
+                .map(|name| name.to_string())
+                .collect()
+        });
+        Self::with_columns(dataframe, columns, false)
     }
 
-    pub fn duckdb(columns: Vec<String>) -> Self {
+    pub fn duckdb(columns: Option<Vec<String>>) -> Self {
         Self::with_columns(None, columns, true)
     }
 
-    fn with_columns(dataframe: Option<DataFrame>, all_columns: Vec<String>, duckdb: bool) -> Self {
+    fn with_columns(
+        dataframe: Option<DataFrame>,
+        columns: Option<Vec<String>>,
+        duckdb: bool,
+    ) -> Self {
+        let all_columns = sql_completion::collect_all_columns(columns.as_deref());
         let provider = SqlQueryProvider {
-            dataframe: dataframe.clone(),
+            columns,
             all_columns,
             history: HISTORY.to_vec(),
         };
@@ -108,7 +119,7 @@ impl Component for SqlQueryPicker {
 
 #[derive(Debug)]
 struct SqlQueryProvider {
-    dataframe: Option<DataFrame>,
+    columns: Option<Vec<String>>,
     all_columns: Vec<String>,
     history: Vec<HistoryOrSqlSuggestion>,
 }
@@ -125,7 +136,7 @@ impl Provider for SqlQueryProvider {
                 cursor,
                 "",
                 &self.all_columns,
-                self.dataframe.as_ref(),
+                self.columns.as_deref(),
             )
             .into_iter()
             .map(|suggestion| HistoryOrSqlSuggestion::SqlSuggestion { suggestion })

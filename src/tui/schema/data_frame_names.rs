@@ -5,6 +5,7 @@ use ratatui::{
     widgets::{Block, Row, StatefulWidget, Table, TableState},
 };
 
+use crate::handler::message::Message;
 use crate::{
     misc::{config::theme, sql::sql},
     tui::{
@@ -119,7 +120,7 @@ impl Component for DataFrameNames {
                     .selected()
                     .and_then(|idx| sql().schema().get_by_index(idx).map(|(s, _)| s.to_owned()))
                 {
-                    sql().unregister(&name);
+                    Message::AppDropTable(name).enqueue();
                 }
                 true
             }

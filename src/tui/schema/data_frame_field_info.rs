@@ -76,18 +76,29 @@ impl Component for DataFrameFieldInfo {
                         .iter()
                         .enumerate()
                         .map(|(idx, (name, info))| {
-                            Row::new([
-                                name.to_owned(),
-                                format!("{}", info.dtype()),
-                                format!("{}", info.estimated_size()),
-                                format!("{}", info.null_count()),
-                                AnyValueFormatter::default()
-                                    .into_single_line(info.min().to_owned().into_value())
-                                    .into_owned(),
-                                AnyValueFormatter::default()
-                                    .into_single_line(info.max().to_owned().into_value())
-                                    .into_owned(),
-                            ])
+                            let dash = |value: Option<String>| value.unwrap_or("-".to_string());
+                            Row::new(match info.text() {
+                                Some(text) => [
+                                    name.to_owned(),
+                                    text.dtype.clone(),
+                                    "-".to_string(),
+                                    dash(text.nulls.map(|nulls| nulls.to_string())),
+                                    dash(text.min.clone()),
+                                    dash(text.max.clone()),
+                                ],
+                                None => [
+                                    name.to_owned(),
+                                    format!("{}", info.dtype()),
+                                    format!("{}", info.estimated_size()),
+                                    format!("{}", info.null_count()),
+                                    AnyValueFormatter::default()
+                                        .into_single_line(info.min().to_owned().into_value())
+                                        .into_owned(),
+                                    AnyValueFormatter::default()
+                                        .into_single_line(info.max().to_owned().into_value())
+                                        .into_owned(),
+                                ],
+                            })
                             .style(theme().row(idx))
                         }),
                 )

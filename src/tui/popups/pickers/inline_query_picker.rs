@@ -21,8 +21,12 @@ pub struct InlineQueryPicker {
 
 impl InlineQueryPicker {
     pub fn new(dataframe: DataFrame, query_type: QueryType) -> Self {
-        let all_columns = sql_completion::collect_all_columns(Some(&dataframe));
-        Self::with_columns(Some(dataframe), all_columns, query_type)
+        let columns = dataframe
+            .get_column_names()
+            .into_iter()
+            .map(|name| name.to_string())
+            .collect();
+        Self::with_columns(Some(dataframe), columns, query_type)
     }
 
     pub fn duckdb(columns: Vec<String>, query_type: QueryType) -> Self {
@@ -31,11 +35,12 @@ impl InlineQueryPicker {
 
     fn with_columns(
         dataframe: Option<DataFrame>,
-        all_columns: Vec<String>,
+        columns: Vec<String>,
         query_type: QueryType,
     ) -> Self {
+        let all_columns = sql_completion::collect_all_columns(Some(&columns));
         let provider = InlineQueryProvider {
-            dataframe: dataframe.clone(),
+            columns,
             query_type,
             all_columns,
         };
@@ -136,7 +141,7 @@ impl Component for InlineQueryPicker {
 
 #[derive(Debug)]
 struct InlineQueryProvider {
-    dataframe: Option<DataFrame>,
+    columns: Vec<String>,
     query_type: QueryType,
     all_columns: Vec<String>,
 }
@@ -150,7 +155,7 @@ impl Provider for InlineQueryProvider {
             cursor,
             self.query_type.sql_prefix(),
             &self.all_columns,
-            self.dataframe.as_ref(),
+            Some(&self.columns),
         )
     }
 }

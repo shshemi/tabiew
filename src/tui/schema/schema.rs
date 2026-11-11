@@ -48,7 +48,7 @@ impl Component for Schema {
         Clear.render(area, buf);
 
         if let Some(selected) = self.names.selected()
-            && let Some((_, new_info)) = sql().schema().get_by_index(selected)
+            && let Some((name, new_info)) = sql().schema().get_by_index(selected)
             && self
                 .info
                 .as_ref()
@@ -56,6 +56,9 @@ impl Component for Schema {
                 .map(|cur_info| cur_info != new_info)
                 .unwrap_or(true)
         {
+            if new_info.needs_stats() {
+                Message::AppTableStats(name.clone()).enqueue();
+            }
             self.info = Some(DataFrameInfo::new(new_info.clone()))
         }
 
@@ -96,27 +99,13 @@ impl Component for Schema {
                     true
                 }
                 (KeyCode::Enter, KeyModifiers::NONE) => {
-                    if let Some((name, df)) = self
-                        .names
-                        .selected()
-                        .and_then(|idx| {
-                            sql()
-                                .schema()
-                                .get_by_index(idx)
-                                .map(|(name, _)| name.to_owned())
-                        })
-                        .and_then(|name| {
-                            sql()
-                                .execute_with_default(
-                                    &format!("SELECT * FROM \"{}\"", name.replace('"', "\"\"")),
-                                    None,
-                                )
-                                .ok()
-                                .map(|df| (name, df))
-                        })
-                    {
-                        Message::TabsAddNamePane(df, name).enqueue();
-                        Message::AppDismissSchema.enqueue();
+                    if let Some(name) = self.names.selected().and_then(|idx| {
+                        sql()
+                            .schema()
+                            .get_by_index(idx)
+                            .map(|(name, _)| name.to_owned())
+                    }) {
+                        Message::AppOpenTable(name).enqueue();
                     }
                     true
                 }

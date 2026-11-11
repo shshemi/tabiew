@@ -4,6 +4,7 @@ use crate::AppResult;
 use crate::duckdb::{DataSource, DuckDB, IngestOptions, Load, Opened, Store};
 use crate::indexer::Indexer;
 use crate::misc::config::config;
+use crate::misc::sql::{BackendSchema, TableInfo, sql};
 use crate::net::remote_load::{self, RemoteLoad};
 use crate::reader::{Empty, Reader};
 use crate::tui::Pane;
@@ -184,8 +185,10 @@ impl App {
             return;
         };
         let mut errors = Vec::new();
+        let mut changed = false;
         let tables = match duckdb.poll() {
             Ok(finished) => {
+                changed = finished.stats || !finished.tables.is_empty();
                 for view in finished.results {
                     if let Some(pane) = self
                         .tabs
@@ -247,6 +250,9 @@ impl App {
                 self.tabs
                     .push(Pane::reader(reader, TableDescription::Table(name)));
             }
+        }
+        if changed {
+            self.sync_schema();
         }
         if let Some(error) = errors.pop() {
             self.show_error(error);
@@ -338,19 +344,65 @@ impl App {
     }
 
     fn show_sql_query_picker(&mut self) {
+        self.sync_schema();
         let table = self.tabs.selected().map(Pane::table);
         self.overlay = Some(Overlay::SqlQueryPicker(match self.duckdb {
             Some(_) => SqlQueryPicker::duckdb(
                 table
+                    .filter(|table| table.view().is_some())
                     .and_then(Table::rows)
                     .and_then(|rows| rows.lock().ok().map(|rows| rows.columns()))
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|(name, _)| name)
-                    .collect(),
+                    .map(|columns| columns.into_iter().map(|(name, _)| name).collect()),
             ),
             None => SqlQueryPicker::new(table.and_then(Table::data_frame).cloned()),
         }));
+    }
+
+    fn sync_schema(&mut self) {
+        if let Some(duckdb) = self.duckdb.as_mut() {
+            let mut schema = BackendSchema::default();
+            for entry in duckdb.tables() {
+                schema.insert(entry.name.clone(), TableInfo::duckdb(&entry));
+            }
+            sql().set_schema(schema);
+        }
+    }
+
+    fn open_table(&mut self, name: &str) {
+        match self.duckdb.as_mut() {
+            Some(duckdb) => match duckdb.reader(name) {
+                Ok(reader) => {
+                    self.schema = None;
+                    self.tabs.add(Pane::reader(
+                        reader,
+                        TableDescription::Table(name.to_owned()),
+                    ));
+                }
+                Err(err) => self.show_error(err.to_string()),
+            },
+            None => {
+                let query = format!("SELECT * FROM \"{}\"", name.replace('"', "\"\""));
+                if let Ok(df) = sql().execute_with_default(&query, None) {
+                    self.schema = None;
+                    self.tabs
+                        .add(Pane::new(df, TableDescription::Table(name.to_owned())));
+                }
+            }
+        }
+    }
+
+    fn drop_table(&mut self, name: &str) {
+        match self.duckdb.as_mut() {
+            Some(duckdb) => {
+                let detached = duckdb.detach(name);
+                duckdb.forget_stats(name);
+                self.sync_schema();
+                if let Err(err) = detached {
+                    self.show_error(err.to_string());
+                }
+            }
+            None => sql().unregister(name),
+        }
     }
 
     fn query(&mut self, sql: &str) {
@@ -437,6 +489,7 @@ impl App {
     }
 
     fn show_schema(&mut self) {
+        self.sync_schema();
         self.schema = Some(Default::default());
     }
 
@@ -565,6 +618,13 @@ impl Component for App {
             Message::AppImport(source, reader) => self.import(source, reader.clone()),
             Message::AppQuery(sql) => self.query(sql),
             Message::AppInlineQuery(query_type, value) => self.inline_query(*query_type, value),
+            Message::AppOpenTable(name) => self.open_table(name),
+            Message::AppDropTable(name) => self.drop_table(name),
+            Message::AppTableStats(name) => {
+                if let Some(duckdb) = self.duckdb.as_mut() {
+                    let _ = duckdb.request_stats(name);
+                }
+            }
             Message::AppDropQuery(view) => {
                 if let Some(duckdb) = self.duckdb.as_mut() {
                     duckdb.drop_result(view);
