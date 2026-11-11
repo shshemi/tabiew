@@ -10,6 +10,9 @@ use super::{Destination, WriteToFile};
 pub struct WriteToMarkdown;
 
 impl WriteToFile for WriteToMarkdown {
+    fn format(&self) -> super::ExportFormat {
+        super::ExportFormat::Markdown
+    }
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()> {
         let buf = render_markdown(data_frame);
         match dest {
@@ -75,7 +78,7 @@ fn format_value(v: &AnyValue<'_>) -> String {
     }
 }
 
-fn escape_cell(s: &str) -> String {
+pub(crate) fn escape_cell(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('|', "\\|")
         .replace('\r', "")

@@ -1,5 +1,5 @@
+use crate::writers::ExportData;
 use crate::writers::{Destination, WriteToFile};
-use polars::frame::DataFrame;
 
 use crate::{
     handler::message::{Message, UnwrapOrEnqueueError},
@@ -23,30 +23,30 @@ pub type CsvExporter = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickSeparator {
-        df: DataFrame,
+        df: ExportData,
         picker: TextPicker,
     },
     PickQuoteChar {
-        df: DataFrame,
+        df: ExportData,
         separator: char,
         picker: TextPicker,
     },
     PickOutputTarget {
-        df: DataFrame,
+        df: ExportData,
         separator: char,
         quote: char,
         picker: ExportTargetPicker,
     },
     PickOutputPath {
-        df: DataFrame,
+        df: ExportData,
         separator: char,
         quote: char,
         picker: FilePicker,
     },
 }
 
-impl From<DataFrame> for State {
-    fn from(value: DataFrame) -> Self {
+impl From<ExportData> for State {
+    fn from(value: ExportData) -> Self {
         Self::PickSeparator {
             df: value,
             picker: TextPicker::default()
@@ -105,13 +105,15 @@ impl WizardStep for State {
                         .with_separator_char(separator)
                         .with_quote_char(quote)
                         .with_header(true)
-                        .write_to_file(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error();
-                    Message::PaneDismissModal.enqueue();
-                    Message::AppShowToast(
-                        "Data frame exported to clipboard in CSV format".to_owned(),
-                    )
-                    .enqueue();
+                        .export(Destination::Clipboard, &mut df)
+                        .unwrap_or_enqueue_error()
+                        .then(|| {
+                            Message::PaneDismissModal.enqueue();
+                            Message::AppShowToast(
+                                "Data frame exported to clipboard in CSV format".to_owned(),
+                            )
+                            .enqueue();
+                        });
                     State::PickOutputTarget {
                         df,
                         separator,
@@ -142,7 +144,7 @@ impl WizardStep for State {
                     .with_separator_char(separator)
                     .with_quote_char(quote)
                     .with_header(true)
-                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .export(Destination::File(picker.path()), &mut df)
                     .unwrap_or_enqueue_error()
                     .then(|| {
                         Message::PaneDismissModal.enqueue();

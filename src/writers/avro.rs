@@ -13,6 +13,9 @@ use super::{Destination, WriteToFile};
 pub struct WriteToAvro;
 
 impl WriteToFile for WriteToAvro {
+    fn format(&self) -> super::ExportFormat {
+        super::ExportFormat::Avro
+    }
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()> {
         match dest {
             Destination::File(path) => Ok(AvroWriter::new(File::create(path)?).finish(data_frame)?),

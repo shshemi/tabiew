@@ -1,4 +1,5 @@
 mod cache;
+mod export;
 mod ingester;
 #[cfg(debug_assertions)]
 mod inspect;
@@ -51,6 +52,7 @@ pub struct DuckDB {
     reader: ReaderConfig,
     results: usize,
     materializing: Vec<Materializing>,
+    exporting: Vec<export::Exporting>,
     stats: HashMap<String, Vec<cache::file_db::ColumnStats>>,
     stats_jobs: Vec<StatsJob>,
     _scratch: Scratch,
@@ -84,6 +86,7 @@ pub struct Finished {
     pub results: Vec<String>,
     pub swapped: Vec<String>,
     pub failed: Vec<(String, String)>,
+    pub exports: Vec<Result<String, String>>,
     pub stats: bool,
 }
 
@@ -118,6 +121,7 @@ impl DuckDB {
             },
             results: 0,
             materializing: Vec::new(),
+            exporting: Vec::new(),
             stats: HashMap::new(),
             stats_jobs: Vec::new(),
             _scratch: scratch,
@@ -146,6 +150,7 @@ impl DuckDB {
             results: polled.ready,
             swapped: polled.swapped,
             failed: polled.failed,
+            exports: self.poll_exports(),
             stats: self.poll_stats(),
         };
         self.poll_probes(&mut finished);

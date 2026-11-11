@@ -10,6 +10,9 @@ use super::{Destination, WriteToFile};
 pub struct WriteToArrow;
 
 impl WriteToFile for WriteToArrow {
+    fn format(&self) -> super::ExportFormat {
+        super::ExportFormat::Arrow
+    }
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()> {
         match dest {
             Destination::File(path) => Ok(IpcWriter::new(File::create(path)?).finish(data_frame)?),

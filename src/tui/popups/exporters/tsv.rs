@@ -1,4 +1,4 @@
-use polars::frame::DataFrame;
+use crate::writers::ExportData;
 
 use crate::{
     handler::message::{Message, UnwrapOrEnqueueError},
@@ -20,17 +20,17 @@ pub type TsvExporter = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickOutputTarget {
-        df: DataFrame,
+        df: ExportData,
         picker: ExportTargetPicker,
     },
     PickOutputPath {
-        df: DataFrame,
+        df: ExportData,
         picker: FilePicker,
     },
 }
 
-impl From<DataFrame> for State {
-    fn from(value: DataFrame) -> Self {
+impl From<ExportData> for State {
+    fn from(value: ExportData) -> Self {
         Self::PickOutputTarget {
             df: value,
             picker: Default::default(),
@@ -51,7 +51,7 @@ impl WizardStep for State {
                         .with_separator_char('\t')
                         .with_quote_char('"')
                         .with_header(false)
-                        .write_to_file(Destination::Clipboard, &mut df)
+                        .export(Destination::Clipboard, &mut df)
                         .unwrap_or_enqueue_error()
                         .then(|| {
                             Message::PaneDismissModal.enqueue();
@@ -69,18 +69,20 @@ impl WizardStep for State {
                     .with_separator_char('\t')
                     .with_quote_char('"')
                     .with_header(false)
-                    .write_to_file(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error();
-                Message::PaneDismissModal.enqueue();
-                Message::AppShowToast(format!(
-                    "Data frame exported to '{}' in TSV format",
-                    picker
-                        .path()
-                        .file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                ))
-                .enqueue();
+                    .export(Destination::File(picker.path()), &mut df)
+                    .unwrap_or_enqueue_error()
+                    .then(|| {
+                        Message::PaneDismissModal.enqueue();
+                        Message::AppShowToast(format!(
+                            "Data frame exported to '{}' in TSV format",
+                            picker
+                                .path()
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                        ))
+                        .enqueue();
+                    });
                 State::PickOutputPath { df, picker }
             }
         }

@@ -38,6 +38,13 @@ impl WriteToCsv {
 }
 
 impl WriteToFile for WriteToCsv {
+    fn format(&self) -> super::ExportFormat {
+        super::ExportFormat::Csv {
+            separator: self.separator,
+            quote: self.quote,
+            header: self.header,
+        }
+    }
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()> {
         match dest {
             Destination::File(path) => Ok(CsvWriter::new(File::create(path)?)

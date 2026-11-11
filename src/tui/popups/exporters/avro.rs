@@ -1,4 +1,4 @@
-use polars::frame::DataFrame;
+use crate::writers::ExportData;
 
 use crate::{
     handler::message::{Message, UnwrapOrEnqueueError},
@@ -16,11 +16,11 @@ pub type AvroExporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
-    PickOutputPath { df: DataFrame, picker: FilePicker },
+    PickOutputPath { df: ExportData, picker: FilePicker },
 }
 
-impl From<DataFrame> for State {
-    fn from(value: DataFrame) -> Self {
+impl From<ExportData> for State {
+    fn from(value: ExportData) -> Self {
         Self::PickOutputPath {
             df: value,
             picker: Default::default(),
@@ -33,7 +33,7 @@ impl WizardStep for State {
         match self {
             State::PickOutputPath { mut df, picker } => {
                 WriteToAvro
-                    .write_to_file(Destination::File(picker.path()), &mut df)
+                    .export(Destination::File(picker.path()), &mut df)
                     .unwrap_or_enqueue_error()
                     .then(|| {
                         Message::PaneDismissModal.enqueue();

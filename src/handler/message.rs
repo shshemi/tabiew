@@ -11,6 +11,7 @@ use crate::{
     duckdb::DataSource,
     net::remote_load::{Importer, Reader},
     tui::{pane::TableDescription, popups::pickers::inline_query_picker::QueryType},
+    writers::{Destination, ExportFormat},
 };
 
 static SHARED_CHANNEL: LazyLock<(Sender<Message>, Mutex<Receiver<Message>>)> =
@@ -52,6 +53,7 @@ pub enum Message {
     AppInlineQuery(QueryType, String),
     AppDropQuery(String),
     AppSearchStart(bool),
+    AppExport(String, ExportFormat, Destination),
     AppSearch(String, String, bool),
     AppOpenTable(String),
     AppDropTable(String),
@@ -103,6 +105,18 @@ impl Message {
 
 pub trait UnwrapOrEnqueueError {
     fn unwrap_or_enqueue_error(&self) -> bool;
+}
+
+impl UnwrapOrEnqueueError for AppResult<bool> {
+    fn unwrap_or_enqueue_error(&self) -> bool {
+        match self {
+            Ok(done) => *done,
+            Err(err) => {
+                Message::AppShowError(err.to_string()).enqueue();
+                false
+            }
+        }
+    }
 }
 
 impl UnwrapOrEnqueueError for AppResult<()> {

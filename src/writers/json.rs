@@ -35,6 +35,12 @@ impl WriteToJson {
 }
 
 impl WriteToFile for WriteToJson {
+    fn format(&self) -> super::ExportFormat {
+        match self.fmt {
+            JsonFormat::Json => super::ExportFormat::Json,
+            JsonFormat::JsonLine => super::ExportFormat::Jsonl,
+        }
+    }
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()> {
         match dest {
             Destination::File(path) => Ok(JsonWriter::new(File::create(path)?)

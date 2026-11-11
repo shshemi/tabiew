@@ -58,6 +58,10 @@ impl App {
         &self.tabs
     }
 
+    pub fn duckdb(&self) -> Option<&DuckDB> {
+        self.duckdb.as_ref()
+    }
+
     pub fn new(tabs: Tabs) -> Self {
         Self {
             tabs,
@@ -185,6 +189,7 @@ impl App {
             return;
         };
         let mut errors = Vec::new();
+        let mut toasts = Vec::new();
         let mut changed = false;
         let (tables, queries) = match duckdb.poll() {
             Ok(finished) => {
@@ -208,6 +213,12 @@ impl App {
                 for view in finished.swapped {
                     for pane in self.tabs.panes_mut() {
                         pane.reset_view(&view);
+                    }
+                }
+                for export in finished.exports {
+                    match export {
+                        Ok(done) => toasts.push(done),
+                        Err(error) => errors.push(error),
                     }
                 }
                 for (view, error) in finished.failed {
@@ -264,6 +275,9 @@ impl App {
                     .add(Pane::reader(reader, TableDescription::Table(name))),
                 Err(err) => errors.push(err.to_string()),
             }
+        }
+        for toast in toasts {
+            self.show_toast(toast);
         }
         if changed {
             self.sync_schema();
@@ -669,6 +683,13 @@ impl Component for App {
             Message::AppImport(source, reader) => self.import(source, reader.clone()),
             Message::AppQuery(sql) => self.query(sql),
             Message::AppSearchStart(fuzzy) => self.search_start(*fuzzy),
+            Message::AppExport(view, format, dest) => {
+                if let Some(duckdb) = self.duckdb.as_mut()
+                    && let Err(err) = duckdb.export(view, *format, dest.clone())
+                {
+                    self.show_error(err.to_string());
+                }
+            }
             Message::AppSearch(base, pattern, fuzzy) => self.search(base, pattern, *fuzzy),
             Message::AppInlineQuery(query_type, value) => self.inline_query(*query_type, value),
             Message::AppOpenTable(name) => self.open_table(name),

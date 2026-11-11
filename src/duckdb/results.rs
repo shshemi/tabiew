@@ -264,6 +264,11 @@ impl DuckDB {
                     materializing.progress.fraction(),
                 )
             })
+            .chain(
+                self.exporting
+                    .iter()
+                    .map(|exporting| (exporting.title.as_str(), exporting.progress.fraction())),
+            )
     }
     pub fn drop_result(&mut self, view: &str) {
         if !view.starts_with(RESULT_PREFIX) {

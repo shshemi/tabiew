@@ -167,41 +167,47 @@ fn apply_export(app: &App, spec: ExportSpec) -> Result<PathBuf, String> {
 }
 
 fn export_current_table(app: &App, spec: ExportSpec) -> AppResult<()> {
-    let mut df = current_table(app)?;
-    match spec {
+    let path = spec.path().to_path_buf();
+    let writer: Box<dyn WriteToFile> = match spec {
         ExportSpec::Csv {
-            path,
             separator,
             quote_char,
             no_header,
-        } => WriteToCsv::default()
-            .with_separator_char(separator)
-            .with_quote_char(quote_char)
-            .with_header(!no_header)
-            .write_to_file(Destination::File(path), &mut df),
+            ..
+        } => Box::new(
+            WriteToCsv::default()
+                .with_separator_char(separator)
+                .with_quote_char(quote_char)
+                .with_header(!no_header),
+        ),
         ExportSpec::Tsv {
-            path,
             quote_char,
             no_header,
-        } => WriteToCsv::default()
-            .with_separator_char('\t')
-            .with_quote_char(quote_char)
-            .with_header(!no_header)
-            .write_to_file(Destination::File(path), &mut df),
-        ExportSpec::Json { path } => WriteToJson::default()
-            .with_format(JsonFormat::Json)
-            .write_to_file(Destination::File(path), &mut df),
-        ExportSpec::Jsonl { path } => WriteToJson::default()
-            .with_format(JsonFormat::JsonLine)
-            .write_to_file(Destination::File(path), &mut df),
-        ExportSpec::Parquet { path } => {
-            WriteToParquet.write_to_file(Destination::File(path), &mut df)
+            ..
+        } => Box::new(
+            WriteToCsv::default()
+                .with_separator_char('\t')
+                .with_quote_char(quote_char)
+                .with_header(!no_header),
+        ),
+        ExportSpec::Json { .. } => Box::new(WriteToJson::default().with_format(JsonFormat::Json)),
+        ExportSpec::Jsonl { .. } => {
+            Box::new(WriteToJson::default().with_format(JsonFormat::JsonLine))
         }
-        ExportSpec::Arrow { path } => WriteToArrow.write_to_file(Destination::File(path), &mut df),
-        ExportSpec::Avro { path } => WriteToAvro.write_to_file(Destination::File(path), &mut df),
-        ExportSpec::Markdown { path } => {
-            WriteToMarkdown.write_to_file(Destination::File(path), &mut df)
-        }
+        ExportSpec::Parquet { .. } => Box::new(WriteToParquet),
+        ExportSpec::Arrow { .. } => Box::new(WriteToArrow),
+        ExportSpec::Avro { .. } => Box::new(WriteToAvro),
+        ExportSpec::Markdown { .. } => Box::new(WriteToMarkdown),
+    };
+    let table = app
+        .tabs()
+        .selected()
+        .ok_or_else(|| anyhow!("no tab is open"))?
+        .table();
+    match (table.data_frame(), table.view(), app.duckdb()) {
+        (Some(df), _, _) => writer.write_to_file(Destination::File(path), &mut df.clone()),
+        (None, Some(view), Some(duckdb)) => duckdb.export_now(&view, writer.format(), &path),
+        _ => Err(anyhow!("not available until the table is ingested")),
     }
 }
 

@@ -56,6 +56,7 @@ use crate::{
         table::Table,
         widgets::status_bar::StatusBar,
     },
+    writers::ExportData,
 };
 
 #[derive(Debug)]
@@ -273,6 +274,18 @@ impl Pane {
         df
     }
 
+    fn export_data(&self) -> Option<ExportData> {
+        match (self.table().data_frame(), self.table().view()) {
+            (Some(df), _) => Some(df.clone().into()),
+            (None, Some(view)) => Some(ExportData::View(view)),
+            (None, None) => {
+                Message::AppShowError("Not available until the table is ingested".to_string())
+                    .enqueue();
+                None
+            }
+        }
+    }
+
     pub fn show_sheet(&mut self) {
         if self.sheet.is_none()
             && let Some(data) = self.sheet_data()
@@ -402,56 +415,56 @@ impl Pane {
     }
 
     fn show_arrow_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportArrow(ArrowExporter::new(df.into())))
     }
 
     fn show_avro_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportAvro(AvroExporter::new(df.into())))
     }
 
     fn show_csv_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportCsv(CsvExporter::new(df.into())))
     }
 
     fn show_json_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportJson(JsonExporter::new(df.into())))
     }
 
     fn show_jsonl_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportJsonl(JsonlExporter::new(df.into())))
     }
 
     fn show_markdown_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportMarkdown(MarkdownExporter::new(df.into())))
     }
 
     fn show_parquet_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportParquet(ParquetExporter::new(df.into())))
     }
 
     fn show_tsv_exporter(&mut self) {
-        let Some(df) = self.frame() else {
+        let Some(df) = self.export_data() else {
             return;
         };
         self.modal = Some(Modal::ExportTsv(TsvExporter::new(df.into())))

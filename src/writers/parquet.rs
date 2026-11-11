@@ -10,6 +10,9 @@ use super::{Destination, WriteToFile};
 pub struct WriteToParquet;
 
 impl WriteToFile for WriteToParquet {
+    fn format(&self) -> super::ExportFormat {
+        super::ExportFormat::Parquet
+    }
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()> {
         match dest {
             Destination::File(path) => {
