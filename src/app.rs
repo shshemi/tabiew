@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::AppResult;
+use crate::args::Format;
 use crate::ctl::{
     self,
     job::{Done, Job, Kind, Wait},
@@ -12,9 +13,10 @@ use crate::ctl::{
 use crate::duckdb::{
     DataSource, DuckDB, Import, IngestOptions, IngestProgress, Load, Opened, Store,
 };
-use crate::indexer::Indexer;
+use crate::indexer::{Indexer, SqliteSource};
 use crate::misc::config::config;
 use crate::misc::external_editor::run_editor;
+use crate::misc::format::resolve_format;
 use crate::misc::sql::{BackendSchema, TableInfo, sql};
 use crate::reader::{Empty, Reader, RowSource};
 use crate::tui::Pane;
@@ -160,14 +162,22 @@ impl App {
                         (part(path.file_stem()), part(path.file_name()))
                     }
                 };
+                let sqlite = ingest
+                    .file
+                    .as_deref()
+                    .filter(|file| resolve_format(options.format.as_ref(), file) == Format::Sqlite)
+                    .and_then(|file| SqliteSource::open(file, options.sqlite_key.as_deref()).ok());
                 let indexer = ingest
                     .file
                     .and_then(|file| Indexer::new(file, options, ingest.complete).ok());
                 let description = TableDescription::Table(name);
                 let config = duckdb.reader_config();
-                let pane = match indexer {
-                    Some(indexer) => Pane::reader(Reader::new(indexer, config), description),
-                    None => Pane::reader(Reader::new(Empty, config), description),
+                let pane = match (sqlite, indexer) {
+                    (Some(sqlite), _) => Pane::reader(Reader::new(sqlite, config), description),
+                    (None, Some(indexer)) => {
+                        Pane::reader(Reader::new(indexer, config), description)
+                    }
+                    (None, None) => Pane::reader(Reader::new(Empty, config), description),
                 };
                 panes.push(pane.loading_from(ingest.source, title, ingest.progress));
             }

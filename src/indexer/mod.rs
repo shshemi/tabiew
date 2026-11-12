@@ -3,6 +3,7 @@ mod fwf;
 mod jsonl;
 mod lines;
 mod logfmt;
+mod sqlite;
 
 use crate::{
     AppResult,
@@ -17,6 +18,7 @@ use fwf::FwfIndexer;
 use indexmap::IndexSet;
 use jsonl::JsonlIndexer;
 use logfmt::LogfmtIndexer;
+pub use sqlite::SqliteSource;
 use std::{
     fs::File,
     io::{self, BufRead, BufReader, Read, Seek, SeekFrom},
