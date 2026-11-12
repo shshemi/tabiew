@@ -354,6 +354,10 @@ impl Message {
         IPC.lock().unwrap_or_graceful_shutdown().send(self);
     }
 
+    pub fn shutdown() {
+        IPC.lock().unwrap_or_graceful_shutdown().shutdown();
+    }
+
     pub fn recv() -> Option<Message> {
         IPC.lock().unwrap_or_graceful_shutdown().recv()
     }

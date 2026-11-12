@@ -23,7 +23,9 @@ async fn main() {
     if let Some(sub_cmd) = args.sub_command {
         match sub_cmd {
             tabiew::args::SubCommand::Ctl(args) => {
-                if let Err(err) = run_ctl(args) {
+                let result = run_ctl(args);
+                ctl::Message::shutdown();
+                if let Err(err) = result {
                     eprintln!("{}", json!({ "error": format!("{err:#}") }));
                     std::process::exit(1);
                 }
@@ -34,7 +36,9 @@ async fn main() {
 
     config::init().unwrap_or_graceful_shutdown();
 
-    if let Err(err) = run(&args) {
+    let result = run(&args);
+    ctl::Message::shutdown();
+    if let Err(err) = result {
         eprintln!("{err:#}");
         std::process::exit(1);
     }

@@ -1,23 +1,28 @@
 use std::{
     sync::mpsc::{Receiver, Sender, TryRecvError, channel},
+    thread::JoinHandle,
     time::Duration,
 };
 
 use iceoryx2::{
     config::Config,
     node::NodeBuilder,
-    prelude::{AllocationStrategy, FileName, SemanticString, ZeroCopySend},
+    prelude::{
+        AllocationStrategy, FileName, LogLevel, SemanticString, ZeroCopySend,
+        set_log_level_from_env_or,
+    },
     service::ipc,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::AppResult;
 
-const CYCLE_TIME: Duration = Duration::from_millis(100);
+const CYCLE_TIME: Duration = Duration::from_millis(25);
 
 pub struct Channel<T> {
-    send: Sender<T>,
+    send: Option<Sender<T>>,
     recv: Receiver<T>,
+    hndl: Option<JoinHandle<AppResult<()>>>,
 }
 
 impl<T> Channel<T>
@@ -27,25 +32,26 @@ where
     pub fn new(auto_reply: fn(&T) -> Option<T>) -> Self {
         let (send, trecv) = channel::<T>();
         let (tsend, recv) = channel::<T>();
-
-        std::thread::spawn(move || -> AppResult<()> {
+        set_log_level_from_env_or(LogLevel::Fatal);
+        let hndl = std::thread::spawn(move || -> AppResult<()> {
             let node = NodeBuilder::new()
                 .config(&Self::ipc_config())
                 .create::<ipc::Service>()?;
             let service = node
-                .service_builder(&"tabiew/broadcast/v2".try_into()?)
+                .service_builder(&"tabiew/broadcast/v3".try_into()?)
                 .publish_subscribe::<[u8]>()
                 .user_header::<Header>()
                 .max_nodes(32)
                 .max_publishers(32)
                 .max_subscribers(32)
                 .history_size(0)
+                .subscriber_max_buffer_size(64)
                 .open_or_create()?;
 
             let subscriber = service.subscriber_builder().create()?;
             let publisher = service
                 .publisher_builder()
-                .initial_max_slice_len(65_536)
+                .initial_max_slice_len(4_096)
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
                 .create()?;
 
@@ -83,7 +89,11 @@ where
             }
         });
 
-        Self { send, recv }
+        Self {
+            send: Some(send),
+            recv,
+            hndl: Some(hndl),
+        }
     }
 
     pub fn recv(&self) -> Option<T> {
@@ -95,7 +105,16 @@ where
     }
 
     pub fn send(&self, msg: T) {
-        let _ = self.send.send(msg);
+        if let Some(send) = &self.send {
+            let _ = send.send(msg);
+        }
+    }
+
+    pub fn shutdown(&mut self) {
+        self.send.take();
+        if let Some(hndl) = self.hndl.take() {
+            let _ = hndl.join();
+        }
     }
 
     fn ipc_config() -> Config {
