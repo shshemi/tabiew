@@ -41,7 +41,8 @@ impl FileIngester for AvroIngester {
             progress: self.progress.clone(),
         };
         let reader = ReaderBuilder::new().build(BufReader::new(counted))?;
-        write_batches(&conn, alias, reader)
+        let schema = reader.schema();
+        write_batches(&conn, alias, schema, reader)
     }
 }
 

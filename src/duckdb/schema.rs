@@ -21,6 +21,7 @@ pub struct TableEntry {
     pub source: Option<PathBuf>,
     pub rows: Option<usize>,
     pub disk: Option<u64>,
+    pub disk_pending: bool,
     pub columns: Vec<(String, String)>,
     pub stats: Option<Vec<ColumnStats>>,
 }
@@ -120,16 +121,18 @@ impl DuckDB {
         {
             self.stats.insert(name.to_string(), stats);
         }
+        let disk = match self.session.in_memory(name) {
+            true => Some(0),
+            false => self
+                .session
+                .stored_size(name)
+                .or_else(|| self.scratch_size(name)),
+        };
         Some(TableEntry {
             source: self.session.source_path(name),
             rows,
-            disk: match self.session.in_memory(name) {
-                true => Some(0),
-                false => self
-                    .session
-                    .stored_size(name)
-                    .or_else(|| self.scratch_size(name)),
-            },
+            disk,
+            disk_pending: disk.is_none() && self.checkpoint_due && name.starts_with(RESULT_PREFIX),
             columns: view.columns().to_vec(),
             stats: self.stats.get(name).cloned(),
             name: name.to_string(),

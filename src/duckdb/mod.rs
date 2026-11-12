@@ -60,6 +60,7 @@ pub struct DuckDB {
     stats_jobs: Vec<StatsJob>,
     counts: HashMap<String, usize>,
     count_jobs: Vec<schema::CountJob>,
+    checkpoint_due: bool,
     _scratch: Scratch,
 }
 
@@ -144,6 +145,7 @@ impl DuckDB {
             stats_jobs: Vec::new(),
             counts: HashMap::new(),
             count_jobs: Vec::new(),
+            checkpoint_due: false,
             _scratch: scratch,
         })
     }
@@ -172,7 +174,7 @@ impl DuckDB {
             failed: polled.failed,
             exports: self.poll_exports(),
             plots: self.poll_plots(),
-            stats: self.poll_stats() | self.poll_counts(),
+            stats: self.poll_stats() | self.poll_counts() | polled.checkpointed,
         };
         self.poll_probes(&mut finished);
         self.poll_parts_probes(&mut finished);

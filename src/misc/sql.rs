@@ -85,6 +85,7 @@ pub struct TableInfo {
     stats: bool,
     known: (bool, bool),
     disk: Option<u64>,
+    disk_pending: bool,
 }
 
 impl TableInfo {
@@ -137,6 +138,7 @@ impl TableInfo {
             stats: entry.stats.is_some(),
             known: (entry.rows.is_some(), total.is_some()),
             disk: entry.disk,
+            disk_pending: entry.disk_pending,
         }
     }
 
@@ -159,10 +161,14 @@ impl TableInfo {
     }
 
     pub fn disk_text(&self) -> Option<String> {
-        self.disk.map(|disk| match disk {
-            0 => "0 B (in memory)".to_string(),
-            disk => Size(disk).to_string(),
-        })
+        match self.disk {
+            Some(0) => Some("0 B (in memory)".to_string()),
+            Some(disk) => Some(Size(disk).to_string()),
+            None if self.disk_pending && self.known.1 => {
+                Some(format!("~{} (estimated)", self.total_est_size))
+            }
+            None => None,
+        }
     }
 
     pub fn shape_text(&self) -> String {

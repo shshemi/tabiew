@@ -8,7 +8,10 @@ use crate::{
 };
 use arrow_ipc::reader::FileReader;
 use duckdb::{
-    Connection, arrow::record_batch::RecordBatch, params, vtab::arrow::ArrowBatchRegistration,
+    Connection,
+    arrow::{datatypes::SchemaRef, record_batch::RecordBatch},
+    params,
+    vtab::arrow::ArrowBatchRegistration,
 };
 use std::{fs::File, path::PathBuf, sync::Arc};
 
@@ -33,17 +36,30 @@ impl FileIngester for ArrowIngester {
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
         let reader = FileReader::try_new_buffered(File::open(&self.path)?, None)?;
         self.progress.total(reader.num_batches() as u64);
-        write_batches(&conn, alias, reader.inspect(|_| self.progress.add(1)))
+        let schema = reader.schema();
+        write_batches(
+            &conn,
+            alias,
+            schema,
+            reader.inspect(|_| self.progress.add(1)),
+        )
     }
 }
 
 pub fn write_batches<E: std::error::Error + Send + Sync + 'static>(
     conn: &Connection,
     alias: &str,
+    schema: SchemaRef,
     batches: impl Iterator<Item = Result<RecordBatch, E>>,
 ) -> AppResult<()> {
     let table = format!("{}.data", quote(alias));
     conn.execute_batch("BEGIN")?;
+    let empty = std::iter::once(Ok(RecordBatch::new_empty(schema)));
+    let mut batches = batches.peekable();
+    let batches: Box<dyn Iterator<Item = Result<RecordBatch, E>>> = match batches.peek() {
+        Some(_) => Box::new(batches),
+        None => Box::new(empty),
+    };
     let written = batches.enumerate().try_for_each(|(idx, batch)| {
         crate::duckdb::cancel::check()?;
         let batch = ArrowBatchRegistration::new(batch?);

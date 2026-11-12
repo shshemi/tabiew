@@ -101,12 +101,14 @@ pub(super) struct Materializing {
     waiting: bool,
     count: Option<Count>,
     result: Receiver<AppResult<()>>,
+    cleanup: Option<PathBuf>,
 }
 
 pub(super) struct Polled {
     pub(super) ready: Vec<String>,
     pub(super) swapped: Vec<String>,
     pub(super) failed: Vec<(String, String)>,
+    pub(super) checkpointed: bool,
 }
 
 fn bind(query: &str, current: Option<&str>) -> String {
@@ -256,6 +258,7 @@ impl DuckDB {
             waiting: count.is_none(),
             count,
             result,
+            cleanup: None,
         });
         Ok(progress)
     }
@@ -351,10 +354,23 @@ impl DuckDB {
             .filter(|bytes| *bytes > 0)
             .map(|bytes| bytes as u64)
     }
+    pub fn remove_when_stored(&mut self, view: &str, path: PathBuf) {
+        match self
+            .materializing
+            .iter_mut()
+            .find(|materializing| materializing.view == view)
+        {
+            Some(materializing) => materializing.cleanup = Some(path),
+            None => {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+    }
     pub fn drop_result(&mut self, view: &str) {
         if !view.starts_with(RESULT_PREFIX) {
             return;
         }
+        self.forget_stats(view);
         let _ = self
             .session
             .execute_batch(&format!("DROP VIEW IF EXISTS {}", quote(view)));
@@ -379,6 +395,7 @@ impl DuckDB {
             ready: Vec::new(),
             swapped: Vec::new(),
             failed: Vec::new(),
+            checkpointed: false,
         };
         let mut i = 0;
         while i < self.materializing.len() {
@@ -396,18 +413,23 @@ impl DuckDB {
                 dropped,
                 waiting,
                 count,
+                cleanup,
                 ..
             } = self.materializing.swap_remove(i);
+            if let Some(path) = cleanup {
+                let _ = std::fs::remove_file(path);
+            }
             let swapped = match dropped {
                 true => Err(anyhow!("Dropped")),
                 false => result.and_then(|()| {
                     self.session.execute_batch(&format!(
-                        "CREATE OR REPLACE VIEW {} AS SELECT * FROM {}; CHECKPOINT {SCRATCH}",
+                        "CREATE OR REPLACE VIEW {} AS SELECT * FROM {}",
                         quote(&view),
                         table(&view)
                     ))
                 }),
             };
+            self.checkpoint_due |= swapped.is_ok();
             match swapped {
                 Ok(()) if waiting => polled.ready.push(view),
                 Ok(()) => {
@@ -438,6 +460,16 @@ impl DuckDB {
                     }
                 }
             }
+        }
+        if self.checkpoint_due
+            && self.materializing.is_empty()
+            && self
+                .session
+                .execute_batch(&format!("CHECKPOINT {SCRATCH}"))
+                .is_ok()
+        {
+            self.checkpoint_due = false;
+            polled.checkpointed = true;
         }
         polled
     }

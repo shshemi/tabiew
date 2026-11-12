@@ -248,7 +248,7 @@ impl App {
                     match plot.and_then(|data| {
                         self.tabs
                             .panes_mut()
-                            .find(|pane| pane.table().view().as_deref() == Some(view.as_str()))
+                            .find(|pane| pane.views().any(|shown| shown == view))
                             .map(|pane| pane.show_plot(data))
                             .unwrap_or(Ok(()))
                     }) {
@@ -787,6 +787,12 @@ impl App {
                     Store::Wait,
                 )
             });
+        match &edited {
+            Ok(Opened::Pending(result, _)) => duckdb.remove_when_stored(result, path),
+            _ => {
+                let _ = std::fs::remove_file(&path);
+            }
+        }
         match edited {
             Ok(Opened::Pending(result, progress)) => {
                 pane.push_reader(

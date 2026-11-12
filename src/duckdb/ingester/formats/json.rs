@@ -12,14 +12,16 @@ use std::{path::PathBuf, sync::Arc};
 pub struct JsonIngester {
     path: PathBuf,
     lines: bool,
+    ignore_errors: bool,
     progress: Arc<StepProgress>,
 }
 
 impl JsonIngester {
-    pub fn new(path: PathBuf, lines: bool) -> Self {
+    pub fn new(path: PathBuf, lines: bool, ignore_errors: bool) -> Self {
         Self {
             path,
             lines,
+            ignore_errors,
             progress: StepProgress::new(1),
         }
     }
@@ -37,9 +39,13 @@ impl FileIngester for JsonIngester {
             "auto"
         };
         let path = self.path.to_string_lossy().into_owned();
+        let errors = match self.ignore_errors {
+            true => ", ignore_errors = true",
+            false => "",
+        };
         let sql = |options: &str| {
             format!(
-                "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_json(?, format = ?{options})",
+                "CREATE OR REPLACE TABLE {}.data AS SELECT * FROM read_json(?, format = ?{errors}{options})",
                 quote(alias)
             )
         };

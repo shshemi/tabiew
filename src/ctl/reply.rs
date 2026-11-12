@@ -198,11 +198,29 @@ fn import_spec(spec: ImportSpec) -> AppResult<(DataSource, Import, Option<usize>
         ),
         ImportSpec::Parquet { source, max_rows } => (source, format(Format::Parquet), max_rows),
         ImportSpec::Json {
-            source, max_rows, ..
-        } => (source, format(Format::Json), max_rows),
+            source,
+            ignore_errors,
+            max_rows,
+        } => (
+            source,
+            Import::Json {
+                lines: false,
+                ignore_errors,
+            },
+            max_rows,
+        ),
         ImportSpec::Jsonl {
-            source, max_rows, ..
-        } => (source, format(Format::Jsonl), max_rows),
+            source,
+            ignore_errors,
+            max_rows,
+        } => (
+            source,
+            Import::Json {
+                lines: true,
+                ignore_errors,
+            },
+            max_rows,
+        ),
         ImportSpec::Arrow { source, max_rows } => (source, format(Format::Arrow), max_rows),
         ImportSpec::Avro { source, max_rows } => (source, format(Format::Avro), max_rows),
         ImportSpec::Fwf {

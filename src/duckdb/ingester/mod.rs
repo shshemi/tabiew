@@ -67,8 +67,8 @@ impl Ingester {
                     ..options.csv.clone()
                 },
             )),
-            Format::Json => Box::new(JsonIngester::new(source, false)),
-            Format::Jsonl => Box::new(JsonIngester::new(source, true)),
+            Format::Json => Box::new(JsonIngester::new(source, false, options.csv.ignore_errors)),
+            Format::Jsonl => Box::new(JsonIngester::new(source, true, options.csv.ignore_errors)),
             Format::Parquet => Box::new(ParquetIngester::new(source)),
             Format::Arrow => Box::new(ArrowIngester::new(source)),
             Format::Fwf => Box::new(FwfIngester::new(

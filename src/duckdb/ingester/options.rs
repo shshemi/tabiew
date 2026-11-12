@@ -54,6 +54,10 @@ pub enum Import {
     },
     Fwf(FwfOptions),
     Sqlite(Option<String>),
+    Json {
+        lines: bool,
+        ignore_errors: bool,
+    },
 }
 
 impl Import {
@@ -99,6 +103,20 @@ impl Import {
             Import::Sqlite(key) => IngestOptions {
                 format: Some(Format::Sqlite),
                 sqlite_key: key.clone(),
+                ..base
+            },
+            Import::Json {
+                lines,
+                ignore_errors,
+            } => IngestOptions {
+                format: Some(match lines {
+                    true => Format::Jsonl,
+                    false => Format::Json,
+                }),
+                csv: CsvOptions {
+                    ignore_errors: *ignore_errors,
+                    ..base.csv
+                },
                 ..base
             },
         }

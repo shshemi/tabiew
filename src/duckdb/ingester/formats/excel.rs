@@ -35,12 +35,16 @@ impl FileIngester for ExcelIngester {
         self.progress.clone()
     }
     fn ingest(&mut self, conn: SessionConn, alias: &str) -> AppResult<()> {
-        let sheets = open_workbook_auto(&self.path)?.worksheets();
-        self.progress.total(sheets.len() as u64);
-        for (name, sheet) in sheets {
+        let mut workbook = open_workbook_auto(&self.path)?;
+        let names = workbook.sheet_names();
+        self.progress.total(names.len() as u64);
+        for name in names {
             crate::duckdb::cancel::check()?;
-            write_sheet(&conn, alias, &name, &sheet, self.header)?;
             self.progress.add(1);
+            let Ok(sheet) = workbook.worksheet_range(&name) else {
+                continue;
+            };
+            write_sheet(&conn, alias, &name, &sheet, self.header)?;
         }
         Ok(())
     }
