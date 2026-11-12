@@ -1,8 +1,4 @@
-use crate::writers::ExportData;
-use crate::writers::{Destination, WriteToFile, WriteToMarkdown};
-
 use crate::{
-    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         popups::{
@@ -13,6 +9,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
+    writers::{Destination, ExportFormat, export},
 };
 
 pub type MarkdownExporter = Wizard<State>;
@@ -20,19 +17,19 @@ pub type MarkdownExporter = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickOutputTarget {
-        df: ExportData,
+        view: String,
         picker: ExportTargetPicker,
     },
     PickOutputPath {
-        df: ExportData,
+        view: String,
         picker: FilePicker,
     },
 }
 
-impl From<ExportData> for State {
-    fn from(value: ExportData) -> Self {
+impl From<String> for State {
+    fn from(value: String) -> Self {
         Self::PickOutputTarget {
-            df: value,
+            view: value,
             picker: Default::default(),
         }
     }
@@ -41,51 +38,32 @@ impl From<ExportData> for State {
 impl WizardStep for State {
     fn next(self) -> State {
         match self {
-            State::PickOutputTarget { mut df, picker } => match picker.selected() {
+            State::PickOutputTarget { view, picker } => match picker.selected() {
                 Some(Target::File) => State::PickOutputPath {
-                    df,
+                    view,
                     picker: Default::default(),
                 },
                 Some(Target::Clipboard) => {
-                    WriteToMarkdown
-                        .export(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error()
-                        .then(|| {
-                            Message::PaneDismissModal.enqueue();
-                            Message::AppShowToast(
-                                "Data frame exported to clipboard in Markdown format".to_owned(),
-                            )
-                            .enqueue();
-                        });
-                    State::PickOutputTarget { df, picker }
+                    export(&view, ExportFormat::Markdown, Destination::Clipboard);
+                    State::PickOutputTarget { view, picker }
                 }
-                None => State::PickOutputTarget { picker, df },
+                None => State::PickOutputTarget { picker, view },
             },
-            State::PickOutputPath { mut df, picker } => {
-                WriteToMarkdown
-                    .export(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error()
-                    .then(|| {
-                        Message::PaneDismissModal.enqueue();
-                        Message::AppShowToast(format!(
-                            "Data frame exported to '{}' in Markdown format",
-                            picker
-                                .path()
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                        ))
-                        .enqueue();
-                    });
-                State::PickOutputPath { df, picker }
+            State::PickOutputPath { view, picker } => {
+                export(
+                    &view,
+                    ExportFormat::Markdown,
+                    Destination::File(picker.path()),
+                );
+                State::PickOutputPath { view, picker }
             }
         }
     }
 
     fn responder(&mut self) -> &mut dyn Component {
         match self {
-            State::PickOutputTarget { picker, df: _ } => picker,
-            State::PickOutputPath { picker, df: _ } => picker,
+            State::PickOutputTarget { picker, view: _ } => picker,
+            State::PickOutputPath { picker, view: _ } => picker,
         }
     }
 }

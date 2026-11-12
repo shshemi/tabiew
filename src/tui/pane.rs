@@ -1,8 +1,5 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::{
-    frame::DataFrame,
-    prelude::{DataType, Field, TimeUnit},
-};
+use polars::frame::DataFrame;
 use rand::RngExt;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
@@ -59,7 +56,6 @@ use crate::{
         table::Table,
         widgets::status_bar::StatusBar,
     },
-    writers::ExportData,
 };
 
 #[derive(Debug)]
@@ -347,16 +343,13 @@ impl Pane {
         df
     }
 
-    fn export_data(&self) -> Option<ExportData> {
-        match (self.table().data_frame(), self.table().view()) {
-            (Some(df), _) => Some(df.clone().into()),
-            (None, Some(view)) => Some(ExportData::View(view)),
-            (None, None) => {
-                Message::AppShowError("Not available until the table is ingested".to_string())
-                    .enqueue();
-                None
-            }
+    fn export_data(&self) -> Option<String> {
+        let view = self.table().view();
+        if view.is_none() {
+            Message::AppShowError("Not available until the table is ingested".to_string())
+                .enqueue();
         }
+        view
     }
 
     pub fn show_sheet(&mut self) {
@@ -599,16 +592,13 @@ impl Pane {
         Some((self.table().view()?, columns))
     }
 
-    fn plot_frame(&self) -> Option<DataFrame> {
-        match self.plot_view() {
-            Some((_, columns)) => Some(DataFrame::empty_with_schema(
-                &columns
-                    .iter()
-                    .map(|(name, data_type)| Field::new(name.into(), polars_type(data_type)))
-                    .collect(),
-            )),
-            None => self.frame(),
+    fn plot_columns(&self) -> Option<Vec<(String, String)>> {
+        let columns = self.plot_view().map(|(_, columns)| columns);
+        if columns.is_none() {
+            Message::AppShowError("Not available until the table is ingested".to_string())
+                .enqueue();
         }
+        columns
     }
 
     pub fn show_plot(&mut self, data: PlotData) -> AppResult<()> {
@@ -625,20 +615,20 @@ impl Pane {
     }
 
     fn show_histogram_builder(&mut self) {
-        let Some(df) = self.plot_frame() else {
+        let Some(columns) = self.plot_columns() else {
             return;
         };
         self.modal = Some(Modal::HistogramBuilder(HistogramBuilder::new(
-            histogram_builder::State::new(&df),
+            histogram_builder::State::new(&columns),
         )))
     }
 
     fn show_scatter_plot_builder(&mut self) {
-        let Some(df) = self.plot_frame() else {
+        let Some(columns) = self.plot_columns() else {
             return;
         };
         self.modal = Some(Modal::ScatterPlotBuilder(Wizard::new(
-            scatter_plot_builder::State::new(df),
+            scatter_plot_builder::State::new(columns),
         )))
     }
 
@@ -1183,18 +1173,5 @@ impl TableDescription {
             | TableDescription::Search(desc)
             | TableDescription::FuzzySearch(desc) => desc,
         }
-    }
-}
-
-fn polars_type(data_type: &str) -> DataType {
-    match data_type {
-        "BOOLEAN" => DataType::Boolean,
-        "VARCHAR" => DataType::String,
-        "DATE" => DataType::Date,
-        "TIMESTAMP" => DataType::Datetime(TimeUnit::Microseconds, None),
-        "FLOAT" | "DOUBLE" => DataType::Float64,
-        _ if data_type.starts_with("DECIMAL") => DataType::Float64,
-        _ if is_numeric(data_type) => DataType::Int64,
-        _ => DataType::Null,
     }
 }

@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
-use polars::{frame::DataFrame, prelude::DataType};
-
 use crate::{
     handler::message::Message,
+    reader::is_numeric,
     tui::{
         icons,
         popups::{
@@ -30,15 +29,11 @@ pub enum State {
 }
 
 impl State {
-    pub fn new(df: &DataFrame) -> Self {
-        let items = df
-            .columns()
+    pub fn new(columns: &[(String, String)]) -> Self {
+        let items = columns
             .iter()
-            .filter(|col| {
-                let dtype = col.dtype();
-                dtype.is_numeric() || dtype.is_string() || dtype.is_bool()
-            })
-            .map(|col| ColumnNameType(col.name().to_string(), col.dtype().to_owned()))
+            .filter(|(_, dtype)| is_numeric(dtype) || dtype == "VARCHAR" || dtype == "BOOLEAN")
+            .map(|(name, dtype)| ColumnNameType(name.clone(), dtype.clone()))
             .collect();
 
         State::PickColumn {
@@ -52,7 +47,7 @@ impl WizardStep for State {
         match self {
             State::PickColumn { picker } => {
                 if let Some(ColumnNameType(name, dtype)) = picker.selected_item() {
-                    if dtype.is_string() {
+                    if dtype == "VARCHAR" {
                         Message::PaneShowHistogram(name.clone(), 0).enqueue();
 
                         State::PickColumn { picker }
@@ -92,7 +87,7 @@ impl WizardStep for State {
 }
 
 #[derive(Debug)]
-pub struct ColumnNameType(String, DataType);
+pub struct ColumnNameType(String, String);
 
 impl Display for ColumnNameType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

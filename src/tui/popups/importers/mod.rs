@@ -1,11 +1,6 @@
-use std::sync::Arc;
-
 use crate::{
-    duckdb::DataSource,
+    duckdb::{DataSource, Import},
     handler::message::Message,
-    misc::sql::{TableSource, sql},
-    net::remote_load,
-    readers::ReaderSource,
 };
 
 pub mod arrow;
@@ -22,49 +17,7 @@ pub mod parquet;
 pub mod sqlite;
 pub mod tsv;
 
-fn dismiss_overlay_and_load_data_frame(source: DataSource, reader: impl remote_load::Importer) {
+fn dismiss_overlay_and_load_data_frame(source: DataSource, import: Import) {
     Message::AppDismissOverlay.enqueue();
-    Message::AppImport(source, Arc::new(reader)).enqueue();
-}
-
-pub fn load_with_polars(source: DataSource, reader: Arc<dyn remote_load::Importer>) {
-    match source {
-        DataSource::Stdin => {
-            let frames = match reader.read_to_data_frames(ReaderSource::Stdin) {
-                Ok(f) => f,
-                Err(err) => {
-                    Message::AppShowError(err.to_string()).enqueue();
-                    return;
-                }
-            };
-            let count = frames.len();
-            for (name, df) in frames {
-                let name = sql().register(&name, df.clone(), TableSource::Stdin);
-                Message::TabsAddNamePane(df, name).enqueue();
-            }
-            Message::AppShowToast(format!("{} data frame(s) were imported from Stdin", count,))
-                .enqueue();
-        }
-        DataSource::File(path_buf) => {
-            let frames = match reader.read_to_data_frames(ReaderSource::File(path_buf.clone())) {
-                Ok(f) => f,
-                Err(err) => {
-                    Message::AppShowError(err.to_string()).enqueue();
-                    return;
-                }
-            };
-            let count = frames.len();
-            for (name, df) in frames {
-                let name = sql().register(&name, df.clone(), TableSource::File(path_buf.clone()));
-                Message::TabsAddNamePane(df, name).enqueue();
-            }
-            Message::AppShowToast(format!(
-                "{} data frame(s) were imported from {}",
-                count,
-                path_buf.to_string_lossy()
-            ))
-            .enqueue();
-        }
-        DataSource::Url(url) => Message::AppDownloadDataSource(url, reader).enqueue(),
-    };
+    Message::AppImport(source, import).enqueue();
 }

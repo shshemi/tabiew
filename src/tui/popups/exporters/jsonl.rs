@@ -1,8 +1,4 @@
-use crate::writers::ExportData;
-use crate::writers::{Destination, WriteToFile};
-
 use crate::{
-    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         popups::{
@@ -13,7 +9,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
-    writers::{JsonFormat, WriteToJson},
+    writers::{Destination, ExportFormat, export},
 };
 
 pub type JsonlExporter = Wizard<State>;
@@ -21,19 +17,19 @@ pub type JsonlExporter = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickOutputTarget {
-        df: ExportData,
+        view: String,
         picker: ExportTargetPicker,
     },
     PickOutputPath {
-        df: ExportData,
+        view: String,
         picker: FilePicker,
     },
 }
 
-impl From<ExportData> for State {
-    fn from(value: ExportData) -> Self {
+impl From<String> for State {
+    fn from(value: String) -> Self {
         State::PickOutputTarget {
-            df: value,
+            view: value,
             picker: Default::default(),
         }
     }
@@ -42,53 +38,28 @@ impl From<ExportData> for State {
 impl WizardStep for State {
     fn next(self) -> Self {
         match self {
-            State::PickOutputTarget { mut df, picker } => match picker.selected() {
+            State::PickOutputTarget { view, picker } => match picker.selected() {
                 Some(Target::File) => State::PickOutputPath {
-                    df,
+                    view,
                     picker: Default::default(),
                 },
                 Some(Target::Clipboard) => {
-                    WriteToJson::default()
-                        .with_format(JsonFormat::JsonLine)
-                        .export(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error()
-                        .then(|| {
-                            Message::PaneDismissModal.enqueue();
-                            Message::AppShowToast(
-                                "Data frame exported to clipboard in JSON Line format".to_owned(),
-                            )
-                            .enqueue();
-                        });
-                    State::PickOutputTarget { df, picker }
+                    export(&view, ExportFormat::Jsonl, Destination::Clipboard);
+                    State::PickOutputTarget { view, picker }
                 }
-                None => State::PickOutputTarget { df, picker },
+                None => State::PickOutputTarget { view, picker },
             },
-            State::PickOutputPath { mut df, picker } => {
-                WriteToJson::default()
-                    .with_format(JsonFormat::JsonLine)
-                    .export(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error()
-                    .then(|| {
-                        Message::PaneDismissModal.enqueue();
-                        Message::AppShowToast(format!(
-                            "Data frame exported to '{}' in JSON Line format",
-                            picker
-                                .path()
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                        ))
-                        .enqueue();
-                    });
-                State::PickOutputPath { df, picker }
+            State::PickOutputPath { view, picker } => {
+                export(&view, ExportFormat::Jsonl, Destination::File(picker.path()));
+                State::PickOutputPath { view, picker }
             }
         }
     }
 
     fn responder(&mut self) -> &mut dyn Component {
         match self {
-            State::PickOutputTarget { df: _, picker } => picker,
-            State::PickOutputPath { df: _, picker } => picker,
+            State::PickOutputTarget { view: _, picker } => picker,
+            State::PickOutputPath { view: _, picker } => picker,
         }
     }
 }

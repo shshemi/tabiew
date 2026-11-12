@@ -81,6 +81,12 @@ pub fn is_numeric(data_type: &str) -> bool {
         .contains(&data_type)
 }
 
+pub fn is_integer(data_type: &str) -> bool {
+    is_numeric(data_type)
+        && !matches!(data_type, "FLOAT" | "DOUBLE")
+        && !data_type.starts_with("DECIMAL")
+}
+
 fn width_of(value: &str) -> u16 {
     u16::try_from(single_line(value).width()).unwrap_or(u16::MAX)
 }

@@ -1,7 +1,6 @@
 use crate::{
-    duckdb::DataSource,
+    duckdb::{DataSource, Import},
     handler::message::Message,
-    readers::SqliteToDataFrames,
     tui::{
         icons,
         popups::{
@@ -75,11 +74,7 @@ impl WizardStep for State {
             State::PickPassword { source, picker } => {
                 dismiss_overlay_and_load_data_frame(
                     source,
-                    if picker.value().is_empty() {
-                        SqliteToDataFrames::default()
-                    } else {
-                        SqliteToDataFrames::default().key(picker.value().to_owned())
-                    },
+                    Import::Sqlite((!picker.value().is_empty()).then(|| picker.value().to_owned())),
                 );
                 Default::default()
             }

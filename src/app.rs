@@ -9,19 +9,19 @@ use crate::ctl::{
     self,
     job::{Done, Job, Kind, Wait},
 };
-use crate::duckdb::{DataSource, DuckDB, IngestOptions, IngestProgress, Load, Opened, Store};
+use crate::duckdb::{
+    DataSource, DuckDB, Import, IngestOptions, IngestProgress, Load, Opened, Store,
+};
 use crate::indexer::Indexer;
 use crate::misc::config::config;
 use crate::misc::external_editor::run_editor;
 use crate::misc::sql::{BackendSchema, TableInfo, sql};
-use crate::net::remote_load::{self, RemoteLoad};
 use crate::reader::{Empty, Reader, RowSource};
 use crate::tui::Pane;
 use crate::tui::layouts::notification::NotificationLayout;
 use crate::tui::pane::TableDescription;
 use crate::tui::popups::column_caster::TargetType;
-use crate::tui::popups::download_notif::{DownloadNotification, idle, render_progress};
-use crate::tui::popups::importers::load_with_polars;
+use crate::tui::popups::download_notif::{idle, render_progress};
 use crate::tui::popups::pickers::inline_query_picker::QueryType;
 use crate::tui::popups::pickers::sql_query_picker::{self, SqlQueryPicker};
 use crate::tui::table::Table;
@@ -49,16 +49,13 @@ use crate::{
     },
 };
 use crossterm::event::{KeyCode, KeyModifiers};
-use itertools::Itertools;
 use ratatui::layout::{Constraint, Direction, Flex, Layout};
-use url::Url;
 
 pub struct App {
     tabs: Tabs,
     overlay: Option<Overlay>,
     schema: Option<Schema>,
     toast: Option<Toast>,
-    dls: Vec<DownloadNotification>,
     running: bool,
     duckdb: Option<DuckDB>,
     options: IngestOptions,
@@ -81,7 +78,6 @@ impl App {
             schema: None,
             toast: None,
             running: true,
-            dls: Vec::new(),
             duckdb: None,
             options: IngestOptions::default(),
             ctl: Vec::new(),
@@ -191,14 +187,9 @@ impl App {
         }
     }
 
-    fn import(&mut self, source: &DataSource, reader: Arc<dyn remote_load::Importer>) {
-        match self.duckdb.is_some() {
-            true => {
-                let options = reader.ingest_options(self.options.clone());
-                self.load(source, &options, None, true);
-            }
-            false => load_with_polars(source.clone(), reader),
-        }
+    fn import(&mut self, source: &DataSource, import: &Import) {
+        let options = import.options(self.options.clone());
+        self.load(source, &options, None, true);
     }
 
     fn poll_duckdb(&mut self) {
@@ -481,14 +472,15 @@ impl App {
         &mut self,
         to: u32,
         source: DataSource,
-        reader: Arc<dyn remote_load::Importer>,
+        import: Import,
+        max_rows: Option<usize>,
     ) -> Option<ctl::Message> {
         let duckdb = self.duckdb.as_mut()?;
-        let options = reader.ingest_options(self.options.clone());
+        let options = import.options(self.options.clone());
         let loaded = match &source {
-            DataSource::Stdin => duckdb.load_stdin(None, &options, None),
-            DataSource::File(path) => duckdb.load(path, None, &options, None),
-            DataSource::Url(url) => duckdb.load_url(url, None, &options, None),
+            DataSource::Stdin => duckdb.load_stdin(None, &options, max_rows),
+            DataSource::File(path) => duckdb.load(path, None, &options, max_rows),
+            DataSource::Url(url) => duckdb.load_url(url, None, &options, max_rows),
         };
         match loaded {
             Ok(Load::Ready(names)) => {
@@ -906,13 +898,6 @@ impl App {
         }
     }
 
-    fn add_download(&mut self, url: &Url, reader: Arc<dyn remote_load::Reader>) {
-        self.dls.push(DownloadNotification::new(
-            url.as_str().to_owned(),
-            RemoteLoad::new(url.to_owned(), reader),
-        ));
-    }
-
     fn reload_app_config(&mut self) {
         if let Err(err) = config().reload() {
             self.show_error(err.to_string());
@@ -979,15 +964,12 @@ impl Component for App {
                 .collect::<Vec<_>>();
         let areas = Layout::new(
             Direction::Vertical,
-            (0..self.dls.len() + ingests.len()).map(|_| Constraint::Length(3)),
+            (0..ingests.len()).map(|_| Constraint::Length(3)),
         )
         .flex(Flex::End)
         .split(NotificationLayout::default().area(area));
 
-        for (dl, area) in self.dls.iter_mut().zip(areas.iter()) {
-            dl.render(*area, buf, FocusState::NotFocused);
-        }
-        for ((title, percent), area) in ingests.iter().zip(areas.iter().skip(self.dls.len())) {
+        for ((title, percent), area) in ingests.iter().zip(areas.iter()) {
             render_progress(title, *percent, &idle(title), *area, buf);
         }
 
@@ -1049,8 +1031,7 @@ impl Component for App {
             Message::AppDismissSchema => self.dismiss_schema(),
             Message::AppShowSqlQuery => self.show_sql_query_picker(),
             Message::AppReloadConfig => self.reload_app_config(),
-            Message::AppDownloadDataSource(url, reader) => self.add_download(url, reader.clone()),
-            Message::AppImport(source, reader) => self.import(source, reader.clone()),
+            Message::AppImport(source, import) => self.import(source, import),
             Message::AppQuery(sql) => self.query(sql),
             Message::AppSearchStart(fuzzy) => self.search_start(*fuzzy),
             Message::AppCast(column, target) => self.cast(column, *target),
@@ -1105,24 +1086,6 @@ impl Component for App {
         {
             self.toast.take();
         }
-        self.dls
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, dl)| (!dl.is_running()).then_some(idx))
-            .collect_vec()
-            .into_iter()
-            .rev()
-            .for_each(|idx| {
-                let dl = self.dls.remove(idx).into_remote_load();
-                match dl.join() {
-                    Ok(nfs) => {
-                        for (name, df) in nfs {
-                            Message::TabsAddNamePane(df, name).enqueue();
-                        }
-                    }
-                    Err(err) => self.show_error(err.to_string()),
-                }
-            });
         self.poll_duckdb();
         self.tabs.tick();
     }

@@ -1,7 +1,6 @@
-use polars::frame::DataFrame;
-
 use crate::{
     handler::message::Message,
+    reader::{is_integer, is_numeric},
     tui::{
         icons,
         popups::{
@@ -16,11 +15,11 @@ pub type ScatterPlotBuilder = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickX {
-        df: DataFrame,
+        columns: Vec<(String, String)>,
         picker: SearchPicker<String>,
     },
     PickY {
-        df: DataFrame,
+        columns: Vec<(String, String)>,
         x: String,
         picker: SearchPicker<String>,
     },
@@ -32,15 +31,14 @@ pub enum State {
 }
 
 impl State {
-    pub fn new(df: DataFrame) -> Self {
-        let items = df
-            .columns()
+    pub fn new(columns: Vec<(String, String)>) -> Self {
+        let items = columns
             .iter()
-            .filter(|col| col.dtype().is_numeric())
-            .map(|col| col.name().to_string())
+            .filter(|(_, dtype)| is_numeric(dtype))
+            .map(|(name, _)| name.clone())
             .collect();
         Self::PickX {
-            df,
+            columns,
             picker: SearchPicker::new(items).with_title(icons::WIDTH.title("Axis X")),
         }
     }
@@ -49,7 +47,7 @@ impl State {
 impl WizardStep for State {
     fn next(self) -> Self {
         match self {
-            State::PickX { df, picker } => {
+            State::PickX { columns, picker } => {
                 if let Some(x) = picker.selected_item().cloned() {
                     let items = picker
                         .into_items()
@@ -57,15 +55,15 @@ impl WizardStep for State {
                         .filter(|item| item != &x)
                         .collect();
                     State::PickY {
-                        df,
+                        columns,
                         x,
                         picker: SearchPicker::new(items).with_title(icons::HEIGHT.title("Axis Y")),
                     }
                 } else {
-                    State::PickX { df, picker }
+                    State::PickX { columns, picker }
                 }
             }
-            State::PickY { df, x, picker } => {
+            State::PickY { columns, x, picker } => {
                 if let Some(y) = picker.selected_item().cloned() {
                     State::PickColorBy {
                         x,
@@ -73,22 +71,21 @@ impl WizardStep for State {
                         picker: SearchPicker::new(
                             std::iter::once("None".to_owned())
                                 .chain(
-                                    df.columns()
+                                    columns
                                         .iter()
-                                        .filter(|col| {
-                                            let dtype = col.dtype();
-                                            dtype.is_string()
-                                                || dtype.is_bool()
-                                                || dtype.is_integer()
+                                        .filter(|(_, dtype)| {
+                                            dtype == "VARCHAR"
+                                                || dtype == "BOOLEAN"
+                                                || is_integer(dtype)
                                         })
-                                        .map(|col| col.name().to_string()),
+                                        .map(|(name, _)| name.clone()),
                                 )
                                 .collect(),
                         )
                         .with_title(icons::PALETTE.title("Color By")),
                     }
                 } else {
-                    State::PickY { df, x, picker }
+                    State::PickY { columns, x, picker }
                 }
             }
             State::PickColorBy { x, y, picker } => {
@@ -108,9 +105,9 @@ impl WizardStep for State {
 
     fn responder(&mut self) -> &mut dyn crate::tui::component::Component {
         match self {
-            State::PickX { df: _, picker } => picker,
+            State::PickX { columns: _, picker } => picker,
             State::PickY {
-                df: _,
+                columns: _,
                 x: _,
                 picker,
             } => picker,

@@ -1,7 +1,7 @@
 use crate::{
-    duckdb::DataSource,
+    args::Format,
+    duckdb::{DataSource, Import},
     handler::message::Message,
-    readers::MarkdownToDataFrame,
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame,
         pickers::{
@@ -27,7 +27,10 @@ impl WizardStep for State {
         match self {
             State::PickSource { picker } => match picker.value() {
                 Some(SourceType::Stdin) => {
-                    dismiss_overlay_and_load_data_frame(DataSource::Stdin, MarkdownToDataFrame);
+                    dismiss_overlay_and_load_data_frame(
+                        DataSource::Stdin,
+                        Import::Format(Format::Markdown),
+                    );
                     State::PickSource { picker }
                 }
                 Some(SourceType::File) => State::PickPath {
@@ -41,13 +44,16 @@ impl WizardStep for State {
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
                     DataSource::File(picker.path()),
-                    MarkdownToDataFrame,
+                    Import::Format(Format::Markdown),
                 );
                 Default::default()
             }
             State::PickUrl { picker } => match picker.url() {
                 Ok(url) => {
-                    dismiss_overlay_and_load_data_frame(DataSource::Url(url), MarkdownToDataFrame);
+                    dismiss_overlay_and_load_data_frame(
+                        DataSource::Url(url),
+                        Import::Format(Format::Markdown),
+                    );
                     Default::default()
                 }
                 Err(err) => {

@@ -6,48 +6,8 @@ use ratatui::{
 
 use crate::{
     misc::config::theme,
-    net::remote_load::RemoteLoad,
-    tui::{
-        app_default::{AppDefault, AppTitle},
-        component::Component,
-    },
+    tui::app_default::{AppDefault, AppTitle},
 };
-
-pub struct DownloadNotification {
-    dl: RemoteLoad,
-    title: String,
-}
-
-impl DownloadNotification {
-    pub fn new(title: String, dl: RemoteLoad) -> Self {
-        DownloadNotification { title, dl }
-    }
-
-    pub fn is_running(&self) -> bool {
-        self.dl.running()
-    }
-
-    pub fn into_remote_load(self) -> RemoteLoad {
-        self.dl
-    }
-}
-
-impl Component for DownloadNotification {
-    fn render(
-        &mut self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        _: crate::tui::component::FocusState,
-    ) {
-        render_progress(
-            &self.title,
-            self.dl.info().percent(),
-            "Downloading...",
-            area,
-            buf,
-        );
-    }
-}
 
 pub fn idle(title: &str) -> String {
     format!(

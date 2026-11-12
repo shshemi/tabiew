@@ -32,7 +32,7 @@ use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use cache::config::Config as DuckDBConfig;
 pub(crate) use ingester::{cut_text, sample_columns};
-pub use ingester::{CsvOptions, FwfOptions, IngestOptions, IngestProgress};
+pub use ingester::{CsvOptions, FwfOptions, Import, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
 pub use cache::file_db::ColumnStats;
 pub use plots::{PlotData, PlotRequest};
@@ -360,6 +360,33 @@ mod tests {
         };
         assert_eq!(names, ["sales"]);
         assert_eq!(count(&db, "sales"), 10);
+    }
+
+    #[test]
+    fn max_rows_limits_the_view_not_the_cache() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("rows.csv");
+        std::fs::write(&path, "a,b\n1,2\n3,4\n5,6\n7,8\n").unwrap();
+        let mut db = duckdb(&dir);
+        let options = IngestOptions::default();
+        db.load(&path, None, &options, None).unwrap();
+        let started = std::time::Instant::now();
+        let names = loop {
+            if let Some((_, names)) = db.poll().unwrap().tables.pop() {
+                break names.unwrap();
+            }
+            assert!(started.elapsed() < std::time::Duration::from_secs(10));
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        };
+        assert_eq!(count(&db, &names[0]), 4);
+        for (max_rows, rows) in [(2, 2), (100, 4)] {
+            db.detach(&names[0]).unwrap();
+            db.poll().unwrap();
+            let Load::Ready(names) = db.load(&path, None, &options, Some(max_rows)).unwrap() else {
+                panic!("expected a cache hit");
+            };
+            assert_eq!(count(&db, &names[0]), rows);
+        }
     }
 
 }

@@ -39,29 +39,12 @@ pub enum ExportFormat {
     Markdown,
 }
 
-#[derive(Debug, Clone)]
-pub enum ExportData {
-    Frame(DataFrame),
-    View(String),
-}
-
-impl From<DataFrame> for ExportData {
-    fn from(value: DataFrame) -> Self {
-        Self::Frame(value)
-    }
+pub fn export(view: &str, format: ExportFormat, dest: Destination) {
+    Message::AppExport(view.to_owned(), format, dest).enqueue();
+    Message::PaneDismissModal.enqueue();
 }
 
 pub trait WriteToFile {
     fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()>;
     fn format(&self) -> ExportFormat;
-    fn export(&self, dest: Destination, data: &mut ExportData) -> AppResult<bool> {
-        match data {
-            ExportData::Frame(df) => self.write_to_file(dest, df).map(|()| true),
-            ExportData::View(view) => {
-                Message::AppExport(view.clone(), self.format(), dest).enqueue();
-                Message::PaneDismissModal.enqueue();
-                Ok(false)
-            }
-        }
-    }
 }

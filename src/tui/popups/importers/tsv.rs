@@ -1,7 +1,6 @@
 use crate::{
-    duckdb::DataSource,
+    duckdb::{DataSource, Import},
     handler::message::Message,
-    readers::CsvToDataFrame,
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame,
         pickers::{
@@ -29,10 +28,7 @@ impl WizardStep for State {
                 Some(SourceType::Stdin) => {
                     dismiss_overlay_and_load_data_frame(
                         DataSource::Stdin,
-                        CsvToDataFrame::default()
-                            .with_no_header(true)
-                            .with_quote_char('"')
-                            .with_separator('\t'),
+                        Import::csv('\t', '"', false),
                     );
                     State::PickSource { picker }
                 }
@@ -47,10 +43,7 @@ impl WizardStep for State {
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
                     DataSource::File(picker.path()),
-                    CsvToDataFrame::default()
-                        .with_no_header(true)
-                        .with_quote_char('"')
-                        .with_separator('\t'),
+                    Import::csv('\t', '"', false),
                 );
                 Default::default()
             }
@@ -58,10 +51,7 @@ impl WizardStep for State {
                 Ok(url) => {
                     dismiss_overlay_and_load_data_frame(
                         DataSource::Url(url),
-                        CsvToDataFrame::default()
-                            .with_no_header(true)
-                            .with_quote_char('"')
-                            .with_separator('\t'),
+                        Import::csv('\t', '"', false),
                     );
                     Default::default()
                 }

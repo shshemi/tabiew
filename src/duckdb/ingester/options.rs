@@ -42,6 +42,69 @@ impl Default for IngestOptions {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Import {
+    Format(Format),
+    Csv {
+        delimiter: char,
+        quote: char,
+        header: bool,
+        ignore_errors: bool,
+        null_padding: bool,
+    },
+    Fwf(FwfOptions),
+    Sqlite(Option<String>),
+}
+
+impl Import {
+    pub fn csv(delimiter: char, quote: char, header: bool) -> Self {
+        Import::Csv {
+            delimiter,
+            quote,
+            header,
+            ignore_errors: false,
+            null_padding: false,
+        }
+    }
+
+    pub fn options(&self, base: IngestOptions) -> IngestOptions {
+        match self {
+            Import::Format(format) => IngestOptions {
+                format: Some(format.clone()),
+                ..base
+            },
+            Import::Csv {
+                delimiter,
+                quote,
+                header,
+                ignore_errors,
+                null_padding,
+            } => IngestOptions {
+                format: Some(Format::Csv),
+                csv: CsvOptions {
+                    delimiter: *delimiter,
+                    quote: *quote,
+                    header: *header,
+                    ignore_errors: *ignore_errors,
+                    null_padding: *null_padding,
+                    ..base.csv
+                },
+                ..base
+            },
+            Import::Fwf(fwf) => IngestOptions {
+                format: Some(Format::Fwf),
+                fwf: fwf.clone(),
+                ..base
+            },
+            Import::Sqlite(key) => IngestOptions {
+                format: Some(Format::Sqlite),
+                sqlite_key: key.clone(),
+                ..base
+            },
+        }
+    }
+}
+
 fn types_from_args(args: &Args) -> Vec<String> {
     if args.no_type_inference {
         return Vec::new();

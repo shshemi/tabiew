@@ -1,7 +1,4 @@
-use crate::writers::ExportData;
-
 use crate::{
-    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         popups::{
@@ -9,20 +6,20 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
-    writers::{Destination, WriteToArrow, WriteToFile},
+    writers::{Destination, ExportFormat, export},
 };
 
 pub type ArrowExporter = Wizard<State>;
 
 #[derive(Debug)]
 pub enum State {
-    PickOutputPath { df: ExportData, picker: FilePicker },
+    PickOutputPath { view: String, picker: FilePicker },
 }
 
-impl From<ExportData> for State {
-    fn from(value: ExportData) -> Self {
+impl From<String> for State {
+    fn from(value: String) -> Self {
         Self::PickOutputPath {
-            df: value,
+            view: value,
             picker: Default::default(),
         }
     }
@@ -31,30 +28,16 @@ impl From<ExportData> for State {
 impl WizardStep for State {
     fn next(self) -> Self {
         match self {
-            State::PickOutputPath { mut df, picker } => {
-                WriteToArrow
-                    .export(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error()
-                    .then(|| {
-                        Message::PaneDismissModal.enqueue();
-                        Message::AppShowToast(format!(
-                            "Data frame exported to '{}' in Arrow format",
-                            picker
-                                .path()
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                        ))
-                        .enqueue();
-                    });
-                Self::PickOutputPath { df, picker }
+            State::PickOutputPath { view, picker } => {
+                export(&view, ExportFormat::Arrow, Destination::File(picker.path()));
+                Self::PickOutputPath { view, picker }
             }
         }
     }
 
     fn responder(&mut self) -> &mut dyn Component {
         match self {
-            State::PickOutputPath { df: _, picker } => picker,
+            State::PickOutputPath { view: _, picker } => picker,
         }
     }
 }

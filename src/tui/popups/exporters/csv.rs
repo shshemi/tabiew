@@ -1,8 +1,4 @@
-use crate::writers::ExportData;
-use crate::writers::{Destination, WriteToFile};
-
 use crate::{
-    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         icons,
@@ -15,7 +11,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
-    writers::WriteToCsv,
+    writers::{Destination, ExportFormat, export},
 };
 
 pub type CsvExporter = Wizard<State>;
@@ -23,32 +19,32 @@ pub type CsvExporter = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickSeparator {
-        df: ExportData,
+        view: String,
         picker: TextPicker,
     },
     PickQuoteChar {
-        df: ExportData,
+        view: String,
         separator: char,
         picker: TextPicker,
     },
     PickOutputTarget {
-        df: ExportData,
+        view: String,
         separator: char,
         quote: char,
         picker: ExportTargetPicker,
     },
     PickOutputPath {
-        df: ExportData,
+        view: String,
         separator: char,
         quote: char,
         picker: FilePicker,
     },
 }
 
-impl From<ExportData> for State {
-    fn from(value: ExportData) -> Self {
+impl From<String> for State {
+    fn from(value: String) -> Self {
         Self::PickSeparator {
-            df: value,
+            view: value,
             picker: TextPicker::default()
                 .with_title(icons::SEPARATOR.title("Separator"))
                 .with_max_len(1)
@@ -60,10 +56,10 @@ impl From<ExportData> for State {
 impl WizardStep for State {
     fn next(self) -> Self {
         match self {
-            State::PickSeparator { df, picker } => {
+            State::PickSeparator { view, picker } => {
                 if let Some(separator) = picker.value().chars().next() {
                     State::PickQuoteChar {
-                        df,
+                        view,
                         separator,
                         picker: TextPicker::default()
                             .with_title(icons::QUOTE.title("Quote"))
@@ -71,95 +67,82 @@ impl WizardStep for State {
                             .with_value("\"".to_owned()),
                     }
                 } else {
-                    State::PickSeparator { df, picker }
+                    State::PickSeparator { view, picker }
                 }
             }
             State::PickQuoteChar {
-                df,
+                view,
                 separator,
                 picker,
             } => {
                 if let Some(quote) = picker.value().chars().next() {
                     State::PickOutputTarget {
-                        df,
+                        view,
                         separator,
                         quote,
                         picker: ExportTargetPicker::default(),
                     }
                 } else {
                     State::PickQuoteChar {
-                        df,
+                        view,
                         separator,
                         picker,
                     }
                 }
             }
             State::PickOutputTarget {
-                mut df,
+                view,
                 separator,
                 quote,
                 picker,
             } => match picker.selected() {
                 Some(Target::Clipboard) => {
-                    WriteToCsv::default()
-                        .with_separator_char(separator)
-                        .with_quote_char(quote)
-                        .with_header(true)
-                        .export(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error()
-                        .then(|| {
-                            Message::PaneDismissModal.enqueue();
-                            Message::AppShowToast(
-                                "Data frame exported to clipboard in CSV format".to_owned(),
-                            )
-                            .enqueue();
-                        });
+                    export(
+                        &view,
+                        ExportFormat::Csv {
+                            separator,
+                            quote,
+                            header: true,
+                        },
+                        Destination::Clipboard,
+                    );
                     State::PickOutputTarget {
-                        df,
+                        view,
                         separator,
                         quote,
                         picker,
                     }
                 }
                 Some(Target::File) => State::PickOutputPath {
-                    df,
+                    view,
                     separator,
                     quote,
                     picker: FilePicker::default(),
                 },
                 None => State::PickOutputTarget {
-                    df,
+                    view,
                     separator,
                     quote,
                     picker,
                 },
             },
             State::PickOutputPath {
-                mut df,
+                view,
                 separator,
                 quote,
                 picker,
             } => {
-                WriteToCsv::default()
-                    .with_separator_char(separator)
-                    .with_quote_char(quote)
-                    .with_header(true)
-                    .export(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error()
-                    .then(|| {
-                        Message::PaneDismissModal.enqueue();
-                        Message::AppShowToast(format!(
-                            "Data frame exported to '{}' in CSV format",
-                            picker
-                                .path()
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                        ))
-                        .enqueue();
-                    });
+                export(
+                    &view,
+                    ExportFormat::Csv {
+                        separator,
+                        quote,
+                        header: true,
+                    },
+                    Destination::File(picker.path()),
+                );
                 State::PickOutputPath {
-                    df,
+                    view,
                     separator,
                     quote,
                     picker,
@@ -170,23 +153,23 @@ impl WizardStep for State {
 
     fn responder(&mut self) -> &mut dyn Component {
         match self {
-            State::PickSeparator { picker, df: _ } => picker,
+            State::PickSeparator { picker, view: _ } => picker,
             State::PickQuoteChar {
                 separator: _,
                 picker,
-                df: _,
+                view: _,
             } => picker,
             State::PickOutputTarget {
                 separator: _,
                 quote: _,
                 picker,
-                df: _,
+                view: _,
             } => picker,
             State::PickOutputPath {
                 separator: _,
                 quote: _,
                 picker,
-                df: _,
+                view: _,
             } => picker,
         }
     }

@@ -1,7 +1,4 @@
-use crate::writers::ExportData;
-
 use crate::{
-    handler::message::{Message, UnwrapOrEnqueueError},
     tui::{
         component::Component,
         popups::{
@@ -12,7 +9,7 @@ use crate::{
             wizard::{Wizard, WizardStep},
         },
     },
-    writers::{Destination, WriteToCsv, WriteToFile},
+    writers::{Destination, ExportFormat, export},
 };
 
 pub type TsvExporter = Wizard<State>;
@@ -20,19 +17,19 @@ pub type TsvExporter = Wizard<State>;
 #[derive(Debug)]
 pub enum State {
     PickOutputTarget {
-        df: ExportData,
+        view: String,
         picker: ExportTargetPicker,
     },
     PickOutputPath {
-        df: ExportData,
+        view: String,
         picker: FilePicker,
     },
 }
 
-impl From<ExportData> for State {
-    fn from(value: ExportData) -> Self {
+impl From<String> for State {
+    fn from(value: String) -> Self {
         Self::PickOutputTarget {
-            df: value,
+            view: value,
             picker: Default::default(),
         }
     }
@@ -41,57 +38,44 @@ impl From<ExportData> for State {
 impl WizardStep for State {
     fn next(self) -> Self {
         match self {
-            State::PickOutputTarget { mut df, picker } => match picker.selected() {
+            State::PickOutputTarget { view, picker } => match picker.selected() {
                 Some(Target::File) => State::PickOutputPath {
-                    df,
+                    view,
                     picker: FilePicker::default(),
                 },
                 Some(Target::Clipboard) => {
-                    WriteToCsv::default()
-                        .with_separator_char('\t')
-                        .with_quote_char('"')
-                        .with_header(false)
-                        .export(Destination::Clipboard, &mut df)
-                        .unwrap_or_enqueue_error()
-                        .then(|| {
-                            Message::PaneDismissModal.enqueue();
-                            Message::AppShowToast(
-                                "Data frame exported to clipboard in TSV format".to_owned(),
-                            )
-                            .enqueue();
-                        });
-                    State::PickOutputTarget { df, picker }
+                    export(
+                        &view,
+                        ExportFormat::Csv {
+                            separator: '\t',
+                            quote: '"',
+                            header: false,
+                        },
+                        Destination::Clipboard,
+                    );
+                    State::PickOutputTarget { view, picker }
                 }
-                None => State::PickOutputTarget { df, picker },
+                None => State::PickOutputTarget { view, picker },
             },
-            State::PickOutputPath { mut df, picker } => {
-                WriteToCsv::default()
-                    .with_separator_char('\t')
-                    .with_quote_char('"')
-                    .with_header(false)
-                    .export(Destination::File(picker.path()), &mut df)
-                    .unwrap_or_enqueue_error()
-                    .then(|| {
-                        Message::PaneDismissModal.enqueue();
-                        Message::AppShowToast(format!(
-                            "Data frame exported to '{}' in TSV format",
-                            picker
-                                .path()
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                        ))
-                        .enqueue();
-                    });
-                State::PickOutputPath { df, picker }
+            State::PickOutputPath { view, picker } => {
+                export(
+                    &view,
+                    ExportFormat::Csv {
+                        separator: '\t',
+                        quote: '"',
+                        header: false,
+                    },
+                    Destination::File(picker.path()),
+                );
+                State::PickOutputPath { view, picker }
             }
         }
     }
 
     fn responder(&mut self) -> &mut dyn Component {
         match self {
-            State::PickOutputTarget { df: _, picker } => picker,
-            State::PickOutputPath { df: _, picker } => picker,
+            State::PickOutputTarget { view: _, picker } => picker,
+            State::PickOutputPath { view: _, picker } => picker,
         }
     }
 }

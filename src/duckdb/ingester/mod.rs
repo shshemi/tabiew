@@ -17,7 +17,7 @@ use formats::{
 };
 pub use formats::{CsvOptions, FwfOptions};
 pub(crate) use formats::{cut_text, sample_columns};
-pub use options::IngestOptions;
+pub use options::{Import, IngestOptions};
 pub use progress::IngestProgress;
 use std::{
     path::PathBuf,

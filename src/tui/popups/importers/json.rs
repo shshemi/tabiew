@@ -1,7 +1,7 @@
 use crate::{
-    duckdb::DataSource,
+    args::Format,
+    duckdb::{DataSource, Import},
     handler::message::Message,
-    readers::JsonToDataFrame,
     tui::popups::{
         importers::dismiss_overlay_and_load_data_frame,
         pickers::{
@@ -29,7 +29,7 @@ impl WizardStep for State {
                 Some(SourceType::Stdin) => {
                     dismiss_overlay_and_load_data_frame(
                         DataSource::Stdin,
-                        JsonToDataFrame::default(),
+                        Import::Format(Format::Json),
                     );
                     State::PickSource { picker }
                 }
@@ -44,7 +44,7 @@ impl WizardStep for State {
             State::PickPath { picker } => {
                 dismiss_overlay_and_load_data_frame(
                     DataSource::File(picker.path()),
-                    JsonToDataFrame::default(),
+                    Import::Format(Format::Json),
                 );
                 Default::default()
             }
@@ -52,7 +52,7 @@ impl WizardStep for State {
                 Ok(url) => {
                     dismiss_overlay_and_load_data_frame(
                         DataSource::Url(url),
-                        JsonToDataFrame::default(),
+                        Import::Format(Format::Json),
                     );
                     Default::default()
                 }

@@ -1,15 +1,13 @@
 use std::sync::{
-    Arc, LazyLock, Mutex,
+    LazyLock, Mutex,
     mpsc::{Receiver, Sender, channel},
 };
 
 use polars::frame::DataFrame;
-use url::Url;
 
 use crate::{
     AppResult,
-    duckdb::{DataSource, PlotRequest},
-    net::remote_load::{Importer, Reader},
+    duckdb::{DataSource, Import, PlotRequest},
     tui::{
         pane::TableDescription,
         popups::{column_caster::TargetType, pickers::inline_query_picker::QueryType},
@@ -49,8 +47,7 @@ pub enum Message {
     AppShowTsvImporter,
     AppDismissSchema,
     AppShowSqlQuery,
-    AppDownloadDataSource(Url, Arc<dyn Reader>),
-    AppImport(DataSource, Arc<dyn Importer>),
+    AppImport(DataSource, Import),
     AppReloadConfig,
     AppQuery(String),
     AppInlineQuery(QueryType, String),

@@ -1,8 +1,7 @@
 use super::dismiss_overlay_and_load_data_frame;
 use crate::{
-    duckdb::DataSource,
+    duckdb::{DataSource, Import},
     handler::message::Message,
-    readers::CsvToDataFrame,
     tui::{
         icons,
         popups::{
@@ -122,10 +121,7 @@ impl WizardStep for State {
                     Message::AppDismissOverlay.enqueue();
                     dismiss_overlay_and_load_data_frame(
                         source,
-                        CsvToDataFrame::default()
-                            .with_no_header(!has_header)
-                            .with_separator(separator)
-                            .with_quote_char(quote),
+                        Import::csv(separator, quote, has_header),
                     );
                     Default::default()
                 } else {

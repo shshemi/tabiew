@@ -1,7 +1,6 @@
 use crate::{
-    duckdb::DataSource,
+    duckdb::{DataSource, FwfOptions, Import},
     handler::message::Message,
-    readers::FwfToDataFrame,
     tui::{
         icons,
         popups::{
@@ -151,12 +150,15 @@ impl WizardStep for State {
                 picker,
             } => {
                 let flexible_width = picker.value().unwrap_or(true);
-                let rtdf = FwfToDataFrame::default()
-                    .with_flexible_width(flexible_width)
-                    .with_has_header(has_header)
-                    .with_separator_length(separator_length)
-                    .with_widths(widths);
-                dismiss_overlay_and_load_data_frame(source, rtdf);
+                dismiss_overlay_and_load_data_frame(
+                    source,
+                    Import::Fwf(FwfOptions {
+                        widths: (!widths.is_empty()).then_some(widths),
+                        separator_length,
+                        flexible_width,
+                        header: has_header,
+                    }),
+                );
                 Default::default()
             }
         }
