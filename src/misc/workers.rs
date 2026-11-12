@@ -13,6 +13,31 @@ struct Queue {
     running: usize,
 }
 
+impl Queue {
+    const fn new() -> Self {
+        Self {
+            jobs: VecDeque::new(),
+            running: 0,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Lane {
+    Long,
+    Short,
+}
+
+impl Lane {
+    fn cap(self) -> usize {
+        let threads = config().worker_threads().max(1);
+        match self {
+            Lane::Long => threads.div_ceil(2),
+            Lane::Short => (threads / 2).max(1),
+        }
+    }
+}
+
 static POOL: LazyLock<Runtime> = LazyLock::new(|| {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -21,10 +46,7 @@ static POOL: LazyLock<Runtime> = LazyLock::new(|| {
         .expect("worker pool")
 });
 
-static QUEUE: Mutex<Queue> = Mutex::new(Queue {
-    jobs: VecDeque::new(),
-    running: 0,
-});
+static QUEUES: Mutex<[Queue; 2]> = Mutex::new([Queue::new(), Queue::new()]);
 
 pub fn release_memory() {
     #[cfg(all(target_os = "linux", target_env = "gnu"))]
@@ -37,21 +59,32 @@ pub fn release_memory() {
 }
 
 pub fn spawn(job: impl FnOnce() + Send + 'static) {
-    QUEUE.lock().unwrap().jobs.push_back(Box::new(job));
+    push(Lane::Long, Box::new(job));
+}
+
+pub fn spawn_short(job: impl FnOnce() + Send + 'static) {
+    push(Lane::Short, Box::new(job));
+}
+
+fn push(lane: Lane, job: Job) {
+    QUEUES.lock().unwrap()[lane as usize].jobs.push_back(job);
     pump();
 }
 
 pub fn pump() {
-    let mut queue = QUEUE.lock().unwrap();
-    while queue.running < config().worker_threads().max(1)
-        && let Some(job) = queue.jobs.pop_front()
-    {
-        queue.running += 1;
-        POOL.spawn_blocking(move || {
-            let _ = catch_unwind(AssertUnwindSafe(job));
-            QUEUE.lock().unwrap().running -= 1;
-            pump();
-        });
+    let mut queues = QUEUES.lock().unwrap();
+    for lane in [Lane::Long, Lane::Short] {
+        let queue = &mut queues[lane as usize];
+        while queue.running < lane.cap()
+            && let Some(job) = queue.jobs.pop_front()
+        {
+            queue.running += 1;
+            POOL.spawn_blocking(move || {
+                let _ = catch_unwind(AssertUnwindSafe(job));
+                QUEUES.lock().unwrap()[lane as usize].running -= 1;
+                pump();
+            });
+        }
     }
 }
 

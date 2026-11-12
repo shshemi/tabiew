@@ -56,7 +56,7 @@ impl DuckDB {
         };
         let (sender, result) = oneshot::channel();
         let target = view.to_string();
-        workers::spawn(move || {
+        workers::spawn_short(move || {
             let _ = sender.send(match request {
                 PlotRequest::Histogram {
                     column,

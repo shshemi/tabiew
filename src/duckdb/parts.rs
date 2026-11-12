@@ -64,7 +64,7 @@ impl DuckDB {
                 .into_iter()
                 .map(|url| {
                     let (sender, result) = oneshot::channel();
-                    workers::spawn(move || {
+                    workers::spawn_short(move || {
                         let _ = sender.send((url.to_string(), probe(&url)));
                     });
                     result

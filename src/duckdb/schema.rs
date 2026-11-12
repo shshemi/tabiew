@@ -141,7 +141,7 @@ impl DuckDB {
             .to_vec();
         let (sender, result) = oneshot::channel();
         let name = view.to_string();
-        workers::spawn(move || {
+        workers::spawn_short(move || {
             let _ = sender.send(stats(&conn, &name, &columns));
         });
         self.stats_jobs.push(StatsJob {
@@ -172,7 +172,7 @@ impl DuckDB {
         let conn = self.session.session()?;
         let (sender, result) = oneshot::channel();
         let sql = format!("SELECT count(*) FROM {}", quote(view));
-        workers::spawn(move || {
+        workers::spawn_short(move || {
             let _ = sender.send(
                 conn.query_row(&sql, [], |r| r.get::<_, i64>(0))
                     .map(|rows| rows as usize)

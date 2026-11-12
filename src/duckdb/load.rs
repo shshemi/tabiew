@@ -158,7 +158,7 @@ impl DuckDB {
         let progress = Arc::new(Deferred::default());
         let (sender, result) = oneshot::channel();
         let target = url.clone();
-        workers::spawn(move || {
+        workers::spawn_short(move || {
             let _ = sender.send(probe(&target));
         });
         self.probing.push(Probing {
