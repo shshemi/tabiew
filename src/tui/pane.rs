@@ -703,6 +703,24 @@ impl Pane {
         )
     }
 
+    pub fn cancel_view(&mut self, view: &str) -> bool {
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.view == view)
+        {
+            self.cancel_pending();
+            return true;
+        }
+        let ours =
+            self.loading() == Some(Path::new(view)) || self.table().view().as_deref() == Some(view);
+        if ours && self.tstack.len_without_base() > 0 {
+            self.pop_data_frame();
+            return true;
+        }
+        false
+    }
+
     fn pop_data_frame(&mut self) {
         if self.cancel_pending() == Some(false) {
             return;

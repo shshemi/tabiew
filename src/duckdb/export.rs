@@ -1,6 +1,6 @@
 use crate::{
     AppResult,
-    duckdb::{DuckDB, ingester::progress::StepProgress, sql::quote},
+    duckdb::{DuckDB, IngestProgress, ingester::progress::StepProgress, sql::quote},
     misc::osc52::CopyToClipboardOsc52,
     misc::workers,
     writers::{Destination, ExportFormat, escape_cell},
@@ -19,6 +19,7 @@ use std::{
 use tokio::sync::oneshot::{self, Receiver, error::TryRecvError};
 
 pub(super) struct Exporting {
+    id: usize,
     pub(super) title: String,
     pub(super) progress: Arc<StepProgress>,
     done: String,
@@ -27,7 +28,12 @@ pub(super) struct Exporting {
 }
 
 impl DuckDB {
-    pub fn export(&mut self, view: &str, format: ExportFormat, dest: Destination) -> AppResult<()> {
+    pub fn export(
+        &mut self,
+        view: &str,
+        format: ExportFormat,
+        dest: Destination,
+    ) -> AppResult<(usize, Arc<dyn IngestProgress>)> {
         let conn = self.session.session()?;
         conn.set_query_progress_tracking(true)?;
         let progress = StepProgress::new(1);
@@ -56,18 +62,19 @@ impl DuckDB {
             let _ = sender.send(write(&conn, &view, format, &path));
         });
         self.exporting.push(Exporting {
+            id: self.results,
             title,
-            progress,
+            progress: progress.clone(),
             done,
             clipboard,
             result,
         });
-        Ok(())
+        Ok((self.results, progress))
     }
     pub fn export_now(&self, view: &str, format: ExportFormat, path: &Path) -> AppResult<()> {
         write(&*self.session.session()?, view, format, path)
     }
-    pub(super) fn poll_exports(&mut self) -> Vec<Result<String, String>> {
+    pub(super) fn poll_exports(&mut self) -> Vec<(usize, Result<String, String>)> {
         let mut finished = Vec::new();
         let mut i = 0;
         while i < self.exporting.len() {
@@ -89,11 +96,12 @@ impl DuckDB {
                 }
                 None => Ok(()),
             });
-            finished.push(
+            finished.push((
+                exporting.id,
                 result
                     .map(|()| exporting.done)
                     .map_err(|e| format!("{}: {e}", exporting.title)),
-            );
+            ));
         }
         finished
     }
@@ -260,7 +268,13 @@ mod tests {
         let mut finished = Vec::new();
         while finished.len() < formats.len() + 1 {
             assert!(start.elapsed() < Duration::from_secs(10));
-            finished.extend(db.poll().unwrap().exports);
+            finished.extend(
+                db.poll()
+                    .unwrap()
+                    .exports
+                    .into_iter()
+                    .map(|(_, result)| result),
+            );
             std::thread::sleep(Duration::from_millis(5));
         }
         assert_eq!(finished.iter().filter(|result| result.is_err()).count(), 1);

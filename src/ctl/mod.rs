@@ -1,3 +1,4 @@
+pub mod job;
 mod message;
 pub mod ops;
 mod reply;

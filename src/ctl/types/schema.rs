@@ -1,11 +1,10 @@
 use std::path::PathBuf;
 
 use indexmap::IndexMap;
-use polars::prelude::{DataType, Scalar};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::misc::sql;
+use crate::{misc::sql, tui::misc::any_value_formatter::AnyValueFormatter};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Schema {
@@ -37,11 +36,11 @@ pub struct TableSchema {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FieldInfo {
-    pub dtype: DataType,
+    pub dtype: String,
     pub est_size: Size,
-    pub null_count: usize,
-    pub min: Scalar,
-    pub max: Scalar,
+    pub null_count: Option<usize>,
+    pub min: Option<String>,
+    pub max: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -95,12 +94,28 @@ impl From<&sql::TableSchema> for TableSchema {
 
 impl From<&sql::FieldInfo> for FieldInfo {
     fn from(value: &sql::FieldInfo) -> Self {
-        Self {
-            dtype: value.dtype().clone(),
-            est_size: value.estimated_size().into(),
-            null_count: value.null_count(),
-            min: value.min().clone(),
-            max: value.max().clone(),
+        let text = |scalar: &polars::prelude::Scalar| {
+            Some(
+                AnyValueFormatter::default()
+                    .into_single_line(scalar.clone().into_value())
+                    .into_owned(),
+            )
+        };
+        match value.text() {
+            Some(field) => Self {
+                dtype: field.dtype.clone(),
+                est_size: value.estimated_size().into(),
+                null_count: field.nulls,
+                min: field.min.clone(),
+                max: field.max.clone(),
+            },
+            None => Self {
+                dtype: value.dtype().to_string(),
+                est_size: value.estimated_size().into(),
+                null_count: Some(value.null_count()),
+                min: text(value.min()),
+                max: text(value.max()),
+            },
         }
     }
 }

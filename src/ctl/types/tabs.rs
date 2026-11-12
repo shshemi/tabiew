@@ -1,4 +1,3 @@
-use polars::datatypes::DataType;
 use serde::{Deserialize, Serialize};
 
 use crate::tui;
@@ -25,7 +24,7 @@ pub struct Table {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Field {
     name: String,
-    dtype: DataType,
+    dtype: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,18 +57,29 @@ impl From<&tui::Pane> for Pane {
 impl Table {
     fn new(table: &tui::table::Table, description: &tui::pane::TableDescription) -> Self {
         Self {
-            schema: table
-                .data_frame()
-                .map(|df| {
-                    df.schema()
-                        .iter()
-                        .map(|(name, dtype)| Field {
-                            name: name.to_string(),
-                            dtype: dtype.clone(),
-                        })
-                        .collect()
-                })
-                .unwrap_or_default(),
+            schema: match (table.data_frame(), table.rows()) {
+                (Some(df), _) => df
+                    .schema()
+                    .iter()
+                    .map(|(name, dtype)| Field {
+                        name: name.to_string(),
+                        dtype: dtype.to_string(),
+                    })
+                    .collect(),
+                (None, Some(rows)) => rows
+                    .lock()
+                    .map(|rows| {
+                        rows.columns()
+                            .iter()
+                            .map(|(name, dtype)| Field {
+                                name: name.clone(),
+                                dtype: dtype.clone(),
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+                (None, None) => Vec::new(),
+            },
             offset: table.offset(),
             rendered_rows: table.rendered_rows(),
             description: description.into(),

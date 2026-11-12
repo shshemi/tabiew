@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use polars::{frame::DataFrame, io::SerWriter, prelude::JsonWriter};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     AppResult,
@@ -9,14 +9,16 @@ use crate::{
         message::Message,
         types::{ExportSpec, ImportSpec, Rows, Shape},
     },
+    duckdb::DataSource,
     handler,
     misc::sql::{TableSource, sql},
+    net::remote_load::Importer,
     readers::{
-        ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, DataFrameReader, ExcelToDataFrames,
-        FwfToDataFrame, HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
+        ArrowIpcToDataFrame, AvroToDataFrame, CsvToDataFrame, ExcelToDataFrames, FwfToDataFrame,
+        HtmlToDataFrame, JsonLineToDataFrame, JsonToDataFrame, LogfmtToDataFrame,
         MarkdownToDataFrame, ParquetToDataFrame, ReaderSource, SqliteToDataFrames,
     },
-    tui::pane::TableDescription,
+    tui::{pane::TableDescription, popups::pickers::inline_query_picker::QueryType},
     writers::{
         Destination, JsonFormat, WriteToArrow, WriteToAvro, WriteToCsv, WriteToFile, WriteToJson,
         WriteToMarkdown, WriteToParquet,
@@ -25,14 +27,14 @@ use crate::{
 
 pub struct Reply<'a> {
     msg: Message,
-    app: Option<&'a App>,
+    app: Option<&'a mut App>,
 }
 
 impl<'a> Reply<'a> {
     pub fn new(msg: Message) -> Self {
         Self { msg, app: None }
     }
-    pub fn with_app(self, app: &'a App) -> Self {
+    pub fn with_app(self, app: &'a mut App) -> Self {
         Self {
             app: Some(app),
             ..self
@@ -46,25 +48,56 @@ impl<'a> Reply<'a> {
     }
 }
 
-fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
+fn handle(msg: Message, app: Option<&mut App>) -> Option<Message> {
+    let duckdb = app.as_deref().and_then(App::duckdb).is_some();
+    let view = app
+        .as_deref()
+        .and_then(|app| app.tabs().selected())
+        .and_then(|pane| pane.table().view())
+        .is_some();
+    match &msg {
+        Message::Sql { pid, from, .. }
+        | Message::Import { pid, from, .. }
+        | Message::Filter { pid, from, .. }
+        | Message::Select { pid, from, .. }
+        | Message::Order { pid, from, .. }
+        | Message::Export { pid, from, .. }
+            if is_for_me(*pid) =>
+        {
+            Message::ack(*from).send()
+        }
+        _ => (),
+    }
     match msg {
         Message::Ps => Some(Message::ps_reply()),
         Message::Schema { pid } if is_for_me(pid) => Some(Message::schema_replay(sql().schema())),
-        Message::Sql { pid, query } if is_for_me(pid) => {
+        Message::Cancel { pid, from } if is_for_me(pid) => app?.ctl_cancel(from),
+        Message::Sql { pid, from, query } if is_for_me(pid) && duckdb => {
+            app?.ctl_query(from, query)
+        }
+        Message::Sql { pid, from, query } if is_for_me(pid) => {
             match sql().execute_with_default(&query, None) {
                 Ok(df) => {
                     let shape = Shape::from(&df);
                     handler::message::Message::TabsAddQueryPane(df, query).enqueue();
-                    Some(Message::sql_replay(Ok(shape)))
+                    Some(Message::sql_replay(from, Ok(shape)))
                 }
-                Err(err) => Some(Message::sql_replay(Err(format!(
-                    "Query {query} failed: {err}"
-                )))),
+                Err(err) => Some(Message::sql_replay(
+                    from,
+                    Err(format!("Query {query} failed: {err}")),
+                )),
             }
         }
-        Message::Import { pid, spec } if is_for_me(pid) => Some(Message::import_reply(
-            import_to_backend(spec).map_err(|err| format!("Import failed: {err:#}")),
-        )),
+        Message::Import { pid, from, spec } if is_for_me(pid) => {
+            match import_to_backend(spec, duckdb) {
+                Ok(Imported::Names(names)) => Some(Message::import_reply(from, Ok(names))),
+                Ok(Imported::Queued(source, reader)) => app?.ctl_import(from, source, reader),
+                Err(err) => Some(Message::import_reply(
+                    from,
+                    Err(format!("Import failed: {err:#}")),
+                )),
+            }
+        }
         Message::Tabs { pid } if is_for_me(pid) => app.map(|app| Message::tabs_reply(app.tabs())),
         Message::TabSwitch { pid, tab_idx } if is_for_me(pid) => app.map(|app| {
             if tab_idx < app.tabs().len() {
@@ -75,15 +108,30 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
             }
         }),
 
-        Message::Filter { pid, filter } if is_for_me(pid) => {
-            app.map(|app| Message::filter_reply(apply_filter(app, filter)))
+        Message::Filter { pid, from, filter } if is_for_me(pid) && duckdb && view => {
+            app?.ctl_inline(from, QueryType::Filter, filter)
         }
-        Message::Select { pid, columns } if is_for_me(pid) => {
-            app.map(|app| Message::select_reply(apply_select(app, columns)))
+        Message::Select { pid, from, columns } if is_for_me(pid) && duckdb && view => {
+            app?.ctl_inline(from, QueryType::Select, columns)
         }
-        Message::Order { pid, order_by } if is_for_me(pid) => {
-            app.map(|app| Message::order_reply(apply_order(app, order_by)))
-        }
+        Message::Order {
+            pid,
+            from,
+            order_by,
+        } if is_for_me(pid) && duckdb && view => app?.ctl_inline(from, QueryType::Order, order_by),
+        Message::Filter { pid, from, filter } if is_for_me(pid) => app
+            .as_deref()
+            .map(|app| Message::filter_reply(from, apply_filter(app, filter))),
+        Message::Select { pid, from, columns } if is_for_me(pid) => app
+            .as_deref()
+            .map(|app| Message::select_reply(from, apply_select(app, columns))),
+        Message::Order {
+            pid,
+            from,
+            order_by,
+        } if is_for_me(pid) => app
+            .as_deref()
+            .map(|app| Message::order_reply(from, apply_order(app, order_by))),
         Message::RmTab { pid, tab_idx } if is_for_me(pid) => app.map(|app| {
             if tab_idx < app.tabs().len() {
                 handler::message::Message::TabsRemove(tab_idx).enqueue();
@@ -93,7 +141,11 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
             }
         }),
         Message::RowSelect { pid, row_idx } if is_for_me(pid) => app.map(|app| {
-            let height = current_table(app).map(|df| df.height()).unwrap_or_default();
+            let height = app
+                .tabs()
+                .selected()
+                .map(|pane| pane.table().row_count())
+                .unwrap_or_default();
             if row_idx < height {
                 handler::message::Message::PaneTableSelect(row_idx).enqueue();
                 Message::row_select_reply(Some(row_idx))
@@ -107,9 +159,13 @@ fn handle(msg: Message, app: Option<&App>) -> Option<Message> {
                     .map_err(|err| format!("Reading rows failed: {err:#}")),
             )
         }),
-        Message::Export { pid, spec } if is_for_me(pid) => {
-            app.map(|app| Message::export_reply(apply_export(app, spec)))
+        Message::Export { pid, from, spec } if is_for_me(pid) && duckdb && view => {
+            let path = spec.path().to_path_buf();
+            app?.ctl_export(from, writer(spec).format(), path)
         }
+        Message::Export { pid, from, spec } if is_for_me(pid) => app
+            .as_deref()
+            .map(|app| Message::export_reply(from, apply_export(app, spec))),
 
         _ => None,
     }
@@ -166,9 +222,8 @@ fn apply_export(app: &App, spec: ExportSpec) -> Result<PathBuf, String> {
     }
 }
 
-fn export_current_table(app: &App, spec: ExportSpec) -> AppResult<()> {
-    let path = spec.path().to_path_buf();
-    let writer: Box<dyn WriteToFile> = match spec {
+fn writer(spec: ExportSpec) -> Box<dyn WriteToFile> {
+    match spec {
         ExportSpec::Csv {
             separator,
             quote_char,
@@ -198,17 +253,20 @@ fn export_current_table(app: &App, spec: ExportSpec) -> AppResult<()> {
         ExportSpec::Arrow { .. } => Box::new(WriteToArrow),
         ExportSpec::Avro { .. } => Box::new(WriteToAvro),
         ExportSpec::Markdown { .. } => Box::new(WriteToMarkdown),
-    };
-    let table = app
+    }
+}
+
+fn export_current_table(app: &App, spec: ExportSpec) -> AppResult<()> {
+    let path = spec.path().to_path_buf();
+    let writer = writer(spec);
+    let df = app
         .tabs()
         .selected()
         .ok_or_else(|| anyhow!("no tab is open"))?
-        .table();
-    match (table.data_frame(), table.view(), app.duckdb()) {
-        (Some(df), _, _) => writer.write_to_file(Destination::File(path), &mut df.clone()),
-        (None, Some(view), Some(duckdb)) => duckdb.export_now(&view, writer.format(), &path),
-        _ => Err(anyhow!("not available until the table is ingested")),
-    }
+        .table()
+        .data_frame()
+        .ok_or_else(|| anyhow!("not available until the table is ingested"))?;
+    writer.write_to_file(Destination::File(path), &mut df.clone())
 }
 
 fn read_rows(app: &App, offset: Option<usize>, count: Option<usize>) -> AppResult<Rows> {
@@ -219,6 +277,13 @@ fn read_rows(app: &App, offset: Option<usize>, count: Option<usize>) -> AppResul
         .table();
     let offset = offset.unwrap_or(table.offset());
     let count = count.unwrap_or(table.rendered_rows());
+    if let (Some(duckdb), Some(view)) = (app.duckdb(), table.view()) {
+        return Ok(Rows {
+            offset,
+            total: table.row_count(),
+            records: duckdb.rows_json(&view, offset, count)?,
+        });
+    }
     let frame = table
         .data_frame()
         .ok_or_else(|| anyhow!("not available on DuckDB tables yet"))?;
@@ -258,7 +323,12 @@ fn is_for_me(pid: u32) -> bool {
     std::process::id() == pid
 }
 
-fn import_to_backend(spec: ImportSpec) -> AppResult<Vec<String>> {
+enum Imported {
+    Names(Vec<String>),
+    Queued(DataSource, Arc<dyn Importer>),
+}
+
+fn import_to_backend(spec: ImportSpec, duckdb: bool) -> AppResult<Imported> {
     match spec {
         ImportSpec::Csv {
             source,
@@ -277,10 +347,12 @@ fn import_to_backend(spec: ImportSpec) -> AppResult<Vec<String>> {
                 .with_truncate_ragged_lines(truncate_ragged_lines)
                 .with_max_rows(max_rows),
             source,
+            duckdb,
         ),
         ImportSpec::Parquet { source, max_rows } => register_file(
             ParquetToDataFrame::default().with_max_rows(max_rows),
             source,
+            duckdb,
         ),
         ImportSpec::Json {
             source,
@@ -291,6 +363,7 @@ fn import_to_backend(spec: ImportSpec) -> AppResult<Vec<String>> {
                 .with_ignore_errors(ignore_errors)
                 .with_max_rows(max_rows),
             source,
+            duckdb,
         ),
         ImportSpec::Jsonl {
             source,
@@ -301,14 +374,18 @@ fn import_to_backend(spec: ImportSpec) -> AppResult<Vec<String>> {
                 .with_ignore_errors(ignore_errors)
                 .with_max_rows(max_rows),
             source,
+            duckdb,
         ),
         ImportSpec::Arrow { source, max_rows } => register_file(
             ArrowIpcToDataFrame::default().with_max_rows(max_rows),
             source,
+            duckdb,
         ),
-        ImportSpec::Avro { source, max_rows } => {
-            register_file(AvroToDataFrame::default().with_max_rows(max_rows), source)
-        }
+        ImportSpec::Avro { source, max_rows } => register_file(
+            AvroToDataFrame::default().with_max_rows(max_rows),
+            source,
+            duckdb,
+        ),
         ImportSpec::Fwf {
             source,
             widths,
@@ -322,28 +399,40 @@ fn import_to_backend(spec: ImportSpec) -> AppResult<Vec<String>> {
                 .with_flexible_width(!no_flexible_width)
                 .with_has_header(!no_header),
             source,
+            duckdb,
         ),
         ImportSpec::Sqlite { source, sqlite_key } => {
             let reader = SqliteToDataFrames::default();
             match sqlite_key {
-                Some(key) => register_file(reader.key(key), source),
-                None => register_file(reader, source),
+                Some(key) => register_file(reader.key(key), source, duckdb),
+                None => register_file(reader, source, duckdb),
             }
         }
-        ImportSpec::Excel { source } => register_file(ExcelToDataFrames, source),
-        ImportSpec::Logfmt { source } => register_file(LogfmtToDataFrame::default(), source),
-        ImportSpec::Html { source } => register_file(HtmlToDataFrame, source),
-        ImportSpec::Markdown { source } => register_file(MarkdownToDataFrame, source),
+        ImportSpec::Excel { source } => register_file(ExcelToDataFrames, source, duckdb),
+        ImportSpec::Logfmt { source } => {
+            register_file(LogfmtToDataFrame::default(), source, duckdb)
+        }
+        ImportSpec::Html { source } => register_file(HtmlToDataFrame, source, duckdb),
+        ImportSpec::Markdown { source } => register_file(MarkdownToDataFrame, source, duckdb),
     }
 }
 
-fn register_file(reader: impl DataFrameReader, source: String) -> AppResult<Vec<String>> {
+fn register_file(
+    reader: impl Importer + 'static,
+    source: String,
+    duckdb: bool,
+) -> AppResult<Imported> {
     let path = PathBuf::from(source);
-    Ok(reader
-        .read_to_data_frames(ReaderSource::File(path.clone()))?
-        .into_iter()
-        .map(|(name, df)| sql().register(&name, df, TableSource::File(path.clone())))
-        .collect())
+    if duckdb {
+        return Ok(Imported::Queued(DataSource::File(path), Arc::new(reader)));
+    }
+    Ok(Imported::Names(
+        reader
+            .read_to_data_frames(ReaderSource::File(path.clone()))?
+            .into_iter()
+            .map(|(name, df)| sql().register(&name, df, TableSource::File(path.clone())))
+            .collect(),
+    ))
 }
 
 fn parse_widths(widths: &str) -> AppResult<Vec<usize>> {

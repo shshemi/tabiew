@@ -94,7 +94,7 @@ pub struct Finished {
     pub results: Vec<String>,
     pub swapped: Vec<String>,
     pub failed: Vec<(String, String)>,
-    pub exports: Vec<Result<String, String>>,
+    pub exports: Vec<(usize, Result<String, String>)>,
     pub plots: Vec<(String, AppResult<PlotData>)>,
     pub stats: bool,
 }

@@ -24,7 +24,7 @@ impl<T> Channel<T>
 where
     T: Sync + Send + 'static + Serialize + for<'de> Deserialize<'de>,
 {
-    pub fn new() -> Self {
+    pub fn new(auto_reply: fn(&T) -> Option<T>) -> Self {
         let (send, trecv) = channel::<T>();
         let (tsend, recv) = channel::<T>();
 
@@ -33,7 +33,7 @@ where
                 .config(&Self::ipc_config())
                 .create::<ipc::Service>()?;
             let service = node
-                .service_builder(&"tabiew/broadcast/v1".try_into()?)
+                .service_builder(&"tabiew/broadcast/v2".try_into()?)
                 .publish_subscribe::<[u8]>()
                 .user_header::<Header>()
                 .max_nodes(32)
@@ -49,25 +49,33 @@ where
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
                 .create()?;
 
+            let publish = |msg: &T| -> AppResult<()> {
+                let buf = postcard::to_allocvec(msg)?;
+                let mut sample = publisher.loan_slice(buf.len())?;
+                sample.user_header_mut().pid = std::process::id();
+                sample.payload_mut().copy_from_slice(&buf);
+                sample.send()?;
+                Ok(())
+            };
             loop {
                 loop {
                     match trecv.try_recv() {
-                        Ok(msg) => {
-                            let buf = postcard::to_allocvec(&msg)?;
-                            let mut sample = publisher.loan_slice(buf.len())?;
-                            sample.user_header_mut().pid = std::process::id();
-                            sample.payload_mut().copy_from_slice(&buf);
-                            sample.send()?;
-                        }
+                        Ok(msg) => publish(&msg)?,
                         Err(TryRecvError::Empty) => break,
                         Err(TryRecvError::Disconnected) => return Ok(()),
                     }
                 }
 
                 while let Some(sample) = subscriber.receive()? {
-                    let msg = postcard::from_bytes(sample.payload())?;
-                    if !sample.user_header().is_echo() {
-                        tsend.send(msg)?;
+                    if sample.user_header().is_echo() {
+                        continue;
+                    }
+                    let Ok(msg) = postcard::from_bytes(sample.payload()) else {
+                        continue;
+                    };
+                    match auto_reply(&msg) {
+                        Some(reply) => publish(&reply)?,
+                        None => tsend.send(msg)?,
                     }
                 }
 
@@ -102,7 +110,7 @@ where
     T: Sync + Send + 'static + Serialize + for<'de> Deserialize<'de>,
 {
     fn default() -> Self {
-        Self::new()
+        Self::new(|_| None)
     }
 }
 

@@ -14,7 +14,7 @@ use crate::{
 };
 
 static IPC: LazyLock<Mutex<ipc::Channel<Message>>> =
-    LazyLock::new(|| Mutex::new(Default::default()));
+    LazyLock::new(|| Mutex::new(ipc::Channel::new(Message::auto_reply)));
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Message {
@@ -31,18 +31,22 @@ pub enum Message {
     },
     Sql {
         pid: u32,
+        from: u32,
         query: String,
     },
     SqlReplay {
         pid: u32,
+        to: u32,
         result: Result<Shape, String>,
     },
     Import {
         pid: u32,
+        from: u32,
         spec: ImportSpec,
     },
     ImportReply {
         pid: u32,
+        to: u32,
         result: Result<Vec<String>, String>,
     },
     Tabs {
@@ -87,35 +91,64 @@ pub enum Message {
     },
     Filter {
         pid: u32,
+        from: u32,
         filter: String,
     },
     FilterReply {
         pid: u32,
+        to: u32,
         result: Result<Shape, String>,
     },
     Select {
         pid: u32,
+        from: u32,
         columns: String,
     },
     SelectReply {
         pid: u32,
+        to: u32,
         result: Result<Shape, String>,
     },
     Order {
         pid: u32,
+        from: u32,
         order_by: String,
     },
     OrderReply {
         pid: u32,
+        to: u32,
         result: Result<Shape, String>,
     },
     Export {
         pid: u32,
+        from: u32,
         spec: ExportSpec,
     },
     ExportReply {
         pid: u32,
+        to: u32,
         result: Result<PathBuf, String>,
+    },
+    Ack {
+        pid: u32,
+        to: u32,
+    },
+    Progress {
+        pid: u32,
+        to: u32,
+        fraction: Option<f64>,
+    },
+    Ping {
+        pid: u32,
+        from: u32,
+    },
+    Pong {
+        pid: u32,
+        to: u32,
+    },
+    Cancel {
+        pid: u32,
+        from: u32,
     },
 }
 
@@ -142,23 +175,33 @@ impl Message {
     pub fn sql(pid: u32, query: impl Into<String>) -> Self {
         Message::Sql {
             pid,
+            from: id(),
             query: query.into(),
         }
     }
 
-    pub fn sql_replay(result: Result<Shape, String>) -> Self {
-        Message::SqlReplay { pid: id(), result }
+    pub fn sql_replay(to: u32, result: Result<Shape, String>) -> Self {
+        Message::SqlReplay {
+            pid: id(),
+            to,
+            result,
+        }
     }
 
     pub fn import(pid: u32, spec: impl Into<ImportSpec>) -> Self {
         Message::Import {
             pid,
+            from: id(),
             spec: spec.into(),
         }
     }
 
-    pub fn import_reply(result: Result<Vec<String>, String>) -> Self {
-        Message::ImportReply { pid: id(), result }
+    pub fn import_reply(to: u32, result: Result<Vec<String>, String>) -> Self {
+        Message::ImportReply {
+            pid: id(),
+            to,
+            result,
+        }
     }
 
     pub fn tabs(pid: u32) -> Self {
@@ -186,45 +229,65 @@ impl Message {
     pub fn filter(pid: u32, filter: impl Into<String>) -> Self {
         Message::Filter {
             pid,
+            from: id(),
             filter: filter.into(),
         }
     }
 
-    pub fn filter_reply(result: Result<Shape, String>) -> Self {
-        Message::FilterReply { pid: id(), result }
+    pub fn filter_reply(to: u32, result: Result<Shape, String>) -> Self {
+        Message::FilterReply {
+            pid: id(),
+            to,
+            result,
+        }
     }
 
     pub fn select(pid: u32, columns: impl Into<String>) -> Self {
         Message::Select {
             pid,
+            from: id(),
             columns: columns.into(),
         }
     }
 
-    pub fn select_reply(result: Result<Shape, String>) -> Self {
-        Message::SelectReply { pid: id(), result }
+    pub fn select_reply(to: u32, result: Result<Shape, String>) -> Self {
+        Message::SelectReply {
+            pid: id(),
+            to,
+            result,
+        }
     }
 
     pub fn order(pid: u32, order_by: impl Into<String>) -> Self {
         Message::Order {
             pid,
+            from: id(),
             order_by: order_by.into(),
         }
     }
 
-    pub fn order_reply(result: Result<Shape, String>) -> Self {
-        Message::OrderReply { pid: id(), result }
+    pub fn order_reply(to: u32, result: Result<Shape, String>) -> Self {
+        Message::OrderReply {
+            pid: id(),
+            to,
+            result,
+        }
     }
 
     pub fn export(pid: u32, spec: impl Into<ExportSpec>) -> Self {
         Message::Export {
             pid,
+            from: id(),
             spec: spec.into(),
         }
     }
 
-    pub fn export_reply(result: Result<PathBuf, String>) -> Self {
-        Message::ExportReply { pid: id(), result }
+    pub fn export_reply(to: u32, result: Result<PathBuf, String>) -> Self {
+        Message::ExportReply {
+            pid: id(),
+            to,
+            result,
+        }
     }
 
     pub fn row_select(pid: u32, row_idx: usize) -> Self {
@@ -254,6 +317,36 @@ impl Message {
         Message::RmTabReply {
             pid: id(),
             removed_tab_idx,
+        }
+    }
+
+    pub fn ack(to: u32) -> Self {
+        Message::Ack { pid: id(), to }
+    }
+
+    pub fn progress(to: u32, fraction: Option<f64>) -> Self {
+        Message::Progress {
+            pid: id(),
+            to,
+            fraction,
+        }
+    }
+
+    pub fn ping(pid: u32) -> Self {
+        Message::Ping { pid, from: id() }
+    }
+
+    pub fn cancel(pid: u32) -> Self {
+        Message::Cancel { pid, from: id() }
+    }
+
+    fn auto_reply(&self) -> Option<Self> {
+        match self {
+            Message::Ping { pid, from } if *pid == id() => Some(Message::Pong {
+                pid: id(),
+                to: *from,
+            }),
+            _ => None,
         }
     }
 

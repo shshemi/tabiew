@@ -1,7 +1,15 @@
-use std::{path::Path, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use crate::AppResult;
-use crate::duckdb::{DataSource, DuckDB, IngestOptions, Load, Opened, Store};
+use crate::ctl::{
+    self,
+    job::{Done, Job, Kind, Wait},
+};
+use crate::duckdb::{DataSource, DuckDB, IngestOptions, IngestProgress, Load, Opened, Store};
 use crate::indexer::Indexer;
 use crate::misc::config::config;
 use crate::misc::external_editor::run_editor;
@@ -19,7 +27,7 @@ use crate::tui::popups::pickers::sql_query_picker::{self, SqlQueryPicker};
 use crate::tui::table::Table;
 use crate::tui::toast::Toast;
 use crate::tui::{error_popup::ErrorPopup, tabs::Tabs};
-use crate::writers::ExportFormat;
+use crate::writers::{Destination, ExportFormat};
 use crate::{
     handler::message::Message,
     tui::{
@@ -54,6 +62,7 @@ pub struct App {
     running: bool,
     duckdb: Option<DuckDB>,
     options: IngestOptions,
+    ctl: Vec<Job>,
 }
 
 impl App {
@@ -75,6 +84,7 @@ impl App {
             dls: Vec::new(),
             duckdb: None,
             options: IngestOptions::default(),
+            ctl: Vec::new(),
         }
     }
 
@@ -130,6 +140,7 @@ impl App {
         };
         let mut panes = Vec::new();
         let mut errors = Vec::new();
+        let ready = matches!(loaded, Ok(Load::Ready(_)));
         match loaded {
             Ok(Load::Ready(names)) => {
                 for name in names {
@@ -175,6 +186,9 @@ impl App {
                 false => self.tabs.push(pane),
             }
         }
+        if ready {
+            self.sync_schema();
+        }
     }
 
     fn import(&mut self, source: &DataSource, reader: Arc<dyn remote_load::Importer>) {
@@ -195,6 +209,9 @@ impl App {
         let mut toasts = Vec::new();
         let mut trim = false;
         let mut changed = false;
+        let mut ctl_failed = Vec::new();
+        let mut ctl_exports = Vec::new();
+        let mut ctl_tables = Vec::new();
         let (tables, queries) = match duckdb.poll() {
             Ok(finished) => {
                 changed =
@@ -238,13 +255,15 @@ impl App {
                         Err(err) => errors.push(err.to_string()),
                     }
                 }
-                for export in finished.exports {
+                for (id, export) in finished.exports {
+                    ctl_exports.push((id, export.clone()));
                     match export {
                         Ok(done) => toasts.push(done),
                         Err(error) => errors.push(error),
                     }
                 }
-                for (view, _) in &finished.failed {
+                for (view, error) in &finished.failed {
+                    ctl_failed.push((view.clone(), error.clone()));
                     for pane in self.tabs.panes_mut() {
                         pane.fail_pending(view);
                     }
@@ -267,6 +286,13 @@ impl App {
             }
         };
         for (source, result) in tables {
+            ctl_tables.push((
+                source.clone(),
+                result
+                    .as_ref()
+                    .map(Clone::clone)
+                    .map_err(|err| format!("{}: {err}", source.display())),
+            ));
             let Some(pane) = self
                 .tabs
                 .panes_mut()
@@ -328,6 +354,173 @@ impl App {
         if let Some(error) = errors.pop() {
             self.show_error(error);
         }
+        self.poll_ctl(ctl_failed, ctl_exports, ctl_tables);
+    }
+
+    fn poll_ctl(
+        &mut self,
+        failed: Vec<(String, String)>,
+        exports: Vec<(usize, Result<String, String>)>,
+        tables: Vec<(PathBuf, Result<Vec<String>, String>)>,
+    ) {
+        let Some(duckdb) = self.duckdb.as_ref() else {
+            return;
+        };
+        let mut i = 0;
+        while i < self.ctl.len() {
+            let job = &mut self.ctl[i];
+            let result = match &job.wait {
+                Wait::View(view) => match failed.iter().find(|(failed, _)| failed == view) {
+                    Some((_, error)) => Some(Err(error.clone())),
+                    None if duckdb.result_progress(view).is_some() => None,
+                    None => Some(
+                        duckdb
+                            .query_shape("SELECT * FROM _", Some(view))
+                            .map(|(height, width)| Done::Shape(height, width))
+                            .map_err(|_| "Cancelled in tw".to_owned()),
+                    ),
+                },
+                Wait::Export(id) => exports
+                    .iter()
+                    .find(|(export, _)| export == id)
+                    .map(|(_, result)| result.clone().map(|_| Done::Written)),
+                Wait::Source(source) => tables
+                    .iter()
+                    .find(|(table, _)| table == source)
+                    .map(|(_, result)| result.clone().map(Done::Names)),
+            };
+            match result {
+                Some(result) => {
+                    let job = self.ctl.swap_remove(i);
+                    job.kind.reply(job.to, result).send();
+                }
+                None => {
+                    if job.sent.elapsed() >= Duration::from_millis(90) {
+                        ctl::Message::progress(
+                            job.to,
+                            job.progress
+                                .as_ref()
+                                .and_then(|progress| progress.fraction()),
+                        )
+                        .send();
+                        job.sent = Instant::now();
+                    }
+                    i += 1;
+                }
+            }
+        }
+    }
+
+    fn track(
+        &mut self,
+        to: u32,
+        kind: Kind,
+        started: AppResult<(Wait, Option<Arc<dyn IngestProgress>>)>,
+    ) -> Option<ctl::Message> {
+        match started {
+            Ok((wait, progress)) => {
+                self.ctl.push(Job {
+                    to,
+                    kind,
+                    wait,
+                    progress,
+                    sent: Instant::now(),
+                });
+                None
+            }
+            Err(err) => Some(kind.reply(to, Err(format!("{err:#}")))),
+        }
+    }
+
+    pub fn ctl_inline(
+        &mut self,
+        to: u32,
+        query_type: QueryType,
+        value: String,
+    ) -> Option<ctl::Message> {
+        let started = self.try_inline_query(query_type, &value);
+        let kind = match query_type {
+            QueryType::Select => Kind::Select(value),
+            QueryType::Filter => Kind::Filter(value),
+            QueryType::Order => Kind::Order(value),
+        };
+        let started = started.map(|view| self.view_job(view));
+        self.track(to, kind, started)
+    }
+
+    pub fn ctl_query(&mut self, to: u32, sql: String) -> Option<ctl::Message> {
+        let started = self.try_query(&sql).map(|view| self.view_job(view));
+        self.track(to, Kind::Sql(sql), started)
+    }
+
+    fn view_job(&self, view: String) -> (Wait, Option<Arc<dyn IngestProgress>>) {
+        let progress = self
+            .duckdb
+            .as_ref()
+            .and_then(|duckdb| duckdb.result_progress(&view));
+        (Wait::View(view), progress)
+    }
+
+    pub fn ctl_export(
+        &mut self,
+        to: u32,
+        format: ExportFormat,
+        path: PathBuf,
+    ) -> Option<ctl::Message> {
+        let view = self.tabs.selected().and_then(|pane| pane.table().view());
+        let started = match (self.duckdb.as_mut(), view) {
+            (Some(duckdb), Some(view)) => duckdb
+                .export(&view, format, Destination::File(path.clone()))
+                .map(|(id, progress)| (Wait::Export(id), Some(progress))),
+            _ => Err(anyhow::anyhow!("not available until the table is ingested")),
+        };
+        self.track(to, Kind::Export(path), started)
+    }
+
+    pub fn ctl_import(
+        &mut self,
+        to: u32,
+        source: DataSource,
+        reader: Arc<dyn remote_load::Importer>,
+    ) -> Option<ctl::Message> {
+        let duckdb = self.duckdb.as_mut()?;
+        let options = reader.ingest_options(self.options.clone());
+        let loaded = match &source {
+            DataSource::Stdin => duckdb.load_stdin(None, &options, None),
+            DataSource::File(path) => duckdb.load(path, None, &options, None),
+            DataSource::Url(url) => duckdb.load_url(url, None, &options, None),
+        };
+        match loaded {
+            Ok(Load::Ready(names)) => {
+                self.sync_schema();
+                Some(Kind::Import.reply(to, Ok(Done::Names(names))))
+            }
+            Ok(Load::Ingesting(ingest)) => self.track(
+                to,
+                Kind::Import,
+                Ok((Wait::Source(ingest.source), Some(ingest.progress))),
+            ),
+            Err(err) => Some(Kind::Import.reply(to, Err(format!("{}: {err:#}", label(&source))))),
+        }
+    }
+
+    pub fn ctl_cancel(&mut self, to: u32) -> Option<ctl::Message> {
+        let job = self
+            .ctl
+            .swap_remove(self.ctl.iter().position(|job| job.to == to)?);
+        if let Wait::View(view) = &job.wait
+            && !self.tabs.panes_mut().any(|pane| pane.cancel_view(view))
+        {
+            match self
+                .tabs
+                .iter()
+                .position(|pane| pane.loading() == Some(Path::new(view)))
+            {
+                Some(idx) => Message::TabsRemove(idx).enqueue(),
+                None => Message::AppDropQuery(view.clone()).enqueue(),
+            }
+        }
+        Some(job.kind.reply(to, Err("Cancelled".to_owned())))
     }
 
     pub fn running(&self) -> bool {
@@ -521,23 +714,30 @@ impl App {
     }
 
     fn query(&mut self, sql: &str) {
-        let Some(duckdb) = self.duckdb.as_mut() else {
-            return;
-        };
+        if let Err(err) = self.try_query(sql) {
+            self.show_toast(err.to_string());
+        }
+    }
+
+    fn try_query(&mut self, sql: &str) -> AppResult<String> {
+        let duckdb = self
+            .duckdb
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("DuckDB is not running"))?;
         let current = self.tabs.selected().and_then(|pane| pane.table().view());
-        match duckdb.open_query(sql, current.as_deref(), Store::Wait) {
-            Ok(Opened::Pending(view, progress)) => {
+        match duckdb.open_query(sql, current.as_deref(), Store::Wait)? {
+            Opened::Pending(view, progress) => {
                 self.overlay = None;
                 sql_query_picker::remember(sql);
                 let mut pane = Pane::reader(
                     Reader::new(Empty, duckdb.reader_config()),
                     TableDescription::Query(sql.to_owned()),
                 );
-                pane.set_running(view, sql.to_owned(), progress, None);
+                pane.set_running(view.clone(), sql.to_owned(), progress, None);
                 self.tabs.add(pane);
+                Ok(view)
             }
-            Ok(Opened::Ready(_)) => (),
-            Err(err) => self.show_toast(err.to_string()),
+            Opened::Ready(reader) => Ok(reader.source().view().unwrap_or_default().to_string()),
         }
     }
 
@@ -646,14 +846,19 @@ impl App {
     }
 
     fn inline_query(&mut self, query_type: QueryType, value: &str) {
+        if let Err(err) = self.try_inline_query(query_type, value) {
+            self.show_error(err.to_string());
+        }
+    }
+
+    fn try_inline_query(&mut self, query_type: QueryType, value: &str) -> AppResult<String> {
         let idx = self.tabs.idx();
         let (Some(duckdb), Some(pane)) = (self.duckdb.as_mut(), self.tabs.panes_mut().nth(idx))
         else {
-            return;
+            return Err(anyhow::anyhow!("No tab is open"));
         };
         let Some(current) = pane.table().view() else {
-            self.show_error("Not available until the table is ingested");
-            return;
+            return Err(anyhow::anyhow!("Not available until the table is ingested"));
         };
         let (sql, description, toast) = match query_type {
             QueryType::Select => (
@@ -673,29 +878,31 @@ impl App {
             ),
         };
         let store = match query_type {
-            QueryType::Select => Store::View,
-            QueryType::Filter => Store::Background,
+            QueryType::Select | QueryType::Filter => Store::Background,
             QueryType::Order => Store::Wait,
         };
         let mut opened = duckdb.open_query(&sql, Some(&current), store);
         let slow = first_page_slow(&mut opened);
-        match opened {
-            Ok(Opened::Ready(reader)) if slow => {
+        match opened? {
+            Opened::Ready(reader) if slow => {
                 let view = reader.source().view().unwrap_or_default().to_string();
-                pane.set_pending(view, false, move |pane| {
+                pane.set_pending(view.clone(), false, move |pane| {
                     pane.push_reader(*reader, description);
                     Message::AppShowToast(toast).enqueue();
                 });
+                Ok(view)
             }
-            Ok(Opened::Ready(reader)) => {
+            Opened::Ready(reader) => {
+                let view = reader.source().view().unwrap_or_default().to_string();
                 pane.push_reader(*reader, description);
                 self.show_toast(toast);
+                Ok(view)
             }
-            Ok(Opened::Pending(view, progress)) => {
+            Opened::Pending(view, progress) => {
                 pane.push_reader(Reader::new(Empty, duckdb.reader_config()), description);
-                pane.set_running(view, sql, progress, Some(toast));
+                pane.set_running(view.clone(), sql, progress, Some(toast));
+                Ok(view)
             }
-            Err(err) => self.show_error(err.to_string()),
         }
     }
 

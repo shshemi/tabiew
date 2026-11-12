@@ -109,6 +109,17 @@ pub(super) struct Polled {
     pub(super) failed: Vec<(String, String)>,
 }
 
+fn bind(query: &str, current: Option<&str>) -> String {
+    let query = query.trim().trim_end_matches(';');
+    match current {
+        Some(current) => format!(
+            "WITH _ AS (SELECT * FROM {}) SELECT * FROM ({query})",
+            quote(current)
+        ),
+        None => query.to_string(),
+    }
+}
+
 fn table(view: &str) -> String {
     format!("{SCRATCH}.main.{}", quote(view))
 }
@@ -130,16 +141,7 @@ impl DuckDB {
         title: &str,
         stored: Option<&str>,
     ) -> AppResult<Opened> {
-        let bind = |query: &str| {
-            let query = query.trim().trim_end_matches(';');
-            match current {
-                Some(current) => format!(
-                    "WITH _ AS (SELECT * FROM {}) SELECT * FROM ({query})",
-                    quote(current)
-                ),
-                None => query.to_string(),
-            }
-        };
+        let bind = |query: &str| bind(query, current);
         let SplitSql { setup, query, .. } = split_sql(sql);
         let query = bind(&query);
         self.results += 1;
@@ -277,6 +279,36 @@ impl DuckDB {
                     .iter()
                     .map(|plotting| (plotting.title.as_str(), plotting.progress.fraction())),
             )
+    }
+    pub fn result_progress(&self, view: &str) -> Option<Arc<dyn IngestProgress>> {
+        self.materializing
+            .iter()
+            .find(|materializing| materializing.view == view && !materializing.dropped)
+            .map(|materializing| materializing.progress.clone() as Arc<dyn IngestProgress>)
+    }
+    pub fn query_shape(&self, sql: &str, current: Option<&str>) -> AppResult<(usize, usize)> {
+        let query = bind(&split_sql(sql).query, current);
+        let conn = self.session.session()?;
+        let width = conn
+            .prepare(&format!("DESCRIBE SELECT * FROM ({query})"))?
+            .query_map([], |_| Ok(()))?
+            .count();
+        let height = conn.query_row(&format!("SELECT count(*) FROM ({query})"), [], |r| {
+            r.get::<_, i64>(0)
+        })? as usize;
+        Ok((height, width))
+    }
+    pub fn rows_json(&self, view: &str, offset: usize, count: usize) -> AppResult<String> {
+        let rows = self
+            .session
+            .session()?
+            .prepare(&format!(
+                "SELECT CAST(to_json(t) AS VARCHAR) FROM (SELECT * FROM {} LIMIT {count} OFFSET {offset}) t",
+                quote(view)
+            ))?
+            .query_map([], |r| r.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(format!("[{}]", rows.join(",")))
     }
     pub fn scratch_path(&self, name: &str) -> PathBuf {
         self._scratch.dir().join(name)

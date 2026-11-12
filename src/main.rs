@@ -246,7 +246,7 @@ fn start_app(mut app: App) -> AppResult<()> {
 
         for msg in ctl::Message::recv_iter() {
             apply_queued_messages(&mut app);
-            ctl::Reply::new(msg).with_app(&app).send();
+            ctl::Reply::new(msg).with_app(&mut app).send();
         }
     }
 
