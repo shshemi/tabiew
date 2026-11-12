@@ -84,6 +84,7 @@ impl<'a> TextTable<'a> {
         self.flush()
     }
     fn flush(&mut self) -> AppResult<()> {
+        crate::duckdb::cancel::check()?;
         self.bytes = 0;
         if self.columns.is_empty() {
             self.batch.clear();

@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::anyhow;
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, atomic::AtomicBool},
 };
 use tokio::sync::oneshot::{self, Receiver};
@@ -23,6 +23,7 @@ pub(super) struct PartsProbing {
     max_rows: Option<usize>,
     progress: Arc<Deferred>,
     result: Vec<Receiver<(String, Probe)>>,
+    cancelled: bool,
 }
 
 pub(super) struct Group {
@@ -76,6 +77,7 @@ impl DuckDB {
                 max_rows,
                 progress: progress.clone(),
                 result,
+                cancelled: false,
             });
             return Ok(Load::Ingesting(Ingest {
                 source: source_path(sources),
@@ -87,6 +89,13 @@ impl DuckDB {
         let loaded = self.load_probed_parts(sources, options, max_rows);
         self.probed.clear();
         loaded
+    }
+    pub(super) fn cancel_parts(&mut self, source: &Path) {
+        for probing in &mut self.parts_probing {
+            if source_path(&probing.sources) == source {
+                probing.cancelled = true;
+            }
+        }
     }
     pub(super) fn poll_parts_probes(&mut self, finished: &mut Finished) {
         let mut i = 0;
@@ -112,6 +121,9 @@ impl DuckDB {
                 if let DataSource::Url(url) = source {
                     self.probed.entry(url.to_string()).or_default();
                 }
+            }
+            if probing.cancelled {
+                continue;
             }
             let source = source_path(&probing.sources);
             match self.load_parts(&probing.sources, &probing.options, probing.max_rows) {

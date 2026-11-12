@@ -1,4 +1,5 @@
 mod cache;
+mod cancel;
 mod export;
 mod ingester;
 mod load;
@@ -70,6 +71,7 @@ struct Ingesting {
     name: Option<String>,
     limit: Option<usize>,
     result: Receiver<AppResult<()>>,
+    cancel: cancel::Cancel,
 }
 
 pub enum Load {
@@ -187,6 +189,16 @@ impl DuckDB {
             let ingesting = self.ingesting.swap_remove(i);
             if let Some(spooled) = &ingesting.spooled {
                 let _ = std::fs::remove_file(spooled);
+            }
+            if ingesting.cancel.cancelled() {
+                let group = ingesting
+                    .group
+                    .and_then(|id| self.groups.iter_mut().find(|group| group.id == id));
+                match group {
+                    Some(group) => group.waiting -= 1,
+                    None => self.session.unpin(&ingesting.alias),
+                }
+                continue;
             }
             if let Some(id) = ingesting.group {
                 let result = result.and_then(|()| self.complete(&ingesting.alias));
@@ -309,6 +321,7 @@ mod tests {
             name: Some("sales".to_string()),
             limit: None,
             result,
+            cancel: Default::default(),
         });
         (alias, sender)
     }

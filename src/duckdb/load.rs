@@ -28,6 +28,7 @@ pub(super) struct Probing {
     complete: Arc<AtomicBool>,
     progress: Arc<Deferred>,
     result: Receiver<Probe>,
+    cancelled: bool,
 }
 
 #[derive(Default, Clone)]
@@ -170,6 +171,7 @@ impl DuckDB {
             complete: complete.clone(),
             progress: progress.clone(),
             result,
+            cancelled: false,
         });
         Ok(Load::Ingesting(Ingest {
             source: PathBuf::from(url.as_str()),
@@ -177,6 +179,31 @@ impl DuckDB {
             file: Some(file),
             complete,
         }))
+    }
+    pub fn cancel_load(&mut self, source: &Path) {
+        for ingesting in &self.ingesting {
+            let grouped = ingesting.group.is_some_and(|id| {
+                self.groups
+                    .iter()
+                    .any(|group| group.id == id && group.source == source)
+            });
+            if ingesting.source == source || grouped {
+                ingesting.cancel.cancel();
+            }
+        }
+        for group in self
+            .groups
+            .iter_mut()
+            .filter(|group| group.source == source)
+        {
+            group.reported = false;
+        }
+        for probing in &mut self.probing {
+            if Path::new(probing.url.as_str()) == source {
+                probing.cancelled = true;
+            }
+        }
+        self.cancel_parts(source);
     }
     pub(super) fn poll_probes(&mut self, finished: &mut Finished) {
         let mut i = 0;
@@ -190,6 +217,10 @@ impl DuckDB {
                 Err(TryRecvError::Closed) => Probe::default(),
             };
             let probing = self.probing.swap_remove(i);
+            if probing.cancelled {
+                probing.complete.store(true, Ordering::Release);
+                continue;
+            }
             let source = PathBuf::from(probing.url.as_str());
             let loaded = self.resolve_url(
                 &probing.url,
@@ -291,7 +322,7 @@ impl DuckDB {
         })
         .and_then(Ingester::ingest);
         match ingested {
-            Ok((progress, result)) => {
+            Ok((progress, result, cancel)) => {
                 let group = self.part_of;
                 self.join(&alias, name.as_deref(), true);
                 self.ingesting.push(Ingesting {
@@ -302,6 +333,7 @@ impl DuckDB {
                     name,
                     limit: max_rows,
                     result,
+                    cancel,
                 });
                 Ok(Load::Ingesting(Ingest {
                     source,

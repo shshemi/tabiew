@@ -63,6 +63,7 @@ pub fn refine(conn: &Connection, alias: &str, types: &[String]) -> AppResult<()>
         .collect::<Vec<_>>()
         .join(", ");
     for (table, column) in columns {
+        crate::duckdb::cancel::check()?;
         let table = format!("{}.{}", quote(alias), quote(&table));
         let column = quote(&column);
         let matched = conn.query_row(

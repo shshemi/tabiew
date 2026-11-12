@@ -3,7 +3,9 @@ use crate::{
     duckdb::{
         DuckDB,
         cache::file_db::ColumnStats,
+        cancel::Cancel,
         reader::{Count, ViewSource},
+        results::RESULT_PREFIX,
         sql::quote,
     },
     misc::workers,
@@ -27,11 +29,13 @@ pub(super) struct CountJob {
     view: String,
     counts: Vec<Count>,
     result: Receiver<AppResult<usize>>,
+    cancel: Cancel,
 }
 
 pub(super) struct StatsJob {
     view: String,
     result: Receiver<AppResult<Vec<ColumnStats>>>,
+    cancel: Cancel,
 }
 
 fn width(data_type: &str) -> Option<u64> {
@@ -139,6 +143,8 @@ impl DuckDB {
         let columns = ViewSource::growing(self.session.session()?, view)?
             .columns()
             .to_vec();
+        let cancel = Cancel::default();
+        cancel.watch(&conn);
         let (sender, result) = oneshot::channel();
         let name = view.to_string();
         workers::spawn_short(move || {
@@ -147,6 +153,7 @@ impl DuckDB {
         self.stats_jobs.push(StatsJob {
             view: view.to_string(),
             result,
+            cancel,
         });
         Ok(())
     }
@@ -170,6 +177,8 @@ impl DuckDB {
             return Ok(());
         }
         let conn = self.session.session()?;
+        let cancel = Cancel::default();
+        cancel.watch(&conn);
         let (sender, result) = oneshot::channel();
         let sql = format!("SELECT count(*) FROM {}", quote(view));
         workers::spawn_short(move || {
@@ -183,8 +192,21 @@ impl DuckDB {
             view: view.to_string(),
             counts: count.into_iter().collect(),
             result,
+            cancel,
         });
         Ok(())
+    }
+    pub fn cancel_jobs(&mut self, view: &str, dropped: bool) {
+        self.cancel_plots(view);
+        if !dropped && !view.starts_with(RESULT_PREFIX) {
+            return;
+        }
+        for job in self.count_jobs.iter().filter(|job| job.view == view) {
+            job.cancel.cancel();
+        }
+        for job in self.stats_jobs.iter().filter(|job| job.view == view) {
+            job.cancel.cancel();
+        }
     }
     pub(super) fn poll_counts(&mut self) -> bool {
         let mut changed = false;

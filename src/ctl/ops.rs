@@ -39,7 +39,6 @@ fn job<T>(
     pid: u32,
     msg: Message,
     verb: &str,
-    cancellable: bool,
     mut reply: impl FnMut(Message) -> Option<Result<T, String>>,
 ) -> AppResult<T> {
     let interrupted = interrupted();
@@ -59,9 +58,6 @@ fn job<T>(
     loop {
         if cancelled.is_none() && interrupted.load(Ordering::Relaxed) {
             clear();
-            if !cancellable {
-                return Err(anyhow!("Stopped waiting, the job keeps running in {pid}"));
-            }
             Message::cancel(pid).send();
             cancelled = Some(Instant::now());
         }
@@ -168,20 +164,14 @@ pub fn fetch_sql_backend(pid: u32) -> AppResult<Schema> {
 }
 
 pub fn send_sql_query(pid: u32, query: String) -> AppResult<Shape> {
-    job(
-        pid,
-        Message::sql(pid, query),
-        "Running",
-        true,
-        |msg| match msg {
-            Message::SqlReplay {
-                pid: tpid,
-                to,
-                result,
-            } if tpid == pid && to == id() => Some(result),
-            _ => None,
-        },
-    )
+    job(pid, Message::sql(pid, query), "Running", |msg| match msg {
+        Message::SqlReplay {
+            pid: tpid,
+            to,
+            result,
+        } if tpid == pid && to == id() => Some(result),
+        _ => None,
+    })
 }
 
 pub fn send_import(pid: u32, spec: impl Into<ImportSpec>) -> AppResult<Vec<String>> {
@@ -189,7 +179,6 @@ pub fn send_import(pid: u32, spec: impl Into<ImportSpec>) -> AppResult<Vec<Strin
         pid,
         Message::import(pid, spec),
         "Importing",
-        false,
         |msg| match msg {
             Message::ImportReply {
                 pid: tpid,
@@ -224,7 +213,6 @@ pub fn send_filter(pid: u32, filter: String) -> AppResult<Shape> {
         pid,
         Message::filter(pid, filter),
         "Filtering",
-        true,
         |msg| match msg {
             Message::FilterReply {
                 pid: tpid,
@@ -241,7 +229,6 @@ pub fn send_select(pid: u32, columns: String) -> AppResult<Shape> {
         pid,
         Message::select(pid, columns),
         "Selecting",
-        true,
         |msg| match msg {
             Message::SelectReply {
                 pid: tpid,
@@ -258,7 +245,6 @@ pub fn send_order(pid: u32, order_by: String) -> AppResult<Shape> {
         pid,
         Message::order(pid, order_by),
         "Ordering",
-        true,
         |msg| match msg {
             Message::OrderReply {
                 pid: tpid,
@@ -275,7 +261,6 @@ pub fn send_export(pid: u32, spec: impl Into<ExportSpec>) -> AppResult<PathBuf> 
         pid,
         Message::export(pid, spec),
         "Exporting",
-        false,
         |msg| match msg {
             Message::ExportReply {
                 pid: tpid,

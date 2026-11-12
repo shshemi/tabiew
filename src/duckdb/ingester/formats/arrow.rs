@@ -45,6 +45,7 @@ pub fn write_batches<E: std::error::Error + Send + Sync + 'static>(
     let table = format!("{}.data", quote(alias));
     conn.execute_batch("BEGIN")?;
     let written = batches.enumerate().try_for_each(|(idx, batch)| {
+        crate::duckdb::cancel::check()?;
         let batch = ArrowBatchRegistration::new(batch?);
         let sql = if idx == 0 {
             format!("CREATE OR REPLACE TABLE {table} AS SELECT * FROM arrow_batch(?)")

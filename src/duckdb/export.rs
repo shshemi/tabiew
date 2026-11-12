@@ -1,6 +1,11 @@
 use crate::{
     AppResult,
-    duckdb::{DuckDB, IngestProgress, ingester::progress::StepProgress, sql::quote},
+    duckdb::{
+        DuckDB, IngestProgress,
+        cancel::{self, Cancel},
+        ingester::progress::StepProgress,
+        sql::quote,
+    },
     misc::osc52::CopyToClipboardOsc52,
     misc::workers,
     writers::{Destination, ExportFormat, escape_cell},
@@ -20,6 +25,8 @@ use tokio::sync::oneshot::{self, Receiver, error::TryRecvError};
 
 pub(super) struct Exporting {
     id: usize,
+    path: PathBuf,
+    cancel: Cancel,
     pub(super) title: String,
     pub(super) progress: Arc<StepProgress>,
     done: String,
@@ -57,12 +64,18 @@ impl DuckDB {
         let title = format!("Exporting to {target}");
         let done = format!("Exported to {target} in {} format", label(format));
         let view = view.to_string();
+        let cancel = Cancel::default();
+        cancel.watch(&conn);
+        let job = cancel.clone();
+        let target = path.clone();
         let (sender, result) = oneshot::channel();
         workers::spawn(move || {
-            let _ = sender.send(write(&conn, &view, format, &path));
+            let _ = sender.send(job.scoped(|| write(&conn, &view, format, &target)));
         });
         self.exporting.push(Exporting {
             id: self.results,
+            path,
+            cancel,
             title,
             progress: progress.clone(),
             done,
@@ -73,6 +86,11 @@ impl DuckDB {
     }
     pub fn export_now(&self, view: &str, format: ExportFormat, path: &Path) -> AppResult<()> {
         write(&*self.session.session()?, view, format, path)
+    }
+    pub fn cancel_export(&mut self, id: usize) {
+        if let Some(exporting) = self.exporting.iter().find(|exporting| exporting.id == id) {
+            exporting.cancel.cancel();
+        }
     }
     pub(super) fn poll_exports(&mut self) -> Vec<(usize, Result<String, String>)> {
         let mut finished = Vec::new();
@@ -87,6 +105,10 @@ impl DuckDB {
                 Err(TryRecvError::Closed) => Err(anyhow!("Export stopped without a result")),
             };
             let exporting = self.exporting.swap_remove(i);
+            if exporting.cancel.cancelled() {
+                let _ = std::fs::remove_file(&exporting.path);
+                continue;
+            }
             let result = result.and_then(|()| match &exporting.clipboard {
                 Some(path) => {
                     let bytes = std::fs::read(path);
@@ -156,6 +178,7 @@ fn write(conn: &Connection, view: &str, format: ExportFormat, path: &Path) -> Ap
                 ExportFormat::Arrow => {
                     let mut writer = arrow_ipc::writer::FileWriter::try_new(file, &schema)?;
                     for batch in batches {
+                        cancel::check()?;
                         writer.write(&batch)?;
                     }
                     writer.finish()?;
@@ -164,6 +187,7 @@ fn write(conn: &Connection, view: &str, format: ExportFormat, path: &Path) -> Ap
                     let mut writer =
                         arrow_avro::writer::AvroWriter::new(file, schema.as_ref().clone())?;
                     for batch in batches {
+                        cancel::check()?;
                         writer.write(&batch)?;
                     }
                     writer.finish()?;
@@ -178,6 +202,7 @@ fn write(conn: &Connection, view: &str, format: ExportFormat, path: &Path) -> Ap
                     writeln!(file, "|{}", "---|".repeat(schema.fields().len()))?;
                     let options = FormatOptions::default().with_null("null");
                     for batch in batches {
+                        cancel::check()?;
                         let columns = batch
                             .columns()
                             .iter()

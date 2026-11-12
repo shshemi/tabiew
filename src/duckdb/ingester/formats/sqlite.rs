@@ -48,6 +48,7 @@ impl FileIngester for SqliteIngester {
             .collect::<Result<Vec<String>, _>>()?;
         self.progress.total(tables.len() as u64);
         for table in tables {
+            crate::duckdb::cancel::check()?;
             copy_table(&sqlite, &conn, alias, &table)?;
             self.progress.add(1);
         }
@@ -123,7 +124,12 @@ fn copy_table(
     for values in &sample {
         copy.append(&values.iter().map(ValueRef::from).collect::<Vec<_>>())?;
     }
+    let mut copied = 0usize;
     while let Some(row) = rows.next()? {
+        copied += 1;
+        if copied.is_multiple_of(4096) {
+            crate::duckdb::cancel::check()?;
+        }
         let values = (0..copy.columns.len())
             .map(|i| row.get_ref(i))
             .collect::<Result<Vec<_>, _>>()?;

@@ -1,7 +1,12 @@
 use crate::{
     AppResult,
     collections::ragged_vec::RaggedVec,
-    duckdb::{DuckDB, ingester::progress::StepProgress, sql::quote},
+    duckdb::{
+        DuckDB,
+        cancel::{self, Cancel},
+        ingester::progress::StepProgress,
+        sql::quote,
+    },
     misc::{config::config, workers},
 };
 use anyhow::anyhow;
@@ -42,6 +47,7 @@ pub(super) struct Plotting {
     pub(super) progress: Arc<StepProgress>,
     view: String,
     result: Receiver<AppResult<PlotData>>,
+    cancel: Cancel,
 }
 
 impl DuckDB {
@@ -54,25 +60,38 @@ impl DuckDB {
             PlotRequest::Histogram { column, .. } => format!("Plotting histogram of {column}"),
             PlotRequest::Scatter { x, y, .. } => format!("Plotting {x} against {y}"),
         };
+        let cancel = Cancel::default();
+        cancel.watch(&conn);
+        let job = cancel.clone();
         let (sender, result) = oneshot::channel();
         let target = view.to_string();
         workers::spawn_short(move || {
-            let _ = sender.send(match request {
+            let _ = sender.send(job.scoped(|| match request {
                 PlotRequest::Histogram {
                     column,
                     buckets,
                     numeric,
                 } => histogram(&conn, &target, &column, buckets, numeric),
                 PlotRequest::Scatter { x, y, group } => scatter(&conn, &target, x, y, group),
-            });
+            }));
         });
         self.plotting.push(Plotting {
             title,
             progress,
             view: view.to_string(),
             result,
+            cancel,
         });
         Ok(())
+    }
+    pub(super) fn cancel_plots(&mut self, view: &str) {
+        for plotting in self
+            .plotting
+            .iter()
+            .filter(|plotting| plotting.view == view)
+        {
+            plotting.cancel.cancel();
+        }
     }
     pub(super) fn poll_plots(&mut self) -> Vec<(String, AppResult<PlotData>)> {
         let mut done = Vec::new();
@@ -86,7 +105,10 @@ impl DuckDB {
                 Ok(result) => result,
                 Err(TryRecvError::Closed) => Err(anyhow!("Plot stopped without a result")),
             };
-            done.push((self.plotting.swap_remove(i).view, result));
+            let plotting = self.plotting.swap_remove(i);
+            if !plotting.cancel.cancelled() {
+                done.push((plotting.view, result));
+            }
         }
         done
     }
@@ -124,6 +146,7 @@ fn histogram(
         let mut data = Vec::new();
         let mut bytes = 0;
         for batch in statement.stream_arrow([])? {
+            cancel::check()?;
             let labels = batch
                 .column(0)
                 .as_any()
@@ -205,6 +228,7 @@ fn scatter(
     let mut all = Vec::new();
     let mut points_read = 0;
     for batch in statement.stream_arrow([])? {
+        cancel::check()?;
         let xs = batch
             .column(0)
             .as_any()

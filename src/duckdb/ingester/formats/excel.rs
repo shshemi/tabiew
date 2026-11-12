@@ -38,6 +38,7 @@ impl FileIngester for ExcelIngester {
         let sheets = open_workbook_auto(&self.path)?.worksheets();
         self.progress.total(sheets.len() as u64);
         for (name, sheet) in sheets {
+            crate::duckdb::cancel::check()?;
             write_sheet(&conn, alias, &name, &sheet, self.header)?;
             self.progress.add(1);
         }

@@ -1,5 +1,4 @@
 pub mod available_col_name;
-pub mod background;
 pub mod config;
 pub mod cpu;
 pub mod external_editor;

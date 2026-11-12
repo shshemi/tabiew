@@ -8,7 +8,7 @@ mod text_table;
 use crate::{
     AppResult,
     args::Format,
-    duckdb::session::SessionConn,
+    duckdb::{cancel::Cancel, session::SessionConn},
     misc::{format::resolve_format, workers},
 };
 use download::Download;
@@ -28,7 +28,7 @@ use text_table::{TextTable, line_limit, read_file};
 use tokio::sync::oneshot::{self, Receiver};
 use url::Url;
 
-type Ingest = (Arc<dyn IngestProgress>, Receiver<AppResult<()>>);
+type Ingest = (Arc<dyn IngestProgress>, Receiver<AppResult<()>>, Cancel);
 
 pub trait FileIngester: Send {
     fn progress(&self) -> Arc<dyn IngestProgress>;
@@ -98,13 +98,19 @@ impl Ingester {
         conn.set_query_progress_tracking(true)?;
         let progress = file_ingester.progress();
         let refine = conn.try_clone()?;
+        let cancel = Cancel::default();
+        cancel.watch(&conn);
+        cancel.watch(&refine);
+        let job = cancel.clone();
         let (sender, receiver) = oneshot::channel();
         workers::spawn(move || {
-            let result = file_ingester
-                .ingest(conn, &alias)
-                .and_then(|()| dates::refine(&refine, &alias, &types));
+            let result = job.scoped(|| {
+                file_ingester
+                    .ingest(conn, &alias)
+                    .and_then(|()| dates::refine(&refine, &alias, &types))
+            });
             let _ = sender.send(result);
         });
-        Ok((progress, receiver))
+        Ok((progress, receiver, cancel))
     }
 }

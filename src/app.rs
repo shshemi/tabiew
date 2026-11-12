@@ -500,16 +500,27 @@ impl App {
         let job = self
             .ctl
             .swap_remove(self.ctl.iter().position(|job| job.to == to)?);
-        if let Wait::View(view) = &job.wait
-            && !self.tabs.panes_mut().any(|pane| pane.cancel_view(view))
-        {
-            match self
-                .tabs
-                .iter()
-                .position(|pane| pane.loading() == Some(Path::new(view)))
-            {
-                Some(idx) => Message::TabsRemove(idx).enqueue(),
-                None => Message::AppDropQuery(view.clone()).enqueue(),
+        match &job.wait {
+            Wait::View(view) if !self.tabs.panes_mut().any(|pane| pane.cancel_view(view)) => {
+                match self
+                    .tabs
+                    .iter()
+                    .position(|pane| pane.loading() == Some(Path::new(view)))
+                {
+                    Some(idx) => Message::TabsRemove(idx).enqueue(),
+                    None => Message::AppDropQuery(view.clone()).enqueue(),
+                }
+            }
+            Wait::View(_) => (),
+            Wait::Export(id) => {
+                if let Some(duckdb) = self.duckdb.as_mut() {
+                    duckdb.cancel_export(*id);
+                }
+            }
+            Wait::Source(source) => {
+                if let Some(duckdb) = self.duckdb.as_mut() {
+                    duckdb.cancel_load(source);
+                }
             }
         }
         Some(job.kind.reply(to, Err("Cancelled".to_owned())))
@@ -642,6 +653,7 @@ impl App {
             return;
         };
         let detached = duckdb.detach(name);
+        duckdb.cancel_jobs(name, true);
         duckdb.forget_stats(name);
         self.sync_schema();
         if let Err(err) = detached {
@@ -1050,8 +1062,22 @@ impl Component for App {
                 }
             }
             Message::AppDropQuery(view) => {
+                let loading = self
+                    .tabs
+                    .iter()
+                    .any(|pane| pane.loading() == Some(Path::new(view)));
+                let shown = self
+                    .tabs
+                    .iter()
+                    .any(|pane| pane.views().any(|v| v == *view));
                 if let Some(duckdb) = self.duckdb.as_mut() {
                     duckdb.drop_result(view);
+                    if !loading {
+                        duckdb.cancel_load(Path::new(view));
+                    }
+                    if !shown {
+                        duckdb.cancel_jobs(view, false);
+                    }
                 }
             }
             _ => (),

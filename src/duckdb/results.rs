@@ -24,7 +24,7 @@ use tokio::sync::oneshot::{self, Receiver, error::TryRecvError};
 
 const SCRATCH: &str = "_scratch";
 const DIR_PREFIX: &str = "tabiew-";
-const RESULT_PREFIX: &str = "_result_";
+pub(super) const RESULT_PREFIX: &str = "_result_";
 
 static INSTANCES: AtomicUsize = AtomicUsize::new(0);
 

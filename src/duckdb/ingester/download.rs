@@ -1,6 +1,7 @@
 use crate::{
     AppResult,
     duckdb::{
+        cancel,
         ingester::{FileIngester, IngestProgress, progress::CountProgress},
         session::SessionConn,
     },
@@ -75,6 +76,7 @@ impl Download {
         let mut buffer = vec![0; 65_536];
         let mut downloaded = 0;
         loop {
+            cancel::check()?;
             let read = reader.read(&mut buffer)?;
             if read == 0 {
                 break;
