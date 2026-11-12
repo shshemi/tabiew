@@ -2,7 +2,6 @@ mod cache;
 mod export;
 mod ingester;
 #[cfg(debug_assertions)]
-mod inspect;
 mod load;
 mod parts;
 mod plots;
@@ -35,7 +34,6 @@ pub use cache::config::Config as DuckDBConfig;
 pub(crate) use ingester::{cut_text, sample_columns};
 pub use ingester::{CsvOptions, FwfOptions, IngestOptions, IngestProgress};
 #[cfg(debug_assertions)]
-pub use inspect::inspect;
 pub use cache::file_db::ColumnStats;
 pub use plots::{PlotData, PlotRequest};
 pub use results::{Opened, Store};

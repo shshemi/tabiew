@@ -22,29 +22,6 @@ pub struct Args {
     )]
     pub format: Option<Format>,
 
-    #[arg(
-        long,
-        help = "Loads the sources into the DuckDB cache without starting the TUI (experimental).",
-        default_value_t = false
-    )]
-    pub duckdb: bool,
-
-    #[cfg(debug_assertions)]
-    #[arg(
-        long,
-        help = "Dev only: prints the metadata, tables, columns and first rows of a DuckDB cache file.",
-        required = false
-    )]
-    pub duckdb_inspect: Option<std::path::PathBuf>,
-
-    #[cfg(debug_assertions)]
-    #[arg(
-        long,
-        help = "Dev only: number of rows --duckdb-inspect prints per table.",
-        default_value_t = 5_usize
-    )]
-    pub inspect_rows: usize,
-
     #[arg(long, help = "Sets the key for sqlite (if required)", value_enum)]
     pub sqlite_key: Option<String>,
 
@@ -137,15 +114,13 @@ pub struct Args {
         short = 'c',
         long = "command",
         allow_hyphen_values = true,
-        help = "Runs a SQL query once the sources are loaded and opens its result in a tab. Repeatable. Name the result with `-- name: <name>` on the first line or `CREATE VIEW <name> AS ...`.",
-        requires = "duckdb"
+        help = "Runs a SQL query once the sources are loaded and opens its result in a tab. Repeatable. Name the result with `-- name: <name>` on the first line or `CREATE VIEW <name> AS ...`."
     )]
     pub commands: Vec<String>,
 
     #[arg(
         long,
-        help = "Runs the SQL in a file like --command, named after the file unless the SQL names it. Repeatable, runs before --command.",
-        requires = "duckdb"
+        help = "Runs the SQL in a file like --command, named after the file unless the SQL names it. Repeatable, runs before --command."
     )]
     pub sql_file: Vec<std::path::PathBuf>,
 }
