@@ -39,7 +39,9 @@ pub fn head(url: &Url) -> RequestBuilder<WithoutBody> {
         cfg = cfg.timeout_connect(Some(timeout));
     }
     if let Some(timeout) = config.read_timeout {
-        cfg = cfg.timeout_recv_response(Some(timeout));
+        cfg = cfg
+            .timeout_recv_response(Some(timeout))
+            .timeout_per_read(Some(timeout));
     }
     if let Some(timeout) = config.request_timeout {
         cfg = cfg.timeout_global(Some(timeout));
@@ -63,7 +65,9 @@ pub fn get(url: &Url) -> RequestBuilder<WithoutBody> {
         cfg = cfg.timeout_connect(Some(timeout));
     }
     if let Some(timeout) = config.read_timeout {
-        cfg = cfg.timeout_recv_response(Some(timeout));
+        cfg = cfg
+            .timeout_recv_response(Some(timeout))
+            .timeout_per_read(Some(timeout));
     }
     if let Some(timeout) = config.request_timeout {
         cfg = cfg.timeout_global(Some(timeout));

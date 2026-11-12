@@ -1,7 +1,6 @@
 mod cache;
 mod export;
 mod ingester;
-#[cfg(debug_assertions)]
 mod load;
 mod parts;
 mod plots;
@@ -33,7 +32,6 @@ use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 pub use cache::config::Config as DuckDBConfig;
 pub(crate) use ingester::{cut_text, sample_columns};
 pub use ingester::{CsvOptions, FwfOptions, Import, IngestOptions, IngestProgress};
-#[cfg(debug_assertions)]
 pub use cache::file_db::ColumnStats;
 pub use plots::{PlotData, PlotRequest};
 pub use results::{Opened, Store};

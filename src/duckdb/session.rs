@@ -32,6 +32,15 @@ pub struct SessionConn {
     _active: Arc<()>,
 }
 
+impl SessionConn {
+    pub fn try_clone(&self) -> duckdb::Result<Self> {
+        Ok(Self {
+            conn: self.conn.try_clone()?,
+            _active: self._active.clone(),
+        })
+    }
+}
+
 impl Deref for SessionConn {
     type Target = Connection;
     fn deref(&self) -> &Connection {

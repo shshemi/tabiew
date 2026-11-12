@@ -1,3 +1,4 @@
+mod dates;
 mod download;
 mod formats;
 mod options;
@@ -38,6 +39,7 @@ pub struct Ingester {
     conn: SessionConn,
     alias: String,
     file_ingester: Box<dyn FileIngester>,
+    types: Vec<String>,
 }
 
 impl Ingester {
@@ -52,6 +54,7 @@ impl Ingester {
             conn,
             alias,
             file_ingester,
+            types: options.types.clone(),
         })
     }
     fn file_ingester(source: PathBuf, options: &IngestOptions) -> AppResult<Box<dyn FileIngester>> {
@@ -90,12 +93,17 @@ impl Ingester {
             conn,
             alias,
             mut file_ingester,
+            types,
         } = self;
         conn.set_query_progress_tracking(true)?;
         let progress = file_ingester.progress();
+        let refine = conn.try_clone()?;
         let (sender, receiver) = oneshot::channel();
         workers::spawn(move || {
-            let _ = sender.send(file_ingester.ingest(conn, &alias));
+            let result = file_ingester
+                .ingest(conn, &alias)
+                .and_then(|()| dates::refine(&refine, &alias, &types));
+            let _ = sender.send(result);
         });
         Ok((progress, receiver))
     }
