@@ -602,16 +602,13 @@ impl App {
     fn show_sql_query_picker(&mut self) {
         self.sync_schema();
         let table = self.tabs.selected().map(Pane::table);
-        self.overlay = Some(Overlay::SqlQueryPicker(match self.duckdb {
-            Some(_) => SqlQueryPicker::duckdb(
-                table
-                    .filter(|table| table.view().is_some())
-                    .and_then(Table::rows)
-                    .and_then(|rows| rows.lock().ok().map(|rows| rows.columns()))
-                    .map(|columns| columns.iter().map(|(name, _)| name.clone()).collect()),
-            ),
-            None => SqlQueryPicker::new(table.and_then(Table::data_frame).cloned()),
-        }));
+        self.overlay = Some(Overlay::SqlQueryPicker(SqlQueryPicker::duckdb(
+            table
+                .filter(|table| table.view().is_some())
+                .and_then(Table::rows)
+                .and_then(|rows| rows.lock().ok().map(|rows| rows.columns()))
+                .map(|columns| columns.iter().map(|(name, _)| name.clone()).collect()),
+        )));
     }
 
     fn sync_schema(&mut self) {
@@ -625,39 +622,30 @@ impl App {
     }
 
     fn open_table(&mut self, name: &str) {
-        match self.duckdb.as_mut() {
-            Some(duckdb) => match duckdb.counted_reader(name) {
-                Ok(reader) => {
-                    self.schema = None;
-                    self.tabs.add(Pane::reader(
-                        reader,
-                        TableDescription::Table(name.to_owned()),
-                    ));
-                }
-                Err(err) => self.show_error(err.to_string()),
-            },
-            None => {
-                let query = format!("SELECT * FROM \"{}\"", name.replace('"', "\"\""));
-                if let Ok(df) = sql().execute_with_default(&query, None) {
-                    self.schema = None;
-                    self.tabs
-                        .add(Pane::new(df, TableDescription::Table(name.to_owned())));
-                }
+        let Some(duckdb) = self.duckdb.as_mut() else {
+            return;
+        };
+        match duckdb.counted_reader(name) {
+            Ok(reader) => {
+                self.schema = None;
+                self.tabs.add(Pane::reader(
+                    reader,
+                    TableDescription::Table(name.to_owned()),
+                ));
             }
+            Err(err) => self.show_error(err.to_string()),
         }
     }
 
     fn drop_table(&mut self, name: &str) {
-        match self.duckdb.as_mut() {
-            Some(duckdb) => {
-                let detached = duckdb.detach(name);
-                duckdb.forget_stats(name);
-                self.sync_schema();
-                if let Err(err) = detached {
-                    self.show_error(err.to_string());
-                }
-            }
-            None => sql().unregister(name),
+        let Some(duckdb) = self.duckdb.as_mut() else {
+            return;
+        };
+        let detached = duckdb.detach(name);
+        duckdb.forget_stats(name);
+        self.sync_schema();
+        if let Err(err) = detached {
+            self.show_error(err.to_string());
         }
     }
 

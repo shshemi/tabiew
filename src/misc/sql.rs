@@ -7,13 +7,6 @@ use std::{
 };
 
 use indexmap::IndexMap;
-use polars::{
-    error::PolarsResult,
-    frame::DataFrame,
-    prelude::{DataType, IntoLazy, LazyFrame, Scalar},
-    series::Series,
-};
-use polars_sql::SQLContext;
 use url::Url;
 
 use crate::{
@@ -25,66 +18,18 @@ use super::unwrap_or_graceful_shutdown::UnwrapOrGracefulShutdown;
 
 const DEFAULT_TABLE_NAME: &str = "_";
 
+#[derive(Default)]
 pub struct SqlBackend {
-    sql: SQLContext,
     schema: BackendSchema,
 }
 
 impl SqlBackend {
-    pub fn new() -> Self {
-        Self {
-            sql: SQLContext::new(),
-            schema: Default::default(),
-        }
-    }
-
     pub fn schema(&self) -> &BackendSchema {
         &self.schema
     }
 
     pub fn set_schema(&mut self, schema: BackendSchema) {
         self.schema = schema;
-    }
-
-    pub fn register(
-        &mut self,
-        name: &str,
-        data_frame: DataFrame,
-        input: impl Into<TableSource>,
-    ) -> String {
-        let name = self.schema.available_name(name);
-        self.schema
-            .insert(name.clone(), TableInfo::new(input.into(), &data_frame));
-        self.sql.register(&name, data_frame.lazy());
-        name
-    }
-
-    pub fn unregister(&mut self, name: &str) {
-        self.schema.remove(name);
-        self.sql.unregister(name);
-    }
-
-    pub fn unset_default(&mut self) {
-        self.sql.unregister("_");
-    }
-
-    pub fn execute_with_default(
-        &mut self,
-        query: &str,
-        default_table: impl Into<Option<DataFrame>>,
-    ) -> PolarsResult<DataFrame> {
-        if let Some(data_frame) = default_table.into() {
-            self.sql.register("_", data_frame.lazy());
-        }
-        let mut df = self.sql.execute(query).and_then(LazyFrame::collect)?;
-        df.rechunk_mut_par();
-        Ok(df)
-    }
-}
-
-impl Default for SqlBackend {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -137,27 +82,12 @@ pub struct TableInfo {
     total_null: usize,
     total_est_size: Size,
     schema: TableSchema,
-    duckdb: Option<bool>,
+    stats: bool,
     known: (bool, bool),
     disk: Option<u64>,
 }
 
 impl TableInfo {
-    pub fn new(input: TableSource, df: &DataFrame) -> Self {
-        let schema = TableSchema::new(df);
-        Self {
-            origin: input,
-            height: df.height(),
-            width: df.width(),
-            total_null: schema.iter().map(|(_, info)| info.null_count()).sum(),
-            total_est_size: schema.iter().map(|(_, info)| info.estimated_size()).sum(),
-            schema,
-            duckdb: None,
-            known: (true, true),
-            disk: None,
-        }
-    }
-
     pub fn duckdb(entry: &TableEntry) -> Self {
         let nulls = |idx: usize| {
             entry
@@ -194,37 +124,30 @@ impl TableInfo {
                         (
                             name.clone(),
                             FieldInfo {
-                                dtype: DataType::Null,
-                                est_size: Size(bytes(idx).unwrap_or_default()),
-                                null_count: nulls(idx).unwrap_or_default(),
-                                min: Scalar::null(DataType::Null),
-                                max: Scalar::null(DataType::Null),
-                                text: Some(FieldText {
-                                    dtype: data_type.clone(),
-                                    nulls: nulls(idx),
-                                    min: stats.and_then(|stats| stats.min.clone()),
-                                    max: stats.and_then(|stats| stats.max.clone()),
-                                    size: bytes(idx).map(|bytes| Size(bytes).to_string()),
-                                }),
+                                dtype: data_type.clone(),
+                                nulls: nulls(idx),
+                                min: stats.and_then(|stats| stats.min.clone()),
+                                max: stats.and_then(|stats| stats.max.clone()),
+                                size: bytes(idx).map(Size),
                             },
                         )
                     })
                     .collect(),
             },
-            duckdb: Some(entry.stats.is_some()),
+            stats: entry.stats.is_some(),
             known: (entry.rows.is_some(), total.is_some()),
             disk: entry.disk,
         }
     }
 
     pub fn needs_stats(&self) -> bool {
-        self.duckdb == Some(false)
+        !self.stats
     }
 
     pub fn total_null_text(&self) -> String {
-        match self.duckdb {
-            Some(false) => "-".to_string(),
-            _ => self.total_null.to_string(),
+        match self.stats {
+            false => "-".to_string(),
+            true => self.total_null.to_string(),
         }
     }
 
@@ -309,21 +232,6 @@ pub struct TableSchema {
 }
 
 impl TableSchema {
-    pub fn new(df: &DataFrame) -> Self {
-        Self {
-            schema: df
-                .columns()
-                .iter()
-                .map(|col| {
-                    (
-                        col.name().to_string(),
-                        FieldInfo::new(col.as_materialized_series()),
-                    )
-                })
-                .collect(),
-        }
-    }
-
     pub fn iter(&self) -> impl Iterator<Item = (&String, &FieldInfo)> {
         self.schema.iter()
     }
@@ -339,60 +247,11 @@ impl TableSchema {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FieldInfo {
-    dtype: DataType,
-    est_size: Size,
-    null_count: usize,
-    min: Scalar,
-    max: Scalar,
-    text: Option<FieldText>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct FieldText {
     pub dtype: String,
     pub nulls: Option<usize>,
     pub min: Option<String>,
     pub max: Option<String>,
-    pub size: Option<String>,
-}
-
-impl FieldInfo {
-    pub fn new(series: &Series) -> Self {
-        // let (min, max) = min_max(series);
-        let min = series.min_reduce().unwrap_or_default().into_value();
-        let max = series.max_reduce().unwrap_or_default().into_value();
-        Self {
-            dtype: series.dtype().to_owned(),
-            est_size: series.estimated_size().into(),
-            null_count: series.null_count(),
-            min: Scalar::new(min.dtype(), min),
-            max: Scalar::new(max.dtype(), max),
-            text: None,
-        }
-    }
-
-    pub fn text(&self) -> Option<&FieldText> {
-        self.text.as_ref()
-    }
-    pub fn dtype(&self) -> &DataType {
-        &self.dtype
-    }
-
-    pub fn estimated_size(&self) -> Size {
-        self.est_size
-    }
-
-    pub fn null_count(&self) -> usize {
-        self.null_count
-    }
-
-    pub fn min(&self) -> &Scalar {
-        &self.min
-    }
-
-    pub fn max(&self) -> &Scalar {
-        &self.max
-    }
+    pub size: Option<Size>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]

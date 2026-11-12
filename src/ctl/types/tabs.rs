@@ -57,18 +57,10 @@ impl From<&tui::Pane> for Pane {
 impl Table {
     fn new(table: &tui::table::Table, description: &tui::pane::TableDescription) -> Self {
         Self {
-            schema: match (table.data_frame(), table.rows()) {
-                (Some(df), _) => df
-                    .schema()
-                    .iter()
-                    .map(|(name, dtype)| Field {
-                        name: name.to_string(),
-                        dtype: dtype.to_string(),
-                    })
-                    .collect(),
-                (None, Some(rows)) => rows
-                    .lock()
-                    .map(|rows| {
+            schema: table
+                .rows()
+                .and_then(|rows| {
+                    rows.lock().ok().map(|rows| {
                         rows.columns()
                             .iter()
                             .map(|(name, dtype)| Field {
@@ -77,9 +69,8 @@ impl Table {
                             })
                             .collect()
                     })
-                    .unwrap_or_default(),
-                (None, None) => Vec::new(),
-            },
+                })
+                .unwrap_or_default(),
             offset: table.offset(),
             rendered_rows: table.rendered_rows(),
             description: description.into(),

@@ -1,15 +1,11 @@
 use std::{env, path::Path, process::Command};
 
 use anyhow::anyhow;
-use polars::frame::DataFrame;
 
 use crate::{
     AppResult,
     handler::event::{disable_event_read, enable_event_read},
-    parsers::data_frame_parser::DataFrameParser,
-    readers::{CsvToDataFrame, DataFrameReader, ReaderSource},
     tui::terminal::{invalidate_tui, start_tui, stop_tui},
-    writers::{Destination, WriteToCsv, WriteToFile},
 };
 
 pub fn run_editor(path: &Path) -> AppResult<()> {
@@ -23,31 +19,5 @@ pub fn run_editor(path: &Path) -> AppResult<()> {
     match status?.success() {
         true => Ok(()),
         false => Err(anyhow!("Editor failed")),
-    }
-}
-
-pub fn edit_in_external_editor(mut df: DataFrame) -> AppResult<DataFrame> {
-    let tempfile = tempfile::NamedTempFile::new()?;
-
-    WriteToCsv::default()
-        .with_header(true)
-        .with_quote_char('"')
-        .with_separator_char(',')
-        .write_to_file(Destination::File(tempfile.path().to_owned()), &mut df)?;
-
-    run_editor(tempfile.path())?;
-    {
-        let mut df = CsvToDataFrame::default()
-            .with_no_header(false)
-            .with_quote_char('"')
-            .with_separator(',')
-            .read_to_data_frames(ReaderSource::File(tempfile.path().to_owned()))?
-            .into_iter()
-            .next()
-            .map(|(_, df)| df)
-            .ok_or(anyhow!("Failed to load data frame back from the editor"))?;
-        let parser = DataFrameParser::from_env_args();
-        parser.parse_and_update(&mut df);
-        Ok(df)
     }
 }

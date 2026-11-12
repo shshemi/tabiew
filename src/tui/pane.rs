@@ -1,5 +1,4 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::frame::DataFrame;
 use rand::RngExt;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
@@ -20,23 +19,16 @@ use crate::{
     collections::non_empty_stack::NonEmptyStack,
     duckdb::{IngestProgress, PlotData, PlotRequest},
     handler::message::{Message, UnwrapOrEnqueueError},
-    misc::{
-        config::config,
-        external_editor::edit_in_external_editor,
-        sql::{TableSource, sql},
-    },
+    misc::config::config,
     reader::{Rows, is_numeric},
     tui::{
         app_default::AppDefault,
         component::{Component, FocusState},
         icons,
         layouts::status_bar::StatusBarLayout,
-        plots::{
-            histogram_plot::{self, HistogramPlot},
-            scatter_plot::{self, ScatterPlot},
-        },
+        plots::{histogram_plot::HistogramPlot, scatter_plot::ScatterPlot},
         popups::{
-            column_caster::{ColumnCaster, Source},
+            column_caster::ColumnCaster,
             data_frame_info::DataFrameInfo,
             download_notif::{idle, render_progress},
             exporter::Exporter,
@@ -105,11 +97,6 @@ impl std::fmt::Debug for Loading {
 }
 
 impl Pane {
-    /// Constructs a new instance of [`App`].
-    pub fn new(data_frame: DataFrame, description: TableDescription) -> Self {
-        Self::with_table(Table::new(data_frame), description)
-    }
-
     pub fn reader(rows: impl Rows + 'static, description: TableDescription) -> Self {
         Self::with_table(Table::reader(rows), description)
     }
@@ -328,19 +315,7 @@ impl Pane {
     }
 
     fn sheet_data(&self) -> Option<SheetData> {
-        match (self.table().data_frame(), self.table().rows()) {
-            (Some(df), _) => Some(SheetData::Frame(df.clone())),
-            (None, Some(rows)) => Some(SheetData::Reader(rows)),
-            (None, None) => None,
-        }
-    }
-
-    fn frame(&self) -> Option<DataFrame> {
-        let df = self.tstack.last().data_frame().cloned();
-        if df.is_none() {
-            Message::AppShowError("Not available on DuckDB tables yet".to_string()).enqueue();
-        }
-        df
+        self.table().rows().map(SheetData)
     }
 
     fn export_data(&self) -> Option<String> {
@@ -375,67 +350,26 @@ impl Pane {
     }
 
     fn show_fuzzy_search(&mut self) {
-        if self.table().rows().is_some() {
-            Message::AppSearchStart(true).enqueue();
-            return;
+        match self.table().rows() {
+            Some(_) => Message::AppSearchStart(true).enqueue(),
+            None => Message::AppShowError("Not available until the table is ingested".to_string())
+                .enqueue(),
         }
-        let Some(df) = self.frame() else {
-            return;
-        };
-        let tbl = self.tstack.last().to_owned();
-        self.tstack.push(tbl);
-        self.dstack
-            .push(TableDescription::Search(Default::default()));
-        self.modal = Some(Modal::SearchBar(SearchBar::fuzzy(df)));
     }
 
     fn show_exact_search(&mut self) {
-        if self.table().rows().is_some() {
-            Message::AppSearchStart(false).enqueue();
-            return;
+        match self.table().rows() {
+            Some(_) => Message::AppSearchStart(false).enqueue(),
+            None => Message::AppShowError("Not available until the table is ingested".to_string())
+                .enqueue(),
         }
-        let Some(df) = self.frame() else {
-            return;
-        };
-        let tbl = self.tstack.last().to_owned();
-        self.tstack.push(tbl);
-        self.dstack
-            .push(TableDescription::Search(Default::default()));
-        self.modal = Some(Modal::SearchBar(SearchBar::exact(df)));
     }
 
     fn show_data_frame_info(&mut self) {
-        if self.table().data_frame().is_none() {
-            match self.table().view() {
-                Some(view) => Message::AppShowInfo(view).enqueue(),
-                None => {
-                    Message::AppShowError("Not available until the table is ingested".to_string())
-                        .enqueue()
-                }
-            }
-            return;
-        }
-        let Some(df) = self.frame() else {
-            return;
-        };
-        match &self.dstack.last() {
-            TableDescription::Table(desc) => {
-                if let Some(input) = sql().schema().get(desc).map(|info| info.source()).cloned() {
-                    self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(&df, input)))
-                }
-            }
-            TableDescription::Query(_)
-            | TableDescription::Filter(_)
-            | TableDescription::Order(_)
-            | TableDescription::Select(_)
-            | TableDescription::Cast(_)
-            | TableDescription::Search(_)
-            | TableDescription::FuzzySearch(_) => {
-                self.modal = Some(Modal::DataFrameInfo(DataFrameInfo::new(
-                    &df,
-                    TableSource::User,
-                )))
-            }
+        match self.table().view() {
+            Some(view) => Message::AppShowInfo(view).enqueue(),
+            None => Message::AppShowError("Not available until the table is ingested".to_string())
+                .enqueue(),
         }
     }
 
@@ -455,27 +389,13 @@ impl Pane {
                 },
             )
             .enqueue();
-            return Ok(());
         }
-        let Some(df) = self.frame() else {
-            return Ok(());
-        };
-        let df = &df;
-        let plot = if let Some(group_by) = group_by {
-            scatter_plot::ScatterPlotBuilder::new(df, x_label, y_label)
-                .with_group(group_by)
-                .build()?
-        } else {
-            scatter_plot::ScatterPlotBuilder::new(df, x_label, y_label).build()?
-        };
-        self.modal = Some(Modal::ScatterPlot(plot));
         Ok(())
     }
 
     fn show_inline_query_picker(&mut self, query_type: QueryType) {
-        let picker = match (self.table().data_frame(), self.table().rows()) {
-            (Some(df), _) => InlineQueryPicker::new(df.clone(), query_type),
-            (None, Some(rows)) => InlineQueryPicker::duckdb(
+        let picker = match self.table().rows() {
+            Some(rows) => InlineQueryPicker::duckdb(
                 rows.lock()
                     .map(|rows| {
                         rows.columns()
@@ -486,7 +406,7 @@ impl Pane {
                     .unwrap_or_default(),
                 query_type,
             ),
-            (None, None) => return,
+            None => return,
         };
         self.modal = Some(Modal::InlineQueryPicker(picker));
     }
@@ -572,22 +492,11 @@ impl Pane {
                 },
             )
             .enqueue();
-            return Ok(());
         }
-        let Some(df) = self.frame() else {
-            return Ok(());
-        };
-        let df = &df;
-        self.modal = Some(Modal::HistogramPlot(
-            histogram_plot::HistogramPlotBuilder::new(df, col, buckets).build()?,
-        ));
         Ok(())
     }
 
     fn plot_view(&self) -> Option<(String, Vec<(String, String)>)> {
-        if self.table().data_frame().is_some() {
-            return None;
-        }
         let columns = self.table().rows()?.lock().ok()?.columns().to_vec();
         Some((self.table().view()?, columns))
     }
@@ -633,16 +542,12 @@ impl Pane {
     }
 
     fn show_table_registerer(&mut self) {
-        let df = match (self.table().data_frame(), self.table().view()) {
-            (Some(df), _) => Some(df.clone()),
-            (None, Some(_)) => None,
-            (None, None) => {
-                Message::AppShowError("Not available until the table is ingested".to_string())
-                    .enqueue();
-                return;
-            }
-        };
-        self.modal = Some(Modal::TableRegisterer(TableRegisterer::new(df)));
+        if self.table().view().is_none() {
+            Message::AppShowError("Not available until the table is ingested".to_string())
+                .enqueue();
+            return;
+        }
+        self.modal = Some(Modal::TableRegisterer(TableRegisterer::default()));
     }
 
     pub fn show_info(&mut self, info: crate::misc::sql::TableInfo, view: String) {
@@ -657,26 +562,18 @@ impl Pane {
     }
 
     fn show_column_caster(&mut self) {
-        let source = match (self.table().data_frame(), self.table().rows()) {
-            (Some(df), _) => Source::Frame(df.clone()),
-            (None, Some(rows)) if self.table().view().is_some() => Source::View(
-                rows.lock()
-                    .map(|rows| rows.columns().to_vec())
-                    .unwrap_or_default(),
-            ),
+        let columns = match self.table().rows() {
+            Some(rows) if self.table().view().is_some() => rows
+                .lock()
+                .map(|rows| rows.columns().to_vec())
+                .unwrap_or_default(),
             _ => {
                 Message::AppShowError("Not available until the table is ingested".to_string())
                     .enqueue();
                 return;
             }
         };
-        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(source.into())))
-    }
-
-    fn push_data_frame(&mut self, df: DataFrame, description: TableDescription) {
-        self.tstack
-            .push(self.tstack.last().clone_with_data_frame(df));
-        self.dstack.push(description);
+        self.modal = Some(Modal::ColumnCaster(ColumnCaster::new(columns.into())))
     }
 
     pub fn push_reader(&mut self, rows: impl Rows + 'static, description: TableDescription) {
@@ -975,7 +872,6 @@ impl Component for Pane {
             Message::PaneShowTableRegisterer => self.show_table_registerer(),
             Message::PaneDismissModal => self.dismiss_modal(),
             Message::PaneDismissSheet => self.dismiss_sheet(),
-            Message::PanePushDataFrame(df, desc) => self.push_data_frame(df.clone(), desc.clone()),
             Message::PanePopDataFrame => self.pop_data_frame(),
             Message::PaneTableSelect(idx) => self.select(*idx),
             Message::PaneShowTableInfo => self.show_data_frame_info(),
@@ -986,24 +882,13 @@ impl Component for Pane {
             Message::PaneShowFuzzySearch => {
                 self.show_fuzzy_search();
             }
-            Message::PaneEditInExternalEditor => {
-                if self.table().data_frame().is_none()
-                    && let Some(view) = self.table().view()
-                {
-                    Message::AppEditInEditor(view).enqueue();
-                    return;
+            Message::PaneEditInExternalEditor => match self.table().view() {
+                Some(view) => Message::AppEditInEditor(view).enqueue(),
+                None => {
+                    Message::AppShowError("Not available until the table is ingested".to_string())
+                        .enqueue()
                 }
-                let Some(df) = self.frame() else {
-                    return;
-                };
-                match edit_in_external_editor(df) {
-                    Ok(df) => self.push_data_frame(
-                        df,
-                        TableDescription::Table("Manual edit using $EDITOR".to_owned()),
-                    ),
-                    Err(err) => Message::AppShowError(err.to_string()).enqueue(),
-                }
-            }
+            },
             _ => (),
         }
     }
@@ -1011,20 +896,7 @@ impl Component for Pane {
     fn tick(&mut self) {
         self.send_search(Duration::from_millis(200));
         match &mut self.modal {
-            Some(Modal::SearchBar(search_bar)) => {
-                if let Some(df) = search_bar.searcher().and_then(|searcher| searcher.latest()) {
-                    self.tstack.last_mut().set_data_frame(df);
-                    *self.description_mut() = match search_bar.search_type() {
-                        SearchType::Fuzzy => {
-                            TableDescription::FuzzySearch(search_bar.value().to_owned())
-                        }
-                        SearchType::Exact => {
-                            TableDescription::Search(search_bar.value().to_owned())
-                        }
-                    };
-                    self.sync_sheet();
-                }
-            }
+            Some(Modal::SearchBar(_)) => (),
             Some(Modal::DataFrameInfo(_)) => (),
             Some(Modal::ScatterPlot(_)) => (),
             Some(Modal::HistogramPlot(_)) => (),

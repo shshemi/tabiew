@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
-use polars::{datatypes::DataType, frame::DataFrame};
 use ratatui::{
     layout::{Alignment, Constraint},
     symbols::Marker,
@@ -13,12 +12,11 @@ use crate::{
     AppResult,
     collections::ragged_vec::RaggedVec,
     handler::message::Message,
-    misc::config::{config, theme},
+    misc::config::theme,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
         layouts::plot::PlotLayout,
-        misc::any_value_formatter::AnyValueFormatter,
     },
 };
 
@@ -105,58 +103,6 @@ impl Component for ScatterPlot {
     }
 }
 
-pub struct ScatterPlotBuilder<'a> {
-    df: &'a DataFrame,
-    x_label: &'a str,
-    y_label: &'a str,
-    group_by: Option<&'a str>,
-}
-
-impl<'a> ScatterPlotBuilder<'a> {
-    pub fn new(df: &'a DataFrame, x_label: &'a str, y_label: &'a str) -> Self {
-        ScatterPlotBuilder {
-            df,
-            x_label,
-            y_label,
-            group_by: None,
-        }
-    }
-
-    pub fn with_group(self, group_by: &'a str) -> Self {
-        ScatterPlotBuilder {
-            group_by: Some(group_by),
-            ..self
-        }
-    }
-
-    pub fn build(self) -> AppResult<ScatterPlot> {
-        if let Some(group_by) = self.group_by {
-            let (data, groups) =
-                scatter_plot_data_grouped(self.df, self.x_label, self.y_label, group_by)?;
-            let [x_bounds, y_bounds] = data_bounds(&data)?;
-            Ok(ScatterPlot {
-                data,
-                x_bounds,
-                y_bounds,
-                x_label: self.x_label.to_owned(),
-                y_label: self.y_label.to_owned(),
-                groups: Some(groups),
-            })
-        } else {
-            let data = scatter_plot_data(self.df, self.x_label, self.y_label)?;
-            let [x_bounds, y_bounds] = data_bounds(&data)?;
-            Ok(ScatterPlot {
-                data,
-                x_bounds,
-                y_bounds,
-                x_label: self.x_label.to_owned(),
-                y_label: self.y_label.to_owned(),
-                groups: None,
-            })
-        }
-    }
-}
-
 impl ScatterPlot {
     pub fn from_points(
         data: RaggedVec<(f64, f64)>,
@@ -184,52 +130,4 @@ fn data_bounds(data: &RaggedVec<(f64, f64)>) -> AppResult<[[f64; 2]; 2]> {
             Some([[x_min.min(x), x_max.max(x)], [y_min.min(y), y_max.max(y)]])
         })
         .ok_or(anyhow!("Empty dimension(s)"))
-}
-
-fn scatter_plot_data(
-    df: &DataFrame,
-    x_label: &str,
-    y_label: &str,
-) -> AppResult<RaggedVec<(f64, f64)>> {
-    Ok(df
-        .column(x_label)?
-        .cast(&DataType::Float64)?
-        .f64()?
-        .iter()
-        .zip(df.column(y_label)?.cast(&DataType::Float64)?.f64()?.iter())
-        .filter_map(|(x, y)| Some((x?, y?)))
-        .collect())
-}
-
-#[allow(clippy::type_complexity)]
-fn scatter_plot_data_grouped(
-    df: &DataFrame,
-    x_label: &str,
-    y_label: &str,
-    group_by: &str,
-) -> AppResult<(RaggedVec<(f64, f64)>, Vec<String>)> {
-    let fp_prec = config().fp_precision();
-    let mut groups = Vec::new();
-    let mut data = RaggedVec::new();
-    for (name, df) in df
-        .partition_by(vec![group_by], true)?
-        .into_iter()
-        .map(|df| {
-            let name = df
-                .column(group_by)
-                .and_then(|column| column.get(0))
-                .map(|val| {
-                    AnyValueFormatter::new(fp_prec)
-                        .into_single_line(val)
-                        .into_owned()
-                })
-                .unwrap_or("null".to_owned());
-            (name, df)
-        })
-        .sorted_by(|(a, _), (b, _)| a.cmp(b))
-    {
-        groups.push(name);
-        data.push(scatter_plot_data(&df, x_label, y_label)?);
-    }
-    Ok((data, groups))
 }

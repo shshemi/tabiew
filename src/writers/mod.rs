@@ -1,22 +1,6 @@
-mod arrow;
-mod avro;
-mod csv;
-mod json;
-mod markdown;
-mod parquet;
-
 use std::path::PathBuf;
 
-pub use arrow::WriteToArrow;
-pub use avro::WriteToAvro;
-pub use csv::WriteToCsv;
-pub use json::{JsonFormat, WriteToJson};
-pub use markdown::WriteToMarkdown;
-pub(crate) use markdown::escape_cell;
-pub use parquet::WriteToParquet;
-use polars::frame::DataFrame;
-
-use crate::{AppResult, handler::message::Message};
+use crate::handler::message::Message;
 
 #[derive(Debug, Clone)]
 pub enum Destination {
@@ -44,7 +28,9 @@ pub fn export(view: &str, format: ExportFormat, dest: Destination) {
     Message::PaneDismissModal.enqueue();
 }
 
-pub trait WriteToFile {
-    fn write_to_file(&self, dest: Destination, data_frame: &mut DataFrame) -> AppResult<()>;
-    fn format(&self) -> ExportFormat;
+pub(crate) fn escape_cell(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('|', "\\|")
+        .replace('\r', "")
+        .replace('\n', "<br>")
 }

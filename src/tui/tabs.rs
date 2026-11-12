@@ -13,7 +13,6 @@ use crate::{
         app_default::AppDefault,
         component::{Component, FocusState},
         icons,
-        pane::TableDescription,
         widgets::tabiew_logo::TabiewLogo,
     },
 };
@@ -247,18 +246,6 @@ impl Component for Tabs {
 
     fn update(&mut self, action: &Message) {
         match action {
-            Message::TabsAddNamePane(df, name) => {
-                self.add(Pane::new(
-                    df.clone(),
-                    TableDescription::Table(name.to_owned()),
-                ));
-            }
-            Message::TabsAddQueryPane(df, query) => {
-                self.add(Pane::new(
-                    df.clone(),
-                    TableDescription::Query(query.to_owned()),
-                ));
-            }
             Message::TabsSelect(idx) => self.select(*idx),
             Message::TabsDismissSwitcher => self.dismiss_tab_switcher(),
             Message::TabsCloseSelected => self.close_selected(),

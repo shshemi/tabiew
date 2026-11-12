@@ -1,10 +1,8 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::frame::DataFrame;
 
 use crate::{
     collections::capped_vec::CappedVec,
     handler::message::Message,
-    misc::sql::sql,
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
@@ -20,8 +18,6 @@ static HISTORY: CappedVec<HistoryOrSqlSuggestion> = CappedVec::<HistoryOrSqlSugg
 #[derive(Debug)]
 pub struct SqlQueryPicker {
     picker: TextPickerWithSuggestion<SqlQueryProvider>,
-    dataframe: Option<DataFrame>,
-    duckdb: bool,
 }
 
 pub fn remember(query: &str) {
@@ -31,26 +27,7 @@ pub fn remember(query: &str) {
 }
 
 impl SqlQueryPicker {
-    pub fn new(dataframe: Option<DataFrame>) -> Self {
-        let columns = dataframe.as_ref().map(|dataframe| {
-            dataframe
-                .get_column_names()
-                .into_iter()
-                .map(|name| name.to_string())
-                .collect()
-        });
-        Self::with_columns(dataframe, columns, false)
-    }
-
     pub fn duckdb(columns: Option<Vec<String>>) -> Self {
-        Self::with_columns(None, columns, true)
-    }
-
-    fn with_columns(
-        dataframe: Option<DataFrame>,
-        columns: Option<Vec<String>>,
-        duckdb: bool,
-    ) -> Self {
         let all_columns = sql_completion::collect_all_columns(columns.as_deref());
         let provider = SqlQueryProvider {
             columns,
@@ -60,8 +37,6 @@ impl SqlQueryPicker {
         Self {
             picker: TextPickerWithSuggestion::new(provider)
                 .with_title(icons::DATABASE.title("SQL")),
-            dataframe,
-            duckdb,
         }
     }
 }
@@ -86,25 +61,8 @@ impl Component for SqlQueryPicker {
                 (KeyCode::Enter, KeyModifiers::NONE) => {
                     if self.picker.has_suggestions() {
                         self.picker.apply_selected_suggestion();
-                    } else if self.duckdb {
-                        Message::AppQuery(self.picker.value().to_owned()).enqueue();
                     } else {
-                        let value = self.picker.value();
-                        match sql().execute_with_default(value, self.dataframe.clone()) {
-                            Ok(df) => {
-                                if df.columns().is_empty() {
-                                    Message::AppShowToast(
-                                        "The query results in an empty data frame".to_owned(),
-                                    )
-                                    .enqueue()
-                                } else {
-                                    Message::AppDismissOverlay.enqueue();
-                                    Message::TabsAddQueryPane(df, value.to_owned()).enqueue();
-                                    remember(value);
-                                }
-                            }
-                            Err(error) => Message::AppShowToast(error.to_string()).enqueue(),
-                        }
+                        Message::AppQuery(self.picker.value().to_owned()).enqueue();
                     }
                     true
                 }

@@ -1,5 +1,4 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::frame::DataFrame;
 use ratatui::layout::Margin;
 
 use crate::{
@@ -15,12 +14,6 @@ pub struct DataFrameInfo {
 }
 
 impl DataFrameInfo {
-    pub fn new(df: &DataFrame, input: crate::misc::sql::TableSource) -> Self {
-        Self {
-            data_frame_info: data_frame_info::DataFrameInfo::new(TableInfo::new(input, df)),
-            view: None,
-        }
-    }
     pub fn duckdb(info: TableInfo, view: String) -> Self {
         Self {
             data_frame_info: data_frame_info::DataFrameInfo::new(info),

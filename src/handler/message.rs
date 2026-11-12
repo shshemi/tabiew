@@ -3,15 +3,10 @@ use std::sync::{
     mpsc::{Receiver, Sender, channel},
 };
 
-use polars::frame::DataFrame;
-
 use crate::{
     AppResult,
     duckdb::{DataSource, Import, PlotRequest},
-    tui::{
-        pane::TableDescription,
-        popups::{column_caster::TargetType, pickers::inline_query_picker::QueryType},
-    },
+    tui::popups::{column_caster::TargetType, pickers::inline_query_picker::QueryType},
     writers::{Destination, ExportFormat},
 };
 
@@ -65,8 +60,6 @@ pub enum Message {
     AppTableStats(String),
     TabsSelect(usize),
     TabsDismissSwitcher,
-    TabsAddNamePane(DataFrame, String),
-    TabsAddQueryPane(DataFrame, String),
     TabsCloseSelected,
     TabsRemove(usize),
     PaneEditInExternalEditor,
@@ -89,7 +82,6 @@ pub enum Message {
     PaneShowSearch,
     PaneDismissModal,
     PaneDismissSheet,
-    PanePushDataFrame(DataFrame, TableDescription),
     PanePopDataFrame,
     PaneTableSelect(usize),
     PaneShowInlineSelect,

@@ -70,18 +70,6 @@ clap = { version = "4.6.6", features = ["derive"] }
 crossterm = { version = "0.29.0", features = ["use-dev-tty"] }
 fwf-rs = "0.2.2"
 itertools = "0.15.0"
-polars = { version = "0.55.2", features = [
-    "avro",
-    "ipc",
-    "json",
-    "parquet",
-    "lazy",
-    "rows",
-    "dtype-full",
-    "performant",
-    "strings",
-] }
-polars-sql = "0.55.2"
 rand = "0.10.2"
 ratatui = { version = "0.30.2", features = ["serde", "unstable-rendered-line-info"] }
 rayon = "1.12.0"
@@ -104,7 +92,7 @@ sqlparser = "0.62.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 logfmt-zerocopy = "0.1.3"
-indexmap = "2.14.1"
+indexmap = { version = "2.14.1", features = ["serde"] }
 ureq = "3.4.0"
 url = { version = "2.5.8", features = ["serde"]}
 scraper = "0.27.0"

@@ -1,10 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use polars::frame::DataFrame;
 use ratatui::widgets::{Block, Widget};
 
 use crate::{
     handler::message::Message,
-    misc::search::Searcher,
     tui::{
         app_default::{AppDefault, AppTitle},
         component::Component,
@@ -24,40 +22,14 @@ pub enum SearchType {
 pub struct SearchBar {
     input: Input,
     search_type: SearchType,
-    searcher: Option<Searcher>,
-    rollback_df: Option<DataFrame>,
 }
 
 impl SearchBar {
-    pub fn exact(dataframe: DataFrame) -> Self {
-        SearchBar {
-            input: Default::default(),
-            search_type: SearchType::Exact,
-            searcher: Some(Searcher::exact(dataframe.clone(), Default::default())),
-            rollback_df: Some(dataframe),
-        }
-    }
-
-    pub fn fuzzy(dataframe: DataFrame) -> Self {
-        SearchBar {
-            input: Default::default(),
-            search_type: SearchType::Fuzzy,
-            searcher: Some(Searcher::fuzzy(dataframe.clone(), Default::default())),
-            rollback_df: Some(dataframe),
-        }
-    }
-
     pub fn duckdb(search_type: SearchType) -> Self {
         SearchBar {
             input: Default::default(),
             search_type,
-            searcher: None,
-            rollback_df: None,
         }
-    }
-
-    pub fn searcher(&self) -> Option<&Searcher> {
-        self.searcher.as_ref()
     }
 
     pub fn search_type(&self) -> &SearchType {
@@ -66,18 +38,6 @@ impl SearchBar {
 
     pub fn value(&self) -> &str {
         self.input.value()
-    }
-
-    fn update_search(&mut self) {
-        if let (Some(searcher), Some(rollback_df)) = (&self.searcher, &self.rollback_df)
-            && self.input.value() != searcher.pattern()
-        {
-            let pattern = self.input.value().to_owned();
-            self.searcher = Some(match self.search_type {
-                SearchType::Fuzzy => Searcher::fuzzy(rollback_df.clone(), pattern),
-                SearchType::Exact => Searcher::exact(rollback_df.clone(), pattern),
-            });
-        }
     }
 }
 
@@ -103,7 +63,6 @@ impl Component for SearchBar {
 
     fn handle(&mut self, event: KeyEvent) -> bool {
         if self.input.handle(event) {
-            self.update_search();
             true
         } else {
             match (event.code, event.modifiers) {

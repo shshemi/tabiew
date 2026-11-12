@@ -23,15 +23,11 @@ pub mod indexer;
 
 pub mod reader;
 
-pub mod parsers;
-
 pub mod iters;
 
 pub mod net;
 
 pub mod collections;
-
-pub mod readers;
 
 pub mod writers;
 

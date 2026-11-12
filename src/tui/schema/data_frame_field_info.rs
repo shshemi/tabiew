@@ -11,7 +11,6 @@ use crate::{
         app_default::AppDefault,
         component::Component,
         icons,
-        misc::any_value_formatter::AnyValueFormatter,
         tag_line::{Tag, TagLine},
     },
 };
@@ -77,28 +76,14 @@ impl Component for DataFrameFieldInfo {
                         .enumerate()
                         .map(|(idx, (name, info))| {
                             let dash = |value: Option<String>| value.unwrap_or("-".to_string());
-                            Row::new(match info.text() {
-                                Some(text) => [
-                                    name.to_owned(),
-                                    text.dtype.clone(),
-                                    dash(text.size.clone()),
-                                    dash(text.nulls.map(|nulls| nulls.to_string())),
-                                    dash(text.min.clone()),
-                                    dash(text.max.clone()),
-                                ],
-                                None => [
-                                    name.to_owned(),
-                                    format!("{}", info.dtype()),
-                                    format!("{}", info.estimated_size()),
-                                    format!("{}", info.null_count()),
-                                    AnyValueFormatter::default()
-                                        .into_single_line(info.min().to_owned().into_value())
-                                        .into_owned(),
-                                    AnyValueFormatter::default()
-                                        .into_single_line(info.max().to_owned().into_value())
-                                        .into_owned(),
-                                ],
-                            })
+                            Row::new([
+                                name.to_owned(),
+                                info.dtype.clone(),
+                                dash(info.size.map(|size| size.to_string())),
+                                dash(info.nulls.map(|nulls| nulls.to_string())),
+                                dash(info.min.clone()),
+                                dash(info.max.clone()),
+                            ])
                             .style(theme().row(idx))
                         }),
                 )

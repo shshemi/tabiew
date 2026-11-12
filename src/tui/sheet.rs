@@ -5,7 +5,6 @@ use std::{
 };
 
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::{frame::DataFrame, prelude::AnyValue};
 use serde::Serialize;
 
 use ratatui::{
@@ -24,23 +23,17 @@ use crate::{
         app_default::{AppDefault, AppTitle},
         component::Component,
         icons,
-        misc::{any_value_formatter::AnyValueFormatter, text_builder::TextBuilder},
+        misc::text_builder::TextBuilder,
         tag_line::{Tag, TagLine},
         utils::Scroll,
     },
 };
 
-pub enum Data {
-    Frame(DataFrame),
-    Reader(Arc<Mutex<dyn Rows>>),
-}
+pub struct Data(pub Arc<Mutex<dyn Rows>>);
 
 impl std::fmt::Debug for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Data::Frame(df) => df.fmt(f),
-            Data::Reader(_) => f.write_str("Reader"),
-        }
+        f.write_str("Reader")
     }
 }
 
@@ -223,7 +216,6 @@ enum Value {
     Bool(bool),
     Number(Number),
     String(String),
-    Array(Vec<Value>),
     Object(BTreeMap<String, Value>),
 }
 
@@ -256,15 +248,7 @@ impl Value {
 }
 
 fn get_row(data: &Data, idx: usize) -> Option<Value> {
-    let df = match data {
-        Data::Frame(df) => df,
-        Data::Reader(reader) => return reader_row(&mut *reader.lock().unwrap(), idx),
-    };
-    let fields = df.fields();
-    let values = df.get(idx)?;
-    Some(any_value_to_value(AnyValue::StructOwned(Box::new((
-        values, fields,
-    )))))
+    reader_row(&mut *data.0.lock().unwrap(), idx)
 }
 
 fn reader_row(reader: &mut dyn Rows, idx: usize) -> Option<Value> {
@@ -297,58 +281,6 @@ fn typed(data_type: &str, datum: Option<&str>) -> Value {
     parsed.unwrap_or_else(|| Value::String(text.to_string()))
 }
 
-fn any_value_to_value(any_value: AnyValue) -> Value {
-    match any_value {
-        AnyValue::Null => Value::Null,
-        AnyValue::Boolean(b) => Value::Bool(b),
-        AnyValue::String(s) => Value::String(s.to_owned()),
-        AnyValue::StringOwned(s) => Value::String(s.into_string()),
-        AnyValue::UInt8(u) => Value::Number(Number::PosInt(u.into())),
-        AnyValue::UInt16(u) => Value::Number(Number::PosInt(u.into())),
-        AnyValue::UInt32(u) => Value::Number(Number::PosInt(u.into())),
-        AnyValue::UInt64(u) => Value::Number(Number::PosInt(u)),
-        AnyValue::UInt128(u) => u64::try_from(u).map_or_else(
-            |_| Value::String(u.to_string()),
-            |u| Value::Number(Number::PosInt(u)),
-        ),
-        AnyValue::Int8(i) => Value::int(i.into()),
-        AnyValue::Int16(i) => Value::int(i.into()),
-        AnyValue::Int32(i) => Value::int(i.into()),
-        AnyValue::Int64(i) => Value::int(i),
-        AnyValue::Int128(i) => {
-            i64::try_from(i).map_or_else(|_| Value::String(i.to_string()), Value::int)
-        }
-        AnyValue::Float16(f) => Value::float(f.into()),
-        AnyValue::Float32(f) => Value::float(f.into()),
-        AnyValue::Float64(f) => Value::float(f),
-        AnyValue::List(series) | AnyValue::Array(series, _) => {
-            Value::Array(series.iter().map(any_value_to_value).collect())
-        }
-        AnyValue::Struct(_, _, fields) => Value::Object(
-            fields
-                .iter()
-                .map(|f| f.name().to_string())
-                .zip(any_value._iter_struct_av().map(any_value_to_value))
-                .collect(),
-        ),
-        AnyValue::StructOwned(s) => {
-            let (values, fields) = *s;
-            Value::Object(
-                fields
-                    .into_iter()
-                    .map(|f| f.name().to_string())
-                    .zip(values.into_iter().map(any_value_to_value))
-                    .collect(),
-            )
-        }
-        av => Value::String(
-            AnyValueFormatter::new(None)
-                .into_multi_line(av)
-                .into_owned(),
-        ),
-    }
-}
-
 fn styled_json(tb: &mut TextBuilder, value: Value, lvl: usize) {
     match value {
         Value::Null => tb.push_span(Span::styled(
@@ -362,23 +294,7 @@ fn styled_json(tb: &mut TextBuilder, value: Value, lvl: usize) {
             serde_json::Number::from_f64(f).map_or_else(|| f.to_string(), |n| n.to_string()),
         )),
         Value::String(s) => tb.push_span(styled_json_text(styled_json_quoted(&s))),
-        Value::Array(arr) if arr.is_empty() => tb.push_span(styled_json_punctuation("[]")),
         Value::Object(map) if map.is_empty() => tb.push_span(styled_json_punctuation("{}")),
-        Value::Array(arr) => {
-            tb.push_span(styled_json_punctuation("["));
-            let last = arr.len() - 1;
-            for (idx, v) in arr.into_iter().enumerate() {
-                tb.new_line();
-                tb.push_span(styled_json_indent(lvl + 1));
-                styled_json(tb, v, lvl + 1);
-                if idx != last {
-                    tb.push_span(styled_json_punctuation(","));
-                }
-            }
-            tb.new_line();
-            tb.push_span(styled_json_indent(lvl));
-            tb.push_span(styled_json_punctuation("]"));
-        }
         Value::Object(map) => {
             tb.push_span(styled_json_punctuation("{"));
             let last = map.len() - 1;
@@ -428,18 +344,7 @@ fn styled_yaml(tb: &mut TextBuilder, value: Value, lvl: usize) {
             serde_json::Number::from_f64(f).map_or_else(|| f.to_string(), |n| n.to_string()),
         )),
         Value::String(s) => tb.push_span(styled_yaml_text(styled_yaml_quoted(&s))),
-        Value::Array(arr) if arr.is_empty() => tb.push_span(styled_yaml_punctuation("[]")),
         Value::Object(map) if map.is_empty() => tb.push_span(styled_yaml_punctuation("{}")),
-        Value::Array(arr) => {
-            for (idx, v) in arr.into_iter().enumerate() {
-                if idx != 0 {
-                    tb.new_line();
-                    tb.push_span(styled_yaml_indent(lvl));
-                }
-                tb.push_span(styled_yaml_punctuation("- "));
-                styled_yaml(tb, v, lvl + 1);
-            }
-        }
         Value::Object(map) => {
             for (idx, (k, v)) in map.into_iter().enumerate() {
                 if idx != 0 {
@@ -474,7 +379,6 @@ fn styled_yaml_text(text: String) -> Span<'static> {
 
 fn styled_yaml_is_block(value: &Value) -> bool {
     match value {
-        Value::Array(arr) => !arr.is_empty(),
         Value::Object(map) => !map.is_empty(),
         _ => false,
     }

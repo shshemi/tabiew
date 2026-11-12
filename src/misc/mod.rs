@@ -7,7 +7,6 @@ pub mod format;
 pub mod ipc;
 pub mod osc52;
 pub mod paths;
-pub mod search;
 pub mod sql;
 pub mod stdin;
 pub mod unwrap_or_graceful_shutdown;

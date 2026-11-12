@@ -3,10 +3,7 @@ use std::fmt::Display;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::{
-    readers::ReaderSource,
-    tui::{component::Component, icons, popups::pickers::list_picker::ListPicker},
-};
+use crate::tui::{component::Component, icons, popups::pickers::list_picker::ListPicker};
 
 #[derive(Debug)]
 pub struct ImportSourcePicker {
@@ -63,14 +60,5 @@ impl SourceType {
 impl Display for SourceType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.icon().item(Into::<&str>::into(self)))
-    }
-}
-
-impl From<&ReaderSource> for SourceType {
-    fn from(r: &ReaderSource) -> Self {
-        match r {
-            ReaderSource::Stdin => SourceType::Stdin,
-            ReaderSource::File(_) => SourceType::File,
-        }
     }
 }

@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{misc::sql, tui::misc::any_value_formatter::AnyValueFormatter};
+use crate::misc::sql;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Schema {
@@ -94,28 +94,12 @@ impl From<&sql::TableSchema> for TableSchema {
 
 impl From<&sql::FieldInfo> for FieldInfo {
     fn from(value: &sql::FieldInfo) -> Self {
-        let text = |scalar: &polars::prelude::Scalar| {
-            Some(
-                AnyValueFormatter::default()
-                    .into_single_line(scalar.clone().into_value())
-                    .into_owned(),
-            )
-        };
-        match value.text() {
-            Some(field) => Self {
-                dtype: field.dtype.clone(),
-                est_size: value.estimated_size().into(),
-                null_count: field.nulls,
-                min: field.min.clone(),
-                max: field.max.clone(),
-            },
-            None => Self {
-                dtype: value.dtype().to_string(),
-                est_size: value.estimated_size().into(),
-                null_count: Some(value.null_count()),
-                min: text(value.min()),
-                max: text(value.max()),
-            },
+        Self {
+            dtype: value.dtype.clone(),
+            est_size: value.size.unwrap_or_default().into(),
+            null_count: value.nulls,
+            min: value.min.clone(),
+            max: value.max.clone(),
         }
     }
 }

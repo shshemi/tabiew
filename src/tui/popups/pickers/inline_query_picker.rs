@@ -1,13 +1,10 @@
 use crossterm::event::{KeyCode, KeyModifiers};
-use polars::frame::DataFrame;
 
 use crate::{
     handler::message::Message,
-    misc::sql::sql,
     sql_completion::{self, SqlSuggestion},
     tui::{
         component::Component,
-        pane::TableDescription,
         popups::pickers::text_picker_with_suggestion::{Provider, TextPickerWithSuggestion},
     },
 };
@@ -15,29 +12,11 @@ use crate::{
 #[derive(Debug)]
 pub struct InlineQueryPicker {
     picker: TextPickerWithSuggestion<InlineQueryProvider>,
-    dataframe: Option<DataFrame>,
     query_type: QueryType,
 }
 
 impl InlineQueryPicker {
-    pub fn new(dataframe: DataFrame, query_type: QueryType) -> Self {
-        let columns = dataframe
-            .get_column_names()
-            .into_iter()
-            .map(|name| name.to_string())
-            .collect();
-        Self::with_columns(Some(dataframe), columns, query_type)
-    }
-
     pub fn duckdb(columns: Vec<String>, query_type: QueryType) -> Self {
-        Self::with_columns(None, columns, query_type)
-    }
-
-    fn with_columns(
-        dataframe: Option<DataFrame>,
-        columns: Vec<String>,
-        query_type: QueryType,
-    ) -> Self {
         let all_columns = sql_completion::collect_all_columns(Some(&columns));
         let provider = InlineQueryProvider {
             columns,
@@ -46,62 +25,13 @@ impl InlineQueryPicker {
         };
         Self {
             picker: TextPickerWithSuggestion::new(provider).with_title(query_type.title()),
-            dataframe,
             query_type,
         }
     }
 
     fn submit(&self) {
-        let value = self.picker.value();
-        let Some(dataframe) = self.dataframe.clone() else {
-            Message::PaneDismissModal.enqueue();
-            Message::AppInlineQuery(self.query_type, value.to_owned()).enqueue();
-            return;
-        };
-        let result = match self.query_type {
-            QueryType::Select => {
-                sql().execute_with_default(&format!("SELECT {value} FROM _"), dataframe)
-            }
-            QueryType::Filter => {
-                sql().execute_with_default(&format!("SELECT * FROM _ where {value}"), dataframe)
-            }
-            QueryType::Order => {
-                sql().execute_with_default(&format!("SELECT * FROM _ ORDER BY {value}"), dataframe)
-            }
-        };
-        match (result, self.query_type) {
-            (Ok(result_dataframe), QueryType::Select) => {
-                Message::PaneDismissModal.enqueue();
-                Message::PanePushDataFrame(
-                    result_dataframe,
-                    TableDescription::Select(value.to_owned()),
-                )
-                .enqueue();
-                Message::AppShowToast(format!("Column selection '{value}' occurred")).enqueue();
-            }
-            (Ok(result_dataframe), QueryType::Order) => {
-                Message::PaneDismissModal.enqueue();
-                Message::PanePushDataFrame(
-                    result_dataframe,
-                    TableDescription::Order(value.to_owned()),
-                )
-                .enqueue();
-                Message::AppShowToast(format!("Data frame ordered by '{value}'")).enqueue();
-            }
-            (Ok(result_dataframe), QueryType::Filter) => {
-                Message::PaneDismissModal.enqueue();
-                Message::PanePushDataFrame(
-                    result_dataframe,
-                    TableDescription::Filter(value.to_owned()),
-                )
-                .enqueue();
-                Message::AppShowToast(format!("Filter '{value}' applied")).enqueue();
-            }
-            (Err(error), _) => {
-                Message::PaneDismissModal.enqueue();
-                Message::AppShowError(error.to_string()).enqueue();
-            }
-        }
+        Message::PaneDismissModal.enqueue();
+        Message::AppInlineQuery(self.query_type, self.picker.value().to_owned()).enqueue();
     }
 }
 

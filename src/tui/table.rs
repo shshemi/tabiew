@@ -5,7 +5,6 @@ use std::{
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use itertools::Itertools;
-use polars::{frame::DataFrame, prelude::AnyValue};
 use ratatui::{
     layout::{Constraint, Layout, Position, Rect},
     text::Text,
@@ -14,29 +13,17 @@ use ratatui::{
 use tui_scrollview::{ScrollView, ScrollViewState, ScrollbarVisibility};
 
 use crate::{
-    iters::zip_iters::ZipItersExt,
     misc::config::{config, theme},
     reader::{Datum, Rows, is_numeric, single_line},
-    tui::{
-        component::Component,
-        misc::{
-            any_value_formatter::AnyValueFormatter, width_calculators::DataFrameWidthsCalculator,
-        },
-    },
+    tui::component::Component,
 };
 
 #[derive(Clone)]
-enum Data {
-    Frame(DataFrame),
-    Reader(Arc<Mutex<dyn Rows>>),
-}
+struct Data(Arc<Mutex<dyn Rows>>);
 
 impl std::fmt::Debug for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Data::Frame(df) => df.fmt(f),
-            Data::Reader(_) => f.write_str("Reader"),
-        }
+        f.write_str("Reader")
     }
 }
 
@@ -58,32 +45,6 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(df: DataFrame) -> Self {
-        let col_space = 1;
-        let col_widths = DataFrameWidthsCalculator::default()
-            .calculate(&df)
-            .into_iter()
-            .map(Constraint::Length)
-            .collect_vec();
-        let col_offsets = col_offsets(&col_widths, col_space);
-        let gutter_width = df.height().to_string().len() as u16;
-        Self {
-            col_widths,
-            selected: None,
-            col_offsets,
-            offset: 0,
-            rendered_rows: 0,
-            rendered_width: 0,
-            column_mode: ColumnMode::Compact,
-            striped: false,
-            show_header: false,
-            gutter_mode: GutterMode::Visible(gutter_width),
-            fp_precision: config().fp_precision(),
-            data: Data::Frame(df),
-            col_space,
-        }
-    }
-
     pub fn reader(rows: impl Rows + 'static) -> Self {
         Self {
             col_widths: Vec::new(),
@@ -97,43 +58,31 @@ impl Table {
             show_header: false,
             gutter_mode: GutterMode::Visible(1),
             fp_precision: config().fp_precision(),
-            data: Data::Reader(Arc::new(Mutex::new(rows))),
+            data: Data(Arc::new(Mutex::new(rows))),
             col_space: 1,
         }
     }
 
     pub fn set_reader(&mut self, rows: impl Rows + 'static) {
-        self.data = Data::Reader(Arc::new(Mutex::new(rows)));
+        self.data = Data(Arc::new(Mutex::new(rows)));
         self.col_widths.clear();
         self.col_offsets = vec![0];
     }
 
     pub fn rows(&self) -> Option<Arc<Mutex<dyn Rows>>> {
-        match &self.data {
-            Data::Frame(_) => None,
-            Data::Reader(reader) => Some(reader.clone()),
-        }
+        Some(self.data.0.clone())
     }
 
     pub fn row_count(&self) -> usize {
-        match &self.data {
-            Data::Frame(df) => df.height(),
-            Data::Reader(reader) => reader.lock().unwrap().row_count(),
-        }
+        self.data.0.lock().unwrap().row_count()
     }
 
     pub fn complete(&self) -> bool {
-        match &self.data {
-            Data::Frame(_) => true,
-            Data::Reader(reader) => reader.lock().unwrap().complete(),
-        }
+        self.data.0.lock().unwrap().complete()
     }
 
     pub fn col_count(&self) -> usize {
-        match &self.data {
-            Data::Frame(df) => df.width(),
-            Data::Reader(reader) => reader.lock().unwrap().columns().len(),
-        }
+        self.data.0.lock().unwrap().columns().len()
     }
 
     pub fn clone_with_reader(&self, rows: impl Rows + 'static) -> Self {
@@ -152,31 +101,6 @@ impl Table {
     pub fn view(&self) -> Option<String> {
         self.rows()
             .and_then(|rows| rows.lock().ok().and_then(|rows| rows.view()))
-    }
-
-    pub fn clone_with_data_frame(&self, df: DataFrame) -> Self {
-        let col_widths = DataFrameWidthsCalculator::default()
-            .calculate(&df)
-            .into_iter()
-            .map(Constraint::Length)
-            .collect_vec();
-        let col_offsets = col_offsets(&col_widths, self.col_space);
-        let gutter_width = df.height().to_string().len() as u16;
-        Self {
-            data: Data::Frame(df),
-            col_widths,
-            col_offsets,
-            offset: 0,
-            selected: self.selected,
-            rendered_rows: self.rendered_rows,
-            rendered_width: self.rendered_width,
-            column_mode: self.column_mode,
-            striped: self.striped,
-            show_header: self.show_header,
-            gutter_mode: GutterMode::Visible(gutter_width),
-            fp_precision: config().fp_precision(),
-            col_space: self.col_space,
-        }
     }
 
     pub fn striped(self) -> Self {
@@ -229,28 +153,6 @@ impl Table {
         Self {
             column_mode: ColumnMode::Expanded(0),
             ..self
-        }
-    }
-
-    pub fn data_frame(&self) -> Option<&DataFrame> {
-        match &self.data {
-            Data::Frame(df) => Some(df),
-            Data::Reader(_) => None,
-        }
-    }
-
-    pub fn data_frame_mut(&mut self) -> Option<&mut DataFrame> {
-        match &mut self.data {
-            Data::Frame(df) => Some(df),
-            Data::Reader(_) => None,
-        }
-    }
-
-    pub fn set_data_frame(&mut self, df: DataFrame) {
-        if let Data::Frame(current) = &mut self.data
-            && current.schema_equal(&df).is_ok()
-        {
-            *current = df;
         }
     }
 
@@ -433,16 +335,7 @@ impl Table {
     /// whenever it changes.
     fn refresh_col_widths(&mut self) {
         self.fp_precision = config().fp_precision();
-        match &self.data {
-            Data::Frame(df) => {
-                self.col_widths = DataFrameWidthsCalculator::default()
-                    .calculate(df)
-                    .into_iter()
-                    .map(Constraint::Length)
-                    .collect_vec();
-            }
-            Data::Reader(reader) => reader.lock().unwrap().reset(),
-        }
+        self.data.0.lock().unwrap().reset();
         self.col_offsets = col_offsets(&self.col_widths, self.col_space);
     }
 
@@ -490,10 +383,7 @@ impl Component for Table {
             *width = row_count.to_string().len() as u16;
         }
 
-        let reader = match &self.data {
-            Data::Reader(reader) => Some(reader.clone()),
-            Data::Frame(_) => None,
-        };
+        let reader = Some(self.data.0.clone());
         let mut guard = reader.as_ref().map(|reader| reader.lock().unwrap());
         let range = self.offset..self.offset + height;
         let filled = guard.as_mut().map(|reader| reader.fill(range.clone()));
@@ -606,91 +496,6 @@ impl Component for Table {
                     buf,
                     selected,
                 ),
-            }
-            return;
-        }
-        drop(guard);
-        let Data::Frame(df) = &self.data else {
-            return;
-        };
-
-        match &mut self.column_mode {
-            ColumnMode::Compact => {
-                let df = df.slice(self.offset as i64, height);
-                let table = build_table(
-                    &df,
-                    &self.col_widths,
-                    self.col_space,
-                    self.show_header,
-                    self.striped,
-                    self.offset,
-                    0,
-                    self.fp_precision,
-                );
-                table.render(
-                    table_area,
-                    buf,
-                    &mut TableState::default().with_selected(if focus_state.is_focused() {
-                        self.selected.map(|s| s.saturating_sub(self.offset))
-                    } else {
-                        None
-                    }),
-                );
-            }
-            ColumnMode::Expanded(x) => {
-                if df.columns().is_empty() {
-                    return;
-                }
-                let total_width = self
-                    .col_offsets
-                    .last()
-                    .copied()
-                    .unwrap_or(0)
-                    .max(table_area.width as usize);
-                *x = (*x).min(total_width.saturating_sub(table_area.width as usize));
-                let col_start = column_index(&self.col_offsets, x);
-                let col_end = column_index(&self.col_offsets, &x.add(table_area.width as usize));
-                let df = df
-                    .select(&df.get_column_names()[col_start..=col_end])
-                    .unwrap_or_default()
-                    .slice(self.offset as i64, height);
-                let table = build_table(
-                    &df,
-                    &self.col_widths[col_start..=col_end],
-                    self.col_space,
-                    self.show_header,
-                    self.striped,
-                    self.offset,
-                    col_start,
-                    self.fp_precision,
-                );
-                let width = (self.col_offsets[col_end + 1] - self.col_offsets[col_start])
-                    .max(table_area.width as usize);
-                let size = ratatui::layout::Size {
-                    width: width as u16,
-                    height: table_area.height,
-                };
-                let mut scroll_area =
-                    ScrollView::new(size).scrollbars_visibility(ScrollbarVisibility::Never);
-                scroll_area.render_stateful_widget(
-                    table,
-                    scroll_area.area(),
-                    &mut TableState::default().with_selected(if focus_state.is_focused() {
-                        self.selected.map(|s| s.saturating_sub(self.offset))
-                    } else {
-                        None
-                    }),
-                );
-                scroll_area.render(
-                    table_area,
-                    buf,
-                    &mut ScrollViewState::with_offset(Position {
-                        x: x.saturating_sub(
-                            self.col_offsets.get(col_start).copied().unwrap_or_default(),
-                        ) as u16,
-                        y: 0,
-                    }),
-                );
             }
         }
     }
@@ -831,68 +636,6 @@ fn next_column_offset(col_offsets: &[usize], offset: &usize) -> usize {
         .get(column_index(col_offsets, offset).saturating_add(1))
         .copied()
         .unwrap_or_default()
-}
-
-fn cell(value: AnyValue<'_>, fp_precision: Option<usize>) -> Cell<'static> {
-    let is_numeric = value.is_primitive_numeric() || matches!(value, AnyValue::Decimal(..));
-    let text = Text::raw(
-        AnyValueFormatter::new(fp_precision)
-            .into_single_line(value)
-            .into_owned(),
-    );
-    if is_numeric {
-        Cell::new(text.right_aligned())
-    } else {
-        Cell::new(text)
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn build_table<'a>(
-    df: &'a DataFrame,
-    col_widths: &[Constraint],
-    col_space: u16,
-    show_header: bool,
-    striped: bool,
-    offset_row: usize,
-    offset_col: usize,
-    fp_precision: Option<usize>,
-) -> ratatui::widgets::Table<'a> {
-    let theme = theme();
-    let mut table = ratatui::widgets::Table::default()
-        .widths(col_widths)
-        .style(theme.text())
-        .row_highlight_style(theme.row_highlighted())
-        .column_spacing(col_space)
-        .rows(
-            df.columns()
-                .iter()
-                .map(|col| col.as_materialized_series().iter())
-                .zip_iters()
-                .enumerate()
-                .map(|(idx, vals)| {
-                    let cells = vals.into_iter().map(|value| cell(value, fp_precision));
-                    Row::new(cells).style(if striped {
-                        theme.row(offset_row + idx)
-                    } else {
-                        theme.row(0)
-                    })
-                }),
-        );
-
-    if show_header {
-        table = table.header(
-            Row::new(df.columns().iter().enumerate().map(|(i, c)| {
-                let mut text = Text::raw(c.name().as_str());
-                if c.dtype().is_numeric() {
-                    text = text.right_aligned();
-                }
-                Cell::new(text).style(theme.header(offset_col + i))
-            }))
-            .style(theme.table_header()),
-        )
-    }
-    table
 }
 
 #[allow(clippy::too_many_arguments)]
