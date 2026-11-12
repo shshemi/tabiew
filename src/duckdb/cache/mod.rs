@@ -344,5 +344,4 @@ mod tests {
         assert!(!db_a.exists());
         assert!(db_b.exists());
     }
-
 }

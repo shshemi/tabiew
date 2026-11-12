@@ -31,9 +31,9 @@ use std::{
 use tokio::sync::oneshot::{Receiver, error::TryRecvError};
 
 pub use cache::config::Config as DuckDBConfig;
-pub(crate) use ingester::{cut_text, sample_columns};
-pub use ingester::{CsvOptions, FwfOptions, Import, IngestOptions, IngestProgress};
 pub use cache::file_db::ColumnStats;
+pub use ingester::{CsvOptions, FwfOptions, Import, IngestOptions, IngestProgress};
+pub(crate) use ingester::{cut_text, sample_columns};
 pub use plots::{PlotData, PlotRequest};
 pub use results::{Opened, Store};
 pub use schema::TableEntry;
@@ -135,8 +135,7 @@ impl DuckDB {
                 segment_rows: config.segment_rows,
                 segments: config.segments,
                 segment_bytes: (crate::misc::config::config().process_ram_size().as_u64()
-                    / config.segments.max(1) as u64)
-                    as usize,
+                    / config.segments.max(1) as u64) as usize,
             },
             results: 0,
             materializing: Vec::new(),
@@ -406,5 +405,4 @@ mod tests {
             assert_eq!(count(&db, &names[0]), rows);
         }
     }
-
 }
