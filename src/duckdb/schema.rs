@@ -33,6 +33,12 @@ pub(super) struct CountJob {
     cancel: Cancel,
 }
 
+#[derive(Clone)]
+pub(super) struct Described {
+    columns: Vec<(String, String)>,
+    disk: Option<u64>,
+}
+
 pub(super) struct StatsJob {
     view: String,
     result: Receiver<AppResult<Vec<ColumnStats>>>,
@@ -110,7 +116,14 @@ impl DuckDB {
         names.iter().filter_map(|name| self.entry(name)).collect()
     }
     pub fn entry(&mut self, name: &str) -> Option<TableEntry> {
-        let view = ViewSource::growing(self.session.session().ok()?, name).ok()?;
+        let described = self.described.get(name).cloned();
+        let columns = match &described {
+            Some(described) => described.columns.clone(),
+            None => ViewSource::growing(self.session.session().ok()?, name)
+                .ok()?
+                .columns()
+                .to_vec(),
+        };
         let rows = self.counts.get(name).copied();
         if rows.is_none() {
             self.request_count(name, None).ok()?;
@@ -121,19 +134,30 @@ impl DuckDB {
         {
             self.stats.insert(name.to_string(), stats);
         }
-        let disk = match self.session.in_memory(name) {
-            true => Some(0),
-            false => self
+        let disk = match (
+            described.and_then(|described| described.disk),
+            self.session.in_memory(name),
+        ) {
+            (Some(disk), _) => Some(disk),
+            (None, true) => Some(0),
+            (None, false) => self
                 .session
                 .stored_size(name)
                 .or_else(|| self.scratch_size(name)),
         };
+        self.described.insert(
+            name.to_string(),
+            Described {
+                columns: columns.clone(),
+                disk,
+            },
+        );
         Some(TableEntry {
             source: self.session.source_path(name),
             rows,
             disk,
             disk_pending: disk.is_none() && self.checkpoint_due && name.starts_with(RESULT_PREFIX),
-            columns: view.columns().to_vec(),
+            columns,
             stats: self.stats.get(name).cloned(),
             name: name.to_string(),
         })
@@ -163,6 +187,7 @@ impl DuckDB {
     pub fn forget_stats(&mut self, view: &str) {
         self.stats.remove(view);
         self.counts.remove(view);
+        self.described.remove(view);
     }
     pub fn counted_reader(&mut self, view: &str) -> AppResult<Reader<ViewSource>> {
         let (reader, count) = self.growing_reader(view)?;

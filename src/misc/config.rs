@@ -44,6 +44,7 @@ impl Config {
             process_ram_size,
             worker_threads,
         } = toml::from_str(&contents)?;
+        let process_ram_size = checked_ram(process_ram_size.into_inner()?)?;
         self.set_theme(theme.into_inner()?);
         self.set_http_config(http.into_inner()?);
         self.set_duckdb_config(duckdb.into_inner()?);
@@ -53,8 +54,7 @@ impl Config {
             .swap(nerd_font.into_inner(), Ordering::Relaxed);
         self.fp_precision
             .swap(fp_precision.into_inner(), Ordering::Relaxed);
-        *self.process_ram_size.write().unwrap_or_graceful_shutdown() =
-            process_ram_size.into_inner()?;
+        *self.process_ram_size.write().unwrap_or_graceful_shutdown() = process_ram_size;
         self.worker_threads
             .swap(worker_threads.into_inner(), Ordering::Relaxed);
         super::workers::pump();
@@ -152,15 +152,25 @@ impl Default for Config {
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
 pub fn init() -> AppResult<()> {
-    let config = if let Ok(path) = config_path()
+    let config: Config = if let Ok(path) = config_path()
         && path.exists()
     {
         toml::from_str(&fs::read_to_string(path)?)?
     } else {
         Default::default()
     };
+    checked_ram(config.process_ram_size())?;
     CONFIG.get_or_init(move || config);
     Ok(())
+}
+
+fn checked_ram(size: ByteSize) -> AppResult<ByteSize> {
+    match size < ByteSize::mib(64) {
+        true => Err(anyhow::anyhow!(
+            "process_ram_size must be at least 64 MiB (got {size})"
+        )),
+        false => Ok(size),
+    }
 }
 
 pub fn config() -> &'static Config {

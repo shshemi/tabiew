@@ -60,6 +60,7 @@ pub struct DuckDB {
     stats_jobs: Vec<StatsJob>,
     counts: HashMap<String, usize>,
     count_jobs: Vec<schema::CountJob>,
+    described: HashMap<String, schema::Described>,
     checkpoint_due: bool,
     _scratch: Scratch,
 }
@@ -145,6 +146,7 @@ impl DuckDB {
             stats_jobs: Vec::new(),
             counts: HashMap::new(),
             count_jobs: Vec::new(),
+            described: HashMap::new(),
             checkpoint_due: false,
             _scratch: scratch,
         })
@@ -227,6 +229,9 @@ impl DuckDB {
             for (sql, fallback) in std::mem::take(&mut self.pending_queries) {
                 finished.queries.push(self.query(&sql, fallback));
             }
+        }
+        if !finished.tables.is_empty() {
+            self.described.clear();
         }
         self.session.flush()?;
         Ok(finished)
