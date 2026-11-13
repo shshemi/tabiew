@@ -17,6 +17,36 @@ pub trait RowSource {
     fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>>;
 }
 
+pub struct Limited<S> {
+    pub source: S,
+    pub limit: Option<usize>,
+}
+
+impl<S: RowSource> RowSource for Limited<S> {
+    fn columns(&self) -> Columns {
+        self.source.columns()
+    }
+    fn row_count(&self) -> usize {
+        let rows = self.source.row_count();
+        self.limit.map_or(rows, |limit| rows.min(limit))
+    }
+    fn complete(&self) -> bool {
+        self.source.complete()
+            || self
+                .limit
+                .is_some_and(|limit| self.source.row_count() >= limit)
+    }
+    fn view(&self) -> Option<&str> {
+        self.source.view()
+    }
+    fn fetch(&self, offset: usize, len: usize) -> AppResult<Vec<Vec<Datum>>> {
+        let len = self
+            .limit
+            .map_or(len, |limit| len.min(limit.saturating_sub(offset)));
+        self.source.fetch(offset, len)
+    }
+}
+
 pub struct Empty;
 
 impl RowSource for Empty {

@@ -18,7 +18,7 @@ use crate::misc::config::config;
 use crate::misc::external_editor::run_editor;
 use crate::misc::format::resolve_format;
 use crate::misc::sql::{BackendSchema, TableInfo, sql};
-use crate::reader::{Empty, Reader, RowSource};
+use crate::reader::{Empty, Limited, Reader, RowSource};
 use crate::tui::Pane;
 use crate::tui::layouts::notification::NotificationLayout;
 use crate::tui::pane::TableDescription;
@@ -109,7 +109,7 @@ impl App {
             DataSource::File(path) => duckdb.load(path, None, options, max_rows),
             DataSource::Url(url) => duckdb.load_url(url, None, options, max_rows),
         };
-        self.open(&label(source), loaded, options, select);
+        self.open(&label(source), loaded, options, max_rows, select);
     }
 
     pub fn load_parts(
@@ -123,7 +123,7 @@ impl App {
         };
         let loaded = duckdb.load_parts(parts, options, max_rows);
         let source = parts.first().map(label).unwrap_or_default();
-        self.open(&source, loaded, options, false);
+        self.open(&source, loaded, options, max_rows, false);
     }
 
     fn open(
@@ -131,6 +131,7 @@ impl App {
         source: &str,
         loaded: AppResult<Load>,
         options: &IngestOptions,
+        max_rows: Option<usize>,
         select: bool,
     ) {
         let Some(duckdb) = self.duckdb.as_ref() else {
@@ -173,10 +174,26 @@ impl App {
                 let description = TableDescription::Table(name);
                 let config = duckdb.reader_config();
                 let pane = match (sqlite, indexer) {
-                    (Some(sqlite), _) => Pane::reader(Reader::new(sqlite, config), description),
-                    (None, Some(indexer)) => {
-                        Pane::reader(Reader::new(indexer, config), description)
-                    }
+                    (Some(sqlite), _) => Pane::reader(
+                        Reader::new(
+                            Limited {
+                                source: sqlite,
+                                limit: max_rows,
+                            },
+                            config,
+                        ),
+                        description,
+                    ),
+                    (None, Some(indexer)) => Pane::reader(
+                        Reader::new(
+                            Limited {
+                                source: indexer,
+                                limit: max_rows,
+                            },
+                            config,
+                        ),
+                        description,
+                    ),
                     (None, None) => Pane::reader(Reader::new(Empty, config), description),
                 };
                 panes.push(pane.loading_from(ingest.source, title, ingest.progress));
