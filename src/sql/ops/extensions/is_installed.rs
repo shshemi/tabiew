@@ -19,7 +19,7 @@ impl IsInstalled {
         recv
     }
 
-    pub(in crate::sql::ops) fn check(&self, db: &Database, ext: Extension) -> AppResult<bool> {
+    fn check(&self, db: &Database, ext: Extension) -> AppResult<bool> {
         let mut stmt =
             db.prepare("SELECT installed FROM duckdb_extensions() WHERE extension_name = ?")?;
         let mut rows = stmt.query([ext.as_sql()])?;
