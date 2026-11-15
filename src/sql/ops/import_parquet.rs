@@ -45,13 +45,13 @@ impl ImportParquet {
         self
     }
 
-    pub fn with_int96_as(mut self, int96_as: impl Into<String>) -> Self {
-        self.int96_as = Some(Value::Text(int96_as.into()));
+    pub fn with_int96_as(mut self, int96_as: Int96As) -> Self {
+        self.int96_as = Some(Value::Text(int96_as.to_sql().to_owned()));
         self
     }
 
-    pub fn with_utf8_validation(mut self, utf8_validation: impl Into<String>) -> Self {
-        self.utf8_validation = Some(Value::Text(utf8_validation.into()));
+    pub fn with_utf8_validation(mut self, utf8_validation: Utf8Validation) -> Self {
+        self.utf8_validation = Some(Value::Text(utf8_validation.to_sql().to_owned()));
         self
     }
 
@@ -66,8 +66,8 @@ impl ImportParquet {
         self
     }
 
-    pub fn with_prefetch_strategy(mut self, prefetch_strategy: impl Into<String>) -> Self {
-        self.prefetch_strategy = Some(Value::Text(prefetch_strategy.into()));
+    pub fn with_prefetch_strategy(mut self, prefetch_strategy: PrefetchStrategy) -> Self {
+        self.prefetch_strategy = Some(Value::Text(prefetch_strategy.to_sql().to_owned()));
         self
     }
 
@@ -156,5 +156,54 @@ impl ImportParquet {
         .into_iter()
         .filter_map(|(option, value)| Some((option, value.clone()?)))
         .collect()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Int96As {
+    Timestamp,
+    TimestampNs,
+    Struct,
+}
+
+impl Int96As {
+    pub fn to_sql(&self) -> &'static str {
+        match self {
+            Int96As::Timestamp => "timestamp",
+            Int96As::TimestampNs => "timestamp_ns",
+            Int96As::Struct => "struct",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Utf8Validation {
+    Strict,
+    Replace,
+    Ignore,
+}
+
+impl Utf8Validation {
+    pub fn to_sql(&self) -> &'static str {
+        match self {
+            Utf8Validation::Strict => "strict",
+            Utf8Validation::Replace => "replace",
+            Utf8Validation::Ignore => "ignore",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrefetchStrategy {
+    Auto,
+    WholeGroup,
+}
+
+impl PrefetchStrategy {
+    pub fn to_sql(&self) -> &'static str {
+        match self {
+            PrefetchStrategy::Auto => "auto",
+            PrefetchStrategy::WholeGroup => "whole_group",
+        }
     }
 }
