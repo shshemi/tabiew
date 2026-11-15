@@ -23,6 +23,7 @@ pub enum Message {
     AppShowToast(String),
     AppShowThemeSelector,
     AppShowFpPrecisionPicker,
+    AppShowKeybindings,
     AppShowSchema,
     AppShowImporter,
     AppShowArrowImporter,

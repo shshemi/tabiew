@@ -23,6 +23,7 @@ use crate::{
                 logfmt::LogfmtImporter, markdown::MarkdownImporter, parquet::ParquetImporter,
                 sqlite::SqliteImporter, tsv::TsvImporter,
             },
+            keybindings::Keybindings,
             pickers::fp_precision_picker::FpPrecisionPicker,
             theme_selector::ThemeSelector,
         },
@@ -73,6 +74,10 @@ impl App {
 
     fn show_fp_precision_picker(&mut self) {
         self.overlay = Some(Overlay::FpPrecisionPicker(Default::default()));
+    }
+
+    fn show_keybindings(&mut self) {
+        self.overlay = Some(Overlay::Keybindings(Default::default()));
     }
 
     fn show_palette(&mut self) {
@@ -238,6 +243,10 @@ impl Component for App {
                     self.show_palette();
                     true
                 }
+                (KeyModifiers::NONE, KeyCode::F(1)) => {
+                    self.show_keybindings();
+                    true
+                }
                 (KeyModifiers::SHIFT, KeyCode::Char('Q'))
                 | (KeyModifiers::NONE, KeyCode::Char('Q')) => {
                     self.quit();
@@ -255,6 +264,7 @@ impl Component for App {
             Message::AppShowError(message) => self.show_error(message),
             Message::AppShowToast(message) => self.show_toast(message),
             Message::AppShowAbout => self.show_about(),
+            Message::AppShowKeybindings => self.show_keybindings(),
             Message::AppShowCommandPicker => self.show_palette(),
             Message::AppShowThemeSelector => self.show_theme_selector(),
             Message::AppShowFpPrecisionPicker => self.show_fp_precision_picker(),
@@ -325,6 +335,7 @@ pub enum Overlay {
     Error(ErrorPopup),
     CommandPicker(CommandPalette),
     ThemeSelector(ThemeSelector),
+    Keybindings(Keybindings),
     FpPrecisionPicker(FpPrecisionPicker),
     SqlQueryPicker(SqlQueryPicker),
     Import(Importer),
@@ -350,6 +361,7 @@ impl Overlay {
             Overlay::Error(error) => error,
             Overlay::CommandPicker(command_palette) => command_palette,
             Overlay::ThemeSelector(theme_selector) => theme_selector,
+            Overlay::Keybindings(keybindings) => keybindings,
             Overlay::FpPrecisionPicker(fp_precision_picker) => fp_precision_picker,
             Overlay::Import(step_by_step) => step_by_step,
             Overlay::SqlQueryPicker(sql_query_picker) => sql_query_picker,

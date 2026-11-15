@@ -174,6 +174,7 @@ curl -s "https://raw.githubusercontent.com/wiki/shshemi/tabiew/housing.csv" | tw
 | `q`| Close |
 | `Q`| Quit Application |
 | `:`| Command Palette|
+| `F1`| Show keybindings help|
 | `/`| Fuzzy Search|
 
 ## Useful Commands
