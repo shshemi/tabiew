@@ -87,7 +87,7 @@ impl ImportCsv {
     }
 
     pub fn with_new_line(mut self, new_line: NewLine) -> Self {
-        self.new_line = Some(Value::Text(new_line.to_sql().to_owned()));
+        self.new_line = Some(Value::Text(new_line.as_sql().to_owned()));
         self
     }
 
@@ -112,7 +112,7 @@ impl ImportCsv {
     }
 
     pub fn with_compression(mut self, compression: Compression) -> Self {
-        self.compression = Some(Value::Text(compression.to_sql().to_owned()));
+        self.compression = Some(Value::Text(compression.as_sql().to_owned()));
         self
     }
 
@@ -376,7 +376,7 @@ pub enum NewLine {
 }
 
 impl NewLine {
-    pub fn to_sql(&self) -> &'static str {
+    pub fn as_sql(&self) -> &'static str {
         match self {
             NewLine::Lf => "\\n",
             NewLine::CrLf => "\\r\\n",

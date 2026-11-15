@@ -14,7 +14,7 @@ pub enum Compression {
 }
 
 impl Compression {
-    pub fn to_sql(&self) -> &'static str {
+    pub fn as_sql(&self) -> &'static str {
         match self {
             Compression::Auto => "auto",
             Compression::None => "none",

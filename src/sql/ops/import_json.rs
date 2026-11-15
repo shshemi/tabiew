@@ -47,7 +47,7 @@ pub struct ImportJson {
 
 impl ImportJson {
     pub fn with_format(mut self, format: JsonFormat) -> Self {
-        self.format = Some(Value::Text(format.to_sql().to_owned()));
+        self.format = Some(Value::Text(format.as_sql().to_owned()));
         self
     }
 
@@ -57,7 +57,7 @@ impl ImportJson {
     }
 
     pub fn with_compression(mut self, compression: Compression) -> Self {
-        self.compression = Some(Value::Text(compression.to_sql().to_owned()));
+        self.compression = Some(Value::Text(compression.as_sql().to_owned()));
         self
     }
 
@@ -239,7 +239,7 @@ pub enum JsonFormat {
 }
 
 impl JsonFormat {
-    pub fn to_sql(&self) -> &'static str {
+    pub fn as_sql(&self) -> &'static str {
         match self {
             JsonFormat::Auto => "auto",
             JsonFormat::Array => "array",

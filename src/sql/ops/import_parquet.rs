@@ -46,12 +46,12 @@ impl ImportParquet {
     }
 
     pub fn with_int96_as(mut self, int96_as: Int96As) -> Self {
-        self.int96_as = Some(Value::Text(int96_as.to_sql().to_owned()));
+        self.int96_as = Some(Value::Text(int96_as.as_sql().to_owned()));
         self
     }
 
     pub fn with_utf8_validation(mut self, utf8_validation: Utf8Validation) -> Self {
-        self.utf8_validation = Some(Value::Text(utf8_validation.to_sql().to_owned()));
+        self.utf8_validation = Some(Value::Text(utf8_validation.as_sql().to_owned()));
         self
     }
 
@@ -67,7 +67,7 @@ impl ImportParquet {
     }
 
     pub fn with_prefetch_strategy(mut self, prefetch_strategy: PrefetchStrategy) -> Self {
-        self.prefetch_strategy = Some(Value::Text(prefetch_strategy.to_sql().to_owned()));
+        self.prefetch_strategy = Some(Value::Text(prefetch_strategy.as_sql().to_owned()));
         self
     }
 
@@ -167,7 +167,7 @@ pub enum Int96As {
 }
 
 impl Int96As {
-    pub fn to_sql(&self) -> &'static str {
+    pub fn as_sql(&self) -> &'static str {
         match self {
             Int96As::Timestamp => "timestamp",
             Int96As::TimestampNs => "timestamp_ns",
@@ -184,7 +184,7 @@ pub enum Utf8Validation {
 }
 
 impl Utf8Validation {
-    pub fn to_sql(&self) -> &'static str {
+    pub fn as_sql(&self) -> &'static str {
         match self {
             Utf8Validation::Strict => "strict",
             Utf8Validation::Replace => "replace",
@@ -200,7 +200,7 @@ pub enum PrefetchStrategy {
 }
 
 impl PrefetchStrategy {
-    pub fn to_sql(&self) -> &'static str {
+    pub fn as_sql(&self) -> &'static str {
         match self {
             PrefetchStrategy::Auto => "auto",
             PrefetchStrategy::WholeGroup => "whole_group",
