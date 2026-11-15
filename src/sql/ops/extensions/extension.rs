@@ -273,3 +273,91 @@ impl Extension for UnityCatalog {
         "unity_catalog"
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    use super::*;
+    use crate::sql::db::{Database, DatabaseConfig, ValueRef};
+
+    /// A fresh in-memory database with the default config.
+    fn db() -> Database {
+        DatabaseConfig::default().open_in_memory().unwrap()
+    }
+
+    fn all_names() -> Vec<&'static str> {
+        vec![
+            CoreFunctions::as_sql(),
+            Icu::as_sql(),
+            Excel::as_sql(),
+            Parquet::as_sql(),
+            Tpch::as_sql(),
+            Tpcds::as_sql(),
+            Httpfs::as_sql(),
+            Json::as_sql(),
+            Autocomplete::as_sql(),
+            Motherduck::as_sql(),
+            MysqlScanner::as_sql(),
+            OdbcScanner::as_sql(),
+            SqliteScanner::as_sql(),
+            PostgresScanner::as_sql(),
+            Inet::as_sql(),
+            Spatial::as_sql(),
+            Aws::as_sql(),
+            Azure::as_sql(),
+            Encodings::as_sql(),
+            Iceberg::as_sql(),
+            Vss::as_sql(),
+            Delta::as_sql(),
+            Fts::as_sql(),
+            Ui::as_sql(),
+            Ducklake::as_sql(),
+            Quack::as_sql(),
+            Vortex::as_sql(),
+            Lance::as_sql(),
+            Avro::as_sql(),
+            UnityCatalog::as_sql(),
+        ]
+    }
+
+    fn duckdb_extension_names() -> BTreeSet<String> {
+        let db = db();
+        let mut stmt = db
+            .prepare("SELECT extension_name FROM duckdb_extensions()")
+            .unwrap();
+        let mut rows = stmt.query([]).unwrap();
+        let mut names = BTreeSet::new();
+        while let Some(row) = rows.next().unwrap() {
+            if let ValueRef::Text(name) = row.get_ref(0).unwrap() {
+                names.insert(String::from_utf8_lossy(name).into_owned());
+            }
+        }
+        names
+    }
+
+    #[test]
+    fn names_are_unique() {
+        let names = all_names();
+        let unique: BTreeSet<_> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+    }
+
+    #[test]
+    fn every_name_is_known_to_duckdb() {
+        let known = duckdb_extension_names();
+        for name in all_names() {
+            assert!(known.contains(name), "{name} is not a DuckDB extension");
+        }
+    }
+
+    #[test]
+    fn every_duckdb_extension_has_a_type() {
+        let ours: BTreeSet<String> = all_names().into_iter().map(str::to_owned).collect();
+        let missing: Vec<_> = duckdb_extension_names()
+            .difference(&ours)
+            .cloned()
+            .collect();
+        assert!(missing.is_empty(), "no Extension type for {missing:?}");
+    }
+}
