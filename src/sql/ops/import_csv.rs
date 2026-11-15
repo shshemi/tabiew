@@ -1,13 +1,17 @@
 use std::path::Path;
 
-use anyhow::anyhow;
-use duckdb::types::{OrderedMap, Value};
+use duckdb::types::Value;
 
 use crate::{
     AppResult,
     sql::{
         db::Database,
-        ops::reply::{Receiver, channel},
+        ops::{
+            reply::{Receiver, channel},
+            util::{
+                list_to_duck_db_value, pairs_to_duck_db_value, quote_ident, table_name, utf8_path,
+            },
+        },
         worker::submit,
     },
 };
@@ -281,7 +285,7 @@ impl ImportCsv {
         self
     }
 
-    pub fn run(&self, path: impl AsRef<Path>) -> Receiver<String> {
+    pub fn run(&self, path: impl AsRef<Path>) -> Receiver<()> {
         let this = self.clone();
         let path = path.as_ref().to_path_buf();
         let (send, recv) = channel();
@@ -289,7 +293,7 @@ impl ImportCsv {
         recv
     }
 
-    fn import(&self, db: &mut Database, path: &Path) -> AppResult<String> {
+    fn import(&self, db: &mut Database, path: &Path) -> AppResult<()> {
         let name = table_name(path)?;
         let path = utf8_path(path)?;
 
@@ -308,7 +312,7 @@ impl ImportCsv {
 
         db.prepare(&sql)?
             .execute(duckdb::params_from_iter(params))?;
-        Ok(name)
+        Ok(())
     }
 
     fn options(&self) -> Vec<(&'static str, Value)> {
@@ -361,35 +365,4 @@ impl ImportCsv {
         .filter_map(|(option, value)| Some((option, value.clone()?)))
         .collect()
     }
-}
-
-fn list_to_duck_db_value(items: Vec<String>) -> Option<Value> {
-    (!items.is_empty()).then(|| Value::List(items.into_iter().map(Value::Text).collect()))
-}
-
-fn pairs_to_duck_db_value(items: Vec<(String, String)>) -> Option<Value> {
-    (!items.is_empty()).then(|| {
-        Value::Struct(OrderedMap::from(
-            items
-                .into_iter()
-                .map(|(name, ty)| (name, Value::Text(ty)))
-                .collect::<Vec<_>>(),
-        ))
-    })
-}
-
-fn table_name(path: &Path) -> AppResult<String> {
-    path.file_stem()
-        .and_then(|stem| stem.to_str())
-        .map(ToOwned::to_owned)
-        .ok_or_else(|| anyhow!("invalid file name: {}", path.display()))
-}
-
-fn utf8_path(path: &Path) -> AppResult<&str> {
-    path.to_str()
-        .ok_or_else(|| anyhow!("non UTF-8 path: {}", path.display()))
-}
-
-fn quote_ident(ident: &str) -> String {
-    format!("\"{}\"", ident.replace('"', "\"\""))
 }
