@@ -54,3 +54,7 @@ pub fn utf8_path(path: &Path) -> AppResult<&str> {
 pub fn quote_ident(ident: &str) -> String {
     format!("\"{}\"", ident.replace('"', "\"\""))
 }
+
+pub fn quote_literal(literal: &str) -> String {
+    format!("'{}'", literal.replace('\'', "''"))
+}
