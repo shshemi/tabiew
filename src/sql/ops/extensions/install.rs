@@ -19,6 +19,10 @@ pub struct Install {
 }
 
 impl Install {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn with_force(mut self, force: bool) -> Self {
         self.force = force;
         self
@@ -34,20 +38,20 @@ impl Install {
         self
     }
 
-    pub fn run(&self, ext: Extension) -> Receiver<()> {
+    pub fn run<E: Extension>(&self) -> Receiver<()> {
         let this = self.clone();
         let (send, recv) = channel();
-        submit(move |db| send.send(this.install(db, ext)));
+        submit(move |db| send.send(this.install::<E>(db)));
         recv
     }
 
-    fn install(&self, db: &mut Database, ext: Extension) -> AppResult<()> {
+    fn install<E: Extension>(&self, db: &mut Database) -> AppResult<()> {
         let mut sql = String::new();
         if self.force {
             sql.push_str("FORCE ");
         }
         sql.push_str("INSTALL ");
-        sql.push_str(ext.as_sql());
+        sql.push_str(E::as_sql());
         if let Some(from) = &self.from {
             sql.push_str(" FROM ");
             sql.push_str(&from.as_sql());

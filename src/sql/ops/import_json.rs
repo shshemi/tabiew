@@ -7,6 +7,7 @@ use crate::{
     sql::{
         db::Database,
         ops::{
+            extensions::{Json, Token},
             reply::{Receiver, channel},
             util::{Compression, pairs_to_duck_db_value, quote_ident, table_name, utf8_path},
         },
@@ -14,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ImportJson {
     format: Option<Value>,
     records: Option<Value>,
@@ -46,6 +47,34 @@ pub struct ImportJson {
 }
 
 impl ImportJson {
+    pub fn new(_token: Token<Json>) -> Self {
+        Self {
+            format: None,
+            records: None,
+            compression: None,
+            ignore_errors: None,
+            maximum_object_size: None,
+            columns: None,
+            date_format: None,
+            timestamp_format: None,
+            auto_detect: None,
+            sample_size: None,
+            maximum_sample_files: None,
+            maximum_depth: None,
+            field_appearance_threshold: None,
+            convert_strings_to_integers: None,
+            map_inference_threshold: None,
+            geojson: None,
+            filename: None,
+            file_row_number: None,
+            union_by_name: None,
+            hive_partitioning: None,
+            hive_types: None,
+            hive_types_autocast: None,
+            allow_empty: None,
+        }
+    }
+
     pub fn with_format(mut self, format: JsonFormat) -> Self {
         self.format = Some(Value::Text(format.as_sql().to_owned()));
         self

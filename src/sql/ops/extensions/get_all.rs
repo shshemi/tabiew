@@ -14,6 +14,10 @@ use crate::{
 pub struct GetAll;
 
 impl GetAll {
+    pub fn new() -> Self {
+        Self
+    }
+
     pub fn run(&self) -> Receiver<Vec<Info>> {
         let this = self.clone();
         let (send, recv) = channel();

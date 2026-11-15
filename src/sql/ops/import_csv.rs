@@ -71,6 +71,10 @@ pub struct ImportCsv {
 }
 
 impl ImportCsv {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn with_delim(mut self, delim: impl Into<String>) -> Self {
         self.delim = Some(Value::Text(delim.into()));
         self

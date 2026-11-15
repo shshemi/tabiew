@@ -7,6 +7,7 @@ use crate::{
     sql::{
         db::Database,
         ops::{
+            extensions::{Parquet, Token},
             reply::{Receiver, channel},
             util::{pairs_to_duck_db_value, quote_ident, table_name, utf8_path},
         },
@@ -14,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ImportParquet {
     binary_as_string: Option<Value>,
     can_have_nan: Option<Value>,
@@ -35,6 +36,25 @@ pub struct ImportParquet {
 }
 
 impl ImportParquet {
+    pub fn new(_token: Token<Parquet>) -> Self {
+        Self {
+            binary_as_string: None,
+            can_have_nan: None,
+            int96_as: None,
+            utf8_validation: None,
+            encryption_config: None,
+            explicit_cardinality: None,
+            prefetch_strategy: None,
+            filename: None,
+            file_row_number: None,
+            union_by_name: None,
+            hive_partitioning: None,
+            hive_types: None,
+            hive_types_autocast: None,
+            allow_empty: None,
+        }
+    }
+
     pub fn with_binary_as_string(mut self, binary_as_string: bool) -> Self {
         self.binary_as_string = Some(Value::Boolean(binary_as_string));
         self
