@@ -21,6 +21,7 @@ impl Database {
     pub fn execute<P: Params>(&self, sql: &str, params: P) -> AppResult<usize> {
         Ok(self.conn.execute(sql, params)?)
     }
+
     pub fn execute_batch(&self, sql: &str) -> AppResult<()> {
         Ok(self.conn.execute_batch(sql)?)
     }
@@ -37,6 +38,10 @@ pub struct Statement<'conn> {
 }
 
 impl<'conn> Statement<'conn> {
+    pub fn execute<P: Params>(&mut self, params: P) -> AppResult<usize> {
+        Ok(self.stmt.execute(params)?)
+    }
+
     pub fn query<P: Params>(&mut self, params: P) -> AppResult<Rows<'_>> {
         Ok(Rows {
             rows: self.stmt.query(params)?,
