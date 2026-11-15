@@ -227,3 +227,157 @@ impl PrefetchStrategy {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        path::{Path, PathBuf},
+        time::{Duration, Instant},
+    };
+
+    use duckdb::types::OrderedMap;
+
+    use super::*;
+    use crate::sql::{
+        db::{DatabaseConfig, ValueRef},
+        ops::{Next, extensions::IsInstalled},
+    };
+
+    fn db() -> Database {
+        DatabaseConfig::default().open_in_memory().unwrap()
+    }
+
+    /// Writes `n` rows (n BIGINT, s VARCHAR) to a parquet file using DuckDB itself.
+    fn write_parquet(dir: &Path, name: &str, n: usize) -> PathBuf {
+        let path = dir.join(name);
+        db().execute(
+            &format!(
+                "COPY (SELECT range AS n, 'v' || range AS s FROM range({n})) TO '{}' (FORMAT parquet)",
+                path.display()
+            ),
+            [],
+        )
+        .unwrap();
+        path
+    }
+
+    /// The first column of the first row, as text.
+    fn text(db: &Database, sql: &str) -> String {
+        let mut stmt = db.prepare(sql).unwrap();
+        let mut rows = stmt.query([]).unwrap();
+        let row = rows.next().unwrap().expect("query returned no rows");
+        match row.get_ref(0).unwrap() {
+            ValueRef::Null => "NULL".to_owned(),
+            ValueRef::Text(bytes) => String::from_utf8_lossy(bytes).into_owned(),
+            other => panic!("expected text, got {other:?}"),
+        }
+    }
+
+    fn wait<T>(recv: &Receiver<T>) -> AppResult<T> {
+        let deadline = Instant::now() + Duration::from_secs(30);
+        loop {
+            match recv.recv() {
+                Next::Value(value) => return value,
+                Next::Done => panic!("sender dropped without sending a value"),
+                Next::Empty if Instant::now() > deadline => panic!("timed out waiting for a value"),
+                Next::Empty => std::thread::sleep(Duration::from_millis(5)),
+            }
+        }
+    }
+
+    /// parquet is statically linked, so the check always yields a token.
+    fn token() -> Token<extensions::Parquet> {
+        wait(&IsInstalled::new().run::<extensions::Parquet>())
+            .unwrap()
+            .expect("parquet is built in")
+    }
+
+    #[test]
+    fn enums_as_sql() {
+        assert_eq!(Int96As::Timestamp.as_sql(), "timestamp");
+        assert_eq!(Int96As::TimestampNs.as_sql(), "timestamp_ns");
+        assert_eq!(Int96As::Struct.as_sql(), "struct");
+        assert_eq!(Utf8Validation::Strict.as_sql(), "strict");
+        assert_eq!(Utf8Validation::Replace.as_sql(), "replace");
+        assert_eq!(Utf8Validation::Ignore.as_sql(), "ignore");
+        assert_eq!(PrefetchStrategy::Auto.as_sql(), "auto");
+        assert_eq!(PrefetchStrategy::WholeGroup.as_sql(), "whole_group");
+    }
+
+    #[test]
+    fn options_are_empty_by_default() {
+        assert!(Parquet::new(token()).options().is_empty());
+    }
+
+    #[test]
+    fn options_follow_setters() {
+        let parquet = Parquet::new(token())
+            .with_binary_as_string(true)
+            .with_int96_as(Int96As::TimestampNs)
+            .with_encryption_config("key1")
+            .with_explicit_cardinality(10)
+            .with_file_row_number(true);
+        assert_eq!(
+            parquet.options(),
+            vec![
+                ("binary_as_string", Value::Boolean(true)),
+                ("int96_as", Value::Text("timestamp_ns".to_owned())),
+                (
+                    "encryption_config",
+                    Value::Struct(OrderedMap::from(vec![(
+                        "footer_key".to_owned(),
+                        Value::Text("key1".to_owned())
+                    )]))
+                ),
+                ("explicit_cardinality", Value::UBigInt(10)),
+                ("file_row_number", Value::Boolean(true)),
+            ]
+        );
+    }
+
+    #[test]
+    fn import_reads_rows() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_parquet(dir.path(), "numbers.parquet", 5);
+        let mut db = db();
+        Parquet::new(token()).import(&mut db, &path).unwrap();
+        assert_eq!(text(&db, "SELECT count(*)::VARCHAR FROM numbers"), "5");
+        assert_eq!(
+            text(&db, "SELECT string_agg(s, ',' ORDER BY n) FROM numbers"),
+            "v0,v1,v2,v3,v4"
+        );
+    }
+
+    #[test]
+    fn import_adds_file_row_number_and_filename() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_parquet(dir.path(), "extra.parquet", 3);
+        let mut db = db();
+        Parquet::new(token())
+            .with_file_row_number(true)
+            .with_filename(true)
+            .import(&mut db, &path)
+            .unwrap();
+        assert_eq!(
+            text(&db, "SELECT max(file_row_number)::VARCHAR FROM extra"),
+            "2"
+        );
+        assert!(text(&db, "SELECT any_value(filename) FROM extra").ends_with("extra.parquet"));
+    }
+
+    #[test]
+    fn import_missing_file_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = Parquet::new(token())
+            .import(&mut db(), &dir.path().join("missing.parquet"))
+            .unwrap_err();
+        assert!(error.to_string().contains("No files found"), "{error}");
+    }
+
+    #[test]
+    fn run_imports_through_the_worker() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_parquet(dir.path(), "parquet_run_through_worker.parquet", 2);
+        wait(&Parquet::new(token()).run(&path)).unwrap();
+    }
+}

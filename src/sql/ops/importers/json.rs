@@ -278,3 +278,168 @@ impl JsonFormat {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        path::{Path, PathBuf},
+        time::{Duration, Instant},
+    };
+
+    use super::*;
+    use crate::sql::{
+        db::{DatabaseConfig, ValueRef},
+        ops::{Next, extensions::IsInstalled},
+    };
+
+    fn db() -> Database {
+        DatabaseConfig::default().open_in_memory().unwrap()
+    }
+
+    fn write(dir: &Path, name: &str, contents: &str) -> PathBuf {
+        let path = dir.join(name);
+        std::fs::write(&path, contents).unwrap();
+        path
+    }
+
+    /// The first column of the first row, as text.
+    fn text(db: &Database, sql: &str) -> String {
+        let mut stmt = db.prepare(sql).unwrap();
+        let mut rows = stmt.query([]).unwrap();
+        let row = rows.next().unwrap().expect("query returned no rows");
+        match row.get_ref(0).unwrap() {
+            ValueRef::Null => "NULL".to_owned(),
+            ValueRef::Text(bytes) => String::from_utf8_lossy(bytes).into_owned(),
+            other => panic!("expected text, got {other:?}"),
+        }
+    }
+
+    fn wait<T>(recv: &Receiver<T>) -> AppResult<T> {
+        let deadline = Instant::now() + Duration::from_secs(30);
+        loop {
+            match recv.recv() {
+                Next::Value(value) => return value,
+                Next::Done => panic!("sender dropped without sending a value"),
+                Next::Empty if Instant::now() > deadline => panic!("timed out waiting for a value"),
+                Next::Empty => std::thread::sleep(Duration::from_millis(5)),
+            }
+        }
+    }
+
+    /// json is statically linked, so the check always yields a token.
+    fn token() -> Token<extensions::Json> {
+        wait(&IsInstalled::new().run::<extensions::Json>())
+            .unwrap()
+            .expect("json is built in")
+    }
+
+    #[test]
+    fn json_format_as_sql() {
+        assert_eq!(JsonFormat::Auto.as_sql(), "auto");
+        assert_eq!(JsonFormat::Array.as_sql(), "array");
+        assert_eq!(JsonFormat::NewlineDelimited.as_sql(), "newline_delimited");
+        assert_eq!(JsonFormat::Unstructured.as_sql(), "unstructured");
+    }
+
+    #[test]
+    fn options_are_empty_by_default() {
+        assert!(Json::new(token()).options().is_empty());
+    }
+
+    #[test]
+    fn options_follow_setters() {
+        let json = Json::new(token())
+            .with_format(JsonFormat::NewlineDelimited)
+            .with_records(true)
+            .with_compression(Compression::Zstd)
+            .with_maximum_object_size(1024);
+        assert_eq!(
+            json.options(),
+            vec![
+                ("format", Value::Text("newline_delimited".to_owned())),
+                ("records", Value::Boolean(true)),
+                ("compression", Value::Text("zstd".to_owned())),
+                ("maximum_object_size", Value::UInt(1024)),
+            ]
+        );
+    }
+
+    #[test]
+    fn empty_columns_are_left_out() {
+        assert!(Json::new(token()).with_columns(vec![]).options().is_empty());
+    }
+
+    #[test]
+    fn import_array() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(
+            dir.path(),
+            "people.json",
+            r#"[{"id": 1, "name": "a"}, {"id": 2, "name": "b"}, {"id": 3, "name": null}]"#,
+        );
+        let mut db = db();
+        Json::new(token()).import(&mut db, &path).unwrap();
+        assert_eq!(text(&db, "SELECT count(*)::VARCHAR FROM people"), "3");
+        assert_eq!(text(&db, "SELECT count(name)::VARCHAR FROM people"), "2");
+        assert_eq!(
+            text(&db, "SELECT any_value(typeof(id)) FROM people"),
+            "BIGINT"
+        );
+    }
+
+    #[test]
+    fn import_newline_delimited_with_columns() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(
+            dir.path(),
+            "events.jsonl",
+            "{\"id\": \"1\", \"tags\": [\"x\"]}\n{\"id\": \"2\", \"tags\": []}\n",
+        );
+        let mut db = db();
+        Json::new(token())
+            .with_format(JsonFormat::NewlineDelimited)
+            .with_columns(vec![
+                ("id".to_owned(), "BIGINT".to_owned()),
+                ("tags".to_owned(), "VARCHAR[]".to_owned()),
+            ])
+            .import(&mut db, &path)
+            .unwrap();
+        assert_eq!(text(&db, "SELECT count(*)::VARCHAR FROM events"), "2");
+        assert_eq!(
+            text(&db, "SELECT any_value(typeof(id)) FROM events"),
+            "BIGINT"
+        );
+        assert_eq!(
+            text(&db, "SELECT any_value(typeof(tags)) FROM events"),
+            "VARCHAR[]"
+        );
+    }
+
+    #[test]
+    fn import_without_records_keeps_objects_whole() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "whole.json", r#"[{"id": 1, "name": "a"}]"#);
+        let mut db = db();
+        Json::new(token())
+            .with_records(false)
+            .import(&mut db, &path)
+            .unwrap();
+        assert!(text(&db, "SELECT any_value(typeof(json)) FROM whole").starts_with("STRUCT"));
+    }
+
+    #[test]
+    fn import_missing_file_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = Json::new(token())
+            .import(&mut db(), &dir.path().join("missing.json"))
+            .unwrap_err();
+        assert!(error.to_string().contains("No files found"), "{error}");
+    }
+
+    #[test]
+    fn run_imports_through_the_worker() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "json_run_through_worker.json", r#"[{"a": 1}]"#);
+        wait(&Json::new(token()).run(&path)).unwrap();
+    }
+}

@@ -388,3 +388,228 @@ impl NewLine {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        path::{Path, PathBuf},
+        time::{Duration, Instant},
+    };
+
+    use duckdb::types::OrderedMap;
+
+    use super::*;
+    use crate::sql::{
+        db::{DatabaseConfig, ValueRef},
+        ops::{Next, importers::Compression},
+    };
+
+    fn db() -> Database {
+        DatabaseConfig::default().open_in_memory().unwrap()
+    }
+
+    fn write(dir: &Path, name: &str, contents: &str) -> PathBuf {
+        let path = dir.join(name);
+        std::fs::write(&path, contents).unwrap();
+        path
+    }
+
+    /// The first column of the first row, as text.
+    fn text(db: &Database, sql: &str) -> String {
+        let mut stmt = db.prepare(sql).unwrap();
+        let mut rows = stmt.query([]).unwrap();
+        let row = rows.next().unwrap().expect("query returned no rows");
+        match row.get_ref(0).unwrap() {
+            ValueRef::Null => "NULL".to_owned(),
+            ValueRef::Text(bytes) => String::from_utf8_lossy(bytes).into_owned(),
+            other => panic!("expected text, got {other:?}"),
+        }
+    }
+
+    fn wait<T>(recv: &Receiver<T>) -> AppResult<T> {
+        let deadline = Instant::now() + Duration::from_secs(30);
+        loop {
+            match recv.recv() {
+                Next::Value(value) => return value,
+                Next::Done => panic!("sender dropped without sending a value"),
+                Next::Empty if Instant::now() > deadline => panic!("timed out waiting for a value"),
+                Next::Empty => std::thread::sleep(Duration::from_millis(5)),
+            }
+        }
+    }
+
+    #[test]
+    fn new_line_as_sql() {
+        assert_eq!(NewLine::Lf.as_sql(), "\\n");
+        assert_eq!(NewLine::CrLf.as_sql(), "\\r\\n");
+        assert_eq!(NewLine::Cr.as_sql(), "\\r");
+    }
+
+    #[test]
+    fn options_are_empty_by_default() {
+        assert!(Csv::new().options().is_empty());
+    }
+
+    #[test]
+    fn options_follow_setters() {
+        let csv = Csv::new()
+            .with_delim(";")
+            .with_header(false)
+            .with_new_line(NewLine::CrLf)
+            .with_compression(Compression::Gzip)
+            .with_skip(2);
+        assert_eq!(
+            csv.options(),
+            vec![
+                ("delim", Value::Text(";".to_owned())),
+                ("new_line", Value::Text("\\r\\n".to_owned())),
+                ("header", Value::Boolean(false)),
+                ("skip", Value::BigInt(2)),
+                ("compression", Value::Text("gzip".to_owned())),
+            ]
+        );
+    }
+
+    #[test]
+    fn lists_and_pairs_become_list_and_struct() {
+        let csv = Csv::new()
+            .with_names(vec!["a".to_owned(), "b".to_owned()])
+            .with_types(vec![("a".to_owned(), "VARCHAR".to_owned())]);
+        assert_eq!(
+            csv.options(),
+            vec![
+                (
+                    "types",
+                    Value::Struct(OrderedMap::from(vec![(
+                        "a".to_owned(),
+                        Value::Text("VARCHAR".to_owned())
+                    )]))
+                ),
+                (
+                    "names",
+                    Value::List(vec![
+                        Value::Text("a".to_owned()),
+                        Value::Text("b".to_owned())
+                    ])
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn empty_lists_are_left_out() {
+        let csv = Csv::new().with_names(vec![]).with_types(vec![]);
+        assert!(csv.options().is_empty());
+    }
+
+    #[test]
+    fn import_detects_dialect_and_types() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "sales.csv", "a;b\n1;x\n2;y\n");
+        let mut db = db();
+        Csv::new().import(&mut db, &path).unwrap();
+        assert_eq!(text(&db, "SELECT count(*)::VARCHAR FROM sales"), "2");
+        assert_eq!(
+            text(&db, "SELECT any_value(typeof(a)) FROM sales"),
+            "BIGINT"
+        );
+        assert_eq!(
+            text(&db, "SELECT string_agg(b, ',' ORDER BY a) FROM sales"),
+            "x,y"
+        );
+    }
+
+    #[test]
+    fn import_applies_options() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "no_header.csv", "1;NA\n2;y\n");
+        let mut db = db();
+        Csv::new()
+            .with_delim(";")
+            .with_header(false)
+            .with_names(vec!["a".to_owned(), "b".to_owned()])
+            .with_types(vec![("a".to_owned(), "VARCHAR".to_owned())])
+            .with_nullstr(vec!["NA".to_owned()])
+            .import(&mut db, &path)
+            .unwrap();
+        assert_eq!(text(&db, "SELECT count(*)::VARCHAR FROM no_header"), "2");
+        assert_eq!(text(&db, "SELECT count(b)::VARCHAR FROM no_header"), "1");
+        assert_eq!(
+            text(&db, "SELECT any_value(typeof(a)) FROM no_header"),
+            "VARCHAR"
+        );
+    }
+
+    #[test]
+    fn import_with_crlf_new_line() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "crlf.csv", "a,b\r\n1,x\r\n2,y\r\n");
+        let mut db = db();
+        Csv::new()
+            .with_new_line(NewLine::CrLf)
+            .import(&mut db, &path)
+            .unwrap();
+        assert_eq!(
+            text(&db, "SELECT string_agg(b, ',' ORDER BY a) FROM crlf"),
+            "x,y"
+        );
+    }
+
+    #[test]
+    fn import_gzip_compressed() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("zipped.gz");
+        let mut db = db();
+        db.execute(
+            &format!(
+                "COPY (SELECT range AS n FROM range(3)) TO '{}' (FORMAT csv, COMPRESSION gzip)",
+                path.display()
+            ),
+            [],
+        )
+        .unwrap();
+        Csv::new()
+            .with_compression(Compression::Gzip)
+            .import(&mut db, &path)
+            .unwrap();
+        assert_eq!(text(&db, "SELECT count(*)::VARCHAR FROM zipped"), "3");
+    }
+
+    #[test]
+    fn table_is_named_after_the_file_stem() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "it's here.csv", "a\n1\n");
+        let mut db = db();
+        Csv::new().import(&mut db, &path).unwrap();
+        assert_eq!(
+            text(&db, "SELECT count(*)::VARCHAR FROM \"it's here\""),
+            "1"
+        );
+    }
+
+    #[test]
+    fn import_missing_file_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = Csv::new()
+            .import(&mut db(), &dir.path().join("missing.csv"))
+            .unwrap_err();
+        assert!(error.to_string().contains("No files found"), "{error}");
+    }
+
+    #[test]
+    fn import_same_file_twice_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "twice.csv", "a\n1\n");
+        let mut db = db();
+        Csv::new().import(&mut db, &path).unwrap();
+        let error = Csv::new().import(&mut db, &path).unwrap_err();
+        assert!(error.to_string().contains("already exists"), "{error}");
+    }
+
+    #[test]
+    fn run_imports_through_the_worker() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write(dir.path(), "csv_run_through_worker.csv", "a\n1\n");
+        wait(&Csv::new().run(&path)).unwrap();
+    }
+}
