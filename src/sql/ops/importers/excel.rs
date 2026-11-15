@@ -7,7 +7,7 @@ use crate::{
     sql::{
         db::Database,
         ops::{
-            extensions::{Excel, Token},
+            extensions::{self, Token},
             reply::{Receiver, channel},
             util::{quote_ident, table_name, utf8_path},
         },
@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct ImportExcel {
+pub struct Excel {
     sheet: Option<Value>,
     range: Option<Value>,
     header: Option<Value>,
@@ -28,8 +28,8 @@ pub struct ImportExcel {
     normalize_names: Option<Value>,
 }
 
-impl ImportExcel {
-    pub fn new(_token: Token<Excel>) -> Self {
+impl Excel {
+    pub fn new(_token: Token<extensions::Excel>) -> Self {
         Self {
             sheet: None,
             range: None,

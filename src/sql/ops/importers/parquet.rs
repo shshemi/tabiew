@@ -7,7 +7,7 @@ use crate::{
     sql::{
         db::Database,
         ops::{
-            extensions::{Parquet, Token},
+            extensions::{self, Token},
             reply::{Receiver, channel},
             util::{pairs_to_duck_db_value, quote_ident, table_name, utf8_path},
         },
@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct ImportParquet {
+pub struct Parquet {
     binary_as_string: Option<Value>,
     can_have_nan: Option<Value>,
     int96_as: Option<Value>,
@@ -35,8 +35,8 @@ pub struct ImportParquet {
     allow_empty: Option<Value>,
 }
 
-impl ImportParquet {
-    pub fn new(_token: Token<Parquet>) -> Self {
+impl Parquet {
+    pub fn new(_token: Token<extensions::Parquet>) -> Self {
         Self {
             binary_as_string: None,
             can_have_nan: None,

@@ -7,10 +7,10 @@ use crate::{
     sql::{
         db::Database,
         ops::{
+            importers::Compression,
             reply::{Receiver, channel},
             util::{
-                Compression, list_to_duck_db_value, pairs_to_duck_db_value, quote_ident,
-                table_name, utf8_path,
+                list_to_duck_db_value, pairs_to_duck_db_value, quote_ident, table_name, utf8_path,
             },
         },
         worker::submit,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default)]
-pub struct ImportCsv {
+pub struct Csv {
     delim: Option<Value>,
     quote: Option<Value>,
     escape: Option<Value>,
@@ -70,7 +70,7 @@ pub struct ImportCsv {
     allow_empty: Option<Value>,
 }
 
-impl ImportCsv {
+impl Csv {
     pub fn new() -> Self {
         Self::default()
     }

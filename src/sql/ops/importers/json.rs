@@ -7,16 +7,17 @@ use crate::{
     sql::{
         db::Database,
         ops::{
-            extensions::{Json, Token},
+            extensions::{self, Token},
+            importers::Compression,
             reply::{Receiver, channel},
-            util::{Compression, pairs_to_duck_db_value, quote_ident, table_name, utf8_path},
+            util::{pairs_to_duck_db_value, quote_ident, table_name, utf8_path},
         },
         worker::submit,
     },
 };
 
 #[derive(Debug, Clone)]
-pub struct ImportJson {
+pub struct Json {
     format: Option<Value>,
     records: Option<Value>,
     compression: Option<Value>,
@@ -46,8 +47,8 @@ pub struct ImportJson {
     allow_empty: Option<Value>,
 }
 
-impl ImportJson {
-    pub fn new(_token: Token<Json>) -> Self {
+impl Json {
+    pub fn new(_token: Token<extensions::Json>) -> Self {
         Self {
             format: None,
             records: None,
