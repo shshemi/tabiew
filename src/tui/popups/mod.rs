@@ -9,6 +9,7 @@ pub mod go_to_line;
 pub mod histogram_builder;
 pub mod importer;
 pub mod importers;
+pub mod keybindings;
 pub mod pickers;
 pub mod scatter_plot_builder;
 pub mod table_registerer;
