@@ -6,7 +6,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use super::db::Database;
+use super::db::{Database, DatabaseConfig};
 
 pub fn submit(req: impl FnOnce(&mut Database) + Send + 'static) {
     static INSTANCE: OnceLock<Worker> = OnceLock::new();
@@ -31,7 +31,7 @@ impl Worker {
 
 impl Default for Worker {
     fn default() -> Self {
-        let mut db = Database::new().unwrap();
+        let mut db = DatabaseConfig::default().open_in_memory().unwrap();
         let (send, recv) = channel::<BoxedAction>();
         let hndl = Some(std::thread::spawn(move || {
             loop {

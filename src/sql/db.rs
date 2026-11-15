@@ -6,16 +6,47 @@ use duckdb::{
 
 use crate::AppResult;
 
+#[derive(Debug, Clone, Default)]
+pub struct DatabaseConfig {
+    autoinstall: bool,
+}
+
+impl DatabaseConfig {
+    pub fn with_autoinstall(mut self, autoinstall: bool) -> Self {
+        self.autoinstall = autoinstall;
+        self
+    }
+
+    pub fn open_in_memory(self) -> AppResult<Database> {
+        Ok(Database {
+            conn: Connection::open_in_memory_with_flags(self.to_duckdb()?)?,
+        })
+    }
+
+    fn to_duckdb(&self) -> AppResult<duckdb::Config> {
+        Ok(duckdb::Config::default()
+            .with("autoinstall_known_extensions", self.autoinstall.to_string())?)
+    }
+}
+
 #[derive(Debug)]
 pub struct Database {
     conn: Connection,
 }
 
 impl Database {
-    pub fn new() -> AppResult<Self> {
-        Ok(Self {
-            conn: duckdb::Connection::open_in_memory()?,
-        })
+    pub fn autoinstall(&self) -> AppResult<bool> {
+        Ok(self.conn.query_row(
+            "SELECT current_setting('autoinstall_known_extensions')",
+            [],
+            |row| row.get(0),
+        )?)
+    }
+
+    pub fn set_autoinstall(&self, enabled: bool) -> AppResult<()> {
+        self.conn
+            .execute(&format!("SET autoinstall_known_extensions = {enabled}"), [])?;
+        Ok(())
     }
 
     pub fn execute<P: Params>(&self, sql: &str, params: P) -> AppResult<usize> {
