@@ -9,7 +9,8 @@ use crate::{
         ops::{
             reply::{Receiver, channel},
             util::{
-                list_to_duck_db_value, pairs_to_duck_db_value, quote_ident, table_name, utf8_path,
+                Compression, list_to_duck_db_value, pairs_to_duck_db_value, quote_ident,
+                table_name, utf8_path,
             },
         },
         worker::submit,
@@ -85,8 +86,8 @@ impl ImportCsv {
         self
     }
 
-    pub fn with_new_line(mut self, new_line: impl Into<String>) -> Self {
-        self.new_line = Some(Value::Text(new_line.into()));
+    pub fn with_new_line(mut self, new_line: NewLine) -> Self {
+        self.new_line = Some(Value::Text(new_line.to_sql().to_owned()));
         self
     }
 
@@ -110,8 +111,8 @@ impl ImportCsv {
         self
     }
 
-    pub fn with_compression(mut self, compression: impl Into<String>) -> Self {
-        self.compression = Some(Value::Text(compression.into()));
+    pub fn with_compression(mut self, compression: Compression) -> Self {
+        self.compression = Some(Value::Text(compression.to_sql().to_owned()));
         self
     }
 
@@ -364,5 +365,22 @@ impl ImportCsv {
         .into_iter()
         .filter_map(|(option, value)| Some((option, value.clone()?)))
         .collect()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NewLine {
+    Lf,
+    CrLf,
+    Cr,
+}
+
+impl NewLine {
+    pub fn to_sql(&self) -> &'static str {
+        match self {
+            NewLine::Lf => "\\n",
+            NewLine::CrLf => "\\r\\n",
+            NewLine::Cr => "\\r",
+        }
     }
 }
