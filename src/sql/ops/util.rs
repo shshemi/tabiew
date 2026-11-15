@@ -5,6 +5,25 @@ use duckdb::types::{OrderedMap, Value};
 
 use crate::AppResult;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Compression {
+    Auto,
+    None,
+    Gzip,
+    Zstd,
+}
+
+impl Compression {
+    pub fn to_sql(&self) -> &'static str {
+        match self {
+            Compression::Auto => "auto",
+            Compression::None => "none",
+            Compression::Gzip => "gzip",
+            Compression::Zstd => "zstd",
+        }
+    }
+}
+
 pub fn list_to_duck_db_value(items: Vec<String>) -> Option<Value> {
     (!items.is_empty()).then(|| Value::List(items.into_iter().map(Value::Text).collect()))
 }
