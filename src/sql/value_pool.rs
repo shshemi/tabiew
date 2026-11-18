@@ -1,33 +1,74 @@
 use std::collections::BTreeMap;
 
-type Coordinate = (usize, usize);
-type Range = (usize, usize);
+use crate::sql::db::ValueRef;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct Coordinate {
+    row: usize,
+    col: usize,
+}
+
+#[derive(Debug)]
+struct Range {
+    single_start: usize,
+    single_end: usize,
+    multi_start: usize,
+    multi_end: usize,
+}
+
+impl Range {
+    fn offset(self, offset: usize) -> Self {
+        Range {
+            single_start: offset + self.single_start,
+            single_end: offset + self.single_end,
+            multi_start: offset + self.multi_start,
+            multi_end: offset + self.multi_end,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.buffer_end().saturating_sub(self.buffer_start())
+    }
+
+    fn buffer_start(&self) -> usize {
+        self.single_start.min(self.multi_start)
+    }
+
+    fn buffer_end(&self) -> usize {
+        self.single_end.max(self.multi_end)
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct ValuePool {
     idx: BTreeMap<Coordinate, Range>,
-    spc: usize,
     buf: String,
 }
 
 impl ValuePool {
-    pub fn get(&self, row: usize, col: usize) -> Option<&str> {
-        let (start, end) = self.idx.get(&(row, col)).copied()?;
-        self.buf.get(start..end)
+    pub fn get_singleline(&self, row: usize, col: usize) -> Option<&str> {
+        self.idx
+            .get(&Coordinate { row, col })
+            .and_then(|r| self.buf.get(r.single_start..r.single_end))
     }
 
-    pub fn push(&mut self, row: usize, col: usize, value: &str) -> bool {
-        let start = self.buf.len();
-        self.buf.push_str(value);
-        let end = self.buf.len();
-        if let Some((start, end)) = self.idx.insert((row, col), (start, end)) {
-            self.spc += end - start;
+    pub fn get_multiline(&self, row: usize, col: usize) -> Option<&str> {
+        self.idx
+            .get(&Coordinate { row, col })
+            .and_then(|r| self.buf.get(r.multi_start..r.multi_end))
+    }
+
+    pub fn push_value(&mut self, row: usize, col: usize, value: ValueRef) -> bool {
+        let offset = self.buf.len();
+        let rng = value_to_insertable(value, &mut self.buf);
+        if let Some(_) = self.idx.insert(Coordinate { row, col }, rng.offset(offset)) {
             true
         } else {
             false
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub fn value_count(&self) -> usize {
         self.idx.len()
     }
 
@@ -35,31 +76,15 @@ impl ValuePool {
         self.idx.len() * size_of::<usize>() * 4 + self.buf.capacity()
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a> {
-        Iter {
-            iter: self.idx.iter(),
-            buf: &self.buf,
+    pub fn merge(&mut self, other: ValuePool) {
+        let offset = self.buf.len();
+        for (crd, rng) in other.idx {
+            self.idx.insert(crd, rng.offset(offset));
         }
-    }
-
-    pub fn merge(&mut self, other: &ValuePool) {
-        for ((row, col), value) in other.iter() {
-            self.push(*row, *col, value);
-        }
+        self.buf.push_str(&other.buf);
     }
 }
 
-pub struct Iter<'a> {
-    iter: std::collections::btree_map::Iter<'a, Coordinate, Range>,
-    buf: &'a String,
-}
-
-impl<'a> Iterator for Iter<'a> {
-    type Item = (&'a (usize, usize), &'a str);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (coor, (start, end)) = self.iter.next()?;
-        let slice = self.buf.get(*start..*end)?;
-        Some((coor, slice))
-    }
+fn value_to_insertable(value: ValueRef, buf: &mut String) -> Range {
+    todo!()
 }
