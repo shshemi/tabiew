@@ -4,6 +4,7 @@ mod database;
 mod row;
 mod rows;
 mod statement;
+mod value;
 mod value_ref;
 
 pub use config::DatabaseConfig;
@@ -12,4 +13,5 @@ pub use database::Database;
 pub use row::Row;
 pub use rows::Rows;
 pub use statement::Statement;
+pub use value::Value;
 pub use value_ref::ValueRef;
