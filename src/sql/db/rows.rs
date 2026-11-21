@@ -9,6 +9,12 @@ impl<'stmt> Rows<'stmt> {
         self.rows.as_ref().map_or(0, |stmt| stmt.column_count())
     }
 
+    pub fn column_names(&self) -> Vec<String> {
+        self.rows
+            .as_ref()
+            .map_or_else(Vec::new, |stmt| stmt.column_names())
+    }
+
     pub fn next<'a>(&mut self) -> AppResult<Option<Row<'a, '_>>> {
         Ok(self.rows.next()?.map(|row| Row { row }))
     }
