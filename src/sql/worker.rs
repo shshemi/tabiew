@@ -10,7 +10,7 @@ use super::db::{Database, DatabaseConfig};
 
 pub fn submit(req: impl FnOnce(&mut Database) + Send + 'static) {
     static INSTANCE: OnceLock<Worker> = OnceLock::new();
-    INSTANCE.get_or_init(|| Worker::default()).submit(req);
+    INSTANCE.get_or_init(Worker::default).submit(req);
 }
 
 type BoxedAction = Box<dyn FnOnce(&mut Database) + Send + 'static>;
