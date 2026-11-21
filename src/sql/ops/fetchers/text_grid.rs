@@ -35,18 +35,15 @@ impl TextGrid {
         self
     }
 
-    pub fn run(&self) -> Receiver<crate::sql::text_grid::TextGrid> {
+    pub fn run(&self) -> Receiver<crate::sql::collections::TextGrid> {
         let this = self.clone();
         let (send, recv) = channel();
         submit(move |db| send.send(this.fetch(db)));
         recv
     }
 
-    fn fetch(&self, db: &Database) -> AppResult<crate::sql::text_grid::TextGrid> {
-        let mut sql = format!(
-            "SELECT * FROM ({})",
-            self.sql.trim().trim_end_matches(';')
-        );
+    fn fetch(&self, db: &Database) -> AppResult<crate::sql::collections::TextGrid> {
+        let mut sql = format!("SELECT * FROM ({})", self.sql.trim().trim_end_matches(';'));
         let mut params = Vec::new();
         if let Some(limit) = self.limit {
             sql.push_str(" LIMIT ?");
@@ -61,7 +58,7 @@ impl TextGrid {
         let mut rows = stmt.query(duckdb::params_from_iter(params))?;
         let columns = rows.column_count();
         let first_row = self.offset.unwrap_or(0) as usize;
-        let mut pool = crate::sql::text_grid::TextGrid::default();
+        let mut pool = crate::sql::collections::TextGrid::default();
         let mut row_idx = first_row;
         while let Some(row) = rows.next()? {
             for col in 0..columns {
