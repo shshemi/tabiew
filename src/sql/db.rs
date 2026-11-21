@@ -90,7 +90,7 @@ impl<'stmt> Rows<'stmt> {
     }
 
     pub fn next<'a>(&mut self) -> AppResult<Option<Row<'a, '_>>> {
-        Ok(self.rows.next()?.map(|row| Row { row: row }))
+        Ok(self.rows.next()?.map(|row| Row { row }))
     }
 }
 
