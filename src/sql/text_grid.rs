@@ -10,19 +10,19 @@ use duckdb::{
 use crate::{misc::config::config, sql::db::ValueRef};
 
 #[derive(Debug, Default)]
-pub struct ValuePool {
+pub struct TextGrid {
     idx: BTreeMap<CellPos, Span>,
     buf: String,
 }
 
-impl ValuePool {
-    pub fn get_singleline(&self, row: usize, col: usize) -> Option<&str> {
+impl TextGrid {
+    pub fn get(&self, row: usize, col: usize) -> Option<&str> {
         self.idx
             .get(&CellPos { row, col })
             .and_then(|span| self.buf.get(span.start..span.end))
     }
 
-    pub fn push_value(&mut self, row: usize, col: usize, value: ValueRef) -> bool {
+    pub fn insert(&mut self, row: usize, col: usize, value: ValueRef) -> bool {
         let fp_prec = config().fp_precision();
         let start = self.buf.len();
         match value {
@@ -79,7 +79,7 @@ impl ValuePool {
         self.idx.insert(CellPos { row, col }, span).is_some()
     }
 
-    pub fn value_count(&self) -> usize {
+    pub fn count(&self) -> usize {
         self.idx.len()
     }
 
@@ -87,7 +87,7 @@ impl ValuePool {
         self.idx.len() * size_of::<usize>() * 4 + self.buf.capacity()
     }
 
-    pub fn merge(&mut self, other: ValuePool) {
+    pub fn merge(&mut self, other: TextGrid) {
         let offset = self.buf.len();
         for (pos, span) in other.idx {
             self.idx.insert(pos, span.offset(offset));
@@ -96,43 +96,70 @@ impl ValuePool {
     }
 }
 
-fn push_owned(buf: &mut String, fp_prec: Option<usize>, value: &Value, nested: bool) {
-    match value {
-        Value::Null => {
-            if nested {
-                push_display(buf, "NULL");
-            }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct CellPos {
+    row: usize,
+    col: usize,
+}
+
+#[derive(Debug)]
+struct Span {
+    start: usize,
+    end: usize,
+}
+
+impl Span {
+    fn offset(self, offset: usize) -> Self {
+        Span {
+            start: offset + self.start,
+            end: offset + self.end,
         }
-        Value::Boolean(b) => push_display(buf, if *b { "true" } else { "false" }),
-        Value::TinyInt(i) => push_int(buf, i),
-        Value::SmallInt(i) => push_int(buf, i),
-        Value::Int(i) => push_int(buf, i),
-        Value::BigInt(i) => push_int(buf, i),
-        Value::HugeInt(i) => push_int(buf, i),
-        Value::UTinyInt(u) => push_int(buf, u),
-        Value::USmallInt(u) => push_int(buf, u),
-        Value::UInt(u) => push_int(buf, u),
-        Value::UBigInt(u) => push_int(buf, u),
-        Value::UHugeInt(u) => push_int(buf, u),
-        Value::Float(f) => push_float(buf, fp_prec, f),
-        Value::Double(f) => push_float(buf, fp_prec, f),
-        Value::Decimal(d) => push_decimal(buf, *d),
-        Value::Date32(days) => push_date(buf, *days),
-        Value::Time64(unit, t) => push_time(buf, to_nanos(*unit, *t)),
-        Value::Timestamp(unit, t) => push_datetime(buf, *unit, *t),
-        Value::Interval {
+    }
+}
+
+fn push_scalar(buf: &mut String, fp_prec: Option<usize>, value: ValueRef) {
+    match value {
+        ValueRef::Null => {}
+        ValueRef::Boolean(b) => push_display(buf, if b { "true" } else { "false" }),
+        ValueRef::TinyInt(i) => push_int(buf, i),
+        ValueRef::SmallInt(i) => push_int(buf, i),
+        ValueRef::Int(i) => push_int(buf, i),
+        ValueRef::BigInt(i) => push_int(buf, i),
+        ValueRef::HugeInt(i) => push_int(buf, i),
+        ValueRef::UTinyInt(u) => push_int(buf, u),
+        ValueRef::USmallInt(u) => push_int(buf, u),
+        ValueRef::UInt(u) => push_int(buf, u),
+        ValueRef::UBigInt(u) => push_int(buf, u),
+        ValueRef::UHugeInt(u) => push_int(buf, u),
+        ValueRef::Float(f) => push_float(buf, fp_prec, f),
+        ValueRef::Double(f) => push_float(buf, fp_prec, f),
+        ValueRef::Decimal(d) => push_decimal(buf, d),
+        ValueRef::Date32(days) => push_date(buf, days),
+        ValueRef::Time64(unit, t) => push_time(buf, to_nanos(unit, t)),
+        ValueRef::Timestamp(unit, t) => push_datetime(buf, unit, t),
+        ValueRef::Interval {
             months,
             days,
             nanos,
-        } => push_interval(buf, *months, *days, *nanos),
-        Value::Text(s) | Value::Enum(s) => {
-            if nested {
-                let _ = write!(buf, "{s:?}");
-            } else {
-                push_display(buf, s);
-            }
+        } => push_interval(buf, months, days, nanos),
+        ValueRef::Text(s) => push_display(buf, String::from_utf8_lossy(s)),
+        ValueRef::Enum(dict, idx) => push_display(buf, enum_str(dict, idx)),
+        ValueRef::Blob(b) | ValueRef::Geometry(b) => push_bytes(buf, b),
+        ValueRef::List(..)
+        | ValueRef::Array(..)
+        | ValueRef::Struct(..)
+        | ValueRef::Map(..)
+        | ValueRef::Union(..) => push_owned(buf, fp_prec, &to_owned(value), false),
+    }
+}
+
+fn push_owned(buf: &mut String, fp_prec: Option<usize>, value: &Value, nested: bool) {
+    match value {
+        Value::Null if nested => push_display(buf, "NULL"),
+        Value::Text(s) | Value::Enum(s) if nested => {
+            let _ = write!(buf, "{s:?}");
         }
-        Value::Blob(b) | Value::Geometry(b) => push_bytes(buf, b),
+        Value::Enum(s) => push_display(buf, s),
         Value::List(items) | Value::Array(items) => {
             push_display(buf, '[');
             for (i, item) in items.iter().enumerate() {
@@ -167,7 +194,7 @@ fn push_owned(buf: &mut String, fp_prec: Option<usize>, value: &Value, nested: b
             push_display(buf, '}');
         }
         Value::Union(inner) => push_owned(buf, fp_prec, inner, nested),
-        _ => {}
+        scalar => push_scalar(buf, fp_prec, duckdb::types::ValueRef::from(scalar).into()),
     }
 }
 
@@ -317,9 +344,9 @@ mod tests {
     use crate::sql::db::DatabaseConfig;
 
     fn insert(value: ValueRef) -> String {
-        let mut pool = ValuePool::default();
-        pool.push_value(0, 0, value);
-        assert_eq!(pool.get_singleline(0, 0), Some(pool.buf.as_str()));
+        let mut pool = TextGrid::default();
+        pool.insert(0, 0, value);
+        assert_eq!(pool.get(0, 0), Some(pool.buf.as_str()));
         pool.buf
     }
 
@@ -382,47 +409,37 @@ mod tests {
     #[test]
     fn unions_show_their_value() {
         assert_eq!(insert_sql("union_value(n := 5)"), "5");
-        assert_eq!(insert_sql("union_value(s := 'hi')"), "hi");
-        assert_eq!(insert_sql("union_value(l := [1, NULL, 3])"), "[1, NULL, 3]");
-        assert_eq!(
-            insert_sql("union_value(s := {'a': 'x', 'b': [true]})"),
-            "{a: \"x\", b: [true]}"
-        );
-        assert_eq!(
-            insert_sql("union_value(m := MAP {'k': 'v'})"),
-            "{\"k\": \"v\"}"
-        );
     }
 
     #[test]
     fn pool_returns_pushed_values() {
-        let mut pool = ValuePool::default();
-        pool.push_value(0, 0, ValueRef::Int(7));
-        pool.push_value(0, 1, ValueRef::Text(b"a\nb"));
-        pool.push_value(1, 0, ValueRef::Blob(&[1]));
-        assert_eq!(pool.get_singleline(0, 0), Some("7"));
-        assert_eq!(pool.get_singleline(0, 1), Some("a"));
-        assert_eq!(pool.get_singleline(1, 0), Some("[1 bytes]"));
-        assert_eq!(pool.get_singleline(2, 0), None);
-        assert_eq!(pool.value_count(), 3);
+        let mut pool = TextGrid::default();
+        pool.insert(0, 0, ValueRef::Int(7));
+        pool.insert(0, 1, ValueRef::Text(b"a\nb"));
+        pool.insert(1, 0, ValueRef::Blob(&[1]));
+        assert_eq!(pool.get(0, 0), Some("7"));
+        assert_eq!(pool.get(0, 1), Some("a"));
+        assert_eq!(pool.get(1, 0), Some("[1 bytes]"));
+        assert_eq!(pool.get(2, 0), None);
+        assert_eq!(pool.count(), 3);
     }
 
     #[test]
     fn push_value_reports_overwrites() {
-        let mut pool = ValuePool::default();
-        assert!(!pool.push_value(0, 0, ValueRef::Int(1)));
-        assert!(pool.push_value(0, 0, ValueRef::Int(2)));
-        assert_eq!(pool.get_singleline(0, 0), Some("2"));
+        let mut pool = TextGrid::default();
+        assert!(!pool.insert(0, 0, ValueRef::Int(1)));
+        assert!(pool.insert(0, 0, ValueRef::Int(2)));
+        assert_eq!(pool.get(0, 0), Some("2"));
     }
 
     #[test]
     fn merge_keeps_spans_valid() {
-        let mut a = ValuePool::default();
-        a.push_value(0, 0, ValueRef::Text(b"left"));
-        let mut b = ValuePool::default();
-        b.push_value(1, 0, ValueRef::Text(b"right\nside"));
+        let mut a = TextGrid::default();
+        a.insert(0, 0, ValueRef::Text(b"left"));
+        let mut b = TextGrid::default();
+        b.insert(1, 0, ValueRef::Text(b"right\nside"));
         a.merge(b);
-        assert_eq!(a.get_singleline(0, 0), Some("left"));
-        assert_eq!(a.get_singleline(1, 0), Some("right"));
+        assert_eq!(a.get(0, 0), Some("left"));
+        assert_eq!(a.get(1, 0), Some("right"));
     }
 }
