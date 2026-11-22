@@ -72,9 +72,8 @@ impl TextGrid {
             }
             None => 0..rows.column_count(),
         };
-        let first_row = self.offset.unwrap_or(0) as usize;
         let mut pool = crate::sql::collections::TextGrid::default();
-        let mut row_idx = first_row;
+        let mut row_idx = self.offset.unwrap_or(0) as usize;
         while let Some(row) = rows.next()? {
             for col in columns.clone() {
                 let value = row.get_ref(col)?;
