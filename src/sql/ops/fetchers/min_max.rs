@@ -12,13 +12,37 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MinMax {
+    min: Value,
+    max: Value,
+}
+
+impl MinMax {
+    pub fn new(min: Value, max: Value) -> Self {
+        Self { min, max }
+    }
+
+    pub fn min(&self) -> &Value {
+        &self.min
+    }
+
+    pub fn max(&self) -> &Value {
+        &self.max
+    }
+
+    pub fn into_inner(self) -> (Value, Value) {
+        (self.min, self.max)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Fetcher {
     table: String,
     column: String,
 }
 
-impl MinMax {
+impl Fetcher {
     pub fn new(table: impl Into<String>, column: impl Into<String>) -> Self {
         Self {
             table: table.into(),
@@ -26,14 +50,14 @@ impl MinMax {
         }
     }
 
-    pub fn run(&self) -> Receiver<(Value, Value)> {
+    pub fn run(&self) -> Receiver<MinMax> {
         let this = self.clone();
         let (send, recv) = channel();
         submit(move |db| send.send(this.fetch(db)));
         recv
     }
 
-    fn fetch(&self, db: &Database) -> AppResult<(Value, Value)> {
+    fn fetch(&self, db: &Database) -> AppResult<MinMax> {
         let column = quote_ident(&self.column);
         let mut stmt = db.prepare(&format!(
             "SELECT MIN({column}), MAX({column}) FROM {}",
@@ -43,7 +67,7 @@ impl MinMax {
         let row = rows
             .next()?
             .ok_or_else(|| anyhow!("min max query returned no rows"))?;
-        Ok((row.get_ref(0)?.into(), row.get_ref(1)?.into()))
+        Ok(MinMax::new(row.get_ref(0)?.into(), row.get_ref(1)?.into()))
     }
 }
 
@@ -53,6 +77,19 @@ mod tests {
 
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
+
+    #[test]
+    fn keeps_min_and_max() {
+        let min_max = MinMax::new(Value::Int(1), Value::Int(9));
+        assert_eq!(min_max.min(), &Value::Int(1));
+        assert_eq!(min_max.max(), &Value::Int(9));
+    }
+
+    #[test]
+    fn into_inner_returns_min_then_max() {
+        let min_max = MinMax::new(Value::Int(1), Value::Int(9));
+        assert_eq!(min_max.into_inner(), (Value::Int(1), Value::Int(9)));
+    }
 
     fn db() -> Database {
         let db = DatabaseConfig::default().open_in_memory().unwrap();
@@ -82,36 +119,39 @@ mod tests {
 
     #[test]
     fn numbers_skip_nulls() {
-        let min_max = MinMax::new("t", "n").fetch(&db()).unwrap();
-        assert_eq!(min_max, (Value::Int(1), Value::Int(3)));
+        let min_max = Fetcher::new("t", "n").fetch(&db()).unwrap();
+        assert_eq!(min_max.into_inner(), (Value::Int(1), Value::Int(3)));
     }
 
     #[test]
     fn text_is_ordered_lexically() {
-        let min_max = MinMax::new("t", "s").fetch(&db()).unwrap();
-        assert_eq!(min_max, (Value::Text("a".into()), Value::Text("c".into())));
+        let min_max = Fetcher::new("t", "s").fetch(&db()).unwrap();
+        assert_eq!(
+            min_max.into_inner(),
+            (Value::Text("a".into()), Value::Text("c".into()))
+        );
     }
 
     #[test]
     fn dates_keep_their_type() {
-        let (min, max) = MinMax::new("t", "d").fetch(&db()).unwrap();
-        assert!(matches!(min, Value::Date32(_)));
-        assert!(matches!(max, Value::Date32(_)));
-        assert_ne!(min, max);
+        let min_max = Fetcher::new("t", "d").fetch(&db()).unwrap();
+        assert!(matches!(min_max.min(), Value::Date32(_)));
+        assert!(matches!(min_max.max(), Value::Date32(_)));
+        assert_ne!(min_max.min(), min_max.max());
     }
 
     #[test]
     fn all_null_column_is_null() {
-        let min_max = MinMax::new("t", "e").fetch(&db()).unwrap();
-        assert_eq!(min_max, (Value::Null, Value::Null));
+        let min_max = Fetcher::new("t", "e").fetch(&db()).unwrap();
+        assert_eq!(min_max.into_inner(), (Value::Null, Value::Null));
     }
 
     #[test]
     fn empty_table_is_null() {
         let db = db();
         db.execute("CREATE TABLE empty (n INTEGER)", []).unwrap();
-        let min_max = MinMax::new("empty", "n").fetch(&db).unwrap();
-        assert_eq!(min_max, (Value::Null, Value::Null));
+        let min_max = Fetcher::new("empty", "n").fetch(&db).unwrap();
+        assert_eq!(min_max.into_inner(), (Value::Null, Value::Null));
     }
 
     #[test]
@@ -122,18 +162,18 @@ mod tests {
             [],
         )
         .unwrap();
-        let min_max = MinMax::new("my \"table", "a b").fetch(&db).unwrap();
-        assert_eq!(min_max, (Value::BigInt(0), Value::BigInt(4)));
+        let min_max = Fetcher::new("my \"table", "a b").fetch(&db).unwrap();
+        assert_eq!(min_max.into_inner(), (Value::BigInt(0), Value::BigInt(4)));
     }
 
     #[test]
     fn missing_column_fails() {
-        assert!(MinMax::new("t", "missing").fetch(&db()).is_err());
+        assert!(Fetcher::new("t", "missing").fetch(&db()).is_err());
     }
 
     #[test]
     fn missing_table_fails() {
-        assert!(MinMax::new("missing", "n").fetch(&db()).is_err());
+        assert!(Fetcher::new("missing", "n").fetch(&db()).is_err());
     }
 
     #[test]
@@ -146,7 +186,7 @@ mod tests {
             ))
         });
         wait(&recv).unwrap();
-        let min_max = wait(&MinMax::new("min_max_run", "n").run()).unwrap();
-        assert_eq!(min_max, (Value::BigInt(0), Value::BigInt(3)));
+        let min_max = wait(&Fetcher::new("min_max_run", "n").run()).unwrap();
+        assert_eq!(min_max.into_inner(), (Value::BigInt(0), Value::BigInt(3)));
     }
 }

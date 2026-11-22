@@ -9,32 +9,53 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GridShape {
-    sql: String,
+    height: usize,
+    width: usize,
 }
 
 impl GridShape {
+    pub fn new(height: usize, width: usize) -> Self {
+        Self { height, width }
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn numel(&self) -> usize {
+        self.height * self.width
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Fetcher {
+    sql: String,
+}
+
+impl Fetcher {
     pub fn new(sql: impl Into<String>) -> Self {
         Self { sql: sql.into() }
     }
 
-    pub fn run(&self) -> Receiver<crate::sql::collections::GridShape> {
+    pub fn run(&self) -> Receiver<GridShape> {
         let this = self.clone();
         let (send, recv) = channel();
         submit(move |db| send.send(this.fetch(db)));
         recv
     }
 
-    fn fetch(&self, db: &Database) -> AppResult<crate::sql::collections::GridShape> {
+    fn fetch(&self, db: &Database) -> AppResult<GridShape> {
         let sql = self.sql.trim().trim_end_matches(';');
-        Ok(crate::sql::collections::GridShape::new_2d(
-            self.rows(db, sql)?,
-            self.cols(db, sql)?,
-        ))
+        Ok(GridShape::new(self.height(db, sql)?, self.width(db, sql)?))
     }
 
-    fn rows(&self, db: &Database, sql: &str) -> AppResult<usize> {
+    fn height(&self, db: &Database, sql: &str) -> AppResult<usize> {
         let mut stmt = db.prepare(&format!("SELECT COUNT(*) FROM ({sql})"))?;
         let mut rows = stmt.query([])?;
         let row = rows
@@ -46,7 +67,7 @@ impl GridShape {
         }
     }
 
-    fn cols(&self, db: &Database, sql: &str) -> AppResult<usize> {
+    fn width(&self, db: &Database, sql: &str) -> AppResult<usize> {
         let mut stmt = db.prepare(&format!("SELECT * FROM ({sql}) LIMIT 0"))?;
         let rows = stmt.query([])?;
         Ok(rows.column_count())
@@ -77,57 +98,61 @@ mod tests {
     }
 
     #[test]
+    fn numel_is_height_times_width() {
+        assert_eq!(GridShape::new(4, 3).numel(), 12);
+        assert_eq!(GridShape::new(0, 3).numel(), 0);
+    }
+
+    #[test]
     fn shape_counts_rows_and_columns() {
-        let shape = GridShape::new("SELECT range AS a, range * 2 AS b, 'x' AS c FROM range(7)")
+        let shape = Fetcher::new("SELECT range AS a, range * 2 AS b, 'x' AS c FROM range(7)")
             .fetch(&db())
             .unwrap();
-        assert_eq!(shape.rows(), 7);
-        assert_eq!(shape.cols(), 3);
+        assert_eq!(shape.height(), 7);
+        assert_eq!(shape.width(), 3);
     }
 
     #[test]
     fn empty_result_has_columns_but_no_rows() {
-        let shape = GridShape::new("SELECT 1 AS a, 2 AS b WHERE false")
+        let shape = Fetcher::new("SELECT 1 AS a, 2 AS b WHERE false")
             .fetch(&db())
             .unwrap();
-        assert_eq!(shape.rows(), 0);
-        assert_eq!(shape.cols(), 2);
+        assert_eq!(shape.height(), 0);
+        assert_eq!(shape.width(), 2);
     }
 
     #[test]
     fn duplicate_column_names_are_counted() {
-        let shape = GridShape::new("SELECT 1 AS a, 2 AS a")
-            .fetch(&db())
-            .unwrap();
-        assert_eq!(shape.rows(), 1);
-        assert_eq!(shape.cols(), 2);
+        let shape = Fetcher::new("SELECT 1 AS a, 2 AS a").fetch(&db()).unwrap();
+        assert_eq!(shape.height(), 1);
+        assert_eq!(shape.width(), 2);
     }
 
     #[test]
     fn shape_matches_the_text_grid() {
         let sql = "SELECT range AS a, range * 10 AS b FROM range(4)";
-        let shape = GridShape::new(sql).fetch(&db()).unwrap();
-        let grid = crate::sql::ops::fetchers::TextGrid::new(sql).run();
+        let shape = Fetcher::new(sql).fetch(&db()).unwrap();
+        let grid = crate::sql::ops::fetchers::text_grid::Fetcher::new(sql).run();
         let grid = wait(&grid).unwrap();
         assert_eq!(grid.len(), shape.numel());
     }
 
     #[test]
     fn trailing_semicolon_is_ignored() {
-        let shape = GridShape::new("SELECT 42 AS n;  ").fetch(&db()).unwrap();
-        assert_eq!(shape.rows(), 1);
-        assert_eq!(shape.cols(), 1);
+        let shape = Fetcher::new("SELECT 42 AS n;  ").fetch(&db()).unwrap();
+        assert_eq!(shape.height(), 1);
+        assert_eq!(shape.width(), 1);
     }
 
     #[test]
     fn invalid_sql_fails() {
-        assert!(GridShape::new("SELEC 1").fetch(&db()).is_err());
+        assert!(Fetcher::new("SELEC 1").fetch(&db()).is_err());
     }
 
     #[test]
     fn run_returns_the_shape_through_the_worker() {
-        let shape = wait(&GridShape::new("SELECT * FROM range(5)").run()).unwrap();
-        assert_eq!(shape.rows(), 5);
-        assert_eq!(shape.cols(), 1);
+        let shape = wait(&Fetcher::new("SELECT * FROM range(5)").run()).unwrap();
+        assert_eq!(shape.height(), 5);
+        assert_eq!(shape.width(), 1);
     }
 }
