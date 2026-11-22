@@ -428,7 +428,7 @@ mod tests {
         assert_eq!(pool.get(0, 1), Some("a"));
         assert_eq!(pool.get(1, 0), Some("[1 bytes]"));
         assert_eq!(pool.get(2, 0), None);
-        assert_eq!(pool.count(), 3);
+        assert_eq!(pool.len(), 3);
     }
 
     #[test]

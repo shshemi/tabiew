@@ -127,7 +127,7 @@ mod tests {
         let pool = TextGrid::new("SELECT range AS n, range * 10 AS m FROM range(3)")
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 6);
+        assert_eq!(pool.len(), 6);
         assert_eq!(pool.get(2, 0), Some("2"));
         assert_eq!(pool.get(2, 1), Some("20"));
         assert_eq!(pool.get(3, 0), None);
@@ -138,7 +138,7 @@ mod tests {
         let pool = TextGrid::new("SELECT NULL::INTEGER AS a, 1 AS b")
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 2);
+        assert_eq!(pool.len(), 2);
         assert_eq!(pool.get(0, 0), Some(""));
         assert_eq!(pool.get(0, 1), Some("1"));
     }
@@ -150,7 +150,7 @@ mod tests {
             .with_limit(2)
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 2);
+        assert_eq!(pool.len(), 2);
         assert_eq!(pool.get(3, 0), Some("3"));
         assert_eq!(pool.get(4, 0), Some("4"));
         assert_eq!(pool.get(0, 0), None);
@@ -162,7 +162,7 @@ mod tests {
             .with_columns(1..3)
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 2);
+        assert_eq!(pool.len(), 2);
         assert_eq!(pool.get(0, 0), None);
         assert_eq!(pool.get(0, 1), Some("1"));
         assert_eq!(pool.get(0, 2), Some("2"));
@@ -175,14 +175,14 @@ mod tests {
             .with_columns(1..10)
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 1);
+        assert_eq!(pool.len(), 1);
         assert_eq!(pool.get(0, 1), Some("1"));
 
         let pool = TextGrid::new("SELECT 0 AS a, 1 AS b")
             .with_columns(5..10)
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 0);
+        assert!(pool.is_empty());
     }
 
     #[test]
@@ -193,7 +193,7 @@ mod tests {
             .with_columns(1..2)
             .fetch(&db())
             .unwrap();
-        assert_eq!(pool.count(), 2);
+        assert_eq!(pool.len(), 2);
         assert_eq!(pool.get(2, 1), Some("20"));
         assert_eq!(pool.get(3, 1), Some("30"));
         assert_eq!(pool.get(2, 0), None);
@@ -208,7 +208,7 @@ mod tests {
     #[test]
     fn empty_result_is_an_empty_pool() {
         let pool = TextGrid::new("SELECT 1 WHERE false").fetch(&db()).unwrap();
-        assert_eq!(pool.count(), 0);
+        assert!(pool.is_empty());
     }
 
     #[test]
