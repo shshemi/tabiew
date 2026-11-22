@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Shape<const DIMS: usize> {
     dims: [usize; DIMS],
 }
