@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use duckdb::types::Value;
 
 use crate::{
@@ -14,6 +16,7 @@ pub struct TextGrid {
     sql: String,
     offset: Option<u64>,
     limit: Option<u64>,
+    columns: Option<Range<usize>>,
 }
 
 impl TextGrid {
@@ -22,6 +25,7 @@ impl TextGrid {
             sql: sql.into(),
             offset: None,
             limit: None,
+            columns: None,
         }
     }
 
@@ -32,6 +36,11 @@ impl TextGrid {
 
     pub fn with_limit(mut self, limit: u64) -> Self {
         self.limit = Some(limit);
+        self
+    }
+
+    pub fn with_columns(mut self, columns: Range<usize>) -> Self {
+        self.columns = Some(columns);
         self
     }
 
@@ -56,12 +65,18 @@ impl TextGrid {
 
         let mut stmt = db.prepare(&sql)?;
         let mut rows = stmt.query(duckdb::params_from_iter(params))?;
-        let columns = rows.column_count();
+        let columns = match &self.columns {
+            Some(range) => {
+                let column_count = rows.column_count();
+                range.start.min(column_count)..range.end.min(column_count)
+            }
+            None => 0..rows.column_count(),
+        };
         let first_row = self.offset.unwrap_or(0) as usize;
         let mut pool = crate::sql::collections::TextGrid::default();
         let mut row_idx = first_row;
         while let Some(row) = rows.next()? {
-            for col in 0..columns {
+            for col in columns.clone() {
                 let value = row.get_ref(col)?;
                 pool.insert(row_idx, col, value);
             }
@@ -139,6 +154,49 @@ mod tests {
         assert_eq!(pool.get(3, 0), Some("3"));
         assert_eq!(pool.get(4, 0), Some("4"));
         assert_eq!(pool.get(0, 0), None);
+    }
+
+    #[test]
+    fn columns_keep_absolute_column_numbers() {
+        let pool = TextGrid::new("SELECT 0 AS a, 1 AS b, 2 AS c, 3 AS d")
+            .with_columns(1..3)
+            .fetch(&db())
+            .unwrap();
+        assert_eq!(pool.count(), 2);
+        assert_eq!(pool.get(0, 0), None);
+        assert_eq!(pool.get(0, 1), Some("1"));
+        assert_eq!(pool.get(0, 2), Some("2"));
+        assert_eq!(pool.get(0, 3), None);
+    }
+
+    #[test]
+    fn columns_past_the_end_are_clamped() {
+        let pool = TextGrid::new("SELECT 0 AS a, 1 AS b")
+            .with_columns(1..10)
+            .fetch(&db())
+            .unwrap();
+        assert_eq!(pool.count(), 1);
+        assert_eq!(pool.get(0, 1), Some("1"));
+
+        let pool = TextGrid::new("SELECT 0 AS a, 1 AS b")
+            .with_columns(5..10)
+            .fetch(&db())
+            .unwrap();
+        assert_eq!(pool.count(), 0);
+    }
+
+    #[test]
+    fn columns_and_rows_combine() {
+        let pool = TextGrid::new("SELECT range AS a, range * 10 AS b FROM range(5)")
+            .with_offset(2)
+            .with_limit(2)
+            .with_columns(1..2)
+            .fetch(&db())
+            .unwrap();
+        assert_eq!(pool.count(), 2);
+        assert_eq!(pool.get(2, 1), Some("20"));
+        assert_eq!(pool.get(3, 1), Some("30"));
+        assert_eq!(pool.get(2, 0), None);
     }
 
     #[test]
