@@ -7,7 +7,10 @@ use duckdb::{
     types::{Decimal, EnumType, ListType, TimeUnit, Value},
 };
 
+use crate::sql::collections::shape::Shape;
 use crate::{misc::config::config, sql::db::ValueRef};
+
+pub type GridShape = Shape<2>;
 
 #[derive(Debug, Default)]
 pub struct TextGrid {
@@ -79,8 +82,12 @@ impl TextGrid {
         self.idx.insert(CellPos { row, col }, span).is_some()
     }
 
-    pub fn count(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.idx.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn mem_usage(&self) -> usize {

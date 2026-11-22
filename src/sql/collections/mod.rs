@@ -1,3 +1,4 @@
+mod shape;
 mod text_grid;
 mod value_series;
 
