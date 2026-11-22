@@ -19,12 +19,12 @@ use crate::{
 };
 
 #[derive(Debug, Default)]
-pub struct TextGrid {
+pub struct TableSlice {
     idx: BTreeMap<CellPos, Span>,
     buf: String,
 }
 
-impl TextGrid {
+impl TableSlice {
     pub fn get(&self, row: usize, col: usize) -> Option<&str> {
         self.idx
             .get(&CellPos { row, col })
@@ -100,7 +100,7 @@ impl TextGrid {
         self.idx.len() * size_of::<usize>() * 4 + self.buf.capacity()
     }
 
-    pub fn merge(&mut self, other: TextGrid) {
+    pub fn merge(&mut self, other: TableSlice) {
         let offset = self.buf.len();
         for (pos, span) in other.idx {
             self.idx.insert(pos, span.offset(offset));
@@ -384,14 +384,14 @@ impl Fetcher {
         self
     }
 
-    pub fn run(&self) -> Receiver<TextGrid> {
+    pub fn run(&self) -> Receiver<TableSlice> {
         let this = self.clone();
         let (send, recv) = channel();
         submit(move |db| send.send(this.fetch(db)));
         recv
     }
 
-    fn fetch(&self, db: &Database) -> AppResult<TextGrid> {
+    fn fetch(&self, db: &Database) -> AppResult<TableSlice> {
         let mut sql = format!("SELECT * FROM ({})", self.sql.trim().trim_end_matches(';'));
         let mut params = Vec::new();
         if let Some(limit) = self.limit {
@@ -412,7 +412,7 @@ impl Fetcher {
             }
             None => 0..rows.column_count(),
         };
-        let mut pool = TextGrid::default();
+        let mut pool = TableSlice::default();
         let mut row_idx = self.offset.unwrap_or(0) as usize;
         while let Some(row) = rows.next()? {
             for col in columns.clone() {
@@ -433,7 +433,7 @@ mod tests {
     use crate::sql::{db::DatabaseConfig, ops::Next};
 
     fn insert(value: ValueRef) -> String {
-        let mut pool = TextGrid::default();
+        let mut pool = TableSlice::default();
         pool.insert(0, 0, value);
         assert_eq!(pool.get(0, 0), Some(pool.buf.as_str()));
         pool.buf
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn pool_returns_pushed_values() {
-        let mut pool = TextGrid::default();
+        let mut pool = TableSlice::default();
         pool.insert(0, 0, ValueRef::Int(7));
         pool.insert(0, 1, ValueRef::Text(b"a\nb"));
         pool.insert(1, 0, ValueRef::Blob(&[1]));
@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn push_value_reports_overwrites() {
-        let mut pool = TextGrid::default();
+        let mut pool = TableSlice::default();
         assert!(!pool.insert(0, 0, ValueRef::Int(1)));
         assert!(pool.insert(0, 0, ValueRef::Int(2)));
         assert_eq!(pool.get(0, 0), Some("2"));
@@ -523,9 +523,9 @@ mod tests {
 
     #[test]
     fn merge_keeps_spans_valid() {
-        let mut a = TextGrid::default();
+        let mut a = TableSlice::default();
         a.insert(0, 0, ValueRef::Text(b"left"));
-        let mut b = TextGrid::default();
+        let mut b = TableSlice::default();
         b.insert(1, 0, ValueRef::Text(b"right\nside"));
         a.merge(b);
         assert_eq!(a.get(0, 0), Some("left"));

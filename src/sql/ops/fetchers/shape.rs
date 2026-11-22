@@ -129,10 +129,10 @@ mod tests {
     }
 
     #[test]
-    fn shape_matches_the_text_grid() {
+    fn shape_matches_the_table_slice() {
         let sql = "SELECT range AS a, range * 10 AS b FROM range(4)";
         let shape = Fetcher::new(sql).fetch(&db()).unwrap();
-        let grid = crate::sql::ops::fetchers::text_grid::Fetcher::new(sql).run();
+        let grid = crate::sql::ops::fetchers::table_slice::Fetcher::new(sql).run();
         let grid = wait(&grid).unwrap();
         assert_eq!(grid.len(), shape.numel());
     }
