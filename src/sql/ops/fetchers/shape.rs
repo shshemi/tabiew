@@ -10,12 +10,12 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct GridShape {
+pub struct Shape {
     height: usize,
     width: usize,
 }
 
-impl GridShape {
+impl Shape {
     pub fn new(height: usize, width: usize) -> Self {
         Self { height, width }
     }
@@ -43,16 +43,16 @@ impl Fetcher {
         Self { sql: sql.into() }
     }
 
-    pub fn run(&self) -> Receiver<GridShape> {
+    pub fn run(&self) -> Receiver<Shape> {
         let this = self.clone();
         let (send, recv) = channel();
         submit(move |db| send.send(this.fetch(db)));
         recv
     }
 
-    fn fetch(&self, db: &Database) -> AppResult<GridShape> {
+    fn fetch(&self, db: &Database) -> AppResult<Shape> {
         let sql = self.sql.trim().trim_end_matches(';');
-        Ok(GridShape::new(self.height(db, sql)?, self.width(db, sql)?))
+        Ok(Shape::new(self.height(db, sql)?, self.width(db, sql)?))
     }
 
     fn height(&self, db: &Database, sql: &str) -> AppResult<usize> {
@@ -99,8 +99,8 @@ mod tests {
 
     #[test]
     fn numel_is_height_times_width() {
-        assert_eq!(GridShape::new(4, 3).numel(), 12);
-        assert_eq!(GridShape::new(0, 3).numel(), 0);
+        assert_eq!(Shape::new(4, 3).numel(), 12);
+        assert_eq!(Shape::new(0, 3).numel(), 0);
     }
 
     #[test]
