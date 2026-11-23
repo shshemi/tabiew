@@ -1,3 +1,7 @@
+use anyhow::anyhow;
+
+use crate::AppResult;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Null,
@@ -116,5 +120,94 @@ impl From<Type> for duckdb::types::Type {
             Type::Variant => D::Variant,
             Type::Any => D::Any,
         }
+    }
+}
+
+impl Type {
+    pub(super) fn from_column(
+        logical: &duckdb::core::LogicalTypeHandle,
+        arrow: &duckdb::arrow::datatypes::DataType,
+    ) -> AppResult<Self> {
+        use duckdb::arrow::datatypes::DataType as A;
+        use duckdb::core::LogicalTypeId as L;
+        Ok(match logical.id() {
+            L::SqlNull => Self::Null,
+            L::Boolean => Self::Boolean,
+            L::Tinyint => Self::TinyInt,
+            L::Smallint => Self::SmallInt,
+            L::Integer => Self::Int,
+            L::Bigint => Self::BigInt,
+            L::Hugeint => Self::HugeInt,
+            L::UHugeint => Self::UHugeInt,
+            L::UTinyint => Self::UTinyInt,
+            L::USmallint => Self::USmallInt,
+            L::UInteger => Self::UInt,
+            L::UBigint => Self::UBigInt,
+            L::Float => Self::Float,
+            L::Double => Self::Double,
+            L::Decimal => Self::Decimal,
+            L::Timestamp => Self::Timestamp,
+            L::TimestampS => Self::Timestamp,
+            L::TimestampMs => Self::Timestamp,
+            L::TimestampNs => Self::Timestamp,
+            L::TimestampTZ => Self::Timestamp,
+            L::Varchar => Self::Text,
+            L::Uuid => Self::Text,
+            L::Blob => Self::Blob,
+            L::Bit => Self::Blob,
+            L::Bignum => Self::Blob,
+            L::Geometry => Self::Geometry,
+            L::Date => Self::Date32,
+            L::Time => Self::Time64,
+            L::TimeNs => Self::Time64,
+            L::TimeTZ => Self::Time64,
+            L::Interval => Self::Interval,
+            L::Enum => Self::Enum,
+            L::Union => Self::Union,
+            L::Variant => Self::Variant,
+            L::Any => Self::Any,
+            L::List => match arrow {
+                A::List(item) | A::LargeList(item) => Self::List(Box::new(Self::from_column(
+                    &logical.child(0),
+                    item.data_type(),
+                )?)),
+                other => return Err(anyhow!("list column has arrow type {other}")),
+            },
+            L::Array => match arrow {
+                A::FixedSizeList(item, size) => Self::Array(
+                    Box::new(Self::from_column(&logical.child(0), item.data_type())?),
+                    u32::try_from(*size)?,
+                ),
+                other => return Err(anyhow!("array column has arrow type {other}")),
+            },
+            L::Struct => match arrow {
+                A::Struct(fields) => {
+                    let mut types = Vec::with_capacity(fields.len());
+                    for (idx, field) in fields.iter().enumerate() {
+                        types.push((
+                            logical.child_name(idx),
+                            Self::from_column(&logical.child(idx), field.data_type())?,
+                        ));
+                    }
+                    Self::Struct(types)
+                }
+                other => return Err(anyhow!("struct column has arrow type {other}")),
+            },
+            L::Map => match arrow {
+                A::Map(entries, _) => match entries.data_type() {
+                    A::Struct(fields) if fields.len() == 2 => Self::Map(
+                        Box::new(Self::from_column(&logical.child(0), fields[0].data_type())?),
+                        Box::new(Self::from_column(&logical.child(1), fields[1].data_type())?),
+                    ),
+                    other => return Err(anyhow!("map column has arrow entries {other}")),
+                },
+                other => return Err(anyhow!("map column has arrow type {other}")),
+            },
+            L::Invalid => return Err(anyhow!("invalid column type")),
+            L::StringLiteral => return Err(anyhow!("unresolved string literal type")),
+            L::IntegerLiteral => return Err(anyhow!("unresolved integer literal type")),
+            L::Unsupported => return Err(anyhow!("unsupported column type")),
+            other => return Err(anyhow!("unknown column type {other:?}")),
+        })
     }
 }
