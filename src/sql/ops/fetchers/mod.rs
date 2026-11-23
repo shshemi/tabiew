@@ -1,3 +1,4 @@
+pub mod db_schema;
 pub mod min_max;
 pub mod schema;
 pub mod shape;
