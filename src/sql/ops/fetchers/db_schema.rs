@@ -45,7 +45,7 @@ impl DbSchema {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Table {
     database: String,
-    schema: String,
+    schema_name: String,
     name: String,
     temporary: bool,
     estimated_rows: u64,
@@ -57,8 +57,8 @@ impl Table {
         &self.database
     }
 
-    pub fn schema(&self) -> &str {
-        &self.schema
+    pub fn schema_name(&self) -> &str {
+        &self.schema_name
     }
 
     pub fn name(&self) -> &str {
@@ -164,7 +164,7 @@ impl Fetcher {
                 int(&row, 0)?,
                 Table {
                     database: required_text(&row, 1)?,
-                    schema: required_text(&row, 2)?,
+                    schema_name: required_text(&row, 2)?,
                     name: required_text(&row, 3)?,
                     temporary: boolean(&row, 4)?,
                     estimated_rows: u64::try_from(int(&row, 5)?)?,
@@ -259,7 +259,7 @@ mod tests {
         let schema = Fetcher::new().fetch(&db()).unwrap();
         let users = schema.find("users").unwrap();
         assert_eq!(users.database(), "memory");
-        assert_eq!(users.schema(), "main");
+        assert_eq!(users.schema_name(), "main");
         assert!(!users.temporary());
         assert_eq!(users.estimated_rows(), 2);
     }
