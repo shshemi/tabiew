@@ -1,7 +1,11 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(
+    version,
+    about = concat!("Tabiew - ", env!("CARGO_PKG_DESCRIPTION")),
+    long_about = None
+)]
 pub struct Args {
     #[command(subcommand)]
     pub sub_command: Option<SubCommand>,
