@@ -1,5 +1,7 @@
 use std::sync::mpsc::TryRecvError;
 
+use anyhow::anyhow;
+
 use crate::AppResult;
 
 #[derive(Debug)]
@@ -25,6 +27,12 @@ impl<T> Receiver<T> {
             Err(TryRecvError::Empty) => Next::Empty,
             Err(TryRecvError::Disconnected) => Next::Done,
         }
+    }
+
+    pub fn recv_blocking(&self) -> AppResult<T> {
+        self.recv
+            .recv()
+            .map_err(|_| anyhow!("sender dropped without sending a value"))?
     }
 }
 
