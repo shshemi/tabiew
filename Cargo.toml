@@ -8,7 +8,6 @@ rust-version = "1.99.1"
 description = "A lightweight TUI application to view and query tabular data files, such as CSV, TSV, and parquet."
 repository = "https://github.com/shshemi/tabiew"
 documentation = "https://docs.rs/tabiew"
-homepage = "https://github.com/shshemi/tabiew"
 
 [package.metadata.deb]
 license-file = ["LICENSE", "4"]
