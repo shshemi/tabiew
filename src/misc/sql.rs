@@ -244,15 +244,12 @@ pub struct FieldInfo {
 
 impl FieldInfo {
     pub fn new(series: &Series) -> Self {
-        // let (min, max) = min_max(series);
-        let min = series.min_reduce().unwrap_or_default().into_value();
-        let max = series.max_reduce().unwrap_or_default().into_value();
         Self {
             dtype: series.dtype().to_owned(),
             est_size: series.estimated_size().into(),
             null_count: series.null_count(),
-            min: Scalar::new(min.dtype(), min),
-            max: Scalar::new(max.dtype(), max),
+            min: series.min_reduce().unwrap_or_default(),
+            max: series.max_reduce().unwrap_or_default(),
         }
     }
     pub fn dtype(&self) -> &DataType {
@@ -327,4 +324,24 @@ pub fn sql() -> impl DerefMut<Target = SqlBackend> {
     static SQL_BACKEND: LazyLock<Mutex<SqlBackend>> =
         LazyLock::new(|| Mutex::new(SqlBackend::default()));
     SQL_BACKEND.lock().unwrap_or_graceful_shutdown()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use polars::prelude::{FrozenCategories, NamedFrom};
+
+    #[test]
+    fn enum_field_preserves_extrema_and_dtype() -> PolarsResult<()> {
+        let dtype = DataType::from_frozen_categories(FrozenCategories::new(
+            ["red", "green", "blue"].into_iter(),
+        )?);
+        let series = Series::new("color".into(), ["red", "green", "red"]).cast(&dtype)?;
+        let field = FieldInfo::new(&series);
+        assert_eq!(field.min().dtype(), &dtype);
+        assert_eq!(field.max().dtype(), &dtype);
+        assert_eq!(field.min().value().get_str(), Some("red"));
+        assert_eq!(field.max().value().get_str(), Some("green"));
+        Ok(())
+    }
 }
