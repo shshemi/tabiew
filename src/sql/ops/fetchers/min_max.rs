@@ -31,7 +31,7 @@ impl MinMax {
         &self.max
     }
 
-    pub fn into_inner(self) -> (Value, Value) {
+    pub fn into_inners(self) -> (Value, Value) {
         (self.min, self.max)
     }
 }
@@ -57,7 +57,7 @@ impl Fetcher {
         recv
     }
 
-    pub(super) fn fetch(&self, db: &Database) -> AppResult<MinMax> {
+    fn fetch(&self, db: &Database) -> AppResult<MinMax> {
         let sql = self.sql.trim().trim_end_matches(';');
         let column = quote_ident(&self.column);
         let mut stmt = db.prepare(&format!("SELECT MIN({column}), MAX({column}) FROM ({sql})"))?;
@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn into_inner_returns_min_then_max() {
         let min_max = MinMax::new(Value::Int(1), Value::Int(9));
-        assert_eq!(min_max.into_inner(), (Value::Int(1), Value::Int(9)));
+        assert_eq!(min_max.into_inners(), (Value::Int(1), Value::Int(9)));
     }
 
     fn db() -> Database {
@@ -118,14 +118,14 @@ mod tests {
     #[test]
     fn numbers_skip_nulls() {
         let min_max = Fetcher::new("SELECT * FROM t", "n").fetch(&db()).unwrap();
-        assert_eq!(min_max.into_inner(), (Value::Int(1), Value::Int(3)));
+        assert_eq!(min_max.into_inners(), (Value::Int(1), Value::Int(3)));
     }
 
     #[test]
     fn text_is_ordered_lexically() {
         let min_max = Fetcher::new("SELECT * FROM t", "s").fetch(&db()).unwrap();
         assert_eq!(
-            min_max.into_inner(),
+            min_max.into_inners(),
             (Value::Text("a".into()), Value::Text("c".into()))
         );
     }
@@ -141,7 +141,7 @@ mod tests {
     #[test]
     fn all_null_column_is_null() {
         let min_max = Fetcher::new("SELECT * FROM t", "e").fetch(&db()).unwrap();
-        assert_eq!(min_max.into_inner(), (Value::Null, Value::Null));
+        assert_eq!(min_max.into_inners(), (Value::Null, Value::Null));
     }
 
     #[test]
@@ -149,7 +149,7 @@ mod tests {
         let db = db();
         db.execute("CREATE TABLE empty (n INTEGER)", []).unwrap();
         let min_max = Fetcher::new("SELECT * FROM empty", "n").fetch(&db).unwrap();
-        assert_eq!(min_max.into_inner(), (Value::Null, Value::Null));
+        assert_eq!(min_max.into_inners(), (Value::Null, Value::Null));
     }
 
     #[test]
@@ -163,7 +163,7 @@ mod tests {
         let min_max = Fetcher::new("SELECT * FROM \"my \"\"table\"", "a b")
             .fetch(&db)
             .unwrap();
-        assert_eq!(min_max.into_inner(), (Value::BigInt(0), Value::BigInt(4)));
+        assert_eq!(min_max.into_inners(), (Value::BigInt(0), Value::BigInt(4)));
     }
 
     #[test]
@@ -185,13 +185,13 @@ mod tests {
         let min_max = Fetcher::new("SELECT range * 2 AS doubled FROM range(5)", "doubled")
             .fetch(&db())
             .unwrap();
-        assert_eq!(min_max.into_inner(), (Value::BigInt(0), Value::BigInt(8)));
+        assert_eq!(min_max.into_inners(), (Value::BigInt(0), Value::BigInt(8)));
     }
 
     #[test]
     fn trailing_semicolon_is_ignored() {
         let min_max = Fetcher::new("SELECT 42 AS n;  ", "n").fetch(&db()).unwrap();
-        assert_eq!(min_max.into_inner(), (Value::Int(42), Value::Int(42)));
+        assert_eq!(min_max.into_inners(), (Value::Int(42), Value::Int(42)));
     }
 
     #[test]
@@ -205,6 +205,6 @@ mod tests {
         });
         wait(&recv).unwrap();
         let min_max = wait(&Fetcher::new("SELECT * FROM min_max_run", "n").run()).unwrap();
-        assert_eq!(min_max.into_inner(), (Value::BigInt(0), Value::BigInt(3)));
+        assert_eq!(min_max.into_inners(), (Value::BigInt(0), Value::BigInt(3)));
     }
 }
