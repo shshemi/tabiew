@@ -2,6 +2,7 @@ pub mod continuous_histogram;
 pub mod db_schema;
 pub mod discrete_histogram;
 pub mod min_max;
+pub mod scatter_plot;
 pub mod schema;
 pub mod shape;
 pub mod summary;
