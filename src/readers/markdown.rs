@@ -78,7 +78,10 @@ fn collect_tables(parser: Parser) -> Vec<(Vec<String>, Vec<Vec<String>>)> {
             }
             Event::End(TagEnd::TableCell) => {
                 in_cell = false;
-                let value = std::mem::take(&mut cell).trim().to_owned();
+                // Keep line breaks encoded by inline <br> tags at cell boundaries.
+                let value = std::mem::take(&mut cell)
+                    .trim_matches(|c: char| c != '\n' && c.is_whitespace())
+                    .to_owned();
                 if in_head {
                     headers.push(value);
                 } else {
@@ -86,6 +89,14 @@ fn collect_tables(parser: Parser) -> Vec<(Vec<String>, Vec<Vec<String>>)> {
                 }
             }
             Event::Text(s) | Event::Code(s) if in_cell => cell.push_str(&s),
+            Event::InlineHtml(tag)
+                if in_cell
+                    && ["<br>", "<br/>", "<br />"]
+                        .iter()
+                        .any(|br| tag.eq_ignore_ascii_case(br)) =>
+            {
+                cell.push('\n');
+            }
             Event::SoftBreak | Event::HardBreak if in_cell => cell.push(' '),
             _ => {}
         }
@@ -118,4 +129,24 @@ fn build_data_frame(headers: Vec<String>, rows: Vec<Vec<String>>) -> AppResult<D
             .map(|(name, values)| Column::new(name.into(), values))
             .collect(),
     )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::writers::{Destination, WriteToFile, WriteToMarkdown};
+
+    #[test]
+    fn multiline_cells_survive_markdown_round_trip() -> AppResult<()> {
+        let dir = tempfile::tempdir()?;
+        let path = dir.path().join("table.md");
+        let mut original = DataFrame::new_infer_height(vec![Column::new(
+            "message".into(),
+            ["first\nsecond", "one\n\nthree", "\nouter\n"],
+        )])?;
+        WriteToMarkdown.write_to_file(Destination::File(path.clone()), &mut original)?;
+        let frames = MarkdownToDataFrame.read_to_data_frames(ReaderSource::File(path))?;
+        assert_eq!(frames[0].1, original);
+        Ok(())
+    }
 }
