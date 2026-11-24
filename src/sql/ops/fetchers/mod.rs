@@ -1,4 +1,6 @@
+pub mod continuous_histogram;
 pub mod db_schema;
+pub mod discrete_histogram;
 pub mod min_max;
 pub mod schema;
 pub mod shape;
