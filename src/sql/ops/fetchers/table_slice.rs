@@ -13,7 +13,7 @@ use crate::{
     AppResult,
     misc::config::config,
     sql::{
-        db::{Database, ValueRef},
+        db::{Database, Query, ValueRef},
         ops::reply::{Receiver, channel},
         worker::submit,
     },
@@ -354,32 +354,18 @@ fn list_len(list: ListType, idx: usize) -> i64 {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
-    offset: Option<u64>,
-    limit: Option<u64>,
+    query: Query,
     columns: Option<Range<usize>>,
     stream_size: Option<NonZeroUsize>,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>) -> Self {
+    pub fn new(query: Query) -> Self {
         Self {
-            sql: sql.into(),
-            offset: None,
-            limit: None,
+            query,
             columns: None,
             stream_size: None,
         }
-    }
-
-    pub fn with_offset(mut self, offset: u64) -> Self {
-        self.offset = Some(offset);
-        self
-    }
-
-    pub fn with_limit(mut self, limit: u64) -> Self {
-        self.limit = Some(limit);
-        self
     }
 
     pub fn with_columns(mut self, columns: Range<usize>) -> Self {
@@ -405,19 +391,8 @@ impl Fetcher {
 
     fn fetch(&self, db: &Database, mut emit: impl FnMut(TableSlice)) -> AppResult<()> {
         let stream_size = self.stream_size.map(NonZeroUsize::get);
-        let mut sql = format!("SELECT * FROM ({})", self.sql.trim().trim_end_matches(';'));
-        let mut params = Vec::new();
-        if let Some(limit) = self.limit {
-            sql.push_str(" LIMIT ?");
-            params.push(Value::UBigInt(limit));
-        }
-        if let Some(offset) = self.offset {
-            sql.push_str(" OFFSET ?");
-            params.push(Value::UBigInt(offset));
-        }
-
-        let mut stmt = db.prepare(&sql)?;
-        let mut rows = stmt.query(duckdb::params_from_iter(params))?;
+        let mut stmt = db.prepare(self.query.as_str())?;
+        let mut rows = stmt.query([])?;
         let columns = match &self.columns {
             Some(range) => {
                 let column_count = rows.column_count();
@@ -427,7 +402,7 @@ impl Fetcher {
         };
         let mut slice = TableSlice::default();
         let mut emitted_atleast_once = false;
-        let mut row_idx = self.offset.unwrap_or(0) as usize;
+        let mut row_idx = 0;
         while let Some(row) = rows.next()? {
             for col in columns.clone() {
                 let value = row.get_ref(col)?;
@@ -452,6 +427,10 @@ mod tests {
 
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
+
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
 
     fn insert(value: ValueRef) -> String {
         let mut pool = TableSlice::default();
@@ -585,10 +564,11 @@ mod tests {
 
     #[test]
     fn columns_are_formatted_by_type() {
-        let pool =
-            Fetcher::new("SELECT 1 AS a, 'x' AS b, 2.5 AS c, DATE '2024-03-05' AS d, [1, 2] AS e")
-                .slice(&db())
-                .unwrap();
+        let pool = Fetcher::new(query(
+            "SELECT 1 AS a, 'x' AS b, 2.5 AS c, DATE '2024-03-05' AS d, [1, 2] AS e",
+        ))
+        .slice(&db())
+        .unwrap();
         assert_eq!(pool.get(0, 0), Some("1"));
         assert_eq!(pool.get(0, 1), Some("x"));
         assert_eq!(pool.get(0, 2), Some("2.5"));
@@ -598,7 +578,7 @@ mod tests {
 
     #[test]
     fn values_are_stored_by_row_and_column() {
-        let pool = Fetcher::new("SELECT range AS n, range * 10 AS m FROM range(3)")
+        let pool = Fetcher::new(query("SELECT range AS n, range * 10 AS m FROM range(3)"))
             .slice(&db())
             .unwrap();
         assert_eq!(pool.len(), 6);
@@ -609,7 +589,7 @@ mod tests {
 
     #[test]
     fn nulls_are_empty() {
-        let pool = Fetcher::new("SELECT NULL::INTEGER AS a, 1 AS b")
+        let pool = Fetcher::new(query("SELECT NULL::INTEGER AS a, 1 AS b"))
             .slice(&db())
             .unwrap();
         assert_eq!(pool.len(), 2);
@@ -618,21 +598,8 @@ mod tests {
     }
 
     #[test]
-    fn limit_and_offset_keep_absolute_row_numbers() {
-        let pool = Fetcher::new("SELECT range FROM range(10)")
-            .with_offset(3)
-            .with_limit(2)
-            .slice(&db())
-            .unwrap();
-        assert_eq!(pool.len(), 2);
-        assert_eq!(pool.get(3, 0), Some("3"));
-        assert_eq!(pool.get(4, 0), Some("4"));
-        assert_eq!(pool.get(0, 0), None);
-    }
-
-    #[test]
     fn columns_keep_absolute_column_numbers() {
-        let pool = Fetcher::new("SELECT 0 AS a, 1 AS b, 2 AS c, 3 AS d")
+        let pool = Fetcher::new(query("SELECT 0 AS a, 1 AS b, 2 AS c, 3 AS d"))
             .with_columns(1..3)
             .slice(&db())
             .unwrap();
@@ -645,14 +612,14 @@ mod tests {
 
     #[test]
     fn columns_past_the_end_are_clamped() {
-        let pool = Fetcher::new("SELECT 0 AS a, 1 AS b")
+        let pool = Fetcher::new(query("SELECT 0 AS a, 1 AS b"))
             .with_columns(1..10)
             .slice(&db())
             .unwrap();
         assert_eq!(pool.len(), 1);
         assert_eq!(pool.get(0, 1), Some("1"));
 
-        let pool = Fetcher::new("SELECT 0 AS a, 1 AS b")
+        let pool = Fetcher::new(query("SELECT 0 AS a, 1 AS b"))
             .with_columns(5..10)
             .slice(&db())
             .unwrap();
@@ -661,38 +628,31 @@ mod tests {
 
     #[test]
     fn columns_and_rows_combine() {
-        let pool = Fetcher::new("SELECT range AS a, range * 10 AS b FROM range(5)")
-            .with_offset(2)
-            .with_limit(2)
-            .with_columns(1..2)
-            .slice(&db())
-            .unwrap();
+        let pool = Fetcher::new(
+            query("SELECT range AS a, range * 10 AS b FROM range(5)")
+                .with_offset(2)
+                .with_limit(2),
+        )
+        .with_columns(1..2)
+        .slice(&db())
+        .unwrap();
         assert_eq!(pool.len(), 2);
-        assert_eq!(pool.get(2, 1), Some("20"));
-        assert_eq!(pool.get(3, 1), Some("30"));
-        assert_eq!(pool.get(2, 0), None);
-    }
-
-    #[test]
-    fn trailing_semicolon_is_ignored() {
-        let pool = Fetcher::new("SELECT 42;  ").slice(&db()).unwrap();
-        assert_eq!(pool.get(0, 0), Some("42"));
+        assert_eq!(pool.get(0, 1), Some("20"));
+        assert_eq!(pool.get(1, 1), Some("30"));
+        assert_eq!(pool.get(0, 0), None);
     }
 
     #[test]
     fn empty_result_is_an_empty_pool() {
-        let pool = Fetcher::new("SELECT 1 WHERE false").slice(&db()).unwrap();
+        let pool = Fetcher::new(query("SELECT 1 WHERE false"))
+            .slice(&db())
+            .unwrap();
         assert!(pool.is_empty());
     }
 
     #[test]
-    fn invalid_sql_fails() {
-        assert!(Fetcher::new("SELEC 1").slice(&db()).is_err());
-    }
-
-    #[test]
     fn stream_size_splits_values_into_slices() {
-        let slices = Fetcher::new("SELECT range AS a, range * 10 AS b FROM range(3)")
+        let slices = Fetcher::new(query("SELECT range AS a, range * 10 AS b FROM range(3)"))
             .with_stream_size(NonZeroUsize::new(4).unwrap())
             .slices(&db())
             .unwrap();
@@ -707,7 +667,7 @@ mod tests {
 
     #[test]
     fn slices_may_split_a_row() {
-        let slices = Fetcher::new("SELECT 1 AS a, 2 AS b, 3 AS c")
+        let slices = Fetcher::new(query("SELECT 1 AS a, 2 AS b, 3 AS c"))
             .with_stream_size(NonZeroUsize::new(2).unwrap())
             .slices(&db())
             .unwrap();
@@ -718,7 +678,7 @@ mod tests {
 
     #[test]
     fn exact_multiple_has_no_trailing_slice() {
-        let slices = Fetcher::new("SELECT range AS a, range AS b FROM range(2)")
+        let slices = Fetcher::new(query("SELECT range AS a, range AS b FROM range(2)"))
             .with_stream_size(NonZeroUsize::new(2).unwrap())
             .slices(&db())
             .unwrap();
@@ -727,22 +687,24 @@ mod tests {
 
     #[test]
     fn slices_keep_absolute_positions() {
-        let slices = Fetcher::new("SELECT range AS a, range * 10 AS b, 0 AS c FROM range(10)")
-            .with_offset(3)
-            .with_limit(2)
-            .with_columns(0..2)
-            .with_stream_size(NonZeroUsize::new(3).unwrap())
-            .slices(&db())
-            .unwrap();
+        let slices = Fetcher::new(
+            query("SELECT range AS a, range * 10 AS b, 0 AS c FROM range(10)")
+                .with_offset(3)
+                .with_limit(2),
+        )
+        .with_columns(0..2)
+        .with_stream_size(NonZeroUsize::new(3).unwrap())
+        .slices(&db())
+        .unwrap();
         assert_eq!(slices.len(), 2);
-        assert_eq!(slices[0].get(3, 0), Some("3"));
-        assert_eq!(slices[0].get(4, 0), Some("4"));
-        assert_eq!(slices[1].get(4, 1), Some("40"));
+        assert_eq!(slices[0].get(0, 0), Some("3"));
+        assert_eq!(slices[0].get(1, 0), Some("4"));
+        assert_eq!(slices[1].get(1, 1), Some("40"));
     }
 
     #[test]
     fn empty_result_sends_one_empty_slice() {
-        let slices = Fetcher::new("SELECT 1 WHERE false")
+        let slices = Fetcher::new(query("SELECT 1 WHERE false"))
             .with_stream_size(NonZeroUsize::new(2).unwrap())
             .slices(&db())
             .unwrap();
@@ -752,7 +714,7 @@ mod tests {
 
     #[test]
     fn run_sends_every_slice_through_the_worker() {
-        let recv = Fetcher::new("SELECT range FROM range(5)")
+        let recv = Fetcher::new(query("SELECT range FROM range(5)"))
             .with_stream_size(NonZeroUsize::new(2).unwrap())
             .run();
         let mut lens = Vec::new();
@@ -770,7 +732,7 @@ mod tests {
 
     #[test]
     fn run_returns_the_pool_through_the_worker() {
-        let pool = wait(&Fetcher::new("SELECT 'hello'").run()).unwrap();
+        let pool = wait(&Fetcher::new(query("SELECT 'hello'")).run()).unwrap();
         assert_eq!(pool.get(0, 0), Some("hello"));
     }
 }
