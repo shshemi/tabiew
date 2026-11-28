@@ -1,7 +1,7 @@
 use crate::{
     AppResult,
     sql::{
-        db::{Database, Type},
+        db::{Database, Query, Type},
         ops::reply::{Receiver, channel},
         worker::submit,
     },
@@ -52,12 +52,12 @@ impl Schema {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
+    query: Query,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>) -> Self {
-        Self { sql: sql.into() }
+    pub fn new(query: Query) -> Self {
+        Self { query }
     }
 
     pub fn run(&self) -> Receiver<Schema> {
@@ -68,7 +68,7 @@ impl Fetcher {
     }
 
     fn fetch(&self, db: &Database) -> AppResult<Schema> {
-        let sql = self.sql.trim().trim_end_matches(';');
+        let sql = self.query.as_str();
         let mut stmt = db.prepare(&format!("SELECT * FROM ({sql}) LIMIT 0"))?;
         let rows = stmt.query([])?;
         let mut columns = Vec::with_capacity(rows.column_count());
@@ -85,6 +85,10 @@ mod tests {
 
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
+
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
 
     fn db() -> Database {
         DatabaseConfig::default().open_in_memory().unwrap()
@@ -103,7 +107,7 @@ mod tests {
     }
 
     fn dtype(expr: &str) -> Type {
-        let schema = Fetcher::new(format!("SELECT {expr} AS c"))
+        let schema = Fetcher::new(query(&format!("SELECT {expr} AS c")))
             .fetch(&db())
             .unwrap();
         schema.get(0).unwrap().1.clone()
@@ -201,7 +205,7 @@ mod tests {
 
     #[test]
     fn columns_keep_their_order_and_names() {
-        let schema = Fetcher::new("SELECT 1 AS a, 'x' AS b, 2 AS a")
+        let schema = Fetcher::new(query("SELECT 1 AS a, 'x' AS b, 2 AS a"))
             .fetch(&db())
             .unwrap();
         assert_eq!(schema.names().collect::<Vec<_>>(), ["a", "b", "a_1"]);
@@ -213,26 +217,15 @@ mod tests {
 
     #[test]
     fn empty_result_still_has_a_schema() {
-        let schema = Fetcher::new("SELECT 1 AS a WHERE false")
+        let schema = Fetcher::new(query("SELECT 1 AS a WHERE false"))
             .fetch(&db())
             .unwrap();
         assert_eq!(schema.get(0), Some(("a", &Type::Int)));
     }
 
     #[test]
-    fn trailing_semicolon_is_ignored() {
-        let schema = Fetcher::new("SELECT 42 AS n;  ").fetch(&db()).unwrap();
-        assert_eq!(schema.len(), 1);
-    }
-
-    #[test]
-    fn invalid_sql_fails() {
-        assert!(Fetcher::new("SELEC 1").fetch(&db()).is_err());
-    }
-
-    #[test]
     fn run_returns_the_schema_through_the_worker() {
-        let schema = wait(&Fetcher::new("SELECT 1 AS a").run()).unwrap();
+        let schema = wait(&Fetcher::new(query("SELECT 1 AS a")).run()).unwrap();
         assert_eq!(schema.get(0), Some(("a", &Type::Int)));
     }
 }

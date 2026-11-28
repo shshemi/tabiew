@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::{
     AppResult,
     sql::{
-        db::{Database, ValueRef},
+        db::{Database, Query, ValueRef},
         ops::reply::{Receiver, channel},
         worker::submit,
     },
@@ -35,12 +35,12 @@ impl Shape {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
+    query: Query,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>) -> Self {
-        Self { sql: sql.into() }
+    pub fn new(query: Query) -> Self {
+        Self { query }
     }
 
     pub fn run(&self) -> Receiver<Shape> {
@@ -51,7 +51,7 @@ impl Fetcher {
     }
 
     fn fetch(&self, db: &Database) -> AppResult<Shape> {
-        let sql = self.sql.trim().trim_end_matches(';');
+        let sql = self.query.as_str();
         Ok(Shape::new(self.height(db, sql)?, self.width(db, sql)?))
     }
 
@@ -81,6 +81,10 @@ mod tests {
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
 
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
+
     fn db() -> Database {
         DatabaseConfig::default().open_in_memory().unwrap()
     }
@@ -105,16 +109,18 @@ mod tests {
 
     #[test]
     fn shape_counts_rows_and_columns() {
-        let shape = Fetcher::new("SELECT range AS a, range * 2 AS b, 'x' AS c FROM range(7)")
-            .fetch(&db())
-            .unwrap();
+        let shape = Fetcher::new(query(
+            "SELECT range AS a, range * 2 AS b, 'x' AS c FROM range(7)",
+        ))
+        .fetch(&db())
+        .unwrap();
         assert_eq!(shape.height(), 7);
         assert_eq!(shape.width(), 3);
     }
 
     #[test]
     fn empty_result_has_columns_but_no_rows() {
-        let shape = Fetcher::new("SELECT 1 AS a, 2 AS b WHERE false")
+        let shape = Fetcher::new(query("SELECT 1 AS a, 2 AS b WHERE false"))
             .fetch(&db())
             .unwrap();
         assert_eq!(shape.height(), 0);
@@ -123,7 +129,9 @@ mod tests {
 
     #[test]
     fn duplicate_column_names_are_counted() {
-        let shape = Fetcher::new("SELECT 1 AS a, 2 AS a").fetch(&db()).unwrap();
+        let shape = Fetcher::new(query("SELECT 1 AS a, 2 AS a"))
+            .fetch(&db())
+            .unwrap();
         assert_eq!(shape.height(), 1);
         assert_eq!(shape.width(), 2);
     }
@@ -131,27 +139,15 @@ mod tests {
     #[test]
     fn shape_matches_the_table_slice() {
         let sql = "SELECT range AS a, range * 10 AS b FROM range(4)";
-        let shape = Fetcher::new(sql).fetch(&db()).unwrap();
-        let grid = crate::sql::ops::fetchers::table_slice::Fetcher::new(sql).run();
+        let shape = Fetcher::new(query(sql)).fetch(&db()).unwrap();
+        let grid = crate::sql::ops::fetchers::table_slice::Fetcher::new(query(sql)).run();
         let grid = wait(&grid).unwrap();
         assert_eq!(grid.len(), shape.numel());
     }
 
     #[test]
-    fn trailing_semicolon_is_ignored() {
-        let shape = Fetcher::new("SELECT 42 AS n;  ").fetch(&db()).unwrap();
-        assert_eq!(shape.height(), 1);
-        assert_eq!(shape.width(), 1);
-    }
-
-    #[test]
-    fn invalid_sql_fails() {
-        assert!(Fetcher::new("SELEC 1").fetch(&db()).is_err());
-    }
-
-    #[test]
     fn run_returns_the_shape_through_the_worker() {
-        let shape = wait(&Fetcher::new("SELECT * FROM range(5)").run()).unwrap();
+        let shape = wait(&Fetcher::new(query("SELECT * FROM range(5)")).run()).unwrap();
         assert_eq!(shape.height(), 5);
         assert_eq!(shape.width(), 1);
     }

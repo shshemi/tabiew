@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::{
     AppResult,
     sql::{
-        db::{Database, ValueRef},
+        db::{Database, Query, ValueRef},
         ops::{
             reply::{Receiver, channel},
             util::quote_ident,
@@ -58,15 +58,15 @@ impl Bucket {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
+    query: Query,
     column: String,
     buckets: usize,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>, column: impl Into<String>, buckets: usize) -> Self {
+    pub fn new(query: Query, column: impl Into<String>, buckets: usize) -> Self {
         Self {
-            sql: sql.into(),
+            query,
             column: column.into(),
             buckets,
         }
@@ -83,7 +83,7 @@ impl Fetcher {
         if self.buckets == 0 {
             return Err(anyhow!("bucket count must be greater than zero"));
         }
-        let sql = self.sql.trim().trim_end_matches(';');
+        let sql = self.query.as_str();
         let column = quote_ident(&self.column);
         let mut stmt = db.prepare(&format!(
             "WITH \
@@ -143,6 +143,10 @@ mod tests {
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
 
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
+
     fn db() -> Database {
         DatabaseConfig::default().open_in_memory().unwrap()
     }
@@ -169,7 +173,7 @@ mod tests {
 
     #[test]
     fn numbers_are_split_into_equal_buckets() {
-        let histogram = Fetcher::new("SELECT range AS n FROM range(10)", "n", 3)
+        let histogram = Fetcher::new(query("SELECT range AS n FROM range(10)"), "n", 3)
             .fetch(&db())
             .unwrap();
         assert_eq!(
@@ -180,7 +184,7 @@ mod tests {
 
     #[test]
     fn empty_buckets_are_kept() {
-        let histogram = Fetcher::new("SELECT * FROM (VALUES (0.0), (10.0)) v(n)", "n", 4)
+        let histogram = Fetcher::new(query("SELECT * FROM (VALUES (0.0), (10.0)) v(n)"), "n", 4)
             .fetch(&db())
             .unwrap();
         assert_eq!(
@@ -191,8 +195,8 @@ mod tests {
 
     #[test]
     fn nulls_and_non_finite_values_are_skipped() {
-        let histogram = Fetcher::new(
-            "SELECT * FROM (VALUES (1.0), (NULL), ('nan'::DOUBLE), ('inf'::DOUBLE), (3.0)) v(n)",
+        let histogram = Fetcher::new(query(
+            "SELECT * FROM (VALUES (1.0), (NULL), ('nan'::DOUBLE), ('inf'::DOUBLE), (3.0)) v(n)"),
             "n",
             2,
         )
@@ -203,7 +207,7 @@ mod tests {
 
     #[test]
     fn single_value_lands_in_the_first_bucket() {
-        let histogram = Fetcher::new("SELECT 5 AS n FROM range(3)", "n", 2)
+        let histogram = Fetcher::new(query("SELECT 5 AS n FROM range(3)"), "n", 2)
             .fetch(&db())
             .unwrap();
         assert_eq!(buckets(histogram), [(5.0, 5.0, 3), (5.0, 5.0, 0)]);
@@ -211,7 +215,7 @@ mod tests {
 
     #[test]
     fn decimals_are_continuous() {
-        let histogram = Fetcher::new("SELECT 1.5::DECIMAL(4, 1) AS n", "n", 1)
+        let histogram = Fetcher::new(query("SELECT 1.5::DECIMAL(4, 1) AS n"), "n", 1)
             .fetch(&db())
             .unwrap();
         assert_eq!(buckets(histogram), [(1.5, 1.5, 1)]);
@@ -219,7 +223,7 @@ mod tests {
 
     #[test]
     fn all_null_numbers_have_no_buckets() {
-        let histogram = Fetcher::new("SELECT NULL::INTEGER AS n", "n", 3)
+        let histogram = Fetcher::new(query("SELECT NULL::INTEGER AS n"), "n", 3)
             .fetch(&db())
             .unwrap();
         assert!(histogram.is_empty());
@@ -227,13 +231,17 @@ mod tests {
 
     #[test]
     fn zero_buckets_fail() {
-        assert!(Fetcher::new("SELECT 1 AS n", "n", 0).fetch(&db()).is_err());
+        assert!(
+            Fetcher::new(query("SELECT 1 AS n"), "n", 0)
+                .fetch(&db())
+                .is_err()
+        );
     }
 
     #[test]
     fn run_returns_the_histogram_through_the_worker() {
         let histogram =
-            wait(&Fetcher::new("SELECT range AS n FROM range(4)", "n", 2).run()).unwrap();
+            wait(&Fetcher::new(query("SELECT range AS n FROM range(4)"), "n", 2).run()).unwrap();
         assert_eq!(buckets(histogram), [(0.0, 1.5, 2), (1.5, 3.0, 2)]);
     }
 }

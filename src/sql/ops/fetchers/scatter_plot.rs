@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::{
     AppResult,
     sql::{
-        db::{Database, Value, ValueRef},
+        db::{Database, Query, Value, ValueRef},
         ops::{
             reply::{Receiver, channel},
             util::quote_ident,
@@ -53,16 +53,16 @@ impl Group {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
+    query: Query,
     x: String,
     y: String,
     group: Option<String>,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>, x: impl Into<String>, y: impl Into<String>) -> Self {
+    pub fn new(query: Query, x: impl Into<String>, y: impl Into<String>) -> Self {
         Self {
-            sql: sql.into(),
+            query,
             x: x.into(),
             y: y.into(),
             group: None,
@@ -82,7 +82,7 @@ impl Fetcher {
     }
 
     fn fetch(&self, db: &Database) -> AppResult<ScatterPlot> {
-        let sql = self.sql.trim().trim_end_matches(';');
+        let sql = self.query.as_str();
         let x = quote_ident(&self.x);
         let y = quote_ident(&self.y);
         match &self.group {
@@ -138,6 +138,10 @@ mod tests {
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
 
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
+
     fn db() -> Database {
         DatabaseConfig::default().open_in_memory().unwrap()
     }
@@ -162,9 +166,13 @@ mod tests {
 
     #[test]
     fn ungrouped_points_are_one_group_without_a_key() {
-        let plot = Fetcher::new("SELECT range AS x, range * 2 AS y FROM range(3)", "x", "y")
-            .fetch(&db())
-            .unwrap();
+        let plot = Fetcher::new(
+            query("SELECT range AS x, range * 2 AS y FROM range(3)"),
+            "x",
+            "y",
+        )
+        .fetch(&db())
+        .unwrap();
         assert_eq!(plot.len(), 1);
         let group = &plot.groups()[0];
         assert_eq!(group.key(), None);
@@ -174,8 +182,10 @@ mod tests {
     #[test]
     fn nulls_and_non_finite_values_are_skipped() {
         let plot = Fetcher::new(
-            "SELECT * FROM (VALUES (1.0, 1.0), (NULL, 2.0), (3.0, NULL), \
+            query(
+                "SELECT * FROM (VALUES (1.0, 1.0), (NULL, 2.0), (3.0, NULL), \
              ('nan'::DOUBLE, 4.0), (5.0, 'inf'::DOUBLE), (6.0, 6.0)) v(x, y)",
+            ),
             "x",
             "y",
         )
@@ -186,7 +196,7 @@ mod tests {
 
     #[test]
     fn empty_result_is_one_empty_group() {
-        let plot = Fetcher::new("SELECT 1 AS x, 2 AS y WHERE false", "x", "y")
+        let plot = Fetcher::new(query("SELECT 1 AS x, 2 AS y WHERE false"), "x", "y")
             .fetch(&db())
             .unwrap();
         assert_eq!(plot.len(), 1);
@@ -195,8 +205,8 @@ mod tests {
 
     #[test]
     fn points_are_grouped_by_value_in_order() {
-        let plot = Fetcher::new(
-            "SELECT * FROM (VALUES (1, 1, 'b'), (2, 2, 'a'), (3, 3, 'b'), (4, 4, NULL)) v(x, y, g)",
+        let plot = Fetcher::new(query(
+            "SELECT * FROM (VALUES (1, 1, 'b'), (2, 2, 'a'), (3, 3, 'b'), (4, 4, NULL)) v(x, y, g)"),
             "x",
             "y",
         )
@@ -223,17 +233,21 @@ mod tests {
 
     #[test]
     fn grouped_empty_result_has_no_groups() {
-        let plot = Fetcher::new("SELECT 1 AS x, 2 AS y, 'a' AS g WHERE false", "x", "y")
-            .with_group("g")
-            .fetch(&db())
-            .unwrap();
+        let plot = Fetcher::new(
+            query("SELECT 1 AS x, 2 AS y, 'a' AS g WHERE false"),
+            "x",
+            "y",
+        )
+        .with_group("g")
+        .fetch(&db())
+        .unwrap();
         assert!(plot.is_empty());
     }
 
     #[test]
     fn quoted_column_names_work() {
         let plot = Fetcher::new(
-            "SELECT 1 AS \"x x\", 2 AS \"y y\", 3 AS \"g g\"",
+            query("SELECT 1 AS \"x x\", 2 AS \"y y\", 3 AS \"g g\""),
             "x x",
             "y y",
         )
@@ -247,7 +261,7 @@ mod tests {
     #[test]
     fn missing_column_fails() {
         assert!(
-            Fetcher::new("SELECT 1 AS x", "x", "missing")
+            Fetcher::new(query("SELECT 1 AS x"), "x", "missing")
                 .fetch(&db())
                 .is_err()
         );
@@ -255,7 +269,7 @@ mod tests {
 
     #[test]
     fn run_returns_the_plot_through_the_worker() {
-        let plot = wait(&Fetcher::new("SELECT 1 AS x, 2 AS y", "x", "y").run()).unwrap();
+        let plot = wait(&Fetcher::new(query("SELECT 1 AS x, 2 AS y"), "x", "y").run()).unwrap();
         assert_eq!(plot.groups()[0].points(), [(1.0, 2.0)]);
     }
 }

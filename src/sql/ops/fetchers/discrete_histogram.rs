@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::{
     AppResult,
     sql::{
-        db::{Database, Value, ValueRef},
+        db::{Database, Query, Value, ValueRef},
         ops::{
             reply::{Receiver, channel},
             util::quote_ident,
@@ -53,14 +53,14 @@ impl Category {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
+    query: Query,
     column: String,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>, column: impl Into<String>) -> Self {
+    pub fn new(query: Query, column: impl Into<String>) -> Self {
         Self {
-            sql: sql.into(),
+            query,
             column: column.into(),
         }
     }
@@ -73,7 +73,7 @@ impl Fetcher {
     }
 
     fn fetch(&self, db: &Database) -> AppResult<DiscreteHistogram> {
-        let sql = self.sql.trim().trim_end_matches(';');
+        let sql = self.query.as_str();
         let column = quote_ident(&self.column);
         let mut stmt = db.prepare(&format!(
             "SELECT {column}, COUNT(*) AS count FROM ({sql}) \
@@ -102,6 +102,10 @@ mod tests {
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
 
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
+
     fn db() -> Database {
         DatabaseConfig::default().open_in_memory().unwrap()
     }
@@ -129,7 +133,7 @@ mod tests {
     #[test]
     fn text_is_counted_by_value() {
         let histogram = Fetcher::new(
-            "SELECT * FROM (VALUES ('b'), ('a'), ('b'), (NULL), ('c'), ('a'), ('b')) v(s)",
+            query("SELECT * FROM (VALUES ('b'), ('a'), ('b'), (NULL), ('c'), ('a'), ('b')) v(s)"),
             "s",
         )
         .fetch(&db())
@@ -147,9 +151,12 @@ mod tests {
 
     #[test]
     fn booleans_are_counted_by_value() {
-        let histogram = Fetcher::new("SELECT * FROM (VALUES (true), (false), (true)) v(b)", "b")
-            .fetch(&db())
-            .unwrap();
+        let histogram = Fetcher::new(
+            query("SELECT * FROM (VALUES (true), (false), (true)) v(b)"),
+            "b",
+        )
+        .fetch(&db())
+        .unwrap();
         assert_eq!(
             categories(histogram),
             [(Value::Boolean(true), 2), (Value::Boolean(false), 1)]
@@ -158,7 +165,7 @@ mod tests {
 
     #[test]
     fn quoted_column_names_work() {
-        let histogram = Fetcher::new("SELECT 'x' AS \"a b\"", "a b")
+        let histogram = Fetcher::new(query("SELECT 'x' AS \"a b\""), "a b")
             .fetch(&db())
             .unwrap();
         assert_eq!(categories(histogram), [(Value::Text("x".into()), 1)]);
@@ -167,7 +174,7 @@ mod tests {
     #[test]
     fn missing_column_fails() {
         assert!(
-            Fetcher::new("SELECT 1 AS n", "missing")
+            Fetcher::new(query("SELECT 1 AS n"), "missing")
                 .fetch(&db())
                 .is_err()
         );
@@ -175,7 +182,7 @@ mod tests {
 
     #[test]
     fn numbers_are_counted_by_value() {
-        let histogram = Fetcher::new("SELECT * FROM (VALUES (1), (2), (1)) v(n)", "n")
+        let histogram = Fetcher::new(query("SELECT * FROM (VALUES (1), (2), (1)) v(n)"), "n")
             .fetch(&db())
             .unwrap();
         assert_eq!(
@@ -186,7 +193,7 @@ mod tests {
 
     #[test]
     fn run_returns_the_histogram_through_the_worker() {
-        let histogram = wait(&Fetcher::new("SELECT 'x' AS s", "s").run()).unwrap();
+        let histogram = wait(&Fetcher::new(query("SELECT 'x' AS s"), "s").run()).unwrap();
         assert_eq!(categories(histogram), [(Value::Text("x".into()), 1)]);
     }
 }

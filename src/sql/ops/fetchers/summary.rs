@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::{
     AppResult,
     sql::{
-        db::{Database, Row, Value, ValueRef},
+        db::{Database, Query, Row, Value, ValueRef},
         ops::reply::{Receiver, channel},
         worker::submit,
     },
@@ -125,12 +125,12 @@ impl ColumnSummary {
 
 #[derive(Debug, Clone)]
 pub struct Fetcher {
-    sql: String,
+    query: Query,
 }
 
 impl Fetcher {
-    pub fn new(sql: impl Into<String>) -> Self {
-        Self { sql: sql.into() }
+    pub fn new(query: Query) -> Self {
+        Self { query }
     }
 
     pub fn run(&self) -> Receiver<Summary> {
@@ -144,7 +144,7 @@ impl Fetcher {
         let mut stmt = db.prepare(&format!(
             "SELECT column_name, column_type, min, max, approx_unique, avg, std, q25, q50, q75, \
              count, null_percentage FROM (SUMMARIZE ({}))",
-            self.sql.trim().trim_end_matches(';')
+            self.query.as_str()
         ))?;
         let mut rows = stmt.query([])?;
         let mut summaries = Vec::new();
@@ -183,6 +183,10 @@ mod tests {
     use super::*;
     use crate::sql::{db::DatabaseConfig, ops::Next};
 
+    fn query(sql: &str) -> Query {
+        Query::new(sql).unwrap()
+    }
+
     fn text(value: &str) -> Value {
         Value::Text(value.into())
     }
@@ -217,7 +221,7 @@ mod tests {
 
     #[test]
     fn all_columns_are_summarized_in_order() {
-        let summary = Fetcher::new("SELECT * FROM t").fetch(&db()).unwrap();
+        let summary = Fetcher::new(query("SELECT * FROM t")).fetch(&db()).unwrap();
         assert_eq!(summary.len(), 3);
         assert_eq!(
             summary.iter().map(ColumnSummary::name).collect::<Vec<_>>(),
@@ -227,7 +231,7 @@ mod tests {
 
     #[test]
     fn numeric_column_has_full_stats() {
-        let summary = Fetcher::new("SELECT n FROM t").fetch(&db()).unwrap();
+        let summary = Fetcher::new(query("SELECT n FROM t")).fetch(&db()).unwrap();
         assert_eq!(summary.len(), 1);
         let n = summary.get(0).unwrap();
         assert_eq!(n.name(), "n");
@@ -247,7 +251,7 @@ mod tests {
     #[test]
     #[ignore = "duckdb-rs panics reading the untyped NULL stat columns"]
     fn text_column_has_no_numeric_stats() {
-        let summary = Fetcher::new("SELECT s FROM t").fetch(&db()).unwrap();
+        let summary = Fetcher::new(query("SELECT s FROM t")).fetch(&db()).unwrap();
         let s = summary.find("s").unwrap();
         assert_eq!(s.dtype(), "VARCHAR");
         assert_eq!(s.min(), &text("a"));
@@ -261,7 +265,7 @@ mod tests {
 
     #[test]
     fn selected_columns_keep_their_order() {
-        let summary = Fetcher::new("SELECT \"x y\", n FROM t")
+        let summary = Fetcher::new(query("SELECT \"x y\", n FROM t"))
             .fetch(&db())
             .unwrap();
         assert_eq!(
@@ -275,7 +279,9 @@ mod tests {
     fn empty_table_has_zero_counts() {
         let db = db();
         db.execute("CREATE TABLE empty (n INTEGER)", []).unwrap();
-        let summary = Fetcher::new("SELECT * FROM empty").fetch(&db).unwrap();
+        let summary = Fetcher::new(query("SELECT * FROM empty"))
+            .fetch(&db)
+            .unwrap();
         let n = summary.find("n").unwrap();
         assert_eq!(n.count(), 0);
         assert_eq!(n.min(), &Value::Null);
@@ -284,28 +290,21 @@ mod tests {
 
     #[test]
     fn missing_column_fails() {
-        assert!(Fetcher::new("SELECT missing FROM t").fetch(&db()).is_err());
-    }
-
-    #[test]
-    fn invalid_sql_fails() {
-        assert!(Fetcher::new("SELEC 1").fetch(&db()).is_err());
+        assert!(
+            Fetcher::new(query("SELECT missing FROM t"))
+                .fetch(&db())
+                .is_err()
+        );
     }
 
     #[test]
     fn expressions_and_table_functions_are_summarized() {
-        let summary = Fetcher::new("SELECT range * 2 AS doubled FROM range(5)")
+        let summary = Fetcher::new(query("SELECT range * 2 AS doubled FROM range(5)"))
             .fetch(&db())
             .unwrap();
         let doubled = summary.find("doubled").unwrap();
         assert_eq!(doubled.min(), &text("0"));
         assert_eq!(doubled.max(), &text("8"));
-    }
-
-    #[test]
-    fn trailing_semicolon_is_ignored() {
-        let summary = Fetcher::new("SELECT 42 AS n;  ").fetch(&db()).unwrap();
-        assert_eq!(summary.find("n").unwrap().count(), 1);
     }
 
     #[test]
@@ -318,7 +317,7 @@ mod tests {
             ))
         });
         wait(&recv).unwrap();
-        let summary = wait(&Fetcher::new("SELECT * FROM summary_run").run()).unwrap();
+        let summary = wait(&Fetcher::new(query("SELECT * FROM summary_run")).run()).unwrap();
         assert_eq!(summary.find("n").unwrap().count(), 4);
     }
 }
