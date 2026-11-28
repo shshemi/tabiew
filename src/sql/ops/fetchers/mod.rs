@@ -2,6 +2,7 @@ pub mod continuous_histogram;
 pub mod db_schema;
 pub mod discrete_histogram;
 pub mod exact_search;
+pub mod fuzzy_search;
 pub mod min_max;
 pub mod scatter_plot;
 pub mod schema;
